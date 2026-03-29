@@ -1,0 +1,151 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>DQ10 職人ツール</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <main class="app">
+      <header class="app-header">
+        <h1>DQ10 職人 原価・利益計算ツール</h1>
+        <p>スマホ対応 / ローカル保存版</p>
+      </header>
+
+      <nav class="tabs" aria-label="画面切替">
+        <button class="tab-button active" data-tab="profit">利益計算</button>
+        <button class="tab-button" data-tab="material">素材価格管理</button>
+        <button class="tab-button" data-tab="recipe">装備/レシピ管理</button>
+      </nav>
+
+      <section id="profit" class="tab-content active" aria-label="利益計算画面">
+        <h2>利益計算画面</h2>
+
+        <label class="field">
+          <span>装備を選択</span>
+          <select id="equipmentSelect"></select>
+        </label>
+
+        <div class="card" id="equipmentInfo"></div>
+
+        <div class="card">
+          <h3>必要素材一覧</h3>
+          <div id="recipeTableWrap"></div>
+        </div>
+
+        <div class="grid-2">
+          <label class="field">
+            <span>販売価格（G）</span>
+            <input id="salePriceInput" type="number" min="0" step="1" />
+          </label>
+          <label class="field">
+            <span>手数料率（%）</span>
+            <input id="feeRateInput" type="number" min="0" max="100" step="0.1" />
+          </label>
+        </div>
+
+        <div class="summary card">
+          <h3>計算結果</h3>
+          <p>素材原価合計: <strong id="totalCost">0 G</strong></p>
+          <p>手数料控除後売上: <strong id="netSales">0 G</strong></p>
+          <p>利益額: <strong id="profitValue">0 G</strong></p>
+          <p>利益率: <strong id="profitRate">0 %</strong></p>
+        </div>
+      </section>
+
+      <section id="material" class="tab-content" aria-label="素材価格管理画面">
+        <h2>素材価格管理画面</h2>
+
+        <form id="materialForm" class="card">
+          <h3>素材追加</h3>
+          <div class="grid-2">
+            <label class="field">
+              <span>素材ID</span>
+              <input id="newMaterialId" placeholder="mat999" required />
+            </label>
+            <label class="field">
+              <span>素材名</span>
+              <input id="newMaterialName" required />
+            </label>
+          </div>
+          <label class="field">
+            <span>単価（G）</span>
+            <input id="newMaterialPrice" type="number" min="0" step="1" required />
+          </label>
+          <button type="submit">素材を追加</button>
+        </form>
+
+        <div class="card">
+          <h3>素材一覧（価格編集可）</h3>
+          <div id="materialListWrap"></div>
+        </div>
+      </section>
+
+      <section id="recipe" class="tab-content" aria-label="装備レシピ管理画面">
+        <h2>装備/レシピ管理画面</h2>
+
+        <form id="equipmentForm" class="card">
+          <h3>装備追加</h3>
+          <div class="grid-2">
+            <label class="field">
+              <span>装備ID</span>
+              <input id="newEquipmentId" placeholder="eq999" required />
+            </label>
+            <label class="field">
+              <span>装備名</span>
+              <input id="newEquipmentName" required />
+            </label>
+          </div>
+          <div class="grid-2">
+            <label class="field">
+              <span>カテゴリ</span>
+              <input id="newEquipmentCategory" placeholder="武器 / 防具 など" required />
+            </label>
+            <label class="field">
+              <span>職人種別</span>
+              <input id="newEquipmentCraftType" placeholder="武器鍛冶 など" required />
+            </label>
+          </div>
+          <div class="grid-2">
+            <label class="field">
+              <span>販売価格（G）</span>
+              <input id="newEquipmentPrice" type="number" min="0" step="1" required />
+            </label>
+            <label class="field">
+              <span>手数料率（%）</span>
+              <input id="newEquipmentFeeRate" type="number" min="0" max="100" step="0.1" required />
+            </label>
+          </div>
+          <button type="submit">装備を追加</button>
+        </form>
+
+        <form id="recipeForm" class="card">
+          <h3>レシピ追加</h3>
+          <div class="grid-2">
+            <label class="field">
+              <span>装備</span>
+              <select id="recipeEquipmentSelect" required></select>
+            </label>
+            <label class="field">
+              <span>素材</span>
+              <select id="recipeMaterialSelect" required></select>
+            </label>
+          </div>
+          <label class="field">
+            <span>必要個数</span>
+            <input id="recipeQuantity" type="number" min="1" step="1" required />
+          </label>
+          <button type="submit">レシピ行を追加</button>
+        </form>
+
+        <div class="card">
+          <h3>登録済みレシピ一覧</h3>
+          <div id="recipeAdminListWrap"></div>
+        </div>
+      </section>
+    </main>
+
+    <script src="app.js"></script>
+  </body>
+</html>
