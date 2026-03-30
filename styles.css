@@ -131,6 +131,34 @@ button {
   margin-bottom: 0;
 }
 
+.material-header-actions {
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.inline-field {
+  margin-bottom: 0;
+  min-width: 130px;
+}
+
+.inline-field input {
+  min-width: 120px;
+}
+
+.profit-value {
+  font-weight: 800;
+}
+
+.profit-value.is-positive {
+  color: #1f8a3b;
+}
+
+.profit-value.is-negative {
+  color: #d93025;
+}
+
 .grid-2 {
   display: grid;
   gap: 10px;

@@ -252,9 +252,6 @@ const toolPurchasePriceInput = getRequiredElementById("toolPurchasePriceInput");
 const materialListWrap = getRequiredElementById("materialListWrap");
 const recipeAdminListWrap = getRequiredElementById("recipeAdminListWrap");
 
-const selectedToolNameEl = getRequiredElementById("selectedToolName");
-const selectedToolPriceEl = getRequiredElementById("selectedToolPrice");
-const selectedToolDurabilityEl = getRequiredElementById("selectedToolDurability");
 const perCraftToolCostEl = getRequiredElementById("perCraftToolCost");
 const totalToolCostEl = getRequiredElementById("totalToolCost");
 const totalMaterialCostEl = getRequiredElementById("totalMaterialCost");
@@ -551,9 +548,6 @@ function calcAndRenderSummary() {
   const profit = salePrice - perItemMaterialCost - perCraftToolCost;
   const totalProfit = totalSales - grandTotalMaterialCost - totalToolCost;
 
-  if (selectedToolNameEl) selectedToolNameEl.textContent = tool?.toolName || "-";
-  if (selectedToolPriceEl) selectedToolPriceEl.textContent = formatGoldWithDecimals(toolPurchasePrice);
-  if (selectedToolDurabilityEl) selectedToolDurabilityEl.textContent = tool ? `${tool.durability}` : "-";
   if (perCraftToolCostEl) perCraftToolCostEl.textContent = formatGoldWithDecimals(perCraftToolCost);
   if (totalToolCostEl) totalToolCostEl.textContent = formatGoldWithDecimals(totalToolCost);
   if (totalMaterialCostEl) totalMaterialCostEl.textContent = formatGoldWithDecimals(perItemMaterialCost);
@@ -561,7 +555,13 @@ function calcAndRenderSummary() {
   if (salePriceEl) salePriceEl.textContent = formatGoldWithDecimals(salePrice);
   if (totalSalesEl) totalSalesEl.textContent = formatGoldWithDecimals(totalSales);
   profitValueEl.textContent = formatGoldWithDecimals(profit);
-  if (totalProfitValueEl) totalProfitValueEl.textContent = formatGoldWithDecimals(totalProfit);
+  profitValueEl.classList.toggle("is-positive", profit >= 0);
+  profitValueEl.classList.toggle("is-negative", profit < 0);
+  if (totalProfitValueEl) {
+    totalProfitValueEl.textContent = formatGoldWithDecimals(totalProfit);
+    totalProfitValueEl.classList.toggle("is-positive", totalProfit >= 0);
+    totalProfitValueEl.classList.toggle("is-negative", totalProfit < 0);
+  }
 }
 
 function renderMaterialList() {
