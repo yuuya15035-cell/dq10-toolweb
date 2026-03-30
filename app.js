@@ -249,9 +249,19 @@ function renderEquipmentSelectors() {
 function renderFilterSelectors() {
   if (!craftsmanFilterSelect || !categoryFilterSelect) return;
 
-  // CSV由来の装備から、選択肢（重複なし）を作る
+  // CSV由来の装備から、職人選択肢（重複なし）を作る
   const craftsmen = Array.from(new Set(state.equipments.map((e) => e.craftsman).filter(Boolean)));
-  const categories = Array.from(new Set(state.equipments.map((e) => e.category).filter(Boolean)));
+  // category は「選択中の職人」に応じて候補を変える。
+  // - 職人未選択: 全カテゴリ
+  // - 職人選択済み: その職人のカテゴリのみ
+  const categories = Array.from(
+    new Set(
+      state.equipments
+        .filter((e) => selectedCraftsman === "" || e.craftsman === selectedCraftsman)
+        .map((e) => e.category)
+        .filter(Boolean)
+    )
+  );
 
   // 既存選択を崩しにくくするため、毎回再描画して値を戻す流れにしています。
   craftsmanFilterSelect.innerHTML = "";
@@ -268,7 +278,8 @@ function renderFilterSelectors() {
     categoryFilterSelect.add(new Option(category, category));
   });
 
-  // 選択中の値が候補になければ未選択（全件）へ戻す
+  // 選択中の値が候補になければ未選択（全件）へ戻す。
+  // 職人を変更したときにカテゴリが無効化された場合も、ここで自然に「全ジャンル」へ戻ります。
   if (!craftsmen.includes(selectedCraftsman)) selectedCraftsman = "";
   if (!categories.includes(selectedCategory)) selectedCategory = "";
 
