@@ -149,11 +149,14 @@ function mergeWithStoredData(csvData, storedData) {
 
 let state = structuredClone(defaultData);
 let selectedEquipmentId = state.equipments[0]?.id || "";
+// 装備検索キーワード（利益計算画面の装備プルダウン用）
+let equipmentSearchKeyword = "";
 
 const tabButtons = document.querySelectorAll(".tab-button");
 const tabContents = document.querySelectorAll(".tab-content");
 
 const equipmentSelect = document.getElementById("equipmentSelect");
+const equipmentSearchInput = document.getElementById("equipmentSearchInput");
 const salePriceInput = document.getElementById("salePriceInput");
 const feeRateInput = document.getElementById("feeRateInput");
 const recipeTableWrap = document.getElementById("recipeTableWrap");
@@ -186,15 +189,28 @@ tabButtons.forEach((btn) => {
 });
 
 function renderEquipmentSelectors() {
+  // 利益計算画面の装備候補は検索キーワードで絞り込む（部分一致）
+  const filteredEquipments = state.equipments.filter((equipment) =>
+    equipment.name.toLowerCase().includes(equipmentSearchKeyword.toLowerCase())
+  );
+
   equipmentSelect.innerHTML = "";
   recipeEquipmentSelect.innerHTML = "";
 
-  state.equipments.forEach((equipment) => {
-    const o1 = new Option(equipment.name, equipment.id);
-    const o2 = new Option(equipment.name, equipment.id);
-    equipmentSelect.add(o1);
-    recipeEquipmentSelect.add(o2);
+  filteredEquipments.forEach((equipment) => {
+    const option = new Option(equipment.name, equipment.id);
+    equipmentSelect.add(option);
   });
+
+  // レシピ管理側の装備選択は従来どおり全件表示にしておく
+  state.equipments.forEach((equipment) => {
+    recipeEquipmentSelect.add(new Option(equipment.name, equipment.id));
+  });
+
+  // 現在選択中の装備がフィルタ結果に存在しない場合は先頭に寄せる
+  if (!filteredEquipments.some((e) => e.id === selectedEquipmentId)) {
+    selectedEquipmentId = filteredEquipments[0]?.id || "";
+  }
 
   if (!state.equipments.some((e) => e.id === selectedEquipmentId)) {
     selectedEquipmentId = state.equipments[0]?.id || "";
@@ -360,6 +376,12 @@ equipmentSelect.addEventListener("change", (e) => {
   salePriceInput.value = eq?.salePrice ?? 0;
   renderRecipeTable();
   calcAndRenderSummary();
+});
+
+// 装備検索欄の入力に合わせて候補を絞り込みます。
+equipmentSearchInput.addEventListener("input", (e) => {
+  equipmentSearchKeyword = e.target.value.trim();
+  rerenderAll();
 });
 
 salePriceInput.addEventListener("change", (e) => {
