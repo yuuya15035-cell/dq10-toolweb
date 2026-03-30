@@ -88,7 +88,11 @@
 
         <div class="grid-2">
           <label class="field">
-            <span>販売価格（G）</span>
+            <span>制作数</span>
+            <input id="productionCountInput" type="number" min="1" step="1" value="1" />
+          </label>
+          <label class="field">
+            <span>1個あたり販売価格（G）</span>
             <input id="salePriceInput" type="number" min="0" step="1" />
           </label>
         </div>
@@ -99,10 +103,13 @@
           <p>道具購入単価: <strong id="selectedToolPrice">0 G</strong></p>
           <p>耐久数: <strong id="selectedToolDurability">-</strong></p>
           <p>1回あたり道具コスト: <strong id="perCraftToolCost">0 G</strong></p>
-          <p>素材合計: <strong id="totalMaterialCost">0 G</strong></p>
-          <p>合計原価: <strong id="totalCost">0 G</strong></p>
-          <p>売値: <strong id="salePrice">0 G</strong></p>
-          <p>利益: <strong id="profitValue">0 G</strong></p>
+          <p>道具コスト総額: <strong id="totalToolCost">0 G</strong></p>
+          <p>1個あたり素材合計: <strong id="totalMaterialCost">0 G</strong></p>
+          <p>素材総額合計: <strong id="grandTotalMaterialCost">0 G</strong></p>
+          <p>1個あたり販売価格: <strong id="salePrice">0 G</strong></p>
+          <p>総売上: <strong id="totalSales">0 G</strong></p>
+          <p>1個あたり利益: <strong id="profitValue">0 G</strong></p>
+          <p>総利益: <strong id="totalProfitValue">0 G</strong></p>
         </div>
       </section>
 

@@ -242,6 +242,7 @@ const equipmentSelect = getRequiredElementById("equipmentSelect");
 const equipmentSearchInput = getRequiredElementById("equipmentSearchInput");
 const craftsmanFilterSelect = getRequiredElementById("craftsmanFilterSelect");
 const categoryFilterSelect = getRequiredElementById("categoryFilterSelect");
+const productionCountInput = getRequiredElementById("productionCountInput");
 const salePriceInput = getRequiredElementById("salePriceInput");
 const recipeTableWrap = getRequiredElementById("recipeTableWrap");
 const toolWrap = getRequiredElementById("toolWrap");
@@ -255,10 +256,13 @@ const selectedToolNameEl = getRequiredElementById("selectedToolName");
 const selectedToolPriceEl = getRequiredElementById("selectedToolPrice");
 const selectedToolDurabilityEl = getRequiredElementById("selectedToolDurability");
 const perCraftToolCostEl = getRequiredElementById("perCraftToolCost");
+const totalToolCostEl = getRequiredElementById("totalToolCost");
 const totalMaterialCostEl = getRequiredElementById("totalMaterialCost");
-const totalCostEl = getRequiredElementById("totalCost");
+const grandTotalMaterialCostEl = getRequiredElementById("grandTotalMaterialCost");
 const salePriceEl = getRequiredElementById("salePrice");
+const totalSalesEl = getRequiredElementById("totalSales");
 const profitValueEl = getRequiredElementById("profitValue");
+const totalProfitValueEl = getRequiredElementById("totalProfitValue");
 
 const materialForm = getRequiredElementById("materialForm");
 const equipmentForm = getRequiredElementById("equipmentForm");
@@ -273,6 +277,12 @@ function formatGold(value) {
 
 function formatGoldWithDecimals(value) {
   return `${Number(value || 0).toLocaleString("ja-JP", { minimumFractionDigits: 0, maximumFractionDigits: 2 })} G`;
+}
+
+function normalizeProductionCount(value) {
+  const parsed = Number(value);
+  if (!Number.isFinite(parsed)) return 1;
+  return Math.max(1, Math.floor(parsed));
 }
 
 function switchTab(target) {
@@ -431,11 +441,15 @@ function renderRecipeTable() {
     .map((row) => {
       const material = state.materials.find((m) => m.id === row.materialId);
       const price = getEffectiveMaterialPrice(row.materialId);
-      const subtotal = price * row.quantity;
+      const productionCount = normalizeProductionCount(productionCountInput?.value);
+      const totalRequired = row.quantity * productionCount;
+      const subtotal = price * totalRequired;
       return `
         <tr>
           <td>${material?.name ?? "(削除済み素材)"}</td>
           <td>${row.quantity}</td>
+          <td>${productionCount}</td>
+          <td>${totalRequired}</td>
           <td>
             <input
               class="inline-input"
@@ -457,9 +471,11 @@ function renderRecipeTable() {
       <thead>
         <tr>
           <th>素材名</th>
-          <th>必要個数</th>
+          <th>1個あたり必要数</th>
+          <th>制作数</th>
+          <th>総必要数</th>
           <th>単価</th>
-          <th>小計</th>
+          <th>総小計</th>
         </tr>
       </thead>
       <tbody>${htmlRows}</tbody>
@@ -513,29 +529,39 @@ function renderToolSection() {
 }
 
 function calcAndRenderSummary() {
-  if (!salePriceInput || !totalCostEl || !profitValueEl) return;
+  if (!salePriceInput || !profitValueEl) return;
 
   const eq = getSelectedEquipment();
+  const productionCount = normalizeProductionCount(productionCountInput?.value);
+  if (productionCountInput) {
+    productionCountInput.value = String(productionCount);
+  }
   const salePrice = Number(salePriceInput.value || eq?.salePrice || 0);
 
-  const totalMaterialCost = getRecipeRowsForSelectedEquipment().reduce((sum, row) => {
+  const perItemMaterialCost = getRecipeRowsForSelectedEquipment().reduce((sum, row) => {
     return sum + getEffectiveMaterialPrice(row.materialId) * row.quantity;
   }, 0);
+  const grandTotalMaterialCost = perItemMaterialCost * productionCount;
 
   const tool = getSelectedTool();
   const toolPurchasePrice = tool ? getToolPurchasePrice(tool.id) : 0;
   const perCraftToolCost = tool && tool.durability > 0 ? toolPurchasePrice / tool.durability : 0;
-  const totalCost = totalMaterialCost + perCraftToolCost;
-  const profit = salePrice - totalCost;
+  const totalToolCost = perCraftToolCost * productionCount;
+  const totalSales = salePrice * productionCount;
+  const profit = salePrice - perItemMaterialCost - perCraftToolCost;
+  const totalProfit = totalSales - grandTotalMaterialCost - totalToolCost;
 
   if (selectedToolNameEl) selectedToolNameEl.textContent = tool?.toolName || "-";
   if (selectedToolPriceEl) selectedToolPriceEl.textContent = formatGoldWithDecimals(toolPurchasePrice);
   if (selectedToolDurabilityEl) selectedToolDurabilityEl.textContent = tool ? `${tool.durability}` : "-";
   if (perCraftToolCostEl) perCraftToolCostEl.textContent = formatGoldWithDecimals(perCraftToolCost);
-  if (totalMaterialCostEl) totalMaterialCostEl.textContent = formatGoldWithDecimals(totalMaterialCost);
-  totalCostEl.textContent = formatGoldWithDecimals(totalCost);
+  if (totalToolCostEl) totalToolCostEl.textContent = formatGoldWithDecimals(totalToolCost);
+  if (totalMaterialCostEl) totalMaterialCostEl.textContent = formatGoldWithDecimals(perItemMaterialCost);
+  if (grandTotalMaterialCostEl) grandTotalMaterialCostEl.textContent = formatGoldWithDecimals(grandTotalMaterialCost);
   if (salePriceEl) salePriceEl.textContent = formatGoldWithDecimals(salePrice);
+  if (totalSalesEl) totalSalesEl.textContent = formatGoldWithDecimals(totalSales);
   profitValueEl.textContent = formatGoldWithDecimals(profit);
+  if (totalProfitValueEl) totalProfitValueEl.textContent = formatGoldWithDecimals(totalProfit);
 }
 
 function renderMaterialList() {
@@ -680,6 +706,19 @@ if (salePriceInput) {
     if (!eq) return;
     eq.salePrice = Number(e.target.value || 0);
     saveData();
+    calcAndRenderSummary();
+  });
+}
+
+if (productionCountInput) {
+  productionCountInput.addEventListener("input", () => {
+    renderRecipeTable();
+    calcAndRenderSummary();
+  });
+  productionCountInput.addEventListener("change", () => {
+    const normalized = normalizeProductionCount(productionCountInput.value);
+    productionCountInput.value = String(normalized);
+    renderRecipeTable();
     calcAndRenderSummary();
   });
 }
