@@ -9,11 +9,14 @@ DQ10（ドラゴンクエスト10）の職人向けに、
 - `craftsman`（職人種別）と `category`（装備ジャンル）のプルダウンをCSVから自動生成
 - 装備名の部分一致検索で、装備ドロップダウン候補を絞り込み
 - 職人種別・装備ジャンル・文字検索を併用して装備候補を絞り込み
+- `data/tools.csv` から職人道具マスタを読み込み
+- 装備に紐づく職人（craftsman）に一致する道具だけを候補表示
+- 道具購入単価と耐久から、1回あたり道具コストを自動計算
 - 同じ `equipmentName` をまとめて装備ドロップダウンに表示
 - 装備を選ぶと、その装備に必要な素材（`materialName`）と必要個数（`quantity`）を表示
 - 素材価格を手入力で登録・更新
 - 装備販売価格を手入力で登録・更新
-- 手数料率を考慮した利益額・利益率を表示
+- 売値 - 素材合計 - 道具コスト で利益を表示
 - データを `localStorage` に保存（ブラウザローカル）
 
 ## recipe.csv の前提
@@ -29,6 +32,15 @@ DQ10（ドラゴンクエスト10）の職人向けに、
 - `quantity`
 
 このうち、アプリの表示/計算で直接使うのは主に `craftsman` / `category` / `equipmentName` / `materialName` / `quantity` です。
+
+## tools.csv の前提
+
+`data/tools.csv` の列は以下を想定しています。
+
+- `profession`
+- `tool_name`
+- `durability`
+- `sort_order`
 
 ## 画面構成
 

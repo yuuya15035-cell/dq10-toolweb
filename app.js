@@ -4,6 +4,7 @@
 const STORAGE_KEY = "dq10_toolweb_data_v1";
 // recipe.csv の配置先。data ディレクトリ配下を正として扱います。
 const RECIPE_CSV_PATH = "./data/recipe.csv";
+const TOOLS_CSV_PATH = "./data/tools.csv";
 
 // 初期データ（CSVが読み込めない場合のフォールバック）
 const defaultData = {
@@ -22,6 +23,8 @@ const defaultData = {
     { id: crypto.randomUUID(), equipmentId: "e:はがねのつるぎ", materialId: "m:てっこうせき", quantity: 1 },
     { id: crypto.randomUUID(), equipmentId: "e:ぎんのレイピア", materialId: "m:ぎんのこうせき", quantity: 1 },
   ],
+  tools: [],
+  toolPurchasePrices: [],
 };
 
 // CSVの1行（カンマ区切り）を最低限パースする関数。
@@ -40,17 +43,63 @@ function makeMaterialId(name) {
   return `m:${name}`;
 }
 
-// recipe.csvを読み込み、画面で使うデータ構造に変換します。
-async function loadDataFromCsv() {
-  const response = await fetch(RECIPE_CSV_PATH);
+function makeToolId(profession, toolName) {
+  return `t:${profession}:${toolName}`;
+}
+
+async function fetchCsvLines(path) {
+  const response = await fetch(path);
   if (!response.ok) {
-    throw new Error(`CSVの読み込みに失敗しました: ${response.status}`);
+    throw new Error(`CSVの読み込みに失敗しました: ${path} (${response.status})`);
+  }
+  const csvText = await response.text();
+  const normalized = csvText.replace(/^\uFEFF/, "");
+  return normalized.split(/\r?\n/).filter((line) => line.trim().length > 0);
+}
+
+function parseToolsFromLines(lines) {
+  if (lines.length <= 1) {
+    throw new Error("tools.csv にデータ行がありません");
   }
 
-  const csvText = await response.text();
-  // UTF-8 BOMが入っている場合があるので除去しておきます。
-  const normalized = csvText.replace(/^\uFEFF/, "");
-  const lines = normalized.split(/\r?\n/).filter((line) => line.trim().length > 0);
+  const headers = parseCsvLine(lines[0]);
+  const professionIndex = headers.indexOf("profession");
+  const toolNameIndex = headers.indexOf("tool_name");
+  const durabilityIndex = headers.indexOf("durability");
+  const sortOrderIndex = headers.indexOf("sort_order");
+
+  if (professionIndex < 0 || toolNameIndex < 0 || durabilityIndex < 0 || sortOrderIndex < 0) {
+    throw new Error("tools.csv ヘッダーが想定と一致しません");
+  }
+
+  const tools = [];
+  for (let i = 1; i < lines.length; i += 1) {
+    const row = parseCsvLine(lines[i]);
+    const profession = row[professionIndex];
+    const toolName = row[toolNameIndex];
+    const durability = Number(row[durabilityIndex] || 0);
+    const sortOrder = Number(row[sortOrderIndex] || Number.MAX_SAFE_INTEGER);
+    if (!profession || !toolName || durability <= 0) {
+      console.warn(`tools.csv の ${i + 1} 行目をスキップしました（profession/tool_name/durability 不正）`);
+      continue;
+    }
+
+    tools.push({
+      id: makeToolId(profession, toolName),
+      profession,
+      toolName,
+      durability,
+      sortOrder,
+    });
+  }
+
+  return tools;
+}
+
+// recipe.csvを読み込み、画面で使うデータ構造に変換します。
+async function loadDataFromCsv() {
+  const [recipeLines, toolLines] = await Promise.all([fetchCsvLines(RECIPE_CSV_PATH), fetchCsvLines(TOOLS_CSV_PATH)]);
+  const lines = recipeLines;
   if (lines.length <= 1) {
     throw new Error("CSVにデータ行がありません");
   }
@@ -110,11 +159,15 @@ async function loadDataFromCsv() {
     });
   }
 
+  const tools = parseToolsFromLines(toolLines);
+
   return {
     feeRate: 5,
     equipments: Array.from(equipmentMap.values()),
     materials: Array.from(materialMap.values()),
     recipes,
+    tools,
+    toolPurchasePrices: [],
   };
 }
 
@@ -139,6 +192,7 @@ function mergeWithStoredData(csvData, storedData) {
 
   const materialPriceByName = new Map((storedData.materials || []).map((m) => [m.name, Number(m.price || 0)]));
   const salePriceByName = new Map((storedData.equipments || []).map((e) => [e.name, Number(e.salePrice || 0)]));
+  const toolPurchasePriceById = new Map((storedData.toolPurchasePrices || []).map((t) => [t.toolId, Number(t.purchasePrice || 0)]));
 
   return {
     feeRate: Number(storedData.feeRate ?? csvData.feeRate ?? 5),
@@ -151,6 +205,11 @@ function mergeWithStoredData(csvData, storedData) {
       salePrice: salePriceByName.get(e.name) ?? e.salePrice,
     })),
     recipes: csvData.recipes,
+    tools: csvData.tools || [],
+    toolPurchasePrices: (csvData.tools || []).map((tool) => ({
+      toolId: tool.id,
+      purchasePrice: toolPurchasePriceById.get(tool.id) || 0,
+    })),
   };
 }
 
@@ -161,6 +220,7 @@ let equipmentSearchKeyword = "";
 // 利益計算画面の絞り込み条件（未選択なら全件）
 let selectedCraftsman = "";
 let selectedCategory = "";
+let selectedToolId = "";
 // 利益計算画面だけで使う「今回計算用の一時単価」。
 // - キー: materialId
 // - 値: 画面上で上書きした単価
@@ -183,15 +243,22 @@ const equipmentSearchInput = getRequiredElementById("equipmentSearchInput");
 const craftsmanFilterSelect = getRequiredElementById("craftsmanFilterSelect");
 const categoryFilterSelect = getRequiredElementById("categoryFilterSelect");
 const salePriceInput = getRequiredElementById("salePriceInput");
-const feeRateInput = getRequiredElementById("feeRateInput");
 const recipeTableWrap = getRequiredElementById("recipeTableWrap");
+const toolWrap = getRequiredElementById("toolWrap");
+const toolSelect = getRequiredElementById("toolSelect");
+const toolDurabilityInput = getRequiredElementById("toolDurabilityInput");
+const toolPurchasePriceInput = getRequiredElementById("toolPurchasePriceInput");
 const materialListWrap = getRequiredElementById("materialListWrap");
 const recipeAdminListWrap = getRequiredElementById("recipeAdminListWrap");
 
+const selectedToolNameEl = getRequiredElementById("selectedToolName");
+const selectedToolPriceEl = getRequiredElementById("selectedToolPrice");
+const selectedToolDurabilityEl = getRequiredElementById("selectedToolDurability");
+const perCraftToolCostEl = getRequiredElementById("perCraftToolCost");
+const totalMaterialCostEl = getRequiredElementById("totalMaterialCost");
 const totalCostEl = getRequiredElementById("totalCost");
-const netSalesEl = getRequiredElementById("netSales");
+const salePriceEl = getRequiredElementById("salePrice");
 const profitValueEl = getRequiredElementById("profitValue");
-const profitRateEl = getRequiredElementById("profitRate");
 
 const materialForm = getRequiredElementById("materialForm");
 const equipmentForm = getRequiredElementById("equipmentForm");
@@ -202,6 +269,10 @@ const recipeMaterialSelect = getRequiredElementById("recipeMaterialSelect");
 
 function formatGold(value) {
   return `${Math.round(value).toLocaleString("ja-JP")} G`;
+}
+
+function formatGoldWithDecimals(value) {
+  return `${Number(value || 0).toLocaleString("ja-JP", { minimumFractionDigits: 0, maximumFractionDigits: 2 })} G`;
 }
 
 function switchTab(target) {
@@ -309,6 +380,35 @@ function getRecipeRowsForSelectedEquipment() {
   return state.recipes.filter((row) => row.equipmentId === selectedEquipmentId);
 }
 
+function getToolsForSelectedEquipment() {
+  const profession = getSelectedEquipment()?.craftsman;
+  if (!profession) return [];
+  return (state.tools || [])
+    .filter((tool) => tool.profession === profession)
+    .sort((a, b) => a.sortOrder - b.sortOrder);
+}
+
+function getSelectedTool() {
+  return (state.tools || []).find((tool) => tool.id === selectedToolId);
+}
+
+function getToolPurchasePrice(toolId) {
+  if (!toolId) return 0;
+  const data = (state.toolPurchasePrices || []).find((item) => item.toolId === toolId);
+  return Number(data?.purchasePrice || 0);
+}
+
+function setToolPurchasePrice(toolId, purchasePrice) {
+  if (!toolId) return;
+  if (!Array.isArray(state.toolPurchasePrices)) state.toolPurchasePrices = [];
+  const found = state.toolPurchasePrices.find((item) => item.toolId === toolId);
+  if (found) {
+    found.purchasePrice = purchasePrice;
+    return;
+  }
+  state.toolPurchasePrices.push({ toolId, purchasePrice });
+}
+
 // 単価は「一時単価」があればそれを優先、無ければ管理用単価を使います。
 function getEffectiveMaterialPrice(materialId) {
   if (temporaryMaterialPrices.has(materialId)) {
@@ -379,25 +479,63 @@ function renderRecipeTable() {
   });
 }
 
+function renderToolSection() {
+  if (!toolWrap || !toolSelect || !toolDurabilityInput || !toolPurchasePriceInput) return;
+
+  const tools = getToolsForSelectedEquipment();
+  toolSelect.innerHTML = "";
+
+  if (tools.length === 0) {
+    selectedToolId = "";
+    toolSelect.add(new Option("該当する道具がありません", ""));
+    toolSelect.disabled = true;
+    toolPurchasePriceInput.disabled = true;
+    toolPurchasePriceInput.value = "";
+    toolDurabilityInput.value = "";
+    return;
+  }
+
+  toolSelect.disabled = false;
+  toolPurchasePriceInput.disabled = false;
+  toolSelect.add(new Option("道具を選択", ""));
+  tools.forEach((tool) => {
+    toolSelect.add(new Option(tool.toolName, tool.id));
+  });
+
+  if (!tools.some((tool) => tool.id === selectedToolId)) {
+    selectedToolId = "";
+  }
+
+  toolSelect.value = selectedToolId;
+  const selectedTool = getSelectedTool();
+  toolDurabilityInput.value = selectedTool ? String(selectedTool.durability) : "";
+  toolPurchasePriceInput.value = selectedTool ? String(getToolPurchasePrice(selectedTool.id)) : "";
+}
+
 function calcAndRenderSummary() {
-  if (!salePriceInput || !feeRateInput || !totalCostEl || !netSalesEl || !profitValueEl || !profitRateEl) return;
+  if (!salePriceInput || !totalCostEl || !profitValueEl) return;
 
   const eq = getSelectedEquipment();
   const salePrice = Number(salePriceInput.value || eq?.salePrice || 0);
-  const feeRate = Number(feeRateInput.value || state.feeRate || 0);
 
-  const totalCost = getRecipeRowsForSelectedEquipment().reduce((sum, row) => {
+  const totalMaterialCost = getRecipeRowsForSelectedEquipment().reduce((sum, row) => {
     return sum + getEffectiveMaterialPrice(row.materialId) * row.quantity;
   }, 0);
 
-  const netSales = salePrice * (1 - feeRate / 100);
-  const profit = netSales - totalCost;
-  const profitRate = salePrice > 0 ? (profit / salePrice) * 100 : 0;
+  const tool = getSelectedTool();
+  const toolPurchasePrice = tool ? getToolPurchasePrice(tool.id) : 0;
+  const perCraftToolCost = tool && tool.durability > 0 ? toolPurchasePrice / tool.durability : 0;
+  const totalCost = totalMaterialCost + perCraftToolCost;
+  const profit = salePrice - totalCost;
 
-  totalCostEl.textContent = formatGold(totalCost);
-  netSalesEl.textContent = formatGold(netSales);
-  profitValueEl.textContent = formatGold(profit);
-  profitRateEl.textContent = `${profitRate.toFixed(2)} %`;
+  if (selectedToolNameEl) selectedToolNameEl.textContent = tool?.toolName || "-";
+  if (selectedToolPriceEl) selectedToolPriceEl.textContent = formatGoldWithDecimals(toolPurchasePrice);
+  if (selectedToolDurabilityEl) selectedToolDurabilityEl.textContent = tool ? `${tool.durability}` : "-";
+  if (perCraftToolCostEl) perCraftToolCostEl.textContent = formatGoldWithDecimals(perCraftToolCost);
+  if (totalMaterialCostEl) totalMaterialCostEl.textContent = formatGoldWithDecimals(totalMaterialCost);
+  totalCostEl.textContent = formatGoldWithDecimals(totalCost);
+  if (salePriceEl) salePriceEl.textContent = formatGoldWithDecimals(salePrice);
+  profitValueEl.textContent = formatGoldWithDecimals(profit);
 }
 
 function renderMaterialList() {
@@ -474,9 +612,8 @@ function rerenderAll() {
 
   const eq = getSelectedEquipment();
   if (salePriceInput) salePriceInput.value = eq?.salePrice ?? 0;
-  if (feeRateInput) feeRateInput.value = state.feeRate ?? 5;
-
   renderRecipeTable();
+  renderToolSection();
   renderMaterialList();
   renderRecipeAdminList();
   calcAndRenderSummary();
@@ -489,6 +626,28 @@ if (equipmentSelect) {
     const eq = getSelectedEquipment();
     if (salePriceInput) salePriceInput.value = eq?.salePrice ?? 0;
     renderRecipeTable();
+    renderToolSection();
+    calcAndRenderSummary();
+  });
+}
+
+if (toolSelect) {
+  toolSelect.addEventListener("change", (e) => {
+    selectedToolId = e.target.value || "";
+    const tool = getSelectedTool();
+    if (toolDurabilityInput) toolDurabilityInput.value = tool ? String(tool.durability) : "";
+    if (toolPurchasePriceInput) toolPurchasePriceInput.value = tool ? String(getToolPurchasePrice(tool.id)) : "";
+    calcAndRenderSummary();
+  });
+}
+
+if (toolPurchasePriceInput) {
+  toolPurchasePriceInput.addEventListener("change", (e) => {
+    const purchasePrice = Number(e.target.value || 0);
+    if (selectedToolId) {
+      setToolPurchasePrice(selectedToolId, purchasePrice);
+      saveData();
+    }
     calcAndRenderSummary();
   });
 }
@@ -520,14 +679,6 @@ if (salePriceInput) {
     const eq = getSelectedEquipment();
     if (!eq) return;
     eq.salePrice = Number(e.target.value || 0);
-    saveData();
-    calcAndRenderSummary();
-  });
-}
-
-if (feeRateInput) {
-  feeRateInput.addEventListener("change", (e) => {
-    state.feeRate = Number(e.target.value || 0);
     saveData();
     calcAndRenderSummary();
   });
@@ -614,6 +765,7 @@ async function initialize() {
   }
 
   selectedEquipmentId = state.equipments[0]?.id || "";
+  selectedToolId = "";
   saveData();
   rerenderAll();
 }
