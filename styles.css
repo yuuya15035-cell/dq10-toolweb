@@ -182,6 +182,23 @@ button {
   grid-template-columns: 1fr;
 }
 
+.summary-header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.summary-header h3 {
+  margin: 0;
+}
+
+.summary-header small {
+  color: #4f5d75;
+  font-size: 0.8rem;
+}
+
 .summary-column h4 {
   margin: 0 0 8px;
 }
