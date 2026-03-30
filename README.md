@@ -3,86 +3,51 @@
 DQ10（ドラゴンクエスト10）の職人向けに、
 **装備の原価・利益計算**をスマホでも見やすく使えるようにしたローカルWebアプリです。
 
-## できること（最小構成）
+## 今回の仕様（CSV読込）
 
-- 装備をドロップダウンで選択
-- 選択した装備の必要素材/必要数を自動表示
-- 素材単価を手入力で登録・更新
-- 装備販売価格・手数料率を手入力で更新
-- 手数料を考慮した利益額・利益率を表示
-- 装備/素材/レシピを管理画面から追加
-- データを `localStorage` に保存（ブラウザローカル）
+リポジトリ直下の `recipe.csv` を読み込んで、装備・素材・レシピを自動生成します。
 
-## データ分離方針（今回の変更ポイント）
+### recipe.csv の列
 
-`app.js` に装備や素材を直書きせず、初期データを JSON から読み込みます。
+- `equipmentLevel`
+- `craftLevel`
+- `equipmentName`
+- `materialName`
+- `quantity`
 
-- `data/equipments.json`（装備マスタ）
-- `data/materials.json`（素材マスタ）
-- `data/recipes.json`（レシピデータ）
+## できること
 
-### データ項目
+- `recipe.csv` を読み込む
+- 同じ `equipmentName` を1つにまとめて装備ドロップダウンに表示
+- 装備を選ぶと、必要素材（`materialName`）と必要数（`quantity`）を表示
+- 素材単価、装備販売価格、手数料率を手入力で管理
+- 手数料考慮後の利益額・利益率を計算表示
+- デザインは既存の3タブ構成を維持
 
-#### 装備マスタ（equipments）
+## 画面
 
-- `equipmentId` : 装備ID
-- `name` : 装備名
-- `category` : カテゴリ
-- `craftType` : 職人種別
-- `salePrice` : 販売価格
-- `feeRate` : 手数料率
+1. 利益計算画面
+2. 素材価格管理画面
+3. 装備/レシピ管理画面
 
-#### 素材マスタ（materials）
+## データ保存
 
-- `materialId` : 素材ID
-- `name` : 素材名
-- `unitPrice` : 単価
+- 元データ: `recipe.csv`
+- 価格編集などのユーザー操作: `localStorage`（キー: `dq10_toolweb_data_v3`）
 
-#### レシピデータ（recipes）
+> `recipe.csv` を更新した場合でも、同一IDの価格情報（単価/販売価格/手数料率）は localStorage の内容が優先されます。
 
-- `equipmentId` : 装備ID
-- `materialId` : 素材ID
-- `requiredQty` : 必要数
-
-## 画面構成
-
-1. **利益計算画面**
-   - 装備選択
-   - 必要素材一覧
-   - 原価合計 / 利益額 / 利益率の確認
-2. **素材価格管理画面**
-   - 素材追加
-   - 素材単価更新
-3. **装備/レシピ管理画面**
-   - 装備追加（ID / カテゴリ / 職人種別 / 販売価格 / 手数料率）
-   - レシピ（装備×素材×必要数）追加
-
-## ローカル実行方法
-
-### 方法1: ファイルを直接開く
-
-`index.html` をブラウザで直接開くだけでも動作します。
-
-### 方法2: 簡易HTTPサーバーで開く（推奨）
+## ローカル実行
 
 ```bash
 python3 -m http.server 8000
 ```
 
-その後、ブラウザで以下にアクセス：
-
-- <http://localhost:8000>
-
-## 補足
-
-- `data/*.json` を更新しても、すでに `localStorage` に保存済みデータがある場合はそちらが優先されます。
-- JSONの初期値を再読み込みしたい場合は、ブラウザの開発者ツールから `localStorage` の `dq10_toolweb_data_v2` を削除してください。
+- ブラウザで <http://localhost:8000> を開く
 
 ## ファイル構成
 
-- `index.html` : 画面定義（3タブ）
-- `styles.css` : スマホ向けを意識したレスポンシブスタイル
-- `app.js` : ロジック本体（JSON読込・状態管理・計算・保存）
-- `data/equipments.json` : 装備マスタ
-- `data/materials.json` : 素材マスタ
-- `data/recipes.json` : レシピデータ
+- `index.html` : 画面
+- `styles.css` : スタイル（スマホ表示対応）
+- `app.js` : CSV読込・描画・計算ロジック
+- `recipe.csv` : レシピ元データ

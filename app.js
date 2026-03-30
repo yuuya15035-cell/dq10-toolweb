@@ -1,18 +1,16 @@
-// DQ10職人ツール（データ分離版）
-// ------------------------------------------------------------
-// このファイルには、装備・素材・レシピの具体データを直書きしません。
-// 初期データは /data/*.json から読み込み、編集結果は localStorage に保存します。
-// ------------------------------------------------------------
+// DQ10職人ツール（CSV読み込み対応版）
+// ============================================================
+// 目的:
+// - recipe.csv を読み込んで装備・素材・レシピを自動構築する
+// - 同じ equipmentName を1つの装備としてまとめる
+// - 画面デザインは既存構成（3タブ）をなるべく維持する
+// - 価格編集などの操作は localStorage に保存する
+// ============================================================
 
-const STORAGE_KEY = "dq10_toolweb_data_v2";
+const STORAGE_KEY = "dq10_toolweb_data_v3";
+const CSV_PATH = "recipe.csv";
 
-const DATA_FILES = {
-  equipments: "data/equipments.json",
-  materials: "data/materials.json",
-  recipes: "data/recipes.json",
-};
-
-// 画面DOMの参照をまとめておく（可読性向上）
+// DOM参照
 const tabButtons = document.querySelectorAll(".tab-button");
 const tabContents = document.querySelectorAll(".tab-content");
 
@@ -36,7 +34,7 @@ const recipeForm = document.getElementById("recipeForm");
 const recipeEquipmentSelect = document.getElementById("recipeEquipmentSelect");
 const recipeMaterialSelect = document.getElementById("recipeMaterialSelect");
 
-// 状態（state）
+// アプリ状態
 let state = {
   equipments: [],
   materials: [],
@@ -52,25 +50,145 @@ function saveData() {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
 }
 
-async function loadDefaultDataFromJson() {
-  // JSONを分離して読み込む。
-  // 将来的にデータ量が増えても、各ファイルを独立管理しやすくする狙い。
-  const [equipments, materials, recipes] = await Promise.all([
-    fetch(DATA_FILES.equipments).then((r) => r.json()),
-    fetch(DATA_FILES.materials).then((r) => r.json()),
-    fetch(DATA_FILES.recipes).then((r) => r.json()),
-  ]);
+// 文字列から扱いやすいIDを作る（日本語にも対応するためシンプル実装）
+function createId(prefix, rawValue, index) {
+  const cleaned = String(rawValue)
+    .trim()
+    .replace(/\s+/g, "_")
+    .replace(/[^\w\u3040-\u30ff\u3400-\u9fffー＿]/g, "");
+  return `${prefix}_${cleaned || index}`;
+}
 
-  return { equipments, materials, recipes };
+// 最小CSVパーサー（今回のCSVは単純列を想定）
+function parseCsv(text) {
+  const lines = text
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter(Boolean);
+
+  if (lines.length <= 1) return [];
+
+  const headers = lines[0].split(",").map((h) => h.trim());
+  return lines.slice(1).map((line) => {
+    const values = line.split(",").map((v) => v.trim());
+    const row = {};
+    headers.forEach((key, idx) => {
+      row[key] = values[idx] ?? "";
+    });
+    return row;
+  });
+}
+
+// recipe.csv から装備/素材/レシピを組み立てる
+function buildDataFromCsvRows(rows) {
+  const equipmentMap = new Map();
+  const materialMap = new Map();
+  const recipeList = [];
+
+  rows.forEach((row, idx) => {
+    const equipmentName = row.equipmentName || "";
+    const materialName = row.materialName || "";
+    const quantity = Number(row.quantity || 0);
+
+    if (!equipmentName || !materialName || quantity <= 0) return;
+
+    // 同じ equipmentName は同一装備として扱う
+    if (!equipmentMap.has(equipmentName)) {
+      equipmentMap.set(equipmentName, {
+        equipmentId: createId("eq", equipmentName, idx),
+        name: equipmentName,
+        // CSV列を活かす。カテゴリは最小構成なので固定
+        category: "CSV取込",
+        craftType: row.craftLevel || "未設定",
+        equipmentLevel: row.equipmentLevel || "",
+        salePrice: 0,
+        feeRate: 5,
+      });
+    }
+
+    if (!materialMap.has(materialName)) {
+      materialMap.set(materialName, {
+        materialId: createId("mat", materialName, idx),
+        name: materialName,
+        unitPrice: 0,
+      });
+    }
+
+    const equipment = equipmentMap.get(equipmentName);
+    const material = materialMap.get(materialName);
+
+    // 同じ装備×素材がCSV内に複数行ある場合は合算
+    const existing = recipeList.find(
+      (r) => r.equipmentId === equipment.equipmentId && r.materialId === material.materialId
+    );
+    if (existing) {
+      existing.requiredQty += quantity;
+    } else {
+      recipeList.push({ equipmentId: equipment.equipmentId, materialId: material.materialId, requiredQty: quantity });
+    }
+  });
+
+  return {
+    equipments: Array.from(equipmentMap.values()),
+    materials: Array.from(materialMap.values()),
+    recipes: recipeList,
+  };
+}
+
+// localStorageの編集値をCSV初期値にマージする
+function mergeWithSavedData(baseData, savedData) {
+  if (!savedData) return baseData;
+
+  // 装備の販売価格/手数料を引き継ぐ
+  baseData.equipments.forEach((eq) => {
+    const saved = savedData.equipments?.find((s) => s.equipmentId === eq.equipmentId);
+    if (saved) {
+      eq.salePrice = Number(saved.salePrice || 0);
+      eq.feeRate = Number(saved.feeRate || 0);
+    }
+  });
+
+  // 素材単価を引き継ぐ
+  baseData.materials.forEach((mat) => {
+    const saved = savedData.materials?.find((s) => s.materialId === mat.materialId);
+    if (saved) mat.unitPrice = Number(saved.unitPrice || 0);
+  });
+
+  // 画面から追加したデータも残したいので、存在しないIDは追加する
+  const baseEquipmentIds = new Set(baseData.equipments.map((e) => e.equipmentId));
+  (savedData.equipments || []).forEach((eq) => {
+    if (!baseEquipmentIds.has(eq.equipmentId)) baseData.equipments.push(eq);
+  });
+
+  const baseMaterialIds = new Set(baseData.materials.map((m) => m.materialId));
+  (savedData.materials || []).forEach((mat) => {
+    if (!baseMaterialIds.has(mat.materialId)) baseData.materials.push(mat);
+  });
+
+  const key = (r) => `${r.equipmentId}::${r.materialId}`;
+  const baseRecipeKeys = new Set(baseData.recipes.map(key));
+  (savedData.recipes || []).forEach((r) => {
+    if (!baseRecipeKeys.has(key(r))) baseData.recipes.push(r);
+  });
+
+  return baseData;
 }
 
 async function loadData() {
-  const saved = localStorage.getItem(STORAGE_KEY);
-  if (saved) return JSON.parse(saved);
+  const csvText = await fetch(CSV_PATH).then((r) => {
+    if (!r.ok) throw new Error("recipe.csv の読み込みに失敗しました。");
+    return r.text();
+  });
 
-  const defaults = await loadDefaultDataFromJson();
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(defaults));
-  return defaults;
+  const csvRows = parseCsv(csvText);
+  const base = buildDataFromCsvRows(csvRows);
+
+  const savedRaw = localStorage.getItem(STORAGE_KEY);
+  const saved = savedRaw ? JSON.parse(savedRaw) : null;
+
+  const merged = mergeWithSavedData(base, saved);
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(merged));
+  return merged;
 }
 
 function switchTab(target) {
@@ -78,9 +196,7 @@ function switchTab(target) {
   tabContents.forEach((tab) => tab.classList.toggle("active", tab.id === target));
 }
 
-tabButtons.forEach((btn) => {
-  btn.addEventListener("click", () => switchTab(btn.dataset.tab));
-});
+tabButtons.forEach((btn) => btn.addEventListener("click", () => switchTab(btn.dataset.tab)));
 
 function getSelectedEquipment() {
   return state.equipments.find((e) => e.equipmentId === selectedEquipmentId);
@@ -95,7 +211,7 @@ function renderEquipmentSelectors() {
   recipeEquipmentSelect.innerHTML = "";
 
   state.equipments.forEach((equipment) => {
-    const label = `${equipment.name}（${equipment.category} / ${equipment.craftType}）`;
+    const label = `${equipment.name}（装備Lv:${equipment.equipmentLevel || "-"} / 職人Lv:${equipment.craftType}）`;
     equipmentSelect.add(new Option(label, equipment.equipmentId));
     recipeEquipmentSelect.add(new Option(label, equipment.equipmentId));
   });
@@ -124,8 +240,8 @@ function renderEquipmentInfo() {
 
   equipmentInfo.innerHTML = `
     <h3>選択中の装備情報</h3>
-    <p>装備ID: <strong>${eq.equipmentId}</strong></p>
-    <p>カテゴリ: <strong>${eq.category}</strong> / 職人種別: <strong>${eq.craftType}</strong></p>
+    <p>装備名: <strong>${eq.name}</strong></p>
+    <p>装備Lv: <strong>${eq.equipmentLevel || "-"}</strong> / 必要職人Lv: <strong>${eq.craftType}</strong></p>
   `;
 }
 
@@ -141,11 +257,9 @@ function renderRecipeTable() {
       const material = state.materials.find((m) => m.materialId === row.materialId);
       const unitPrice = material?.unitPrice || 0;
       const subtotal = unitPrice * row.requiredQty;
-
       return `
         <tr>
-          <td>${material?.materialId ?? "-"}</td>
-          <td>${material?.name ?? "(削除済み素材)"}</td>
+          <td>${material?.name ?? "(不明素材)"}</td>
           <td>${row.requiredQty}</td>
           <td>${formatGold(unitPrice)}</td>
           <td>${formatGold(subtotal)}</td>
@@ -158,7 +272,6 @@ function renderRecipeTable() {
     <table class="table">
       <thead>
         <tr>
-          <th>素材ID</th>
           <th>素材名</th>
           <th>必要数</th>
           <th>単価</th>
@@ -262,7 +375,7 @@ function rerenderAll() {
 
   const eq = getSelectedEquipment();
   salePriceInput.value = eq?.salePrice ?? 0;
-  feeRateInput.value = eq?.feeRate ?? 0;
+  feeRateInput.value = eq?.feeRate ?? 5;
 
   renderRecipeTable();
   renderMaterialList();
@@ -270,15 +383,13 @@ function rerenderAll() {
   calcAndRenderSummary();
 }
 
-// ---- イベント ----
+// イベント
 
 equipmentSelect.addEventListener("change", (e) => {
   selectedEquipmentId = e.target.value;
   const eq = getSelectedEquipment();
-
   salePriceInput.value = eq?.salePrice ?? 0;
-  feeRateInput.value = eq?.feeRate ?? 0;
-
+  feeRateInput.value = eq?.feeRate ?? 5;
   renderEquipmentInfo();
   renderRecipeTable();
   calcAndRenderSummary();
@@ -287,7 +398,6 @@ equipmentSelect.addEventListener("change", (e) => {
 salePriceInput.addEventListener("change", (e) => {
   const eq = getSelectedEquipment();
   if (!eq) return;
-
   eq.salePrice = Number(e.target.value || 0);
   saveData();
   calcAndRenderSummary();
@@ -296,7 +406,6 @@ salePriceInput.addEventListener("change", (e) => {
 feeRateInput.addEventListener("change", (e) => {
   const eq = getSelectedEquipment();
   if (!eq) return;
-
   eq.feeRate = Number(e.target.value || 0);
   saveData();
   calcAndRenderSummary();
@@ -304,14 +413,13 @@ feeRateInput.addEventListener("change", (e) => {
 
 materialForm.addEventListener("submit", (e) => {
   e.preventDefault();
-
   const materialId = document.getElementById("newMaterialId").value.trim();
   const name = document.getElementById("newMaterialName").value.trim();
   const unitPrice = Number(document.getElementById("newMaterialPrice").value || 0);
 
   if (!materialId || !name) return;
   if (state.materials.some((m) => m.materialId === materialId)) {
-    alert("素材IDが重複しています。別のIDを使ってください。");
+    alert("素材IDが重複しています。");
     return;
   }
 
@@ -323,7 +431,6 @@ materialForm.addEventListener("submit", (e) => {
 
 equipmentForm.addEventListener("submit", (e) => {
   e.preventDefault();
-
   const equipmentId = document.getElementById("newEquipmentId").value.trim();
   const name = document.getElementById("newEquipmentName").value.trim();
   const category = document.getElementById("newEquipmentCategory").value.trim();
@@ -333,11 +440,19 @@ equipmentForm.addEventListener("submit", (e) => {
 
   if (!equipmentId || !name || !category || !craftType) return;
   if (state.equipments.some((eq) => eq.equipmentId === equipmentId)) {
-    alert("装備IDが重複しています。別のIDを使ってください。");
+    alert("装備IDが重複しています。");
     return;
   }
 
-  state.equipments.push({ equipmentId, name, category, craftType, salePrice, feeRate });
+  state.equipments.push({
+    equipmentId,
+    name,
+    category,
+    craftType,
+    equipmentLevel: "",
+    salePrice,
+    feeRate,
+  });
   selectedEquipmentId = equipmentId;
   saveData();
   equipmentForm.reset();
@@ -346,14 +461,11 @@ equipmentForm.addEventListener("submit", (e) => {
 
 recipeForm.addEventListener("submit", (e) => {
   e.preventDefault();
-
   const equipmentId = recipeEquipmentSelect.value;
   const materialId = recipeMaterialSelect.value;
   const requiredQty = Number(document.getElementById("recipeQuantity").value || 0);
-
   if (!equipmentId || !materialId || requiredQty <= 0) return;
 
-  // 同じ装備ID+素材IDが既にある場合は必要数を加算する
   const existing = state.recipes.find((r) => r.equipmentId === equipmentId && r.materialId === materialId);
   if (existing) {
     existing.requiredQty += requiredQty;
@@ -374,7 +486,7 @@ async function init() {
     rerenderAll();
   } catch (error) {
     console.error(error);
-    alert("データ読み込みに失敗しました。data/*.json を確認してください。");
+    alert("recipe.csv の読込に失敗しました。列名を確認してください。");
   }
 }
 
