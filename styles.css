@@ -106,6 +106,31 @@ button {
   font-weight: 700;
 }
 
+/* aタグのリンクでも既存ボタンと近い見た目にして、デザイン差分を最小化 */
+.market-link-button {
+  display: inline-block;
+  border-radius: 8px;
+  background: var(--primary);
+  color: #fff;
+  padding: 10px 14px;
+  font-weight: 700;
+  text-decoration: none;
+  margin-bottom: 12px;
+}
+
+/* 見出しとボタンを同じ行に置きつつ、狭い画面では折り返して崩れを防ぐ */
+.card-header-inline {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.card-header-inline .market-link-button {
+  margin-bottom: 0;
+}
+
 .grid-2 {
   display: grid;
   gap: 10px;
