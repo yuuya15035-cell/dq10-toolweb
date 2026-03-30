@@ -5,7 +5,7 @@ DQ10（ドラゴンクエスト10）の職人向けに、
 
 ## できること（最小構成）
 
-- `date/recipe.csv` を読み込み、装備一覧を自動生成
+- `data/recipe.csv` を読み込み、装備一覧を自動生成
 - 装備名の部分一致検索で、装備ドロップダウン候補を絞り込み
 - 同じ `equipmentName` をまとめて装備ドロップダウンに表示
 - 装備を選ぶと、その装備に必要な素材（`materialName`）と必要個数（`quantity`）を表示
@@ -16,7 +16,7 @@ DQ10（ドラゴンクエスト10）の職人向けに、
 
 ## recipe.csv の前提
 
-`date/recipe.csv` の列は以下を想定しています。
+`data/recipe.csv` の列は以下を想定しています。
 
 - `equipmentLevel`
 - `craftLevel`
@@ -66,7 +66,7 @@ python3 -m http.server 8000
 - `index.html` : 画面定義（3タブ）
 - `styles.css` : スマホ向けを意識したレスポンシブスタイル
 - `app.js` : ロジック本体（CSV読込・状態管理・計算・localStorage保存）
-- `date/recipe.csv` : レシピ元データ
+- `data/recipe.csv` : レシピ元データ
 
 ## 今後の拡張案
 
