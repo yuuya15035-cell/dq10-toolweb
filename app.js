@@ -249,6 +249,10 @@ const salePriceStar0Input = getRequiredElementById("salePriceStar0Input");
 const salePriceStar1Input = getRequiredElementById("salePriceStar1Input");
 const salePriceStar2Input = getRequiredElementById("salePriceStar2Input");
 const salePriceStar3Input = getRequiredElementById("salePriceStar3Input");
+const countStar0Input = getRequiredElementById("countStar0Input");
+const countStar1Input = getRequiredElementById("countStar1Input");
+const countStar2Input = getRequiredElementById("countStar2Input");
+const countStar3Input = getRequiredElementById("countStar3Input");
 const recipeTableWrap = getRequiredElementById("recipeTableWrap");
 const toolWrap = getRequiredElementById("toolWrap");
 const toolSelect = getRequiredElementById("toolSelect");
@@ -258,17 +262,26 @@ const materialListWrap = getRequiredElementById("materialListWrap");
 const recipeAdminListWrap = getRequiredElementById("recipeAdminListWrap");
 
 const perCraftToolCostEl = getRequiredElementById("perCraftToolCost");
-const totalToolCostEl = getRequiredElementById("totalToolCost");
 const totalMaterialCostEl = getRequiredElementById("totalMaterialCost");
-const grandTotalMaterialCostEl = getRequiredElementById("grandTotalMaterialCost");
-const salePriceStar0El = getRequiredElementById("salePriceStar0");
-const salePriceStar1El = getRequiredElementById("salePriceStar1");
-const salePriceStar2El = getRequiredElementById("salePriceStar2");
-const salePriceStar3El = getRequiredElementById("salePriceStar3");
 const profitStar0ValueEl = getRequiredElementById("profitStar0Value");
 const profitStar1ValueEl = getRequiredElementById("profitStar1Value");
 const profitStar2ValueEl = getRequiredElementById("profitStar2Value");
 const profitStar3ValueEl = getRequiredElementById("profitStar3Value");
+const productionCountWarningEl = getRequiredElementById("productionCountWarning");
+const countStar0ValueEl = getRequiredElementById("countStar0Value");
+const countStar1ValueEl = getRequiredElementById("countStar1Value");
+const countStar2ValueEl = getRequiredElementById("countStar2Value");
+const countStar3ValueEl = getRequiredElementById("countStar3Value");
+const salesStar0ValueEl = getRequiredElementById("salesStar0Value");
+const salesStar1ValueEl = getRequiredElementById("salesStar1Value");
+const salesStar2ValueEl = getRequiredElementById("salesStar2Value");
+const salesStar3ValueEl = getRequiredElementById("salesStar3Value");
+const totalProfitStar0ValueEl = getRequiredElementById("totalProfitStar0Value");
+const totalProfitStar1ValueEl = getRequiredElementById("totalProfitStar1Value");
+const totalProfitStar2ValueEl = getRequiredElementById("totalProfitStar2Value");
+const totalProfitStar3ValueEl = getRequiredElementById("totalProfitStar3Value");
+const totalSalesValueEl = getRequiredElementById("totalSalesValue");
+const totalProfitValueEl = getRequiredElementById("totalProfitValue");
 
 const materialForm = getRequiredElementById("materialForm");
 const equipmentForm = getRequiredElementById("equipmentForm");
@@ -295,6 +308,12 @@ function normalizeProductionCount(value) {
   const parsed = Number(value);
   if (!Number.isFinite(parsed)) return 1;
   return Math.max(1, Math.floor(parsed));
+}
+
+function normalizeStarCount(value) {
+  const parsed = Number(value);
+  if (!Number.isFinite(parsed)) return 0;
+  return Math.max(0, Math.floor(parsed));
 }
 
 function switchTab(target) {
@@ -554,41 +573,77 @@ function calcAndRenderSummary() {
   const eq = getSelectedEquipment();
   const productionCount = normalizeProductionCount(productionCountInput?.value);
   if (productionCountInput) productionCountInput.value = String(productionCount);
+  const countStar0 = normalizeStarCount(countStar0Input?.value);
+  const countStar1 = normalizeStarCount(countStar1Input?.value);
+  const countStar2 = normalizeStarCount(countStar2Input?.value);
+  const countStar3 = normalizeStarCount(countStar3Input?.value);
+  if (countStar0Input) countStar0Input.value = String(countStar0);
+  if (countStar1Input) countStar1Input.value = String(countStar1);
+  if (countStar2Input) countStar2Input.value = String(countStar2);
+  if (countStar3Input) countStar3Input.value = String(countStar3);
 
   const salePrices = getSalePricesForEquipment(eq);
   const perItemMaterialCost = getRecipeRowsForSelectedEquipment().reduce(
     (sum, row) => sum + getEffectiveMaterialPrice(row.materialId) * row.quantity,
     0
   );
-  const grandTotalMaterialCost = perItemMaterialCost * productionCount;
-
   const tool = getSelectedTool();
   const toolPurchasePrice = tool ? getToolPurchasePrice(tool.id) : 0;
   const perCraftToolCost = tool && tool.durability > 0 ? toolPurchasePrice / tool.durability : 0;
-  const totalToolCost = perCraftToolCost * productionCount;
+  const totalCount = countStar0 + countStar1 + countStar2 + countStar3;
 
   const profitStar0 = salePrices.star0 - perItemMaterialCost - perCraftToolCost;
   const profitStar1 = salePrices.star1 - perItemMaterialCost - perCraftToolCost;
   const profitStar2 = salePrices.star2 - perItemMaterialCost - perCraftToolCost;
   const profitStar3 = salePrices.star3 - perItemMaterialCost - perCraftToolCost;
+  const salesStar0 = salePrices.star0 * countStar0;
+  const salesStar1 = salePrices.star1 * countStar1;
+  const salesStar2 = salePrices.star2 * countStar2;
+  const salesStar3 = salePrices.star3 * countStar3;
+  const totalProfitStar0 = profitStar0 * countStar0;
+  const totalProfitStar1 = profitStar1 * countStar1;
+  const totalProfitStar2 = profitStar2 * countStar2;
+  const totalProfitStar3 = profitStar3 * countStar3;
+  const totalSales = salesStar0 + salesStar1 + salesStar2 + salesStar3;
+  const totalProfit = totalProfitStar0 + totalProfitStar1 + totalProfitStar2 + totalProfitStar3;
 
   if (perCraftToolCostEl) perCraftToolCostEl.textContent = formatGold(perCraftToolCost);
-  if (totalToolCostEl) totalToolCostEl.textContent = formatGold(totalToolCost);
   if (totalMaterialCostEl) totalMaterialCostEl.textContent = formatGold(perItemMaterialCost);
-  if (grandTotalMaterialCostEl) grandTotalMaterialCostEl.textContent = formatGold(grandTotalMaterialCost);
-  if (salePriceStar0El) salePriceStar0El.textContent = formatGold(salePrices.star0);
-  if (salePriceStar1El) salePriceStar1El.textContent = formatGold(salePrices.star1);
-  if (salePriceStar2El) salePriceStar2El.textContent = formatGold(salePrices.star2);
-  if (salePriceStar3El) salePriceStar3El.textContent = formatGold(salePrices.star3);
   if (profitStar0ValueEl) profitStar0ValueEl.textContent = formatGold(profitStar0);
   if (profitStar1ValueEl) profitStar1ValueEl.textContent = formatGold(profitStar1);
   if (profitStar2ValueEl) profitStar2ValueEl.textContent = formatGold(profitStar2);
   if (profitStar3ValueEl) profitStar3ValueEl.textContent = formatGold(profitStar3);
+  if (countStar0ValueEl) countStar0ValueEl.textContent = String(countStar0);
+  if (countStar1ValueEl) countStar1ValueEl.textContent = String(countStar1);
+  if (countStar2ValueEl) countStar2ValueEl.textContent = String(countStar2);
+  if (countStar3ValueEl) countStar3ValueEl.textContent = String(countStar3);
+  if (salesStar0ValueEl) salesStar0ValueEl.textContent = formatGold(salesStar0);
+  if (salesStar1ValueEl) salesStar1ValueEl.textContent = formatGold(salesStar1);
+  if (salesStar2ValueEl) salesStar2ValueEl.textContent = formatGold(salesStar2);
+  if (salesStar3ValueEl) salesStar3ValueEl.textContent = formatGold(salesStar3);
+  if (totalProfitStar0ValueEl) totalProfitStar0ValueEl.textContent = formatGold(totalProfitStar0);
+  if (totalProfitStar1ValueEl) totalProfitStar1ValueEl.textContent = formatGold(totalProfitStar1);
+  if (totalProfitStar2ValueEl) totalProfitStar2ValueEl.textContent = formatGold(totalProfitStar2);
+  if (totalProfitStar3ValueEl) totalProfitStar3ValueEl.textContent = formatGold(totalProfitStar3);
+  if (totalSalesValueEl) totalSalesValueEl.textContent = formatGold(totalSales);
+  if (totalProfitValueEl) totalProfitValueEl.textContent = formatGold(totalProfit);
+
+  if (productionCountWarningEl) {
+    productionCountWarningEl.textContent =
+      totalCount === productionCount
+        ? ""
+        : `警告: ★個数合計（${totalCount}）と制作数（${productionCount}）が一致していません。`;
+  }
 
   applyProfitColor(profitStar0ValueEl, profitStar0);
   applyProfitColor(profitStar1ValueEl, profitStar1);
   applyProfitColor(profitStar2ValueEl, profitStar2);
   applyProfitColor(profitStar3ValueEl, profitStar3);
+  applyProfitColor(totalProfitStar0ValueEl, totalProfitStar0);
+  applyProfitColor(totalProfitStar1ValueEl, totalProfitStar1);
+  applyProfitColor(totalProfitStar2ValueEl, totalProfitStar2);
+  applyProfitColor(totalProfitStar3ValueEl, totalProfitStar3);
+  applyProfitColor(totalProfitValueEl, totalProfit);
 }
 
 function renderMaterialList() {
@@ -764,6 +819,22 @@ if (productionCountInput) {
     calcAndRenderSummary();
   });
 }
+
+[
+  countStar0Input,
+  countStar1Input,
+  countStar2Input,
+  countStar3Input,
+].forEach((input) => {
+  if (!input) return;
+  input.addEventListener("input", () => {
+    calcAndRenderSummary();
+  });
+  input.addEventListener("change", () => {
+    input.value = String(normalizeStarCount(input.value));
+    calcAndRenderSummary();
+  });
+});
 
 if (materialForm) {
   materialForm.addEventListener("submit", (e) => {

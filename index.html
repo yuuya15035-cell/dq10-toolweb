@@ -84,40 +84,81 @@
 
         <div class="card">
           <h3>販売価格（できのよさ別）</h3>
-          <div class="grid-2">
-            <label class="field">
-              <span>★0販売価格（G）</span>
-              <input id="salePriceStar0Input" type="number" min="0" step="1" />
-            </label>
-            <label class="field">
-              <span>★1販売価格（G）</span>
-              <input id="salePriceStar1Input" type="number" min="0" step="1" />
-            </label>
-            <label class="field">
-              <span>★2販売価格（G）</span>
-              <input id="salePriceStar2Input" type="number" min="0" step="1" />
-            </label>
-            <label class="field">
-              <span>★3販売価格（G）</span>
-              <input id="salePriceStar3Input" type="number" min="0" step="1" />
-            </label>
+          <div class="sale-input-list">
+            <div class="sale-input-row">
+              <label class="field">
+                <span>★0販売価格（G）</span>
+                <input id="salePriceStar0Input" type="number" min="0" step="1" />
+              </label>
+              <label class="field">
+                <span>★0個数</span>
+                <input id="countStar0Input" type="number" min="0" step="1" value="0" />
+              </label>
+            </div>
+            <div class="sale-input-row">
+              <label class="field">
+                <span>★1販売価格（G）</span>
+                <input id="salePriceStar1Input" type="number" min="0" step="1" />
+              </label>
+              <label class="field">
+                <span>★1個数</span>
+                <input id="countStar1Input" type="number" min="0" step="1" value="0" />
+              </label>
+            </div>
+            <div class="sale-input-row">
+              <label class="field">
+                <span>★2販売価格（G）</span>
+                <input id="salePriceStar2Input" type="number" min="0" step="1" />
+              </label>
+              <label class="field">
+                <span>★2個数</span>
+                <input id="countStar2Input" type="number" min="0" step="1" value="0" />
+              </label>
+            </div>
+            <div class="sale-input-row">
+              <label class="field">
+                <span>★3販売価格（G）</span>
+                <input id="salePriceStar3Input" type="number" min="0" step="1" />
+              </label>
+              <label class="field">
+                <span>★3個数</span>
+                <input id="countStar3Input" type="number" min="0" step="1" value="0" />
+              </label>
+            </div>
           </div>
         </div>
 
         <div class="summary card">
           <h3>計算結果</h3>
-          <p>1回あたり道具コスト: <strong id="perCraftToolCost">0 G</strong></p>
-          <p>道具コスト総額: <strong id="totalToolCost">0 G</strong></p>
-          <p>1個あたり素材合計: <strong id="totalMaterialCost">0 G</strong></p>
-          <p>素材総額合計: <strong id="grandTotalMaterialCost">0 G</strong></p>
-          <p>★0販売価格: <strong id="salePriceStar0">0 G</strong></p>
-          <p>★1販売価格: <strong id="salePriceStar1">0 G</strong></p>
-          <p>★2販売価格: <strong id="salePriceStar2">0 G</strong></p>
-          <p>★3販売価格: <strong id="salePriceStar3">0 G</strong></p>
-          <p>★0の1個あたり利益: <strong id="profitStar0Value" class="profit-value">0 G</strong></p>
-          <p>★1の1個あたり利益: <strong id="profitStar1Value" class="profit-value">0 G</strong></p>
-          <p>★2の1個あたり利益: <strong id="profitStar2Value" class="profit-value">0 G</strong></p>
-          <p>★3の1個あたり利益: <strong id="profitStar3Value" class="profit-value">0 G</strong></p>
+          <p id="productionCountWarning" class="warning-text" aria-live="polite"></p>
+          <div class="summary-grid">
+            <section class="summary-column">
+              <h4>1個あたり情報</h4>
+              <p>1回あたり道具コスト: <strong id="perCraftToolCost">0 G</strong></p>
+              <p>1個あたり素材合計: <strong id="totalMaterialCost">0 G</strong></p>
+              <p>★0の1個あたり利益: <strong id="profitStar0Value" class="profit-value">0 G</strong></p>
+              <p>★1の1個あたり利益: <strong id="profitStar1Value" class="profit-value">0 G</strong></p>
+              <p>★2の1個あたり利益: <strong id="profitStar2Value" class="profit-value">0 G</strong></p>
+              <p>★3の1個あたり利益: <strong id="profitStar3Value" class="profit-value">0 G</strong></p>
+            </section>
+            <section class="summary-column">
+              <h4>複数制作結果</h4>
+              <p>★0個数: <strong id="countStar0Value">0</strong></p>
+              <p>★1個数: <strong id="countStar1Value">0</strong></p>
+              <p>★2個数: <strong id="countStar2Value">0</strong></p>
+              <p>★3個数: <strong id="countStar3Value">0</strong></p>
+              <p>★0売上合計: <strong id="salesStar0Value">0 G</strong></p>
+              <p>★1売上合計: <strong id="salesStar1Value">0 G</strong></p>
+              <p>★2売上合計: <strong id="salesStar2Value">0 G</strong></p>
+              <p>★3売上合計: <strong id="salesStar3Value">0 G</strong></p>
+              <p>★0利益合計: <strong id="totalProfitStar0Value" class="profit-value">0 G</strong></p>
+              <p>★1利益合計: <strong id="totalProfitStar1Value" class="profit-value">0 G</strong></p>
+              <p>★2利益合計: <strong id="totalProfitStar2Value" class="profit-value">0 G</strong></p>
+              <p>★3利益合計: <strong id="totalProfitStar3Value" class="profit-value">0 G</strong></p>
+              <p>総売上: <strong id="totalSalesValue">0 G</strong></p>
+              <p>総利益: <strong id="totalProfitValue" class="profit-value">0 G</strong></p>
+            </section>
+          </div>
         </div>
       </section>
 

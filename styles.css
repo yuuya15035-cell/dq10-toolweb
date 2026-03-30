@@ -165,6 +165,37 @@ button {
   grid-template-columns: 1fr;
 }
 
+.sale-input-list {
+  display: grid;
+  gap: 10px;
+}
+
+.sale-input-row {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 10px;
+}
+
+.summary-grid {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: 1fr;
+}
+
+.summary-column h4 {
+  margin: 0 0 8px;
+}
+
+.summary-column p {
+  margin: 6px 0;
+}
+
+.warning-text {
+  margin: 0 0 10px;
+  color: #d93025;
+  font-weight: 700;
+}
+
 .table {
   width: 100%;
   border-collapse: collapse;
@@ -198,6 +229,14 @@ button {
   }
 
   .grid-2 {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .sale-input-row {
+    grid-template-columns: 2fr 1fr;
+  }
+
+  .summary-grid {
     grid-template-columns: 1fr 1fr;
   }
 }
