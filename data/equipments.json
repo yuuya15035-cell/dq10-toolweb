@@ -1,0 +1,18 @@
+[
+  {
+    "equipmentId": "eq001",
+    "name": "はがねのつるぎ",
+    "category": "武器",
+    "craftType": "武器鍛冶",
+    "salePrice": 3200,
+    "feeRate": 5
+  },
+  {
+    "equipmentId": "eq002",
+    "name": "ぎんのレイピア",
+    "category": "武器",
+    "craftType": "武器鍛冶",
+    "salePrice": 5800,
+    "feeRate": 5
+  }
+]
