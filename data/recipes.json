@@ -1,0 +1,22 @@
+[
+  {
+    "equipmentId": "eq001",
+    "materialId": "mat001",
+    "requiredQty": 5
+  },
+  {
+    "equipmentId": "eq001",
+    "materialId": "mat003",
+    "requiredQty": 1
+  },
+  {
+    "equipmentId": "eq002",
+    "materialId": "mat002",
+    "requiredQty": 4
+  },
+  {
+    "equipmentId": "eq002",
+    "materialId": "mat003",
+    "requiredQty": 2
+  }
+]

@@ -1,0 +1,17 @@
+[
+  {
+    "materialId": "mat001",
+    "name": "てっこうせき",
+    "unitPrice": 120
+  },
+  {
+    "materialId": "mat002",
+    "name": "ぎんのこうせき",
+    "unitPrice": 320
+  },
+  {
+    "materialId": "mat003",
+    "name": "ようせいのひだね",
+    "unitPrice": 450
+  }
+]
