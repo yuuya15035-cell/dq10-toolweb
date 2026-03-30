@@ -15,8 +15,8 @@ const defaultData = {
     { id: "m:ようせいのひだね", name: "ようせいのひだね", price: 450 },
   ],
   equipments: [
-    { id: "e:はがねのつるぎ", name: "はがねのつるぎ", salePrice: 3200 },
-    { id: "e:ぎんのレイピア", name: "ぎんのレイピア", salePrice: 5800 },
+    { id: "e:はがねのつるぎ", name: "はがねのつるぎ", salePrices: { star0: 3200, star1: 3200, star2: 3200, star3: 3200 } },
+    { id: "e:ぎんのレイピア", name: "ぎんのレイピア", salePrices: { star0: 5800, star1: 5800, star2: 5800, star3: 5800 } },
   ],
   recipes: [
     { id: crypto.randomUUID(), equipmentId: "e:はがねのつるぎ", materialId: "m:ぎんのこうせき", quantity: 1 },
@@ -138,7 +138,7 @@ async function loadDataFromCsv() {
         craftsman,
         category,
         // 販売価格はCSVに無いので0初期化（既存保存値があれば後で引き継ぎ）
-        salePrice: 0,
+        salePrices: { star0: 0, star1: 0, star2: 0, star3: 0 },
       });
     }
 
@@ -191,7 +191,9 @@ function mergeWithStoredData(csvData, storedData) {
   if (!storedData) return csvData;
 
   const materialPriceByName = new Map((storedData.materials || []).map((m) => [m.name, Number(m.price || 0)]));
-  const salePriceByName = new Map((storedData.equipments || []).map((e) => [e.name, Number(e.salePrice || 0)]));
+  const salePricesByName = new Map(
+    (storedData.equipments || []).map((e) => [e.name, normalizeSalePrices(e.salePrices, Number(e.salePrice || 0))])
+  );
   const toolPurchasePriceById = new Map((storedData.toolPurchasePrices || []).map((t) => [t.toolId, Number(t.purchasePrice || 0)]));
 
   return {
@@ -202,7 +204,7 @@ function mergeWithStoredData(csvData, storedData) {
     })),
     equipments: csvData.equipments.map((e) => ({
       ...e,
-      salePrice: salePriceByName.get(e.name) ?? e.salePrice,
+      salePrices: salePricesByName.get(e.name) ?? normalizeSalePrices(e.salePrices, Number(e.salePrice || 0)),
     })),
     recipes: csvData.recipes,
     tools: csvData.tools || [],
@@ -243,7 +245,10 @@ const equipmentSearchInput = getRequiredElementById("equipmentSearchInput");
 const craftsmanFilterSelect = getRequiredElementById("craftsmanFilterSelect");
 const categoryFilterSelect = getRequiredElementById("categoryFilterSelect");
 const productionCountInput = getRequiredElementById("productionCountInput");
-const salePriceInput = getRequiredElementById("salePriceInput");
+const salePriceStar0Input = getRequiredElementById("salePriceStar0Input");
+const salePriceStar1Input = getRequiredElementById("salePriceStar1Input");
+const salePriceStar2Input = getRequiredElementById("salePriceStar2Input");
+const salePriceStar3Input = getRequiredElementById("salePriceStar3Input");
 const recipeTableWrap = getRequiredElementById("recipeTableWrap");
 const toolWrap = getRequiredElementById("toolWrap");
 const toolSelect = getRequiredElementById("toolSelect");
@@ -256,10 +261,14 @@ const perCraftToolCostEl = getRequiredElementById("perCraftToolCost");
 const totalToolCostEl = getRequiredElementById("totalToolCost");
 const totalMaterialCostEl = getRequiredElementById("totalMaterialCost");
 const grandTotalMaterialCostEl = getRequiredElementById("grandTotalMaterialCost");
-const salePriceEl = getRequiredElementById("salePrice");
-const totalSalesEl = getRequiredElementById("totalSales");
-const profitValueEl = getRequiredElementById("profitValue");
-const totalProfitValueEl = getRequiredElementById("totalProfitValue");
+const salePriceStar0El = getRequiredElementById("salePriceStar0");
+const salePriceStar1El = getRequiredElementById("salePriceStar1");
+const salePriceStar2El = getRequiredElementById("salePriceStar2");
+const salePriceStar3El = getRequiredElementById("salePriceStar3");
+const profitStar0ValueEl = getRequiredElementById("profitStar0Value");
+const profitStar1ValueEl = getRequiredElementById("profitStar1Value");
+const profitStar2ValueEl = getRequiredElementById("profitStar2Value");
+const profitStar3ValueEl = getRequiredElementById("profitStar3Value");
 
 const materialForm = getRequiredElementById("materialForm");
 const equipmentForm = getRequiredElementById("equipmentForm");
@@ -272,8 +281,14 @@ function formatGold(value) {
   return `${Math.round(value).toLocaleString("ja-JP")} G`;
 }
 
-function formatGoldWithDecimals(value) {
-  return `${Number(value || 0).toLocaleString("ja-JP", { minimumFractionDigits: 0, maximumFractionDigits: 2 })} G`;
+function normalizeSalePrices(salePrices, fallbackSalePrice = 0) {
+  const fallback = Number(fallbackSalePrice || 0);
+  return {
+    star0: Number(salePrices?.star0 ?? fallback),
+    star1: Number(salePrices?.star1 ?? fallback),
+    star2: Number(salePrices?.star2 ?? fallback),
+    star3: Number(salePrices?.star3 ?? fallback),
+  };
 }
 
 function normalizeProductionCount(value) {
@@ -381,6 +396,10 @@ function renderMaterialSelector() {
 
 function getSelectedEquipment() {
   return state.equipments.find((e) => e.id === selectedEquipmentId);
+}
+
+function getSalePricesForEquipment(equipment) {
+  return normalizeSalePrices(equipment?.salePrices, Number(equipment?.salePrice || 0));
 }
 
 function getRecipeRowsForSelectedEquipment() {
@@ -525,43 +544,51 @@ function renderToolSection() {
   toolPurchasePriceInput.value = selectedTool ? String(getToolPurchasePrice(selectedTool.id)) : "";
 }
 
-function calcAndRenderSummary() {
-  if (!salePriceInput || !profitValueEl) return;
+function applyProfitColor(element, value) {
+  if (!element) return;
+  element.classList.toggle("is-positive", value >= 0);
+  element.classList.toggle("is-negative", value < 0);
+}
 
+function calcAndRenderSummary() {
   const eq = getSelectedEquipment();
   const productionCount = normalizeProductionCount(productionCountInput?.value);
-  if (productionCountInput) {
-    productionCountInput.value = String(productionCount);
-  }
-  const salePrice = Number(salePriceInput.value || eq?.salePrice || 0);
+  if (productionCountInput) productionCountInput.value = String(productionCount);
 
-  const perItemMaterialCost = getRecipeRowsForSelectedEquipment().reduce((sum, row) => {
-    return sum + getEffectiveMaterialPrice(row.materialId) * row.quantity;
-  }, 0);
+  const salePrices = getSalePricesForEquipment(eq);
+  const perItemMaterialCost = getRecipeRowsForSelectedEquipment().reduce(
+    (sum, row) => sum + getEffectiveMaterialPrice(row.materialId) * row.quantity,
+    0
+  );
   const grandTotalMaterialCost = perItemMaterialCost * productionCount;
 
   const tool = getSelectedTool();
   const toolPurchasePrice = tool ? getToolPurchasePrice(tool.id) : 0;
   const perCraftToolCost = tool && tool.durability > 0 ? toolPurchasePrice / tool.durability : 0;
   const totalToolCost = perCraftToolCost * productionCount;
-  const totalSales = salePrice * productionCount;
-  const profit = salePrice - perItemMaterialCost - perCraftToolCost;
-  const totalProfit = totalSales - grandTotalMaterialCost - totalToolCost;
 
-  if (perCraftToolCostEl) perCraftToolCostEl.textContent = formatGoldWithDecimals(perCraftToolCost);
-  if (totalToolCostEl) totalToolCostEl.textContent = formatGoldWithDecimals(totalToolCost);
-  if (totalMaterialCostEl) totalMaterialCostEl.textContent = formatGoldWithDecimals(perItemMaterialCost);
-  if (grandTotalMaterialCostEl) grandTotalMaterialCostEl.textContent = formatGoldWithDecimals(grandTotalMaterialCost);
-  if (salePriceEl) salePriceEl.textContent = formatGoldWithDecimals(salePrice);
-  if (totalSalesEl) totalSalesEl.textContent = formatGoldWithDecimals(totalSales);
-  profitValueEl.textContent = formatGoldWithDecimals(profit);
-  profitValueEl.classList.toggle("is-positive", profit >= 0);
-  profitValueEl.classList.toggle("is-negative", profit < 0);
-  if (totalProfitValueEl) {
-    totalProfitValueEl.textContent = formatGoldWithDecimals(totalProfit);
-    totalProfitValueEl.classList.toggle("is-positive", totalProfit >= 0);
-    totalProfitValueEl.classList.toggle("is-negative", totalProfit < 0);
-  }
+  const profitStar0 = salePrices.star0 - perItemMaterialCost - perCraftToolCost;
+  const profitStar1 = salePrices.star1 - perItemMaterialCost - perCraftToolCost;
+  const profitStar2 = salePrices.star2 - perItemMaterialCost - perCraftToolCost;
+  const profitStar3 = salePrices.star3 - perItemMaterialCost - perCraftToolCost;
+
+  if (perCraftToolCostEl) perCraftToolCostEl.textContent = formatGold(perCraftToolCost);
+  if (totalToolCostEl) totalToolCostEl.textContent = formatGold(totalToolCost);
+  if (totalMaterialCostEl) totalMaterialCostEl.textContent = formatGold(perItemMaterialCost);
+  if (grandTotalMaterialCostEl) grandTotalMaterialCostEl.textContent = formatGold(grandTotalMaterialCost);
+  if (salePriceStar0El) salePriceStar0El.textContent = formatGold(salePrices.star0);
+  if (salePriceStar1El) salePriceStar1El.textContent = formatGold(salePrices.star1);
+  if (salePriceStar2El) salePriceStar2El.textContent = formatGold(salePrices.star2);
+  if (salePriceStar3El) salePriceStar3El.textContent = formatGold(salePrices.star3);
+  if (profitStar0ValueEl) profitStar0ValueEl.textContent = formatGold(profitStar0);
+  if (profitStar1ValueEl) profitStar1ValueEl.textContent = formatGold(profitStar1);
+  if (profitStar2ValueEl) profitStar2ValueEl.textContent = formatGold(profitStar2);
+  if (profitStar3ValueEl) profitStar3ValueEl.textContent = formatGold(profitStar3);
+
+  applyProfitColor(profitStar0ValueEl, profitStar0);
+  applyProfitColor(profitStar1ValueEl, profitStar1);
+  applyProfitColor(profitStar2ValueEl, profitStar2);
+  applyProfitColor(profitStar3ValueEl, profitStar3);
 }
 
 function renderMaterialList() {
@@ -637,7 +664,11 @@ function rerenderAll() {
   renderMaterialSelector();
 
   const eq = getSelectedEquipment();
-  if (salePriceInput) salePriceInput.value = eq?.salePrice ?? 0;
+  const salePrices = getSalePricesForEquipment(eq);
+  if (salePriceStar0Input) salePriceStar0Input.value = salePrices.star0;
+  if (salePriceStar1Input) salePriceStar1Input.value = salePrices.star1;
+  if (salePriceStar2Input) salePriceStar2Input.value = salePrices.star2;
+  if (salePriceStar3Input) salePriceStar3Input.value = salePrices.star3;
   renderRecipeTable();
   renderToolSection();
   renderMaterialList();
@@ -650,7 +681,11 @@ if (equipmentSelect) {
   equipmentSelect.addEventListener("change", (e) => {
     selectedEquipmentId = e.target.value;
     const eq = getSelectedEquipment();
-    if (salePriceInput) salePriceInput.value = eq?.salePrice ?? 0;
+    const salePrices = getSalePricesForEquipment(eq);
+    if (salePriceStar0Input) salePriceStar0Input.value = salePrices.star0;
+    if (salePriceStar1Input) salePriceStar1Input.value = salePrices.star1;
+    if (salePriceStar2Input) salePriceStar2Input.value = salePrices.star2;
+    if (salePriceStar3Input) salePriceStar3Input.value = salePrices.star3;
     renderRecipeTable();
     renderToolSection();
     calcAndRenderSummary();
@@ -700,15 +735,22 @@ if (categoryFilterSelect) {
   });
 }
 
-if (salePriceInput) {
-  salePriceInput.addEventListener("change", (e) => {
+[
+  { input: salePriceStar0Input, key: "star0" },
+  { input: salePriceStar1Input, key: "star1" },
+  { input: salePriceStar2Input, key: "star2" },
+  { input: salePriceStar3Input, key: "star3" },
+].forEach(({ input, key }) => {
+  if (!input) return;
+  input.addEventListener("change", (e) => {
     const eq = getSelectedEquipment();
     if (!eq) return;
-    eq.salePrice = Number(e.target.value || 0);
+    eq.salePrices = getSalePricesForEquipment(eq);
+    eq.salePrices[key] = Number(e.target.value || 0);
     saveData();
     calcAndRenderSummary();
   });
-}
+});
 
 if (productionCountInput) {
   productionCountInput.addEventListener("input", () => {
@@ -750,7 +792,13 @@ if (equipmentForm) {
 
     // CSV外で手動追加した装備は、絞り込み対象の値を空で持たせます。
     // これによりデータ構造をそろえつつ、既存画面への影響を最小化できます。
-    const added = { id: makeEquipmentId(name), name, salePrice, craftsman: "", category: "" };
+    const added = {
+      id: makeEquipmentId(name),
+      name,
+      salePrices: normalizeSalePrices(null, salePrice),
+      craftsman: "",
+      category: "",
+    };
     state.equipments.push(added);
     selectedEquipmentId = added.id;
     saveData();
