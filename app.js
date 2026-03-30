@@ -2,7 +2,7 @@
 // 日本語コメントを多めに入れて、将来の拡張をしやすくしています。
 
 const STORAGE_KEY = "dq10_toolweb_data_v1";
-const RECIPE_CSV_PATH = "./data/recipe.csv";
+const RECIPE_CSV_PATH = "./date/recipe.csv";
 
 // 初期データ（CSVが読み込めない場合のフォールバック）
 const defaultData = {
@@ -56,11 +56,13 @@ async function loadDataFromCsv() {
 
   // ヘッダー行の位置を取り、必要列の存在を確認します。
   const headers = parseCsvLine(lines[0]);
+  const craftsmanIndex = headers.indexOf("craftsman");
+  const categoryIndex = headers.indexOf("category");
   const equipmentNameIndex = headers.indexOf("equipmentName");
   const materialNameIndex = headers.indexOf("materialName");
   const quantityIndex = headers.indexOf("quantity");
 
-  if (equipmentNameIndex < 0 || materialNameIndex < 0 || quantityIndex < 0) {
+  if (craftsmanIndex < 0 || categoryIndex < 0 || equipmentNameIndex < 0 || materialNameIndex < 0 || quantityIndex < 0) {
     throw new Error("CSVヘッダーが想定と一致しません");
   }
 
@@ -71,16 +73,20 @@ async function loadDataFromCsv() {
   // データ行を順に読み取り、装備・素材を重複なくまとめます。
   for (let i = 1; i < lines.length; i += 1) {
     const row = parseCsvLine(lines[i]);
+    const craftsman = row[craftsmanIndex];
+    const category = row[categoryIndex];
     const equipmentName = row[equipmentNameIndex];
     const materialName = row[materialNameIndex];
     const quantity = Number(row[quantityIndex] || 0);
 
-    if (!equipmentName || !materialName || quantity <= 0) continue;
+    if (!craftsman || !category || !equipmentName || !materialName || quantity <= 0) continue;
 
     if (!equipmentMap.has(equipmentName)) {
       equipmentMap.set(equipmentName, {
         id: makeEquipmentId(equipmentName),
         name: equipmentName,
+        craftsman,
+        category,
         // 販売価格はCSVに無いので0初期化（既存保存値があれば後で引き継ぎ）
         salePrice: 0,
       });
@@ -151,6 +157,9 @@ let state = structuredClone(defaultData);
 let selectedEquipmentId = state.equipments[0]?.id || "";
 // 装備検索キーワード（利益計算画面の装備プルダウン用）
 let equipmentSearchKeyword = "";
+// 利益計算画面の絞り込み条件（未選択なら全件）
+let selectedCraftsman = "";
+let selectedCategory = "";
 
 function getRequiredElementById(id) {
   const element = document.getElementById(id);
@@ -165,6 +174,8 @@ const tabContents = document.querySelectorAll(".tab-content");
 
 const equipmentSelect = getRequiredElementById("equipmentSelect");
 const equipmentSearchInput = getRequiredElementById("equipmentSearchInput");
+const craftsmanFilterSelect = getRequiredElementById("craftsmanFilterSelect");
+const categoryFilterSelect = getRequiredElementById("categoryFilterSelect");
 const salePriceInput = getRequiredElementById("salePriceInput");
 const feeRateInput = getRequiredElementById("feeRateInput");
 const recipeTableWrap = getRequiredElementById("recipeTableWrap");
@@ -199,9 +210,14 @@ tabButtons.forEach((btn) => {
 function renderEquipmentSelectors() {
   if (!equipmentSelect || !recipeEquipmentSelect) return;
 
-  // 利益計算画面の装備候補は検索キーワードで絞り込む（部分一致）
+  // 利益計算画面の装備候補は、職人種別・ジャンル・検索キーワードをAND条件で絞り込みます。
+  // - 職人種別未選択: 全職人対象
+  // - ジャンル未選択: 全ジャンル対象
+  // - 検索欄空: 文字条件は無効（他の絞り込み条件のみで表示）
   const filteredEquipments = state.equipments.filter((equipment) =>
-    equipment.name.toLowerCase().includes(equipmentSearchKeyword.toLowerCase())
+    (selectedCraftsman === "" || equipment.craftsman === selectedCraftsman) &&
+    (selectedCategory === "" || equipment.category === selectedCategory) &&
+    (equipmentSearchKeyword === "" || equipment.name.toLowerCase().includes(equipmentSearchKeyword.toLowerCase()))
   );
 
   equipmentSelect.innerHTML = "";
@@ -227,6 +243,36 @@ function renderEquipmentSelectors() {
   }
   equipmentSelect.value = selectedEquipmentId;
   recipeEquipmentSelect.value = selectedEquipmentId;
+}
+
+function renderFilterSelectors() {
+  if (!craftsmanFilterSelect || !categoryFilterSelect) return;
+
+  // CSV由来の装備から、選択肢（重複なし）を作る
+  const craftsmen = Array.from(new Set(state.equipments.map((e) => e.craftsman).filter(Boolean)));
+  const categories = Array.from(new Set(state.equipments.map((e) => e.category).filter(Boolean)));
+
+  // 既存選択を崩しにくくするため、毎回再描画して値を戻す流れにしています。
+  craftsmanFilterSelect.innerHTML = "";
+  categoryFilterSelect.innerHTML = "";
+
+  craftsmanFilterSelect.add(new Option("全職人", ""));
+  categoryFilterSelect.add(new Option("全ジャンル", ""));
+
+  craftsmen.forEach((craftsman) => {
+    craftsmanFilterSelect.add(new Option(craftsman, craftsman));
+  });
+
+  categories.forEach((category) => {
+    categoryFilterSelect.add(new Option(category, category));
+  });
+
+  // 選択中の値が候補になければ未選択（全件）へ戻す
+  if (!craftsmen.includes(selectedCraftsman)) selectedCraftsman = "";
+  if (!categories.includes(selectedCategory)) selectedCategory = "";
+
+  craftsmanFilterSelect.value = selectedCraftsman;
+  categoryFilterSelect.value = selectedCategory;
 }
 
 function renderMaterialSelector() {
@@ -376,6 +422,7 @@ function renderRecipeAdminList() {
 }
 
 function rerenderAll() {
+  renderFilterSelectors();
   renderEquipmentSelectors();
   renderMaterialSelector();
 
@@ -404,6 +451,20 @@ if (equipmentSelect) {
 if (equipmentSearchInput) {
   equipmentSearchInput.addEventListener("input", (e) => {
     equipmentSearchKeyword = e.target.value.trim();
+    rerenderAll();
+  });
+}
+
+if (craftsmanFilterSelect) {
+  craftsmanFilterSelect.addEventListener("change", (e) => {
+    selectedCraftsman = e.target.value;
+    rerenderAll();
+  });
+}
+
+if (categoryFilterSelect) {
+  categoryFilterSelect.addEventListener("change", (e) => {
+    selectedCategory = e.target.value;
     rerenderAll();
   });
 }
