@@ -2,56 +2,152 @@
 // 日本語コメントを多めに入れて、将来の拡張をしやすくしています。
 
 const STORAGE_KEY = "dq10_toolweb_data_v1";
+const RECIPE_CSV_PATH = "./date/recipe.csv";
 
-// 初期データ（最初は最小構成）
+// 初期データ（CSVが読み込めない場合のフォールバック）
 const defaultData = {
   feeRate: 5,
   materials: [
-    { id: crypto.randomUUID(), name: "てっこうせき", price: 120 },
-    { id: crypto.randomUUID(), name: "ぎんのこうせき", price: 320 },
-    { id: crypto.randomUUID(), name: "ようせいのひだね", price: 450 },
+    { id: "m:てっこうせき", name: "てっこうせき", price: 120 },
+    { id: "m:ぎんのこうせき", name: "ぎんのこうせき", price: 320 },
+    { id: "m:ようせいのひだね", name: "ようせいのひだね", price: 450 },
   ],
   equipments: [
-    { id: crypto.randomUUID(), name: "はがねのつるぎ", salePrice: 3200 },
-    { id: crypto.randomUUID(), name: "ぎんのレイピア", salePrice: 5800 },
+    { id: "e:はがねのつるぎ", name: "はがねのつるぎ", salePrice: 3200 },
+    { id: "e:ぎんのレイピア", name: "ぎんのレイピア", salePrice: 5800 },
   ],
-  recipes: [],
+  recipes: [
+    { id: crypto.randomUUID(), equipmentId: "e:はがねのつるぎ", materialId: "m:ぎんのこうせき", quantity: 1 },
+    { id: crypto.randomUUID(), equipmentId: "e:はがねのつるぎ", materialId: "m:てっこうせき", quantity: 1 },
+    { id: crypto.randomUUID(), equipmentId: "e:ぎんのレイピア", materialId: "m:ぎんのこうせき", quantity: 1 },
+  ],
 };
 
-// 初期レシピをID確定後に設定する
-function fillDefaultRecipes(data) {
-  if (data.recipes.length > 0) return data;
-  const sword = data.equipments.find((e) => e.name === "はがねのつるぎ");
-  const rapier = data.equipments.find((e) => e.name === "ぎんのレイピア");
-  const iron = data.materials.find((m) => m.name === "てっこうせき");
-  const silver = data.materials.find((m) => m.name === "ぎんのこうせき");
-  const fire = data.materials.find((m) => m.name === "ようせいのひだね");
-
-  data.recipes = [
-    { id: crypto.randomUUID(), equipmentId: sword?.id, materialId: iron?.id, quantity: 5 },
-    { id: crypto.randomUUID(), equipmentId: sword?.id, materialId: fire?.id, quantity: 1 },
-    { id: crypto.randomUUID(), equipmentId: rapier?.id, materialId: silver?.id, quantity: 4 },
-    { id: crypto.randomUUID(), equipmentId: rapier?.id, materialId: fire?.id, quantity: 2 },
-  ].filter((r) => r.equipmentId && r.materialId);
-
-  return data;
+// CSVの1行（カンマ区切り）を最低限パースする関数。
+// このデータはクォートをほぼ使っていない想定なので、できるだけシンプルに実装しています。
+function parseCsvLine(line) {
+  return line.split(",").map((cell) => cell.trim());
 }
 
-function loadData() {
-  const raw = localStorage.getItem(STORAGE_KEY);
-  if (!raw) {
-    const seeded = fillDefaultRecipes(defaultData);
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(seeded));
-    return structuredClone(seeded);
+// 装備名・素材名から固定IDを作る関数。
+// 名前をベースにすることで、再読み込み後も価格の引き継ぎがしやすくなります。
+function makeEquipmentId(name) {
+  return `e:${name}`;
+}
+
+function makeMaterialId(name) {
+  return `m:${name}`;
+}
+
+// recipe.csvを読み込み、画面で使うデータ構造に変換します。
+async function loadDataFromCsv() {
+  const response = await fetch(RECIPE_CSV_PATH);
+  if (!response.ok) {
+    throw new Error(`CSVの読み込みに失敗しました: ${response.status}`);
   }
-  return fillDefaultRecipes(JSON.parse(raw));
+
+  const csvText = await response.text();
+  // UTF-8 BOMが入っている場合があるので除去しておきます。
+  const normalized = csvText.replace(/^\uFEFF/, "");
+  const lines = normalized.split(/\r?\n/).filter((line) => line.trim().length > 0);
+  if (lines.length <= 1) {
+    throw new Error("CSVにデータ行がありません");
+  }
+
+  // ヘッダー行の位置を取り、必要列の存在を確認します。
+  const headers = parseCsvLine(lines[0]);
+  const equipmentNameIndex = headers.indexOf("equipmentName");
+  const materialNameIndex = headers.indexOf("materialName");
+  const quantityIndex = headers.indexOf("quantity");
+
+  if (equipmentNameIndex < 0 || materialNameIndex < 0 || quantityIndex < 0) {
+    throw new Error("CSVヘッダーが想定と一致しません");
+  }
+
+  const equipmentMap = new Map();
+  const materialMap = new Map();
+  const recipes = [];
+
+  // データ行を順に読み取り、装備・素材を重複なくまとめます。
+  for (let i = 1; i < lines.length; i += 1) {
+    const row = parseCsvLine(lines[i]);
+    const equipmentName = row[equipmentNameIndex];
+    const materialName = row[materialNameIndex];
+    const quantity = Number(row[quantityIndex] || 0);
+
+    if (!equipmentName || !materialName || quantity <= 0) continue;
+
+    if (!equipmentMap.has(equipmentName)) {
+      equipmentMap.set(equipmentName, {
+        id: makeEquipmentId(equipmentName),
+        name: equipmentName,
+        // 販売価格はCSVに無いので0初期化（既存保存値があれば後で引き継ぎ）
+        salePrice: 0,
+      });
+    }
+
+    if (!materialMap.has(materialName)) {
+      materialMap.set(materialName, {
+        id: makeMaterialId(materialName),
+        name: materialName,
+        // 素材価格もCSVに無いため0初期化（既存保存値があれば後で引き継ぎ）
+        price: 0,
+      });
+    }
+
+    recipes.push({
+      id: crypto.randomUUID(),
+      equipmentId: makeEquipmentId(equipmentName),
+      materialId: makeMaterialId(materialName),
+      quantity,
+    });
+  }
+
+  return {
+    feeRate: 5,
+    equipments: Array.from(equipmentMap.values()),
+    materials: Array.from(materialMap.values()),
+    recipes,
+  };
+}
+
+function loadStoredData() {
+  const raw = localStorage.getItem(STORAGE_KEY);
+  if (!raw) return null;
+
+  try {
+    return JSON.parse(raw);
+  } catch {
+    return null;
+  }
 }
 
 function saveData() {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
 }
 
-let state = loadData();
+// CSVデータをベースに、既存のローカル保存データ（価格や手数料）を重ねます。
+function mergeWithStoredData(csvData, storedData) {
+  if (!storedData) return csvData;
+
+  const materialPriceByName = new Map((storedData.materials || []).map((m) => [m.name, Number(m.price || 0)]));
+  const salePriceByName = new Map((storedData.equipments || []).map((e) => [e.name, Number(e.salePrice || 0)]));
+
+  return {
+    feeRate: Number(storedData.feeRate ?? csvData.feeRate ?? 5),
+    materials: csvData.materials.map((m) => ({
+      ...m,
+      price: materialPriceByName.get(m.name) ?? m.price,
+    })),
+    equipments: csvData.equipments.map((e) => ({
+      ...e,
+      salePrice: salePriceByName.get(e.name) ?? e.salePrice,
+    })),
+    recipes: csvData.recipes,
+  };
+}
+
+let state = structuredClone(defaultData);
 let selectedEquipmentId = state.equipments[0]?.id || "";
 
 const tabButtons = document.querySelectorAll(".tab-button");
@@ -286,7 +382,7 @@ materialForm.addEventListener("submit", (e) => {
   const price = Number(document.getElementById("newMaterialPrice").value || 0);
   if (!name) return;
 
-  state.materials.push({ id: crypto.randomUUID(), name, price });
+  state.materials.push({ id: makeMaterialId(name), name, price });
   saveData();
   materialForm.reset();
   rerenderAll();
@@ -298,7 +394,7 @@ equipmentForm.addEventListener("submit", (e) => {
   const salePrice = Number(document.getElementById("newEquipmentPrice").value || 0);
   if (!name) return;
 
-  const added = { id: crypto.randomUUID(), name, salePrice };
+  const added = { id: makeEquipmentId(name), name, salePrice };
   state.equipments.push(added);
   selectedEquipmentId = added.id;
   saveData();
@@ -327,5 +423,24 @@ recipeForm.addEventListener("submit", (e) => {
   rerenderAll();
 });
 
-// 初期描画
-rerenderAll();
+// 初期化処理。
+// 1) CSVを読み込む
+// 2) ローカル保存の価格情報をマージ
+// 3) 画面描画
+async function initialize() {
+  const storedData = loadStoredData();
+
+  try {
+    const csvData = await loadDataFromCsv();
+    state = mergeWithStoredData(csvData, storedData);
+  } catch (error) {
+    console.warn("recipe.csv の読み込みに失敗したため、フォールバックデータを使用します", error);
+    state = mergeWithStoredData(structuredClone(defaultData), storedData);
+  }
+
+  selectedEquipmentId = state.equipments[0]?.id || "";
+  saveData();
+  rerenderAll();
+}
+
+initialize();
