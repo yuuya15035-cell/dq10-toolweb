@@ -2,7 +2,7 @@
 // 日本語コメントを多めに入れて、将来の拡張をしやすくしています。
 
 const STORAGE_KEY = "dq10_toolweb_data_v1";
-const RECIPE_CSV_PATH = "./date/recipe.csv";
+const RECIPE_CSV_PATH = "./data/recipe.csv";
 
 // 初期データ（CSVが読み込めない場合のフォールバック）
 const defaultData = {
@@ -152,28 +152,36 @@ let selectedEquipmentId = state.equipments[0]?.id || "";
 // 装備検索キーワード（利益計算画面の装備プルダウン用）
 let equipmentSearchKeyword = "";
 
+function getRequiredElementById(id) {
+  const element = document.getElementById(id);
+  if (!element) {
+    console.warn(`#${id} が見つかりません。該当機能をスキップします。`);
+  }
+  return element;
+}
+
 const tabButtons = document.querySelectorAll(".tab-button");
 const tabContents = document.querySelectorAll(".tab-content");
 
-const equipmentSelect = document.getElementById("equipmentSelect");
-const equipmentSearchInput = document.getElementById("equipmentSearchInput");
-const salePriceInput = document.getElementById("salePriceInput");
-const feeRateInput = document.getElementById("feeRateInput");
-const recipeTableWrap = document.getElementById("recipeTableWrap");
-const materialListWrap = document.getElementById("materialListWrap");
-const recipeAdminListWrap = document.getElementById("recipeAdminListWrap");
+const equipmentSelect = getRequiredElementById("equipmentSelect");
+const equipmentSearchInput = getRequiredElementById("equipmentSearchInput");
+const salePriceInput = getRequiredElementById("salePriceInput");
+const feeRateInput = getRequiredElementById("feeRateInput");
+const recipeTableWrap = getRequiredElementById("recipeTableWrap");
+const materialListWrap = getRequiredElementById("materialListWrap");
+const recipeAdminListWrap = getRequiredElementById("recipeAdminListWrap");
 
-const totalCostEl = document.getElementById("totalCost");
-const netSalesEl = document.getElementById("netSales");
-const profitValueEl = document.getElementById("profitValue");
-const profitRateEl = document.getElementById("profitRate");
+const totalCostEl = getRequiredElementById("totalCost");
+const netSalesEl = getRequiredElementById("netSales");
+const profitValueEl = getRequiredElementById("profitValue");
+const profitRateEl = getRequiredElementById("profitRate");
 
-const materialForm = document.getElementById("materialForm");
-const equipmentForm = document.getElementById("equipmentForm");
-const recipeForm = document.getElementById("recipeForm");
+const materialForm = getRequiredElementById("materialForm");
+const equipmentForm = getRequiredElementById("equipmentForm");
+const recipeForm = getRequiredElementById("recipeForm");
 
-const recipeEquipmentSelect = document.getElementById("recipeEquipmentSelect");
-const recipeMaterialSelect = document.getElementById("recipeMaterialSelect");
+const recipeEquipmentSelect = getRequiredElementById("recipeEquipmentSelect");
+const recipeMaterialSelect = getRequiredElementById("recipeMaterialSelect");
 
 function formatGold(value) {
   return `${Math.round(value).toLocaleString("ja-JP")} G`;
@@ -189,6 +197,8 @@ tabButtons.forEach((btn) => {
 });
 
 function renderEquipmentSelectors() {
+  if (!equipmentSelect || !recipeEquipmentSelect) return;
+
   // 利益計算画面の装備候補は検索キーワードで絞り込む（部分一致）
   const filteredEquipments = state.equipments.filter((equipment) =>
     equipment.name.toLowerCase().includes(equipmentSearchKeyword.toLowerCase())
@@ -220,6 +230,8 @@ function renderEquipmentSelectors() {
 }
 
 function renderMaterialSelector() {
+  if (!recipeMaterialSelect) return;
+
   recipeMaterialSelect.innerHTML = "";
   state.materials.forEach((material) => {
     recipeMaterialSelect.add(new Option(material.name, material.id));
@@ -235,6 +247,8 @@ function getRecipeRowsForSelectedEquipment() {
 }
 
 function renderRecipeTable() {
+  if (!recipeTableWrap) return;
+
   const rows = getRecipeRowsForSelectedEquipment();
   if (rows.length === 0) {
     recipeTableWrap.innerHTML = "<p>この装備のレシピが未登録です。</p>";
@@ -273,6 +287,8 @@ function renderRecipeTable() {
 }
 
 function calcAndRenderSummary() {
+  if (!salePriceInput || !feeRateInput || !totalCostEl || !netSalesEl || !profitValueEl || !profitRateEl) return;
+
   const eq = getSelectedEquipment();
   const salePrice = Number(salePriceInput.value || eq?.salePrice || 0);
   const feeRate = Number(feeRateInput.value || state.feeRate || 0);
@@ -293,6 +309,8 @@ function calcAndRenderSummary() {
 }
 
 function renderMaterialList() {
+  if (!materialListWrap) return;
+
   const rows = state.materials
     .map(
       (m) => `
@@ -324,6 +342,8 @@ function renderMaterialList() {
 }
 
 function renderRecipeAdminList() {
+  if (!recipeAdminListWrap) return;
+
   const rows = state.recipes
     .map((r) => {
       const eq = state.equipments.find((e) => e.id === r.equipmentId);
@@ -360,8 +380,8 @@ function rerenderAll() {
   renderMaterialSelector();
 
   const eq = getSelectedEquipment();
-  salePriceInput.value = eq?.salePrice ?? 0;
-  feeRateInput.value = state.feeRate ?? 5;
+  if (salePriceInput) salePriceInput.value = eq?.salePrice ?? 0;
+  if (feeRateInput) feeRateInput.value = state.feeRate ?? 5;
 
   renderRecipeTable();
   renderMaterialList();
@@ -370,80 +390,99 @@ function rerenderAll() {
 }
 
 // --- イベント定義 ---
-equipmentSelect.addEventListener("change", (e) => {
-  selectedEquipmentId = e.target.value;
-  const eq = getSelectedEquipment();
-  salePriceInput.value = eq?.salePrice ?? 0;
-  renderRecipeTable();
-  calcAndRenderSummary();
-});
+if (equipmentSelect) {
+  equipmentSelect.addEventListener("change", (e) => {
+    selectedEquipmentId = e.target.value;
+    const eq = getSelectedEquipment();
+    if (salePriceInput) salePriceInput.value = eq?.salePrice ?? 0;
+    renderRecipeTable();
+    calcAndRenderSummary();
+  });
+}
 
 // 装備検索欄の入力に合わせて候補を絞り込みます。
-equipmentSearchInput.addEventListener("input", (e) => {
-  equipmentSearchKeyword = e.target.value.trim();
-  rerenderAll();
-});
+if (equipmentSearchInput) {
+  equipmentSearchInput.addEventListener("input", (e) => {
+    equipmentSearchKeyword = e.target.value.trim();
+    rerenderAll();
+  });
+}
 
-salePriceInput.addEventListener("change", (e) => {
-  const eq = getSelectedEquipment();
-  if (!eq) return;
-  eq.salePrice = Number(e.target.value || 0);
-  saveData();
-  calcAndRenderSummary();
-});
+if (salePriceInput) {
+  salePriceInput.addEventListener("change", (e) => {
+    const eq = getSelectedEquipment();
+    if (!eq) return;
+    eq.salePrice = Number(e.target.value || 0);
+    saveData();
+    calcAndRenderSummary();
+  });
+}
 
-feeRateInput.addEventListener("change", (e) => {
-  state.feeRate = Number(e.target.value || 0);
-  saveData();
-  calcAndRenderSummary();
-});
+if (feeRateInput) {
+  feeRateInput.addEventListener("change", (e) => {
+    state.feeRate = Number(e.target.value || 0);
+    saveData();
+    calcAndRenderSummary();
+  });
+}
 
-materialForm.addEventListener("submit", (e) => {
-  e.preventDefault();
-  const name = document.getElementById("newMaterialName").value.trim();
-  const price = Number(document.getElementById("newMaterialPrice").value || 0);
-  if (!name) return;
+if (materialForm) {
+  materialForm.addEventListener("submit", (e) => {
+    e.preventDefault();
+    const nameInput = getRequiredElementById("newMaterialName");
+    const priceInput = getRequiredElementById("newMaterialPrice");
+    const name = nameInput?.value.trim() ?? "";
+    const price = Number(priceInput?.value || 0);
+    if (!name) return;
 
-  state.materials.push({ id: makeMaterialId(name), name, price });
-  saveData();
-  materialForm.reset();
-  rerenderAll();
-});
+    state.materials.push({ id: makeMaterialId(name), name, price });
+    saveData();
+    materialForm.reset();
+    rerenderAll();
+  });
+}
 
-equipmentForm.addEventListener("submit", (e) => {
-  e.preventDefault();
-  const name = document.getElementById("newEquipmentName").value.trim();
-  const salePrice = Number(document.getElementById("newEquipmentPrice").value || 0);
-  if (!name) return;
+if (equipmentForm) {
+  equipmentForm.addEventListener("submit", (e) => {
+    e.preventDefault();
+    const nameInput = getRequiredElementById("newEquipmentName");
+    const priceInput = getRequiredElementById("newEquipmentPrice");
+    const name = nameInput?.value.trim() ?? "";
+    const salePrice = Number(priceInput?.value || 0);
+    if (!name) return;
 
-  const added = { id: makeEquipmentId(name), name, salePrice };
-  state.equipments.push(added);
-  selectedEquipmentId = added.id;
-  saveData();
-  equipmentForm.reset();
-  rerenderAll();
-});
+    const added = { id: makeEquipmentId(name), name, salePrice };
+    state.equipments.push(added);
+    selectedEquipmentId = added.id;
+    saveData();
+    equipmentForm.reset();
+    rerenderAll();
+  });
+}
 
-recipeForm.addEventListener("submit", (e) => {
-  e.preventDefault();
-  const equipmentId = recipeEquipmentSelect.value;
-  const materialId = recipeMaterialSelect.value;
-  const quantity = Number(document.getElementById("recipeQuantity").value || 0);
-  if (!equipmentId || !materialId || quantity <= 0) return;
+if (recipeForm) {
+  recipeForm.addEventListener("submit", (e) => {
+    e.preventDefault();
+    const quantityInput = getRequiredElementById("recipeQuantity");
+    const equipmentId = recipeEquipmentSelect?.value ?? "";
+    const materialId = recipeMaterialSelect?.value ?? "";
+    const quantity = Number(quantityInput?.value || 0);
+    if (!equipmentId || !materialId || quantity <= 0) return;
 
-  // 同じ装備+素材があれば個数を加算
-  const existing = state.recipes.find((r) => r.equipmentId === equipmentId && r.materialId === materialId);
-  if (existing) {
-    existing.quantity += quantity;
-  } else {
-    state.recipes.push({ id: crypto.randomUUID(), equipmentId, materialId, quantity });
-  }
+    // 同じ装備+素材があれば個数を加算
+    const existing = state.recipes.find((r) => r.equipmentId === equipmentId && r.materialId === materialId);
+    if (existing) {
+      existing.quantity += quantity;
+    } else {
+      state.recipes.push({ id: crypto.randomUUID(), equipmentId, materialId, quantity });
+    }
 
-  selectedEquipmentId = equipmentId;
-  saveData();
-  recipeForm.reset();
-  rerenderAll();
-});
+    selectedEquipmentId = equipmentId;
+    saveData();
+    recipeForm.reset();
+    rerenderAll();
+  });
+}
 
 // 初期化処理。
 // 1) CSVを読み込む
@@ -457,6 +496,11 @@ async function initialize() {
     state = mergeWithStoredData(csvData, storedData);
   } catch (error) {
     console.warn("recipe.csv の読み込みに失敗したため、フォールバックデータを使用します", error);
+    state = mergeWithStoredData(structuredClone(defaultData), storedData);
+  }
+
+  // CSV側が空でも初期表示で一覧が空にならないようフォールバックを維持
+  if ((state.equipments || []).length === 0 || (state.recipes || []).length === 0) {
     state = mergeWithStoredData(structuredClone(defaultData), storedData);
   }
 
