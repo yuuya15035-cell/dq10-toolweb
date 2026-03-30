@@ -272,15 +272,12 @@ const countStar0ValueEl = getRequiredElementById("countStar0Value");
 const countStar1ValueEl = getRequiredElementById("countStar1Value");
 const countStar2ValueEl = getRequiredElementById("countStar2Value");
 const countStar3ValueEl = getRequiredElementById("countStar3Value");
-const salesStar0ValueEl = getRequiredElementById("salesStar0Value");
-const salesStar1ValueEl = getRequiredElementById("salesStar1Value");
-const salesStar2ValueEl = getRequiredElementById("salesStar2Value");
-const salesStar3ValueEl = getRequiredElementById("salesStar3Value");
 const totalProfitStar0ValueEl = getRequiredElementById("totalProfitStar0Value");
 const totalProfitStar1ValueEl = getRequiredElementById("totalProfitStar1Value");
 const totalProfitStar2ValueEl = getRequiredElementById("totalProfitStar2Value");
 const totalProfitStar3ValueEl = getRequiredElementById("totalProfitStar3Value");
-const totalSalesValueEl = getRequiredElementById("totalSalesValue");
+const totalFeeValueEl = getRequiredElementById("totalFeeValue");
+const averageNetSalesValueEl = getRequiredElementById("averageNetSalesValue");
 const totalProfitValueEl = getRequiredElementById("totalProfitValue");
 
 const materialForm = getRequiredElementById("materialForm");
@@ -591,11 +588,16 @@ function calcAndRenderSummary() {
   const toolPurchasePrice = tool ? getToolPurchasePrice(tool.id) : 0;
   const perCraftToolCost = tool && tool.durability > 0 ? toolPurchasePrice / tool.durability : 0;
   const totalCount = countStar0 + countStar1 + countStar2 + countStar3;
+  const feeRate = Number(state.feeRate || 5) / 100;
 
-  const profitStar0 = salePrices.star0 - perItemMaterialCost - perCraftToolCost;
-  const profitStar1 = salePrices.star1 - perItemMaterialCost - perCraftToolCost;
-  const profitStar2 = salePrices.star2 - perItemMaterialCost - perCraftToolCost;
-  const profitStar3 = salePrices.star3 - perItemMaterialCost - perCraftToolCost;
+  const netSalePriceStar0 = salePrices.star0 * (1 - feeRate);
+  const netSalePriceStar1 = salePrices.star1 * (1 - feeRate);
+  const netSalePriceStar2 = salePrices.star2 * (1 - feeRate);
+  const netSalePriceStar3 = salePrices.star3 * (1 - feeRate);
+  const profitStar0 = netSalePriceStar0 - perItemMaterialCost - perCraftToolCost;
+  const profitStar1 = netSalePriceStar1 - perItemMaterialCost - perCraftToolCost;
+  const profitStar2 = netSalePriceStar2 - perItemMaterialCost - perCraftToolCost;
+  const profitStar3 = netSalePriceStar3 - perItemMaterialCost - perCraftToolCost;
   const salesStar0 = salePrices.star0 * countStar0;
   const salesStar1 = salePrices.star1 * countStar1;
   const salesStar2 = salePrices.star2 * countStar2;
@@ -605,6 +607,8 @@ function calcAndRenderSummary() {
   const totalProfitStar2 = profitStar2 * countStar2;
   const totalProfitStar3 = profitStar3 * countStar3;
   const totalSales = salesStar0 + salesStar1 + salesStar2 + salesStar3;
+  const totalFee = totalSales * feeRate;
+  const averageNetSales = totalCount > 0 ? (totalSales - totalFee) / totalCount : 0;
   const totalProfit = totalProfitStar0 + totalProfitStar1 + totalProfitStar2 + totalProfitStar3;
 
   if (perCraftToolCostEl) perCraftToolCostEl.textContent = formatGold(perCraftToolCost);
@@ -617,15 +621,12 @@ function calcAndRenderSummary() {
   if (countStar1ValueEl) countStar1ValueEl.textContent = String(countStar1);
   if (countStar2ValueEl) countStar2ValueEl.textContent = String(countStar2);
   if (countStar3ValueEl) countStar3ValueEl.textContent = String(countStar3);
-  if (salesStar0ValueEl) salesStar0ValueEl.textContent = formatGold(salesStar0);
-  if (salesStar1ValueEl) salesStar1ValueEl.textContent = formatGold(salesStar1);
-  if (salesStar2ValueEl) salesStar2ValueEl.textContent = formatGold(salesStar2);
-  if (salesStar3ValueEl) salesStar3ValueEl.textContent = formatGold(salesStar3);
   if (totalProfitStar0ValueEl) totalProfitStar0ValueEl.textContent = formatGold(totalProfitStar0);
   if (totalProfitStar1ValueEl) totalProfitStar1ValueEl.textContent = formatGold(totalProfitStar1);
   if (totalProfitStar2ValueEl) totalProfitStar2ValueEl.textContent = formatGold(totalProfitStar2);
   if (totalProfitStar3ValueEl) totalProfitStar3ValueEl.textContent = formatGold(totalProfitStar3);
-  if (totalSalesValueEl) totalSalesValueEl.textContent = formatGold(totalSales);
+  if (totalFeeValueEl) totalFeeValueEl.textContent = formatGold(totalFee);
+  if (averageNetSalesValueEl) averageNetSalesValueEl.textContent = formatGold(averageNetSales);
   if (totalProfitValueEl) totalProfitValueEl.textContent = formatGold(totalProfit);
 
   if (productionCountWarningEl) {

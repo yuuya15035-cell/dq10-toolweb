@@ -129,17 +129,20 @@
         </div>
 
         <div class="summary card">
-          <h3>計算結果</h3>
+          <div class="summary-header">
+            <h3>計算結果</h3>
+            <small>※手数料は一律5%です</small>
+          </div>
           <p id="productionCountWarning" class="warning-text" aria-live="polite"></p>
           <div class="summary-grid">
             <section class="summary-column">
               <h4>1個あたり情報</h4>
               <p>1回あたり道具コスト: <strong id="perCraftToolCost">0 G</strong></p>
               <p>1個あたり素材合計: <strong id="totalMaterialCost">0 G</strong></p>
-              <p>★0の1個あたり利益: <strong id="profitStar0Value" class="profit-value">0 G</strong></p>
-              <p>★1の1個あたり利益: <strong id="profitStar1Value" class="profit-value">0 G</strong></p>
-              <p>★2の1個あたり利益: <strong id="profitStar2Value" class="profit-value">0 G</strong></p>
-              <p>★3の1個あたり利益: <strong id="profitStar3Value" class="profit-value">0 G</strong></p>
+              <p>★0の1個あたり純利益: <strong id="profitStar0Value" class="profit-value">0 G</strong></p>
+              <p>★1の1個あたり純利益: <strong id="profitStar1Value" class="profit-value">0 G</strong></p>
+              <p>★2の1個あたり純利益: <strong id="profitStar2Value" class="profit-value">0 G</strong></p>
+              <p>★3の1個あたり純利益: <strong id="profitStar3Value" class="profit-value">0 G</strong></p>
             </section>
             <section class="summary-column">
               <h4>複数制作結果</h4>
@@ -147,16 +150,13 @@
               <p>★1個数: <strong id="countStar1Value">0</strong></p>
               <p>★2個数: <strong id="countStar2Value">0</strong></p>
               <p>★3個数: <strong id="countStar3Value">0</strong></p>
-              <p>★0売上合計: <strong id="salesStar0Value">0 G</strong></p>
-              <p>★1売上合計: <strong id="salesStar1Value">0 G</strong></p>
-              <p>★2売上合計: <strong id="salesStar2Value">0 G</strong></p>
-              <p>★3売上合計: <strong id="salesStar3Value">0 G</strong></p>
               <p>★0利益合計: <strong id="totalProfitStar0Value" class="profit-value">0 G</strong></p>
               <p>★1利益合計: <strong id="totalProfitStar1Value" class="profit-value">0 G</strong></p>
               <p>★2利益合計: <strong id="totalProfitStar2Value" class="profit-value">0 G</strong></p>
               <p>★3利益合計: <strong id="totalProfitStar3Value" class="profit-value">0 G</strong></p>
-              <p>総売上: <strong id="totalSalesValue">0 G</strong></p>
-              <p>総利益: <strong id="totalProfitValue" class="profit-value">0 G</strong></p>
+              <p>総手数料: <strong id="totalFeeValue">0 G</strong></p>
+              <p>平均純売上: <strong id="averageNetSalesValue">0 G</strong></p>
+              <p>純利益（総利益）: <strong id="totalProfitValue" class="profit-value">0 G</strong></p>
             </section>
           </div>
         </div>
