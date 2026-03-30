@@ -161,6 +161,11 @@ let equipmentSearchKeyword = "";
 // 利益計算画面の絞り込み条件（未選択なら全件）
 let selectedCraftsman = "";
 let selectedCategory = "";
+// 利益計算画面だけで使う「今回計算用の一時単価」。
+// - キー: materialId
+// - 値: 画面上で上書きした単価
+// saveData() には含めず、素材価格管理の元データを保護します。
+const temporaryMaterialPrices = new Map();
 
 function getRequiredElementById(id) {
   const element = document.getElementById(id);
@@ -304,6 +309,15 @@ function getRecipeRowsForSelectedEquipment() {
   return state.recipes.filter((row) => row.equipmentId === selectedEquipmentId);
 }
 
+// 単価は「一時単価」があればそれを優先、無ければ管理用単価を使います。
+function getEffectiveMaterialPrice(materialId) {
+  if (temporaryMaterialPrices.has(materialId)) {
+    return temporaryMaterialPrices.get(materialId) || 0;
+  }
+  const material = state.materials.find((m) => m.id === materialId);
+  return material?.price || 0;
+}
+
 function renderRecipeTable() {
   if (!recipeTableWrap) return;
 
@@ -316,13 +330,22 @@ function renderRecipeTable() {
   const htmlRows = rows
     .map((row) => {
       const material = state.materials.find((m) => m.id === row.materialId);
-      const price = material?.price || 0;
+      const price = getEffectiveMaterialPrice(row.materialId);
       const subtotal = price * row.quantity;
       return `
         <tr>
           <td>${material?.name ?? "(削除済み素材)"}</td>
           <td>${row.quantity}</td>
-          <td>${formatGold(price)}</td>
+          <td>
+            <input
+              class="inline-input"
+              type="number"
+              min="0"
+              step="1"
+              value="${price}"
+              data-temp-material-price-id="${row.materialId}"
+            >
+          </td>
           <td>${formatGold(subtotal)}</td>
         </tr>
       `;
@@ -342,6 +365,18 @@ function renderRecipeTable() {
       <tbody>${htmlRows}</tbody>
     </table>
   `;
+
+  // 利益計算画面でだけ有効な一時単価の変更ハンドラ。
+  // ここではsaveData()しないことで、素材価格管理の単価を汚さないようにしています。
+  recipeTableWrap.querySelectorAll("[data-temp-material-price-id]").forEach((input) => {
+    input.addEventListener("change", (e) => {
+      const materialId = e.target.dataset.tempMaterialPriceId;
+      const nextPrice = Number(e.target.value || 0);
+      temporaryMaterialPrices.set(materialId, nextPrice);
+      renderRecipeTable();
+      calcAndRenderSummary();
+    });
+  });
 }
 
 function calcAndRenderSummary() {
@@ -352,8 +387,7 @@ function calcAndRenderSummary() {
   const feeRate = Number(feeRateInput.value || state.feeRate || 0);
 
   const totalCost = getRecipeRowsForSelectedEquipment().reduce((sum, row) => {
-    const material = state.materials.find((m) => m.id === row.materialId);
-    return sum + (material?.price || 0) * row.quantity;
+    return sum + getEffectiveMaterialPrice(row.materialId) * row.quantity;
   }, 0);
 
   const netSales = salePrice * (1 - feeRate / 100);
