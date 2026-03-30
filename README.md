@@ -6,7 +6,9 @@ DQ10（ドラゴンクエスト10）の職人向けに、
 ## できること（最小構成）
 
 - `data/recipe.csv` を読み込み、装備一覧を自動生成
+- `craftsman`（職人種別）と `category`（装備ジャンル）のプルダウンをCSVから自動生成
 - 装備名の部分一致検索で、装備ドロップダウン候補を絞り込み
+- 職人種別・装備ジャンル・文字検索を併用して装備候補を絞り込み
 - 同じ `equipmentName` をまとめて装備ドロップダウンに表示
 - 装備を選ぶと、その装備に必要な素材（`materialName`）と必要個数（`quantity`）を表示
 - 素材価格を手入力で登録・更新
@@ -18,13 +20,15 @@ DQ10（ドラゴンクエスト10）の職人向けに、
 
 `data/recipe.csv` の列は以下を想定しています。
 
+- `craftsman`
+- `category`
 - `equipmentLevel`
 - `craftLevel`
 - `equipmentName`
 - `materialName`
 - `quantity`
 
-このうち、アプリの表示/計算で直接使うのは主に `equipmentName` / `materialName` / `quantity` です。
+このうち、アプリの表示/計算で直接使うのは主に `craftsman` / `category` / `equipmentName` / `materialName` / `quantity` です。
 
 ## 画面構成
 

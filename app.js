@@ -2,7 +2,8 @@
 // 日本語コメントを多めに入れて、将来の拡張をしやすくしています。
 
 const STORAGE_KEY = "dq10_toolweb_data_v1";
-const RECIPE_CSV_PATH = "./date/recipe.csv";
+// recipe.csv の配置先。data ディレクトリ配下を正として扱います。
+const RECIPE_CSV_PATH = "./data/recipe.csv";
 
 // 初期データ（CSVが読み込めない場合のフォールバック）
 const defaultData = {
@@ -512,7 +513,9 @@ if (equipmentForm) {
     const salePrice = Number(priceInput?.value || 0);
     if (!name) return;
 
-    const added = { id: makeEquipmentId(name), name, salePrice };
+    // CSV外で手動追加した装備は、絞り込み対象の値を空で持たせます。
+    // これによりデータ構造をそろえつつ、既存画面への影響を最小化できます。
+    const added = { id: makeEquipmentId(name), name, salePrice, craftsman: "", category: "" };
     state.equipments.push(added);
     selectedEquipmentId = added.id;
     saveData();
