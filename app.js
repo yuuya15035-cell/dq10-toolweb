@@ -219,6 +219,7 @@ let state = structuredClone(defaultData);
 let selectedEquipmentId = state.equipments[0]?.id || "";
 // 装備検索キーワード（利益計算画面の装備プルダウン用）
 let equipmentSearchKeyword = "";
+let materialSearchKeyword = "";
 // 利益計算画面の絞り込み条件（未選択なら全件）
 let selectedCraftsman = "";
 let selectedCategory = "";
@@ -242,6 +243,7 @@ const tabContents = document.querySelectorAll(".tab-content");
 
 const equipmentSelect = getRequiredElementById("equipmentSelect");
 const equipmentSearchInput = getRequiredElementById("equipmentSearchInput");
+const materialSearchInput = getRequiredElementById("materialSearchInput");
 const craftsmanFilterSelect = getRequiredElementById("craftsmanFilterSelect");
 const categoryFilterSelect = getRequiredElementById("categoryFilterSelect");
 const productionCountInput = getRequiredElementById("productionCountInput");
@@ -329,17 +331,48 @@ function renderEquipmentSelectors() {
   // - 職人種別未選択: 全職人対象
   // - ジャンル未選択: 全ジャンル対象
   // - 検索欄空: 文字条件は無効（他の絞り込み条件のみで表示）
-  const filteredEquipments = state.equipments.filter((equipment) =>
-    (selectedCraftsman === "" || equipment.craftsman === selectedCraftsman) &&
-    (selectedCategory === "" || equipment.category === selectedCategory) &&
-    (equipmentSearchKeyword === "" || equipment.name.toLowerCase().includes(equipmentSearchKeyword.toLowerCase()))
-  );
+  const normalizedMaterialKeyword = materialSearchKeyword.trim().toLowerCase();
+  const matchedRecipeByEquipmentId = new Map();
+
+  if (normalizedMaterialKeyword !== "") {
+    state.recipes.forEach((row) => {
+      const material = state.materials.find((m) => m.id === row.materialId);
+      const materialName = material?.name?.trim().toLowerCase() ?? "";
+      if (!materialName.includes(normalizedMaterialKeyword)) return;
+
+      if (!matchedRecipeByEquipmentId.has(row.equipmentId)) {
+        matchedRecipeByEquipmentId.set(row.equipmentId, []);
+      }
+      matchedRecipeByEquipmentId.get(row.equipmentId).push({
+        materialName: material?.name ?? "",
+        quantity: row.quantity,
+      });
+    });
+  }
+
+  const filteredEquipments = state.equipments.filter((equipment) => {
+    const matchesMaterial = normalizedMaterialKeyword === "" || matchedRecipeByEquipmentId.has(equipment.id);
+    return (
+      (selectedCraftsman === "" || equipment.craftsman === selectedCraftsman) &&
+      (selectedCategory === "" || equipment.category === selectedCategory) &&
+      (equipmentSearchKeyword === "" || equipment.name.toLowerCase().includes(equipmentSearchKeyword.toLowerCase())) &&
+      matchesMaterial
+    );
+  });
 
   equipmentSelect.innerHTML = "";
   recipeEquipmentSelect.innerHTML = "";
 
   filteredEquipments.forEach((equipment) => {
-    const option = new Option(equipment.name, equipment.id);
+    let label = equipment.name;
+    if (normalizedMaterialKeyword !== "") {
+      const matchedMaterials = matchedRecipeByEquipmentId.get(equipment.id) || [];
+      if (matchedMaterials.length > 0) {
+        const details = matchedMaterials.map((m) => `${m.materialName}×${m.quantity}`).join(" / ");
+        label = `${equipment.name}（${details}）`;
+      }
+    }
+    const option = new Option(label, equipment.id);
     equipmentSelect.add(option);
   });
 
@@ -773,6 +806,13 @@ if (toolPurchasePriceInput) {
 if (equipmentSearchInput) {
   equipmentSearchInput.addEventListener("input", (e) => {
     equipmentSearchKeyword = e.target.value.trim();
+    rerenderAll();
+  });
+}
+
+if (materialSearchInput) {
+  materialSearchInput.addEventListener("input", (e) => {
+    materialSearchKeyword = e.target.value.trim();
     rerenderAll();
   });
 }

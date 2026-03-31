@@ -14,20 +14,19 @@
       </header>
 
       <nav class="tabs" aria-label="画面切替">
-        <button class="tab-button active" data-tab="profit">利益計算</button>
-        <button class="tab-button" data-tab="material">素材価格管理</button>
-        <button class="tab-button" data-tab="recipe">装備/レシピ管理</button>
+        <button class="tab-button active" data-tab="profit">レシピ検索</button>
+        <button class="tab-button" data-tab="data">データ追加</button>
       </nav>
 
-      <section id="profit" class="tab-content active" aria-label="利益計算画面">
-        <h2>利益計算画面</h2>
+      <section id="profit" class="tab-content active" aria-label="レシピ検索画面">
+        <h2>レシピ検索</h2>
 
         <label class="field">
           <span>装備名検索（部分一致）</span>
           <input id="equipmentSearchInput" type="text" placeholder="例: はがね / つるぎ" />
         </label>
 
-        <div class="grid-2">
+        <div class="grid-2 grid-3-on-desktop">
           <label class="field">
             <span>職人種別</span>
             <select id="craftsmanFilterSelect"></select>
@@ -35,6 +34,10 @@
           <label class="field">
             <span>装備ジャンル</span>
             <select id="categoryFilterSelect"></select>
+          </label>
+          <label class="field">
+            <span>素材で検索（部分一致）</span>
+            <input id="materialSearchInput" type="text" placeholder="例: 竜の涙" />
           </label>
         </div>
 
@@ -162,49 +165,41 @@
         </div>
       </section>
 
-      <section id="material" class="tab-content" aria-label="素材価格管理画面">
-        <h2>素材価格管理画面</h2>
+      <section id="data" class="tab-content" aria-label="データ追加画面">
+        <h2>データ追加</h2>
+        <div class="grid-2">
+          <form id="materialForm" class="card compact-card">
+            <h3>素材追加</h3>
+            <div class="grid-2">
+              <label class="field">
+                <span>素材名</span>
+                <input id="newMaterialName" required />
+              </label>
+              <label class="field">
+                <span>単価（G）</span>
+                <input id="newMaterialPrice" type="number" min="0" step="1" required />
+              </label>
+            </div>
+            <button type="submit">素材を追加</button>
+          </form>
 
-        <form id="materialForm" class="card">
-          <h3>素材追加</h3>
-          <div class="grid-2">
-            <label class="field">
-              <span>素材名</span>
-              <input id="newMaterialName" required />
-            </label>
-            <label class="field">
-              <span>単価（G）</span>
-              <input id="newMaterialPrice" type="number" min="0" step="1" required />
-            </label>
-          </div>
-          <button type="submit">素材を追加</button>
-        </form>
-
-        <div class="card">
-          <h3>素材一覧（価格編集可）</h3>
-          <div id="materialListWrap"></div>
+          <form id="equipmentForm" class="card compact-card">
+            <h3>装備追加</h3>
+            <div class="grid-2">
+              <label class="field">
+                <span>装備名</span>
+                <input id="newEquipmentName" required />
+              </label>
+              <label class="field">
+                <span>販売価格（G）</span>
+                <input id="newEquipmentPrice" type="number" min="0" step="1" required />
+              </label>
+            </div>
+            <button type="submit">装備を追加</button>
+          </form>
         </div>
-      </section>
 
-      <section id="recipe" class="tab-content" aria-label="装備レシピ管理画面">
-        <h2>装備/レシピ管理画面</h2>
-
-        <form id="equipmentForm" class="card">
-          <h3>装備追加</h3>
-          <div class="grid-2">
-            <label class="field">
-              <span>装備名</span>
-              <input id="newEquipmentName" required />
-            </label>
-            <label class="field">
-              <span>販売価格（G）</span>
-              <input id="newEquipmentPrice" type="number" min="0" step="1" required />
-            </label>
-          </div>
-          <button type="submit">装備を追加</button>
-        </form>
-
-        <form id="recipeForm" class="card">
+        <form id="recipeForm" class="card compact-card">
           <h3>レシピ追加</h3>
           <div class="grid-2">
             <label class="field">
@@ -222,6 +217,11 @@
           </label>
           <button type="submit">レシピ行を追加</button>
         </form>
+
+        <div class="card">
+          <h3>素材一覧（価格編集可）</h3>
+          <div id="materialListWrap"></div>
+        </div>
 
         <div class="card">
           <h3>登録済みレシピ一覧</h3>
