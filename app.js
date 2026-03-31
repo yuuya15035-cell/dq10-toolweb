@@ -262,6 +262,10 @@ const toolDurabilityInput = getRequiredElementById("toolDurabilityInput");
 const toolPurchasePriceInput = getRequiredElementById("toolPurchasePriceInput");
 const materialListWrap = getRequiredElementById("materialListWrap");
 const recipeAdminListWrap = getRequiredElementById("recipeAdminListWrap");
+const exportMaterialPricesButton = getRequiredElementById("exportMaterialPricesButton");
+const importMaterialPricesButton = getRequiredElementById("importMaterialPricesButton");
+const importMaterialPricesInput = getRequiredElementById("importMaterialPricesInput");
+const materialDataTransferMessage = getRequiredElementById("materialDataTransferMessage");
 
 const perCraftToolCostEl = getRequiredElementById("perCraftToolCost");
 const totalMaterialCostEl = getRequiredElementById("totalMaterialCost");
@@ -313,6 +317,96 @@ function normalizeStarCount(value) {
   const parsed = Number(value);
   if (!Number.isFinite(parsed)) return 0;
   return Math.max(0, Math.floor(parsed));
+}
+
+function setMaterialDataTransferMessage(message, isError = false) {
+  if (!materialDataTransferMessage) return;
+  materialDataTransferMessage.textContent = message;
+  materialDataTransferMessage.style.color = isError ? "#d93025" : "#4f5d75";
+}
+
+function getMaterialPricePayload() {
+  return {
+    version: 1,
+    exportedAt: new Date().toISOString(),
+    materials: state.materials.map((material) => ({
+      name: material.name,
+      price: Number(material.price || 0),
+    })),
+  };
+}
+
+function exportMaterialPricesAsJson() {
+  const payload = getMaterialPricePayload();
+  const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
+  const link = document.createElement("a");
+  const datePart = new Date().toISOString().slice(0, 10);
+  link.href = URL.createObjectURL(blob);
+  link.download = `dq10-material-prices-${datePart}.json`;
+  document.body.append(link);
+  link.click();
+  link.remove();
+  URL.revokeObjectURL(link.href);
+
+  setMaterialDataTransferMessage(`単価ファイルを保存しました（${payload.materials.length}件）`);
+}
+
+function parseImportedMaterialPriceFile(fileName, text) {
+  const normalizedFileName = fileName.toLowerCase();
+  const trimmedText = text.trim();
+
+  if (normalizedFileName.endsWith(".json")) {
+    const json = JSON.parse(trimmedText);
+    const rows = Array.isArray(json?.materials) ? json.materials : [];
+    return rows
+      .map((row) => ({ name: String(row?.name ?? "").trim(), price: Number(row?.price ?? 0) }))
+      .filter((row) => row.name !== "" && Number.isFinite(row.price));
+  }
+
+  if (normalizedFileName.endsWith(".csv")) {
+    const lines = trimmedText
+      .replace(/^\uFEFF/, "")
+      .split(/\r?\n/)
+      .map((line) => line.trim())
+      .filter((line) => line.length > 0);
+
+    if (lines.length === 0) return [];
+    const headers = parseCsvLine(lines[0]);
+    const nameIndex = headers.findIndex((header) => ["name", "materialName", "素材名"].includes(header));
+    const priceIndex = headers.findIndex((header) => ["price", "単価", "価格"].includes(header));
+    if (nameIndex < 0 || priceIndex < 0) {
+      throw new Error("CSVヘッダーは name/price（または materialName/price）形式にしてください");
+    }
+
+    return lines
+      .slice(1)
+      .map((line) => parseCsvLine(line))
+      .map((columns) => ({ name: String(columns[nameIndex] ?? "").trim(), price: Number(columns[priceIndex] ?? 0) }))
+      .filter((row) => row.name !== "" && Number.isFinite(row.price));
+  }
+
+  throw new Error("JSON または CSV ファイルを選択してください");
+}
+
+function applyImportedMaterialPrices(rows) {
+  const materialByName = new Map(state.materials.map((material) => [material.name, material]));
+  let appliedCount = 0;
+
+  rows.forEach((row) => {
+    const target = materialByName.get(row.name);
+    if (!target) return;
+    target.price = Math.max(0, Math.floor(row.price));
+    appliedCount += 1;
+  });
+
+  if (appliedCount === 0) {
+    setMaterialDataTransferMessage("一致する素材名がなかったため、反映は0件でした。", true);
+    return;
+  }
+
+  saveData();
+  rerenderAll();
+  setMaterialDataTransferMessage(`単価を読込しました（一致素材 ${appliedCount}件を反映）`);
 }
 
 function switchTab(target) {
@@ -981,6 +1075,34 @@ if (recipeForm) {
     saveData();
     recipeForm.reset();
     rerenderAll();
+  });
+}
+
+if (exportMaterialPricesButton) {
+  exportMaterialPricesButton.addEventListener("click", () => {
+    exportMaterialPricesAsJson();
+  });
+}
+
+if (importMaterialPricesButton && importMaterialPricesInput) {
+  importMaterialPricesButton.addEventListener("click", () => {
+    importMaterialPricesInput.click();
+  });
+
+  importMaterialPricesInput.addEventListener("change", async (event) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    try {
+      const text = await file.text();
+      const rows = parseImportedMaterialPriceFile(file.name, text);
+      applyImportedMaterialPrices(rows);
+    } catch (error) {
+      console.error(error);
+      setMaterialDataTransferMessage("読込に失敗しました。ファイル形式を確認してください。", true);
+    } finally {
+      importMaterialPricesInput.value = "";
+    }
   });
 }
 

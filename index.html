@@ -219,7 +219,15 @@
         </form>
 
         <div class="card">
-          <h3>素材一覧（価格編集可）</h3>
+          <div class="card-header-inline">
+            <h3>素材一覧（価格編集可）</h3>
+            <div class="material-data-transfer-actions">
+              <button id="exportMaterialPricesButton" type="button">単価を保存</button>
+              <button id="importMaterialPricesButton" type="button">単価を読込</button>
+              <input id="importMaterialPricesInput" type="file" accept=".json,.csv,application/json,text/csv" hidden />
+            </div>
+          </div>
+          <p id="materialDataTransferMessage" class="helper-text" aria-live="polite"></p>
           <div id="materialListWrap"></div>
         </div>
 
