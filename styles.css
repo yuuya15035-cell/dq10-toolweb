@@ -142,6 +142,18 @@ button {
   flex-wrap: wrap;
 }
 
+.material-data-transfer-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.helper-text {
+  margin: 4px 0 10px;
+  color: #4f5d75;
+  font-size: 0.9rem;
+}
+
 .inline-field {
   margin-bottom: 0;
   min-width: 130px;
