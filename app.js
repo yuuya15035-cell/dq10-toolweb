@@ -493,6 +493,16 @@ function getEffectiveMaterialPrice(materialId) {
   return material?.price || 0;
 }
 
+function getProductionCountForCalculation() {
+  return normalizeProductionCount(productionCountInput?.value);
+}
+
+function normalizeProductionCountInput() {
+  if (!productionCountInput) return;
+  const normalized = normalizeProductionCount(productionCountInput.value);
+  productionCountInput.value = String(normalized);
+}
+
 function renderRecipeTable() {
   if (!recipeTableWrap) return;
 
@@ -502,49 +512,77 @@ function renderRecipeTable() {
     return;
   }
 
+  const productionCount = getProductionCountForCalculation();
   const htmlRows = rows
     .map((row) => {
       const material = state.materials.find((m) => m.id === row.materialId);
       const price = getEffectiveMaterialPrice(row.materialId);
-      const productionCount = normalizeProductionCount(productionCountInput?.value);
       const totalRequired = row.quantity * productionCount;
       const subtotal = price * totalRequired;
-      return `
-        <tr>
-          <td>${material?.name ?? "(削除済み素材)"}</td>
-          <td>${row.quantity}</td>
-          <td>${productionCount}</td>
-          <td>${totalRequired}</td>
-          <td>
-            <input
-              class="inline-input"
-              type="number"
-              min="0"
-              step="1"
-              value="${price}"
-              data-temp-material-price-id="${row.materialId}"
-            >
-          </td>
-          <td>${formatGold(subtotal)}</td>
-        </tr>
-      `;
-    })
-    .join("");
+      return {
+        table: `
+          <tr>
+            <td>${material?.name ?? "(削除済み素材)"}</td>
+            <td>${row.quantity}</td>
+            <td>${productionCount}</td>
+            <td>${totalRequired}</td>
+            <td>
+              <input
+                class="inline-input"
+                type="number"
+                min="0"
+                step="1"
+                value="${price}"
+                data-temp-material-price-id="${row.materialId}"
+              >
+            </td>
+            <td>${formatGold(subtotal)}</td>
+          </tr>
+        `,
+        card: `
+          <article class="recipe-material-card">
+            <h4>${material?.name ?? "(削除済み素材)"}</h4>
+            <ul class="recipe-material-meta">
+              <li><span>1個あたり必要数:</span> <strong>${row.quantity}</strong></li>
+              <li><span>制作数:</span> <strong>${productionCount}</strong></li>
+              <li><span>総必要数:</span> <strong>${totalRequired}</strong></li>
+              <li class="recipe-material-price-row">
+                <span>単価:</span>
+                <input
+                  class="material-price-input-mobile"
+                  type="number"
+                  min="0"
+                  step="1"
+                  value="${price}"
+                  data-temp-material-price-id="${row.materialId}"
+                >
+              </li>
+              <li class="recipe-material-subtotal"><span>総小計:</span> <strong>${formatGold(subtotal)}</strong></li>
+            </ul>
+          </article>
+        `,
+      };
+    });
 
   recipeTableWrap.innerHTML = `
-    <table class="table">
-      <thead>
-        <tr>
-          <th>素材名</th>
-          <th>1個あたり必要数</th>
-          <th>制作数</th>
-          <th>総必要数</th>
-          <th>単価</th>
-          <th>総小計</th>
-        </tr>
-      </thead>
-      <tbody>${htmlRows}</tbody>
-    </table>
+    <div class="recipe-table-desktop">
+      <table class="table">
+        <thead>
+          <tr>
+            <th>素材名</th>
+            <th>1個あたり必要数</th>
+            <th>制作数</th>
+            <th>総必要数</th>
+            <th>単価</th>
+            <th>総小計</th>
+          </tr>
+        </thead>
+        <tbody>${htmlRows.map((row) => row.table).join("")}</tbody>
+      </table>
+    </div>
+    <div class="recipe-cards-mobile">
+      ${htmlRows.map((row) => row.card).join("")}
+    </div>
   `;
 
   // 利益計算画面でだけ有効な一時単価の変更ハンドラ。
@@ -601,8 +639,7 @@ function applyProfitColor(element, value) {
 
 function calcAndRenderSummary() {
   const eq = getSelectedEquipment();
-  const productionCount = normalizeProductionCount(productionCountInput?.value);
-  if (productionCountInput) productionCountInput.value = String(productionCount);
+  const productionCount = getProductionCountForCalculation();
   const countStar0 = normalizeStarCount(countStar0Input?.value);
   const countStar1 = normalizeStarCount(countStar1Input?.value);
   const countStar2 = normalizeStarCount(countStar2Input?.value);
@@ -853,9 +890,13 @@ if (productionCountInput) {
     renderRecipeTable();
     calcAndRenderSummary();
   });
+  productionCountInput.addEventListener("blur", () => {
+    normalizeProductionCountInput();
+    renderRecipeTable();
+    calcAndRenderSummary();
+  });
   productionCountInput.addEventListener("change", () => {
-    const normalized = normalizeProductionCount(productionCountInput.value);
-    productionCountInput.value = String(normalized);
+    normalizeProductionCountInput();
     renderRecipeTable();
     calcAndRenderSummary();
   });

@@ -265,3 +265,62 @@ button {
     grid-template-columns: 1fr 1fr;
   }
 }
+
+.recipe-table-desktop {
+  display: none;
+}
+
+.recipe-cards-mobile {
+  display: grid;
+  gap: 10px;
+}
+
+.recipe-material-card {
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 10px;
+  background: #fff;
+}
+
+.recipe-material-card h4 {
+  margin: 0 0 8px;
+  font-size: 1rem;
+}
+
+.recipe-material-meta {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 6px;
+}
+
+.recipe-material-meta li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.recipe-material-price-row {
+  align-items: flex-end;
+}
+
+.material-price-input-mobile {
+  width: 100%;
+  max-width: 220px;
+}
+
+.recipe-material-subtotal strong {
+  font-size: 1.05rem;
+}
+
+@media (min-width: 700px) {
+  .recipe-table-desktop {
+    display: block;
+  }
+
+  .recipe-cards-mobile {
+    display: none;
+  }
+}
