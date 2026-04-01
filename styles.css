@@ -36,7 +36,7 @@ body {
 
 .tabs {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 8px;
   margin-bottom: 16px;
 }
@@ -254,6 +254,97 @@ button {
   background: #dc3545;
   padding: 8px 10px;
   font-size: 0.85rem;
+}
+
+.bazaar-list {
+  display: grid;
+  gap: 10px;
+}
+
+.bazaar-card {
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: #fff;
+  padding: 12px;
+}
+
+.bazaar-card-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.bazaar-card-header h3 {
+  margin: 0;
+  font-size: 1rem;
+}
+
+.bazaar-category {
+  margin: 4px 0 0;
+  color: #4f5d75;
+  font-size: 0.85rem;
+}
+
+.bazaar-today-price {
+  margin: 8px 0 2px;
+  font-size: 1.4rem;
+  font-weight: 800;
+  color: #184ec8;
+}
+
+.bazaar-today-price span {
+  font-size: 0.9rem;
+  font-weight: 700;
+}
+
+.bazaar-previous-price {
+  margin: 0 0 10px;
+  color: #4f5d75;
+  font-size: 0.9rem;
+}
+
+.bazaar-meta {
+  margin: 0;
+  display: grid;
+  gap: 6px;
+}
+
+.bazaar-meta div {
+  display: grid;
+  grid-template-columns: 72px 1fr;
+  gap: 8px;
+}
+
+.bazaar-meta dt {
+  color: #4f5d75;
+  font-size: 0.82rem;
+}
+
+.bazaar-meta dd {
+  margin: 0;
+  word-break: break-word;
+}
+
+.bazaar-badge {
+  display: inline-block;
+  border-radius: 999px;
+  padding: 4px 10px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  background: #e8edf8;
+  color: #33415c;
+  white-space: nowrap;
+}
+
+.bazaar-badge.is-rising {
+  background: #ffe7e7;
+  color: #b42318;
+}
+
+.bazaar-badge.is-dropping {
+  background: #e7f1ff;
+  color: #1d4ed8;
 }
 
 @media (min-width: 700px) {

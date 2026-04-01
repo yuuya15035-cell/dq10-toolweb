@@ -15,6 +15,7 @@
 
       <nav class="tabs" aria-label="画面切替">
         <button class="tab-button active" data-tab="profit">レシピ検索</button>
+        <button class="tab-button" data-tab="bazaar">バザー価格一覧</button>
         <button class="tab-button" data-tab="data">データ追加</button>
       </nav>
 
@@ -163,6 +164,14 @@
             </section>
           </div>
         </div>
+      </section>
+
+      <section id="bazaar" class="tab-content" aria-label="バザー価格一覧画面">
+        <h2>バザー価格一覧</h2>
+        <p class="helper-text">
+          CSV配置先: <code>public/data/bazaar_prices.csv</code>（差し替えでそのまま表示更新）
+        </p>
+        <div id="bazaarListWrap"></div>
       </section>
 
       <section id="data" class="tab-content" aria-label="データ追加画面">
