@@ -329,9 +329,15 @@ function formatGold(value) {
 }
 
 function formatBazaarPrice(value) {
+  if (value === null || value === undefined || String(value).trim() === "") return "-";
   const parsed = Number(value);
   if (!Number.isFinite(parsed)) return "-";
   return parsed.toLocaleString("ja-JP");
+}
+
+function formatBazaarPriceWithUnit(value) {
+  const text = formatBazaarPrice(value);
+  return text === "-" ? "-" : `${text} G`;
 }
 
 function formatBazaarUpdatedAt(rawValue) {
@@ -352,7 +358,7 @@ function formatBazaarUpdatedAt(rawValue) {
 function parseBazaarPricesFromLines(lines) {
   if (lines.length <= 1) return [];
 
-  const headers = parseCsvLine(lines[0]);
+  const headers = parseCsvLine(lines[0]).map((header) => String(header || "").replace(/^\uFEFF/, "").trim());
   const materialNameIndex = headers.indexOf("materialName");
   const itemCategoryIndex = headers.indexOf("item_category");
   const sortOrderIndex = headers.indexOf("sort_order");
@@ -380,13 +386,15 @@ function parseBazaarPricesFromLines(lines) {
     .map((line) => parseCsvLine(line))
     .map((row, rowIndex) => {
       const sortOrderRaw = Number(row[sortOrderIndex]);
+      const todayPriceRaw = String(row[todayPriceIndex] || "").trim();
+      const previousDayPriceRaw = String(row[previousDayPriceIndex] || "").trim();
       return {
         id: `bazaar-row-${rowIndex}`,
         materialName: String(row[materialNameIndex] || "").trim(),
         itemCategory: String(row[itemCategoryIndex] || "").trim(),
         sortOrder: Number.isFinite(sortOrderRaw) ? sortOrderRaw : Number.MAX_SAFE_INTEGER,
-        todayPrice: Number(row[todayPriceIndex] || 0),
-        previousDayPrice: Number(row[previousDayPriceIndex] || 0),
+        todayPrice: todayPriceRaw === "" ? null : Number(todayPriceRaw),
+        previousDayPrice: previousDayPriceRaw === "" ? null : Number(previousDayPriceRaw),
         updatedAt: String(row[updatedAtIndex] || "").trim(),
         updateInfo: String(row[updateInfoIndex] || "").trim(),
         comment: String(row[commentIndex] || "").trim(),
@@ -424,6 +432,8 @@ function renderBazaarPrices() {
             row.updateInfo === ""
               ? ""
               : `<span class="bazaar-badge ${badgeClass}">${row.updateInfo}</span>`;
+          const todayPriceText = formatBazaarPrice(row.todayPrice);
+          const todayPriceHtml = todayPriceText === "-" ? "-" : `${todayPriceText} <span>G</span>`;
 
           return `
             <article class="bazaar-card">
@@ -434,12 +444,12 @@ function renderBazaarPrices() {
                 </div>
                 ${badgeHtml}
               </header>
-              <p class="bazaar-today-price">${formatBazaarPrice(row.todayPrice)} <span>G</span></p>
-              <p class="bazaar-previous-price">前日: ${formatBazaarPrice(row.previousDayPrice)} G</p>
+              <p class="bazaar-today-price">${todayPriceHtml}</p>
+              <p class="bazaar-previous-price">前日: ${formatBazaarPriceWithUnit(row.previousDayPrice)}</p>
               <dl class="bazaar-meta">
                 <div>
-                  <dt>更新日時</dt>
-                  <dd>${formatBazaarUpdatedAt(row.updatedAt)}</dd>
+                  <dt>更新時</dt>
+                  <dd>更新時: ${formatBazaarUpdatedAt(row.updatedAt)}</dd>
                 </div>
                 <div>
                   <dt>コメント</dt>
