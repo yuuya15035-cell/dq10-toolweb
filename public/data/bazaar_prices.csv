@@ -1,0 +1,4 @@
+materialName,item_category,sort_order,today_price,previous_day_price,updated_at,update_info,comment
+てっこうせき,鉱石,10,120,115,2026-04-01T23:15:00+09:00,,
+ぎんのこうせき,鉱石,20,345,380,2026-04-01T23:15:00+09:00,急落,在庫が多く値下がり
+ようせいのひだね,素材,30,520,470,2026-04-01T23:15:00+09:00,急騰,需要増

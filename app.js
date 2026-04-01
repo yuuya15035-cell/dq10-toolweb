@@ -5,6 +5,7 @@ const STORAGE_KEY = "dq10_toolweb_data_v1";
 // recipe.csv の配置先。data ディレクトリ配下を正として扱います。
 const RECIPE_CSV_PATH = "./data/recipe.csv";
 const TOOLS_CSV_PATH = "./data/tools.csv";
+const BAZAAR_CSV_PATH = "./public/data/bazaar_prices.csv";
 
 // 初期データ（CSVが読み込めない場合のフォールバック）
 const defaultData = {
@@ -30,7 +31,35 @@ const defaultData = {
 // CSVの1行（カンマ区切り）を最低限パースする関数。
 // このデータはクォートをほぼ使っていない想定なので、できるだけシンプルに実装しています。
 function parseCsvLine(line) {
-  return line.split(",").map((cell) => cell.trim());
+  const cells = [];
+  let current = "";
+  let inQuotes = false;
+
+  for (let i = 0; i < line.length; i += 1) {
+    const char = line[i];
+    const next = line[i + 1];
+
+    if (char === '"') {
+      if (inQuotes && next === '"') {
+        current += '"';
+        i += 1;
+        continue;
+      }
+      inQuotes = !inQuotes;
+      continue;
+    }
+
+    if (char === "," && !inQuotes) {
+      cells.push(current.trim());
+      current = "";
+      continue;
+    }
+
+    current += char;
+  }
+
+  cells.push(current.trim());
+  return cells;
 }
 
 // 装備名・素材名から固定IDを作る関数。
@@ -224,6 +253,7 @@ let materialSearchKeyword = "";
 let selectedCraftsman = "";
 let selectedCategory = "";
 let selectedToolId = "";
+let bazaarPrices = [];
 // 利益計算画面だけで使う「今回計算用の一時単価」。
 // - キー: materialId
 // - 値: 画面上で上書きした単価
@@ -266,6 +296,7 @@ const exportMaterialPricesButton = getRequiredElementById("exportMaterialPricesB
 const importMaterialPricesButton = getRequiredElementById("importMaterialPricesButton");
 const importMaterialPricesInput = getRequiredElementById("importMaterialPricesInput");
 const materialDataTransferMessage = getRequiredElementById("materialDataTransferMessage");
+const bazaarListWrap = getRequiredElementById("bazaarListWrap");
 
 const perCraftToolCostEl = getRequiredElementById("perCraftToolCost");
 const totalMaterialCostEl = getRequiredElementById("totalMaterialCost");
@@ -295,6 +326,132 @@ const recipeMaterialSelect = getRequiredElementById("recipeMaterialSelect");
 
 function formatGold(value) {
   return `${Math.round(value).toLocaleString("ja-JP")} G`;
+}
+
+function formatBazaarPrice(value) {
+  const parsed = Number(value);
+  if (!Number.isFinite(parsed)) return "-";
+  return parsed.toLocaleString("ja-JP");
+}
+
+function formatBazaarUpdatedAt(rawValue) {
+  const normalized = String(rawValue || "").trim();
+  if (normalized === "") return "-";
+
+  const parsed = new Date(normalized);
+  if (Number.isNaN(parsed.getTime())) return normalized;
+
+  return new Intl.DateTimeFormat("ja-JP", {
+    month: "numeric",
+    day: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  }).format(parsed);
+}
+
+function parseBazaarPricesFromLines(lines) {
+  if (lines.length <= 1) return [];
+
+  const headers = parseCsvLine(lines[0]);
+  const materialNameIndex = headers.indexOf("materialName");
+  const itemCategoryIndex = headers.indexOf("item_category");
+  const sortOrderIndex = headers.indexOf("sort_order");
+  const todayPriceIndex = headers.indexOf("today_price");
+  const previousDayPriceIndex = headers.indexOf("previous_day_price");
+  const updatedAtIndex = headers.indexOf("updated_at");
+  const updateInfoIndex = headers.indexOf("update_info");
+  const commentIndex = headers.indexOf("comment");
+
+  if (
+    materialNameIndex < 0 ||
+    itemCategoryIndex < 0 ||
+    sortOrderIndex < 0 ||
+    todayPriceIndex < 0 ||
+    previousDayPriceIndex < 0 ||
+    updatedAtIndex < 0 ||
+    updateInfoIndex < 0 ||
+    commentIndex < 0
+  ) {
+    throw new Error("bazaar_prices.csv ヘッダーが想定と一致しません");
+  }
+
+  return lines
+    .slice(1)
+    .map((line) => parseCsvLine(line))
+    .map((row, rowIndex) => {
+      const sortOrderRaw = Number(row[sortOrderIndex]);
+      return {
+        id: `bazaar-row-${rowIndex}`,
+        materialName: String(row[materialNameIndex] || "").trim(),
+        itemCategory: String(row[itemCategoryIndex] || "").trim(),
+        sortOrder: Number.isFinite(sortOrderRaw) ? sortOrderRaw : Number.MAX_SAFE_INTEGER,
+        todayPrice: Number(row[todayPriceIndex] || 0),
+        previousDayPrice: Number(row[previousDayPriceIndex] || 0),
+        updatedAt: String(row[updatedAtIndex] || "").trim(),
+        updateInfo: String(row[updateInfoIndex] || "").trim(),
+        comment: String(row[commentIndex] || "").trim(),
+      };
+    })
+    .filter((row) => row.materialName !== "")
+    .sort((a, b) => a.sortOrder - b.sortOrder);
+}
+
+async function loadBazaarPricesCsv() {
+  const lines = await fetchCsvLines(BAZAAR_CSV_PATH);
+  return parseBazaarPricesFromLines(lines);
+}
+
+function getUpdateInfoBadgeClass(updateInfo) {
+  if (updateInfo === "急騰") return "is-rising";
+  if (updateInfo === "急落") return "is-dropping";
+  return "";
+}
+
+function renderBazaarPrices() {
+  if (!bazaarListWrap) return;
+
+  if (!Array.isArray(bazaarPrices) || bazaarPrices.length === 0) {
+    bazaarListWrap.innerHTML = `<p>表示できる価格データがありません。CSV内容を確認してください。</p>`;
+    return;
+  }
+
+  bazaarListWrap.innerHTML = `
+    <div class="bazaar-list">
+      ${bazaarPrices
+        .map((row) => {
+          const badgeClass = getUpdateInfoBadgeClass(row.updateInfo);
+          const badgeHtml =
+            row.updateInfo === ""
+              ? ""
+              : `<span class="bazaar-badge ${badgeClass}">${row.updateInfo}</span>`;
+
+          return `
+            <article class="bazaar-card">
+              <header class="bazaar-card-header">
+                <div>
+                  <h3>${row.materialName}</h3>
+                  <p class="bazaar-category">${row.itemCategory || "-"}</p>
+                </div>
+                ${badgeHtml}
+              </header>
+              <p class="bazaar-today-price">${formatBazaarPrice(row.todayPrice)} <span>G</span></p>
+              <p class="bazaar-previous-price">前日: ${formatBazaarPrice(row.previousDayPrice)} G</p>
+              <dl class="bazaar-meta">
+                <div>
+                  <dt>更新日時</dt>
+                  <dd>${formatBazaarUpdatedAt(row.updatedAt)}</dd>
+                </div>
+                <div>
+                  <dt>コメント</dt>
+                  <dd>${row.comment || "-"}</dd>
+                </div>
+              </dl>
+            </article>
+          `;
+        })
+        .join("")}
+    </div>
+  `;
 }
 
 function normalizeSalePrices(salePrices, fallbackSalePrice = 0) {
@@ -894,6 +1051,7 @@ function rerenderAll() {
   renderMaterialList();
   renderRecipeAdminList();
   calcAndRenderSummary();
+  renderBazaarPrices();
 }
 
 // --- イベント定義 ---
@@ -1119,6 +1277,13 @@ async function initialize() {
   } catch (error) {
     console.warn("recipe.csv の読み込みに失敗したため、フォールバックデータを使用します", error);
     state = mergeWithStoredData(structuredClone(defaultData), storedData);
+  }
+
+  try {
+    bazaarPrices = await loadBazaarPricesCsv();
+  } catch (error) {
+    console.warn("bazaar_prices.csv の読み込みに失敗しました", error);
+    bazaarPrices = [];
   }
 
   // CSV側が空でも初期表示で一覧が空にならないようフォールバックを維持
