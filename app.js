@@ -254,6 +254,7 @@ let selectedCraftsman = "";
 let selectedCategory = "";
 let selectedToolId = "";
 let bazaarPrices = [];
+let selectedBazaarCategory = "";
 // 利益計算画面だけで使う「今回計算用の一時単価」。
 // - キー: materialId
 // - 値: 画面上で上書きした単価
@@ -423,10 +424,66 @@ function renderBazaarPrices() {
     return;
   }
 
+  const categorySet = new Set(
+    bazaarPrices
+      .map((row) => String(row.itemCategory || "").trim())
+      .filter((category) => category !== "")
+  );
+  const categories = Array.from(categorySet).sort((a, b) => a.localeCompare(b, "ja"));
+  const hasSelectedCategory = selectedBazaarCategory !== "" && categorySet.has(selectedBazaarCategory);
+
+  if (selectedBazaarCategory !== "" && !hasSelectedCategory) {
+    selectedBazaarCategory = "";
+  }
+
+  const visibleRows = bazaarPrices
+    .filter((row) => selectedBazaarCategory === "" || row.itemCategory === selectedBazaarCategory)
+    .slice()
+    .sort((a, b) => {
+      if (selectedBazaarCategory === "") {
+        const categoryA = String(a.itemCategory || "").trim();
+        const categoryB = String(b.itemCategory || "").trim();
+        if (categoryA !== categoryB) {
+          return categoryA.localeCompare(categoryB, "ja");
+        }
+      }
+
+      if (a.sortOrder !== b.sortOrder) {
+        return a.sortOrder - b.sortOrder;
+      }
+
+      return String(a.materialName || "").localeCompare(String(b.materialName || ""), "ja");
+    });
+
   bazaarListWrap.innerHTML = `
+    <div class="bazaar-category-filter" role="tablist" aria-label="ジャンル切り替え">
+      <button
+        type="button"
+        class="bazaar-category-chip ${selectedBazaarCategory === "" ? "is-active" : ""}"
+        data-bazaar-category=""
+      >
+        すべて
+      </button>
+      ${categories
+        .map(
+          (category) => `
+            <button
+              type="button"
+              class="bazaar-category-chip ${selectedBazaarCategory === category ? "is-active" : ""}"
+              data-bazaar-category="${category}"
+            >
+              ${category}
+            </button>
+          `
+        )
+        .join("")}
+    </div>
     <div class="bazaar-list">
-      ${bazaarPrices
-        .map((row) => {
+      ${
+        visibleRows.length === 0
+          ? `<p>選択したジャンルのデータがありません。</p>`
+          : visibleRows
+              .map((row) => {
           const badgeClass = getUpdateInfoBadgeClass(row.updateInfo);
           const badgeHtml =
             row.updateInfo === ""
@@ -458,10 +515,18 @@ function renderBazaarPrices() {
               </dl>
             </article>
           `;
-        })
-        .join("")}
+              })
+              .join("")
+      }
     </div>
   `;
+
+  bazaarListWrap.querySelectorAll("[data-bazaar-category]").forEach((button) => {
+    button.addEventListener("click", () => {
+      selectedBazaarCategory = String(button.dataset.bazaarCategory || "");
+      renderBazaarPrices();
+    });
+  });
 }
 
 function normalizeSalePrices(salePrices, fallbackSalePrice = 0) {
