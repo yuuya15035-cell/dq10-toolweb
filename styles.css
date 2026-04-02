@@ -663,47 +663,95 @@ button {
 
 .recipe-cards-mobile {
   display: grid;
-  gap: 10px;
+  gap: 7px;
 }
 
 .recipe-material-card {
   border: 1px solid var(--line);
   border-radius: 10px;
-  padding: 10px;
+  padding: 8px 9px;
   background: #fff;
 }
 
-.recipe-material-card h4 {
-  margin: 0 0 8px;
-  font-size: 1rem;
+.recipe-material-name {
+  margin: 0 0 5px;
+  font-size: 0.98rem;
+  line-height: 1.25;
+  font-weight: 700;
 }
 
-.recipe-material-meta {
-  list-style: none;
+.recipe-material-count-line {
   margin: 0;
-  padding: 0;
-  display: grid;
-  gap: 6px;
+  display: flex;
+  align-items: baseline;
+  gap: 5px;
+  flex-wrap: wrap;
+  font-size: 0.77rem;
+  color: #56637b;
+  line-height: 1.2;
 }
 
-.recipe-material-meta li {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
+.recipe-material-count-line strong {
+  font-size: 0.98rem;
+  color: #1f2a44;
+  font-weight: 800;
 }
 
 .recipe-material-price-row {
-  align-items: flex-end;
+  margin-top: 6px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: end;
+  gap: 8px;
+}
+
+.recipe-material-price-field {
+  margin: 0;
+  display: grid;
+  gap: 3px;
+}
+
+.recipe-material-price-field span {
+  font-size: 0.74rem;
+  color: #56637b;
+  font-weight: 600;
 }
 
 .material-price-input-mobile {
-  width: 100%;
-  max-width: 220px;
+  width: min(100%, 140px);
+  min-height: 36px;
+  font-size: 1rem;
+  font-weight: 700;
+  text-align: right;
+}
+
+.recipe-material-subtotal {
+  margin: 0;
+  text-align: right;
+  display: grid;
+  gap: 2px;
+}
+
+.recipe-material-subtotal span {
+  font-size: 0.72rem;
+  color: #56637b;
+  font-weight: 600;
 }
 
 .recipe-material-subtotal strong {
-  font-size: 1.05rem;
+  font-size: 1.06rem;
+  line-height: 1.1;
+}
+
+.recipe-material-subtotal strong span {
+  font-size: 0.76rem;
+  color: #627089;
+  font-weight: 600;
+}
+
+.material-header-actions .market-link-button {
+  padding: 9px 12px;
+  font-size: 0.9rem;
 }
 
 @media (min-width: 700px) {
