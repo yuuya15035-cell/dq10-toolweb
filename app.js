@@ -5,7 +5,7 @@ const STORAGE_KEY = "dq10_toolweb_data_v1";
 // recipe.csv の配置先。data ディレクトリ配下を正として扱います。
 const RECIPE_CSV_PATH = "./data/recipe.csv";
 const TOOLS_CSV_PATH = "./data/tools.csv";
-const BAZAAR_CSV_PATH = "./public/data/bazaar_prices.csv";
+const BAZAAR_CSV_PATH = "./data/bazaar_prices.csv";
 
 // 初期データ（CSVが読み込めない場合のフォールバック）
 const defaultData = {
@@ -391,6 +391,7 @@ function parseBazaarPricesFromLines(lines) {
   const updatedAtIndex = headers.indexOf("updated_at");
   const updateInfoIndex = headers.indexOf("update_info");
   const commentIndex = headers.indexOf("comment");
+  const shopPriceIndex = headers.indexOf("shop_price");
 
   if (
     materialNameIndex < 0 ||
@@ -400,7 +401,8 @@ function parseBazaarPricesFromLines(lines) {
     previousDayPriceIndex < 0 ||
     updatedAtIndex < 0 ||
     updateInfoIndex < 0 ||
-    commentIndex < 0
+    commentIndex < 0 ||
+    shopPriceIndex < 0
   ) {
     throw new Error("bazaar_prices.csv ヘッダーが想定と一致しません");
   }
@@ -411,6 +413,8 @@ function parseBazaarPricesFromLines(lines) {
     .map((row, rowIndex) => {
       const sortOrderRaw = Number(row[sortOrderIndex]);
       const todayPriceRaw = String(row[todayPriceIndex] || "").trim();
+      const shopPriceRaw = String(row[shopPriceIndex] || "").trim();
+      const displayPriceRaw = todayPriceRaw !== "" ? todayPriceRaw : shopPriceRaw;
       const previousDayPriceRaw = String(row[previousDayPriceIndex] || "").trim();
       return {
         id: `bazaar-row-${rowIndex}`,
@@ -418,6 +422,8 @@ function parseBazaarPricesFromLines(lines) {
         itemCategory: String(row[itemCategoryIndex] || "").trim(),
         sortOrder: Number.isFinite(sortOrderRaw) ? sortOrderRaw : Number.MAX_SAFE_INTEGER,
         todayPrice: todayPriceRaw === "" ? null : Number(todayPriceRaw),
+        shopPrice: shopPriceRaw === "" ? null : Number(shopPriceRaw),
+        displayPrice: displayPriceRaw === "" ? null : Number(displayPriceRaw),
         previousDayPrice: previousDayPriceRaw === "" ? null : Number(previousDayPriceRaw),
         updatedAt: String(row[updatedAtIndex] || "").trim(),
         updateInfo: String(row[updateInfoIndex] || "").trim(),
@@ -512,8 +518,7 @@ function renderBazaarPrices() {
             row.updateInfo === ""
               ? ""
               : `<span class="bazaar-badge ${badgeClass}">${row.updateInfo}</span>`;
-          const todayPriceText = formatBazaarPrice(row.todayPrice);
-          const todayPriceHtml = todayPriceText === "-" ? "-" : `${todayPriceText} <span>G</span>`;
+          const todayPriceHtml = formatBazaarPriceWithUnit(row.displayPrice);
 
           return `
             <article class="bazaar-card">
