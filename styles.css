@@ -194,6 +194,25 @@ button {
   margin-bottom: 0;
 }
 
+.recipe-section-header {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  flex-wrap: wrap;
+  min-width: 0;
+}
+
+.recipe-section-header h3 {
+  margin: 0;
+}
+
+.recipe-cost-note {
+  margin: 0;
+  color: rgba(34, 34, 34, 0.68);
+  font-size: 0.8rem;
+  line-height: 1.4;
+}
+
 .material-header-actions {
   display: flex;
   align-items: flex-end;
