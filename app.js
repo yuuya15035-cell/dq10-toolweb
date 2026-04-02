@@ -753,22 +753,30 @@ function renderEquipmentSelectors() {
     });
   }
 
-  const filteredEquipments = state.equipments.filter((equipment) => {
-    const matchesMaterial = normalizedMaterialKeyword === "" || matchedRecipeByEquipmentId.has(equipment.id);
-    return (
-      (selectedCraftsman === "" || equipment.craftsman === selectedCraftsman) &&
-      (selectedCategory === "" || equipment.category === selectedCategory) &&
-      (equipmentSearchKeyword === "" || equipment.name.toLowerCase().includes(equipmentSearchKeyword.toLowerCase())) &&
-      matchesMaterial
-    );
-  });
+  const filteredEquipments = state.equipments
+    .filter((equipment) => {
+      const matchesMaterial = normalizedMaterialKeyword === "" || matchedRecipeByEquipmentId.has(equipment.id);
+      return (
+        (selectedCraftsman === "" || equipment.craftsman === selectedCraftsman) &&
+        (selectedCategory === "" || equipment.category === selectedCategory) &&
+        (equipmentSearchKeyword === "" || equipment.name.toLowerCase().includes(equipmentSearchKeyword.toLowerCase())) &&
+        matchesMaterial
+      );
+    })
+    .sort((a, b) => {
+      // 装備一覧は「原価が高い順」をデフォルトにする。
+      // 並びの基準はプルダウン表示と一致させるため、四捨五入後の原価を使う。
+      const roundedCostDiff = getRoundedEquipmentMaterialCost(b.id) - getRoundedEquipmentMaterialCost(a.id);
+      if (roundedCostDiff !== 0) return roundedCostDiff;
+      return a.name.localeCompare(b.name, "ja");
+    });
 
   equipmentSelect.innerHTML = "";
   recipeEquipmentSelect.innerHTML = "";
 
   filteredEquipments.forEach((equipment) => {
-    const materialCost = getEquipmentMaterialCost(equipment.id);
-    let label = `${equipment.name}（原価: ${Math.round(materialCost).toLocaleString("ja-JP")} G）`;
+    const roundedMaterialCost = getRoundedEquipmentMaterialCost(equipment.id);
+    let label = `${equipment.name}（原価: ${roundedMaterialCost.toLocaleString("ja-JP")} G）`;
     if (normalizedMaterialKeyword !== "") {
       const matchedMaterials = matchedRecipeByEquipmentId.get(equipment.id) || [];
       if (matchedMaterials.length > 0) {
@@ -901,6 +909,10 @@ function getEquipmentMaterialCost(equipmentId) {
   return state.recipes
     .filter((row) => row.equipmentId === equipmentId)
     .reduce((sum, row) => sum + getEffectiveMaterialPrice(row.materialId) * row.quantity, 0);
+}
+
+function getRoundedEquipmentMaterialCost(equipmentId) {
+  return Math.round(getEquipmentMaterialCost(equipmentId));
 }
 
 function getProductionCountForCalculation() {
