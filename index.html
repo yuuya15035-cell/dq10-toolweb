@@ -49,7 +49,7 @@
           <input id="equipmentSearchInput" type="text" placeholder="例: はがね / つるぎ" />
         </label>
 
-        <div class="grid-2 grid-3-on-desktop">
+        <div class="search-filter-grid">
           <label class="field">
             <span>職人種別</span>
             <select id="craftsmanFilterSelect"></select>
@@ -115,44 +115,48 @@
 
         <div class="card">
           <h3>販売価格（できのよさ別）</h3>
-          <div class="sale-input-list">
+          <div class="sale-input-list" aria-label="できのよさ別販売価格入力">
             <div class="sale-input-row">
-              <label class="field">
-                <span>★0販売価格（G）</span>
+              <p class="sale-star-badge">★0</p>
+              <label class="field sale-price-field">
+                <span>販売価格 <small>（G）</small></span>
                 <input id="salePriceStar0Input" type="number" min="0" step="1" />
               </label>
-              <label class="field">
-                <span>★0個数</span>
+              <label class="field sale-count-field">
+                <span>個数</span>
                 <input id="countStar0Input" type="number" min="0" step="1" value="0" />
               </label>
             </div>
             <div class="sale-input-row">
-              <label class="field">
-                <span>★1販売価格（G）</span>
+              <p class="sale-star-badge">★1</p>
+              <label class="field sale-price-field">
+                <span>販売価格 <small>（G）</small></span>
                 <input id="salePriceStar1Input" type="number" min="0" step="1" />
               </label>
-              <label class="field">
-                <span>★1個数</span>
+              <label class="field sale-count-field">
+                <span>個数</span>
                 <input id="countStar1Input" type="number" min="0" step="1" value="0" />
               </label>
             </div>
             <div class="sale-input-row">
-              <label class="field">
-                <span>★2販売価格（G）</span>
+              <p class="sale-star-badge">★2</p>
+              <label class="field sale-price-field">
+                <span>販売価格 <small>（G）</small></span>
                 <input id="salePriceStar2Input" type="number" min="0" step="1" />
               </label>
-              <label class="field">
-                <span>★2個数</span>
+              <label class="field sale-count-field">
+                <span>個数</span>
                 <input id="countStar2Input" type="number" min="0" step="1" value="0" />
               </label>
             </div>
             <div class="sale-input-row">
-              <label class="field">
-                <span>★3販売価格（G）</span>
+              <p class="sale-star-badge">★3</p>
+              <label class="field sale-price-field">
+                <span>販売価格 <small>（G）</small></span>
                 <input id="salePriceStar3Input" type="number" min="0" step="1" />
               </label>
-              <label class="field">
-                <span>★3個数</span>
+              <label class="field sale-count-field">
+                <span>個数</span>
                 <input id="countStar3Input" type="number" min="0" step="1" value="0" />
               </label>
             </div>
