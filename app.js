@@ -529,18 +529,22 @@ function renderBazaarPrices() {
                 </div>
                 ${badgeHtml}
               </header>
-              <p class="bazaar-today-price">${todayPriceHtml}</p>
-              <p class="bazaar-previous-price">前日: ${formatBazaarPriceWithUnit(row.previousDayPrice)}</p>
-              <dl class="bazaar-meta">
-                <div>
-                  <dt>更新時</dt>
-                  <dd>更新時: ${formatBazaarUpdatedAt(row.updatedAt)}</dd>
+              <div class="bazaar-main">
+                <div class="bazaar-primary">
+                  <p class="bazaar-today-price">${todayPriceHtml}</p>
+                  <p class="bazaar-previous-price">前日: ${formatBazaarPriceWithUnit(row.previousDayPrice)}</p>
                 </div>
-                <div>
-                  <dt>コメント</dt>
-                  <dd>${row.comment || "-"}</dd>
-                </div>
-              </dl>
+                <dl class="bazaar-meta">
+                  <div class="bazaar-meta-item">
+                    <dt>更新時</dt>
+                    <dd>${formatBazaarUpdatedAt(row.updatedAt)}</dd>
+                  </div>
+                  <div class="bazaar-meta-item">
+                    <dt>コメント</dt>
+                    <dd class="bazaar-comment">${row.comment || "-"}</dd>
+                  </div>
+                </dl>
+              </div>
             </article>
           `;
               })
