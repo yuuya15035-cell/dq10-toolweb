@@ -92,34 +92,26 @@ body {
 }
 
 .app-header h1 {
-  margin-bottom: 4px;
-  font-size: 1.4rem;
+  margin: 0 0 8px;
+  font-size: 1.5rem;
 }
 
 .app-header p {
-  margin-top: 0;
+  margin: 0;
   color: #4f5d75;
 }
 
-.tabs {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 8px;
-  margin-bottom: 16px;
-}
-
-.tab-button {
+.app-header {
+  margin-bottom: 18px;
+  padding: 14px 16px;
   border: 1px solid var(--line);
+  border-radius: 12px;
   background: #fff;
-  border-radius: 10px;
-  padding: 10px;
-  font-weight: 600;
 }
 
-.tab-button.active {
-  background: var(--primary);
-  color: #fff;
-  border-color: var(--primary);
+.last-updated {
+  margin-top: 8px !important;
+  font-size: 0.9rem;
 }
 
 .tab-content {
@@ -454,6 +446,11 @@ button {
 
   .app-header h1 {
     font-size: 1.8rem;
+  }
+
+  .app-header {
+    margin-bottom: 20px;
+    padding: 16px 18px;
   }
 
   .grid-2 {

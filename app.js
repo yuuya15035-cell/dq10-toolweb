@@ -321,6 +321,7 @@ const totalProfitStar3ValueEl = getRequiredElementById("totalProfitStar3Value");
 const totalFeeValueEl = getRequiredElementById("totalFeeValue");
 const averageNetSalesValueEl = getRequiredElementById("averageNetSalesValue");
 const totalProfitValueEl = getRequiredElementById("totalProfitValue");
+const lastUpdatedValueEl = getRequiredElementById("lastUpdatedValue");
 
 const materialForm = getRequiredElementById("materialForm");
 const equipmentForm = getRequiredElementById("equipmentForm");
@@ -355,6 +356,24 @@ function formatBazaarUpdatedAt(rawValue) {
   return new Intl.DateTimeFormat("ja-JP", {
     month: "numeric",
     day: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  }).format(parsed);
+}
+
+function renderLastUpdated() {
+  if (!lastUpdatedValueEl) return;
+
+  const parsed = new Date(document.lastModified);
+  if (Number.isNaN(parsed.getTime())) {
+    lastUpdatedValueEl.textContent = "-";
+    return;
+  }
+
+  lastUpdatedValueEl.textContent = new Intl.DateTimeFormat("ja-JP", {
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
     hour: "2-digit",
     minute: "2-digit",
   }).format(parsed);
@@ -1415,6 +1434,7 @@ async function initialize() {
 
   selectedEquipmentId = state.equipments[0]?.id || "";
   selectedToolId = "";
+  renderLastUpdated();
   saveData();
   rerenderAll();
 }
