@@ -271,6 +271,10 @@ function getRequiredElementById(id) {
 
 const tabButtons = document.querySelectorAll(".tab-button");
 const tabContents = document.querySelectorAll(".tab-content");
+const menuToggleButton = getRequiredElementById("menuToggleButton");
+const sideMenu = getRequiredElementById("sideMenu");
+const menuOverlay = getRequiredElementById("menuOverlay");
+const sideMenuItems = document.querySelectorAll(".side-menu-item");
 
 const equipmentSelect = getRequiredElementById("equipmentSelect");
 const equipmentSearchInput = getRequiredElementById("equipmentSearchInput");
@@ -646,8 +650,51 @@ function switchTab(target) {
   tabContents.forEach((tab) => tab.classList.toggle("active", tab.id === target));
 }
 
+function setMenuOpen(isOpen) {
+  if (!sideMenu || !menuOverlay || !menuToggleButton) return;
+  sideMenu.classList.toggle("is-open", isOpen);
+  sideMenu.setAttribute("aria-hidden", isOpen ? "false" : "true");
+  menuToggleButton.setAttribute("aria-expanded", isOpen ? "true" : "false");
+  menuOverlay.hidden = !isOpen;
+}
+
+function scrollToBlock(blockId) {
+  if (!blockId) return;
+  switchTab(blockId);
+  const target = document.getElementById(blockId);
+  if (!target) return;
+  target.scrollIntoView({ block: "start", behavior: "smooth" });
+}
+
 tabButtons.forEach((btn) => {
   btn.addEventListener("click", () => switchTab(btn.dataset.tab));
+});
+
+if (menuToggleButton) {
+  menuToggleButton.addEventListener("click", () => {
+    const next = menuToggleButton.getAttribute("aria-expanded") !== "true";
+    setMenuOpen(next);
+  });
+}
+
+if (menuOverlay) {
+  menuOverlay.addEventListener("click", () => {
+    setMenuOpen(false);
+  });
+}
+
+sideMenuItems.forEach((item) => {
+  item.addEventListener("click", () => {
+    const targetId = item.dataset.menuTarget || "";
+    scrollToBlock(targetId);
+    setMenuOpen(false);
+  });
+});
+
+document.addEventListener("keydown", (event) => {
+  if (event.key === "Escape") {
+    setMenuOpen(false);
+  }
 });
 
 function renderEquipmentSelectors() {
