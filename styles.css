@@ -261,6 +261,34 @@ button {
   gap: 10px;
 }
 
+.bazaar-category-filter {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  padding: 2px 2px 8px;
+  margin-bottom: 8px;
+  -webkit-overflow-scrolling: touch;
+}
+
+.bazaar-category-chip {
+  border: 1px solid #c9d3e6;
+  background: #f6f9ff;
+  color: #24406d;
+  border-radius: 999px;
+  padding: 10px 14px;
+  font-size: 0.95rem;
+  font-weight: 700;
+  line-height: 1;
+  white-space: nowrap;
+  min-height: 42px;
+}
+
+.bazaar-category-chip.is-active {
+  background: #2b62d9;
+  color: #fff;
+  border-color: #2b62d9;
+}
+
 .bazaar-card {
   border: 1px solid var(--line);
   border-radius: 12px;
