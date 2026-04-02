@@ -6,6 +6,7 @@ const STORAGE_KEY = "dq10_toolweb_data_v1";
 const RECIPE_CSV_PATH = "./data/recipe.csv";
 const TOOLS_CSV_PATH = "./data/tools.csv";
 const BAZAAR_CSV_PATH = "./data/bazaar_prices.csv";
+const BAZAAR_CATEGORY_ORDER = ["石系", "植物系", "モンスター系", "その他", "消費アイテム"];
 
 // 初期データ（CSVが読み込めない場合のフォールバック）
 const defaultData = {
@@ -445,6 +446,11 @@ function getUpdateInfoBadgeClass(updateInfo) {
   return "";
 }
 
+function getBazaarCategoryPriority(category) {
+  const index = BAZAAR_CATEGORY_ORDER.indexOf(String(category || "").trim());
+  return index >= 0 ? index : Number.MAX_SAFE_INTEGER;
+}
+
 function renderBazaarPrices() {
   if (!bazaarListWrap) return;
 
@@ -458,7 +464,11 @@ function renderBazaarPrices() {
       .map((row) => String(row.itemCategory || "").trim())
       .filter((category) => category !== "")
   );
-  const categories = Array.from(categorySet).sort((a, b) => a.localeCompare(b, "ja"));
+  const categories = Array.from(categorySet).sort((a, b) => {
+    const priorityDiff = getBazaarCategoryPriority(a) - getBazaarCategoryPriority(b);
+    if (priorityDiff !== 0) return priorityDiff;
+    return a.localeCompare(b, "ja");
+  });
   const hasSelectedCategory = selectedBazaarCategory !== "" && categorySet.has(selectedBazaarCategory);
 
   if (selectedBazaarCategory !== "" && !hasSelectedCategory) {
@@ -470,11 +480,8 @@ function renderBazaarPrices() {
     .slice()
     .sort((a, b) => {
       if (selectedBazaarCategory === "") {
-        const categoryA = String(a.itemCategory || "").trim();
-        const categoryB = String(b.itemCategory || "").trim();
-        if (categoryA !== categoryB) {
-          return categoryA.localeCompare(categoryB, "ja");
-        }
+        const categoryDiff = getBazaarCategoryPriority(a.itemCategory) - getBazaarCategoryPriority(b.itemCategory);
+        if (categoryDiff !== 0) return categoryDiff;
       }
 
       if (a.sortOrder !== b.sortOrder) {
@@ -485,27 +492,20 @@ function renderBazaarPrices() {
     });
 
   bazaarListWrap.innerHTML = `
-    <div class="bazaar-category-filter" role="tablist" aria-label="ジャンル切り替え">
-      <button
-        type="button"
-        class="bazaar-category-chip ${selectedBazaarCategory === "" ? "is-active" : ""}"
-        data-bazaar-category=""
-      >
-        すべて
-      </button>
-      ${categories
-        .map(
-          (category) => `
-            <button
-              type="button"
-              class="bazaar-category-chip ${selectedBazaarCategory === category ? "is-active" : ""}"
-              data-bazaar-category="${category}"
-            >
-              ${category}
-            </button>
-          `
-        )
-        .join("")}
+    <div class="bazaar-category-select-wrap">
+      <label class="field bazaar-category-field">
+        <span>ジャンル切り替え</span>
+        <select id="bazaarCategorySelect" aria-label="ジャンル切り替え">
+          <option value="">すべて</option>
+          ${categories
+            .map(
+              (category) => `
+                <option value="${category}" ${selectedBazaarCategory === category ? "selected" : ""}>${category}</option>
+              `
+            )
+            .join("")}
+        </select>
+      </label>
     </div>
     <div class="bazaar-list">
       ${
@@ -553,12 +553,14 @@ function renderBazaarPrices() {
     </div>
   `;
 
-  bazaarListWrap.querySelectorAll("[data-bazaar-category]").forEach((button) => {
-    button.addEventListener("click", () => {
-      selectedBazaarCategory = String(button.dataset.bazaarCategory || "");
+  const bazaarCategorySelect = bazaarListWrap.querySelector("#bazaarCategorySelect");
+  if (bazaarCategorySelect) {
+    bazaarCategorySelect.value = selectedBazaarCategory;
+    bazaarCategorySelect.addEventListener("change", (event) => {
+      selectedBazaarCategory = String(event.target.value || "");
       renderBazaarPrices();
     });
-  });
+  }
 }
 
 function normalizeSalePrices(salePrices, fallbackSalePrice = 0) {
