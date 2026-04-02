@@ -960,14 +960,15 @@ function renderRecipeTable() {
               <span>合計 <strong>${totalRequired}</strong></span>
             </p>
             <div class="recipe-material-price-row">
-              <label class="recipe-material-price-field">
-                <span>単価</span>
+              <label class="recipe-material-price-field recipe-material-price-field--embedded">
+                <span class="recipe-material-price-prefix" aria-hidden="true">単価</span>
                 <input
-                  class="material-price-input-mobile"
+                  class="material-price-input-mobile material-price-input-mobile--with-prefix"
                   type="number"
                   min="0"
                   step="1"
                   value="${price}"
+                  aria-label="単価"
                   data-temp-material-price-id="${row.materialId}"
                 >
               </label>
