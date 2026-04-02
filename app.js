@@ -761,12 +761,13 @@ function renderEquipmentSelectors() {
   recipeEquipmentSelect.innerHTML = "";
 
   filteredEquipments.forEach((equipment) => {
-    let label = equipment.name;
+    const materialCost = getEquipmentMaterialCost(equipment.id);
+    let label = `${equipment.name}（原価: ${Math.round(materialCost).toLocaleString("ja-JP")} G）`;
     if (normalizedMaterialKeyword !== "") {
       const matchedMaterials = matchedRecipeByEquipmentId.get(equipment.id) || [];
       if (matchedMaterials.length > 0) {
         const details = matchedMaterials.map((m) => `${m.materialName}×${m.quantity}`).join(" / ");
-        label = `${equipment.name}（${details}）`;
+        label = `${label}（${details}）`;
       }
     }
     const option = new Option(label, equipment.id);
@@ -888,6 +889,12 @@ function getEffectiveMaterialPrice(materialId) {
   }
   const material = state.materials.find((m) => m.id === materialId);
   return material?.price || 0;
+}
+
+function getEquipmentMaterialCost(equipmentId) {
+  return state.recipes
+    .filter((row) => row.equipmentId === equipmentId)
+    .reduce((sum, row) => sum + getEffectiveMaterialPrice(row.materialId) * row.quantity, 0);
 }
 
 function getProductionCountForCalculation() {
