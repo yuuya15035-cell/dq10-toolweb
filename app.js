@@ -951,13 +951,17 @@ function renderRecipeTable() {
         `,
         card: `
           <article class="recipe-material-card">
-            <h4>${material?.name ?? "(削除済み素材)"}</h4>
-            <ul class="recipe-material-meta">
-              <li><span>1個あたり必要数:</span> <strong>${row.quantity}</strong></li>
-              <li><span>制作数:</span> <strong>${productionCount}</strong></li>
-              <li><span>総必要数:</span> <strong>${totalRequired}</strong></li>
-              <li class="recipe-material-price-row">
-                <span>単価:</span>
+            <h4 class="recipe-material-name">${material?.name ?? "(削除済み素材)"}</h4>
+            <p class="recipe-material-count-line">
+              <span>必要 <strong>${row.quantity}</strong></span>
+              <span>/</span>
+              <span>制作 <strong>${productionCount}</strong></span>
+              <span>/</span>
+              <span>合計 <strong>${totalRequired}</strong></span>
+            </p>
+            <div class="recipe-material-price-row">
+              <label class="recipe-material-price-field">
+                <span>単価</span>
                 <input
                   class="material-price-input-mobile"
                   type="number"
@@ -966,9 +970,12 @@ function renderRecipeTable() {
                   value="${price}"
                   data-temp-material-price-id="${row.materialId}"
                 >
-              </li>
-              <li class="recipe-material-subtotal"><span>総小計:</span> <strong>${formatGold(subtotal)}</strong></li>
-            </ul>
+              </label>
+              <p class="recipe-material-subtotal">
+                <span>小計</span>
+                <strong>${formatGold(subtotal)}</strong>
+              </p>
+            </div>
           </article>
         `,
       };
