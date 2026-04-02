@@ -339,32 +339,21 @@ button {
   gap: 8px;
 }
 
-.bazaar-category-filter {
-  display: flex;
-  gap: 8px;
-  overflow-x: auto;
-  padding: 2px 2px 8px;
+.bazaar-category-select-wrap {
   margin-bottom: 8px;
-  -webkit-overflow-scrolling: touch;
 }
 
-.bazaar-category-chip {
-  border: 1px solid #c9d3e6;
-  background: #f6f9ff;
-  color: #24406d;
-  border-radius: 999px;
-  padding: 10px 14px;
-  font-size: 0.95rem;
-  font-weight: 700;
-  line-height: 1;
-  white-space: nowrap;
-  min-height: 42px;
+.bazaar-category-field {
+  margin-bottom: 0;
 }
 
-.bazaar-category-chip.is-active {
-  background: #2b62d9;
-  color: #fff;
-  border-color: #2b62d9;
+.bazaar-category-field span {
+  font-size: 0.82rem;
+  color: #4f5d75;
+}
+
+.bazaar-category-field select {
+  background: #fff;
 }
 
 .bazaar-card {
@@ -474,16 +463,13 @@ button {
     gap: 6px;
   }
 
-  .bazaar-category-filter {
-    gap: 6px;
+  .bazaar-category-select-wrap {
     padding-bottom: 6px;
     margin-bottom: 6px;
   }
 
-  .bazaar-category-chip {
-    padding: 8px 10px;
-    font-size: 0.82rem;
-    min-height: 34px;
+  .bazaar-category-field span {
+    font-size: 0.75rem;
   }
 
   .bazaar-card {
