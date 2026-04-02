@@ -336,7 +336,7 @@ button {
 
 .bazaar-list {
   display: grid;
-  gap: 10px;
+  gap: 8px;
 }
 
 .bazaar-category-filter {
@@ -371,7 +371,7 @@ button {
   border: 1px solid var(--line);
   border-radius: 12px;
   background: #fff;
-  padding: 12px;
+  padding: 10px;
 }
 
 .bazaar-card-header {
@@ -383,64 +383,160 @@ button {
 
 .bazaar-card-header h3 {
   margin: 0;
-  font-size: 1rem;
+  font-size: 0.98rem;
+  line-height: 1.25;
 }
 
 .bazaar-category {
-  margin: 4px 0 0;
+  margin: 2px 0 0;
   color: #4f5d75;
-  font-size: 0.85rem;
+  font-size: 0.8rem;
+  line-height: 1.2;
+}
+
+.bazaar-main {
+  margin-top: 6px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 8px;
+  align-items: end;
+}
+
+.bazaar-primary {
+  min-width: 0;
 }
 
 .bazaar-today-price {
-  margin: 8px 0 2px;
-  font-size: 1.4rem;
+  margin: 0;
+  font-size: 1.2rem;
   font-weight: 800;
   color: #184ec8;
+  line-height: 1.1;
 }
 
 .bazaar-today-price span {
-  font-size: 0.9rem;
+  font-size: 0.78rem;
   font-weight: 700;
 }
 
 .bazaar-previous-price {
-  margin: 0 0 10px;
+  margin: 2px 0 0;
   color: #4f5d75;
-  font-size: 0.9rem;
+  font-size: 0.8rem;
+  line-height: 1.2;
 }
 
 .bazaar-meta {
   margin: 0;
   display: grid;
-  gap: 6px;
+  gap: 4px;
 }
 
-.bazaar-meta div {
-  display: grid;
-  grid-template-columns: 72px 1fr;
-  gap: 8px;
+.bazaar-meta-item {
+  display: flex;
+  gap: 6px;
+  min-width: 0;
 }
 
 .bazaar-meta dt {
   color: #4f5d75;
-  font-size: 0.82rem;
+  font-size: 0.74rem;
+  flex-shrink: 0;
+  line-height: 1.2;
 }
 
 .bazaar-meta dd {
   margin: 0;
   word-break: break-word;
+  font-size: 0.76rem;
+  line-height: 1.2;
+}
+
+.bazaar-comment {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .bazaar-badge {
   display: inline-block;
   border-radius: 999px;
-  padding: 4px 10px;
-  font-size: 0.78rem;
+  padding: 3px 8px;
+  font-size: 0.72rem;
   font-weight: 700;
   background: #e8edf8;
   color: #33415c;
   white-space: nowrap;
+}
+
+@media (max-width: 480px) {
+  .bazaar-list {
+    gap: 6px;
+  }
+
+  .bazaar-category-filter {
+    gap: 6px;
+    padding-bottom: 6px;
+    margin-bottom: 6px;
+  }
+
+  .bazaar-category-chip {
+    padding: 8px 10px;
+    font-size: 0.82rem;
+    min-height: 34px;
+  }
+
+  .bazaar-card {
+    padding: 8px 9px;
+    border-radius: 10px;
+  }
+
+  .bazaar-card-header {
+    gap: 6px;
+  }
+
+  .bazaar-card-header h3 {
+    font-size: 0.9rem;
+  }
+
+  .bazaar-category {
+    font-size: 0.72rem;
+  }
+
+  .bazaar-main {
+    margin-top: 4px;
+    gap: 6px;
+  }
+
+  .bazaar-today-price {
+    font-size: 1.06rem;
+  }
+
+  .bazaar-today-price span {
+    font-size: 0.7rem;
+  }
+
+  .bazaar-previous-price {
+    font-size: 0.72rem;
+  }
+
+  .bazaar-meta {
+    gap: 3px;
+  }
+
+  .bazaar-meta-item {
+    gap: 4px;
+  }
+
+  .bazaar-meta dt,
+  .bazaar-meta dd {
+    font-size: 0.68rem;
+  }
+
+  .bazaar-badge {
+    padding: 2px 7px;
+    font-size: 0.64rem;
+  }
 }
 
 .bazaar-badge.is-rising {
