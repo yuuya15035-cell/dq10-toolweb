@@ -42,6 +42,98 @@ DQ10（ドラゴンクエスト10）の職人向けに、
 - `durability`
 - `sort_order`
 
+## データ参照先一覧
+
+実装（`app.js`）で実際に参照しているデータソースを、画面/機能単位で整理しています。
+
+### レシピ検索（装備・素材・利益計算）
+
+- 参照先: `data/recipe.csv`（相対パス: `./data/recipe.csv`）
+- 用途:
+  - 装備一覧・必要素材一覧の生成
+  - 職人種別（`craftsman`）/装備ジャンル（`category`）の絞り込み
+- 主な使用項目:
+  - `craftsman`
+  - `category`
+  - `equipmentName`
+  - `materialName`
+  - `quantity`
+- 更新方法:
+  - **CSV更新（手動差し替え）**
+  - `data/recipe.csv` を更新すると、次回読込時に反映
+
+### レシピ検索（職人道具）
+
+- 参照先: `data/tools.csv`（相対パス: `./data/tools.csv`）
+- 用途:
+  - 職人道具候補（職人別）と耐久の表示
+  - 道具コスト計算（購入単価 ÷ 耐久）
+- 主な使用項目:
+  - `profession`
+  - `tool_name`
+  - `durability`
+  - `sort_order`
+- 更新方法:
+  - **CSV更新（手動差し替え）**
+  - `data/tools.csv` を更新すると、次回読込時に反映
+
+### バザー価格一覧
+
+- 参照先: `data/bazaar_prices.csv`（相対パス: `./data/bazaar_prices.csv`）
+- 用途: バザー価格一覧表示用
+- 主な使用項目:
+  - `materialName`
+  - `item_category`
+  - `sort_order`
+  - `today_price`
+  - `shop_price`
+  - `previous_day_price`
+  - `updated_at`
+  - `update_info`
+  - `comment`
+- 補足:
+  - `today_price` がある場合はそちらを優先表示
+  - `today_price` が空欄の場合は `shop_price` を表示
+  - 表示時は価格末尾に `G` を付与
+- 更新方法:
+  - **CSV更新（手動差し替え）**
+  - `data/bazaar_prices.csv` を更新すると、次回読込時に反映
+
+### 素材単価の保存/引き継ぎ（ブラウザローカル）
+
+- 参照先: `localStorage` キー `dq10_toolweb_data_v1`
+- 用途:
+  - 素材単価、装備販売価格、道具購入単価などのユーザー入力値を保持
+  - CSV再読込時に、同名データへ既存入力値をマージして再利用
+- 更新方法:
+  - **画面操作で自動更新**
+  - エクスポート/インポート機能による更新も可能（JSON/CSV）
+
+### 素材単価インポート（任意）
+
+- 参照先: ユーザーが画面から選択した `.json` / `.csv` ファイル
+- 用途:
+  - 素材単価の一括反映（`name` と `price` を参照）
+- 更新方法:
+  - **手動ファイル選択**
+  - 画面の「単価を読込」から任意ファイルを読み込み
+
+### 固定値・フォールバックデータ（コード内定義）
+
+- 参照先: `app.js` 内 `defaultData` / `feeRate: 5`
+- 用途:
+  - CSV読込失敗時の初期表示データ
+  - 手数料率（5%）の基準値
+- 更新方法:
+  - **コード更新（固定値参照）**
+
+### 未参照（現行実装）
+
+- キラキラ拾い系データ:
+  - 現在のコード上で専用の JSON/CSV は参照していません。
+- `data/bazaar_prices_history.csv`:
+  - リポジトリ上にはありますが、現行実装からは読込していません。
+
 ## 画面構成
 
 1. **利益計算画面**
@@ -93,4 +185,5 @@ python3 -m http.server 8000
 
 ## 更新履歴
 
-- 2026-04-02: バザー価格CSVの参照先を `data/bazaar_prices.csv` に統一（画面内案内文も更新）。
+- 2026-04-02: バザー価格CSVの参照先を `data/bazaar_prices.csv` に統一。
+- 2026-04-02: README に実装ベースの「データ参照先一覧」を追記。
