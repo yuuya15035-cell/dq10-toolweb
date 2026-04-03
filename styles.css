@@ -432,6 +432,11 @@ button {
   padding: 10px;
 }
 
+.bazaar-card.is-focused {
+  border-color: #2463eb;
+  box-shadow: 0 0 0 2px rgba(36, 99, 235, 0.22);
+}
+
 .bazaar-card-header {
   display: flex;
   align-items: flex-start;
@@ -606,6 +611,73 @@ button {
 
 .recipe-favorite-toggle-button:disabled {
   opacity: 0.6;
+}
+
+.favorites-layout {
+  display: grid;
+  gap: 12px;
+}
+
+.favorites-section h3 {
+  margin-top: 0;
+}
+
+.favorites-empty {
+  margin: 6px 0 0;
+  color: #4f5d75;
+}
+
+.favorites-list {
+  display: grid;
+  gap: 10px;
+}
+
+.favorite-item-card {
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 10px;
+  background: #fff;
+}
+
+.favorite-item-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.favorite-item-title-button {
+  border: none;
+  background: transparent;
+  color: #1f2a44;
+  font-size: 1rem;
+  font-weight: 700;
+  text-align: left;
+  padding: 0;
+}
+
+.favorite-item-title-button:hover {
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.favorite-item-meta {
+  margin: 8px 0 0;
+  color: #4f5d75;
+  font-size: 0.88rem;
+}
+
+.favorite-link-button {
+  display: inline-block;
+  margin-top: 10px;
+  border-radius: 8px;
+  background: var(--primary);
+  color: #fff;
+  padding: 8px 12px;
+  font-size: 0.88rem;
+  font-weight: 700;
+  text-decoration: none;
 }
 
 @media (max-width: 480px) {
