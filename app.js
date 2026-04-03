@@ -939,21 +939,34 @@ function renderFavoriteMaterialsSection() {
   }
 
   favoriteMaterialsListWrap.innerHTML = `
-    <div class="favorites-list">
+    <div class="favorite-materials-grid">
       ${favoriteRows
         .map((row) => {
           const changeRate = getBazaarRowChangeRate(row);
           const changePresentation = getBazaarChangePresentation(changeRate);
+          const changeArrowHtml =
+            changePresentation.arrow && changePresentation.isComputable
+              ? `<span class="favorite-material-change-arrow ${changePresentation.toneClass}" aria-hidden="true">${changePresentation.arrow}</span>`
+              : "";
           return `
-            <article class="favorite-item-card">
-              <header class="favorite-item-header">
-                <button type="button" class="favorite-item-title-button" data-favorite-material-key="${row.materialKey}">
+            <article class="favorite-material-card">
+              <header class="favorite-material-header">
+                <button
+                  type="button"
+                  class="favorite-material-title-button"
+                  data-favorite-material-key="${row.materialKey}"
+                  aria-label="${row.materialName}をバザー一覧で開く"
+                >
                   ${row.materialName}
                 </button>
               </header>
-              <p class="favorite-item-meta">現在価格: ${formatBazaarPriceWithUnit(row.displayPrice)}</p>
-              <p class="favorite-item-meta">前日比: ${changePresentation.text}</p>
-              <a href="#" class="favorite-link-button" data-favorite-material-link-key="${row.materialKey}">バザー一覧で開く</a>
+              <p class="favorite-material-price">現在価格: ${formatBazaarPriceWithUnit(row.displayPrice)}</p>
+              <p class="favorite-material-change">
+                前日比:
+                <span class="favorite-material-change-value ${changePresentation.toneClass}">${changePresentation.text}</span>
+                ${changeArrowHtml}
+              </p>
+              <a href="#" class="favorite-material-link-button" data-favorite-material-link-key="${row.materialKey}">バザー一覧へ</a>
             </article>
           `;
         })

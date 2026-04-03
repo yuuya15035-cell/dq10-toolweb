@@ -680,7 +680,134 @@ button {
   text-decoration: none;
 }
 
+.favorite-materials-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.favorite-material-card {
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 9px;
+  background: #fff;
+  display: grid;
+  gap: 6px;
+}
+
+.favorite-material-header {
+  display: flex;
+}
+
+.favorite-material-title-button {
+  width: 100%;
+  min-height: 44px;
+  border: none;
+  background: #f6f9ff;
+  border-radius: 8px;
+  color: #1f2a44;
+  font-size: 0.92rem;
+  font-weight: 700;
+  text-align: left;
+  padding: 9px 10px;
+}
+
+.favorite-material-title-button:hover {
+  cursor: pointer;
+  text-decoration: underline;
+}
+
+.favorite-material-price,
+.favorite-material-change {
+  margin: 0;
+  color: #4f5d75;
+  font-size: 0.82rem;
+  line-height: 1.25;
+}
+
+.favorite-material-change {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+
+.favorite-material-change-value,
+.favorite-material-change-arrow {
+  font-weight: 800;
+}
+
+.favorite-material-change-value.is-positive,
+.favorite-material-change-arrow.is-positive {
+  color: #1f8a3b;
+}
+
+.favorite-material-change-value.is-neutral,
+.favorite-material-change-arrow.is-neutral {
+  color: #4f5d75;
+}
+
+.favorite-material-change-value.is-negative,
+.favorite-material-change-arrow.is-negative {
+  color: #d93025;
+}
+
+.favorite-material-change-value.is-unavailable,
+.favorite-material-change-arrow.is-unavailable {
+  color: var(--text);
+}
+
+.favorite-material-change-arrow {
+  font-size: 1.05em;
+  line-height: 1;
+}
+
+.favorite-material-link-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 40px;
+  margin-top: 2px;
+  border-radius: 8px;
+  border: 1px solid #c4d5ff;
+  background: #eaf0ff;
+  color: #1f2a44;
+  padding: 8px 10px;
+  font-size: 0.82rem;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+@media (min-width: 768px) {
+  .favorite-materials-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 12px;
+  }
+}
+
+@media (min-width: 1040px) {
+  .favorite-materials-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
 @media (max-width: 480px) {
+  .favorite-materials-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .favorite-material-card {
+    padding: 10px;
+  }
+
+  .favorite-material-title-button {
+    min-height: 46px;
+  }
+
+  .favorite-material-link-button {
+    min-height: 42px;
+  }
+
   .bazaar-list {
     gap: 6px;
   }
