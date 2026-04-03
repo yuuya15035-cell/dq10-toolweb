@@ -397,20 +397,25 @@ button {
   gap: 8px;
 }
 
-.bazaar-category-select-wrap {
+.bazaar-control-wrap {
   margin-bottom: 8px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 8px;
 }
 
 .bazaar-category-field {
   margin-bottom: 0;
 }
 
-.bazaar-category-field span {
+.bazaar-category-field span,
+.bazaar-sort-field span {
   font-size: 0.82rem;
   color: #4f5d75;
 }
 
-.bazaar-category-field select {
+.bazaar-category-field select,
+.bazaar-sort-field select {
   background: #fff;
 }
 
@@ -521,12 +526,14 @@ button {
     gap: 6px;
   }
 
-  .bazaar-category-select-wrap {
+  .bazaar-control-wrap {
     padding-bottom: 6px;
     margin-bottom: 6px;
+    gap: 6px;
   }
 
-  .bazaar-category-field span {
+  .bazaar-category-field span,
+  .bazaar-sort-field span {
     font-size: 0.75rem;
   }
 
@@ -580,6 +587,12 @@ button {
   .bazaar-badge {
     padding: 2px 7px;
     font-size: 0.64rem;
+  }
+}
+
+@media (min-width: 560px) {
+  .bazaar-control-wrap {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 
