@@ -557,6 +557,44 @@ button {
   align-items: end;
 }
 
+.bazaar-actions {
+  margin-top: 10px;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.bazaar-official-link-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  min-height: 40px;
+  padding: 9px 12px;
+  border: 1px solid #d4def1;
+  border-radius: 10px;
+  background: #f7faff;
+  color: #1f4fbf;
+  font-size: 0.82rem;
+  font-weight: 700;
+  line-height: 1.2;
+  text-decoration: none;
+}
+
+.bazaar-official-link-button::after {
+  content: "↗";
+  font-size: 0.9em;
+  line-height: 1;
+}
+
+.bazaar-official-link-button:hover {
+  background: #eef4ff;
+}
+
+.bazaar-official-link-button:focus-visible {
+  outline: 2px solid #2463eb;
+  outline-offset: 2px;
+}
+
 .bazaar-primary {
   min-width: 0;
 }
@@ -975,6 +1013,16 @@ button {
   .bazaar-main {
     margin-top: 4px;
     gap: 6px;
+  }
+
+  .bazaar-actions {
+    margin-top: 8px;
+  }
+
+  .bazaar-official-link-button {
+    min-height: 42px;
+    font-size: 0.78rem;
+    padding: 9px 11px;
   }
 
   .bazaar-today-price {
