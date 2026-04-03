@@ -547,6 +547,20 @@ function parseNullableNumber(value) {
   return Number.isFinite(parsed) ? parsed : null;
 }
 
+function parseOfficialUrl(value) {
+  const normalized = String(value || "").trim();
+  if (normalized === "") return "";
+  try {
+    const parsed = new URL(normalized);
+    if (parsed.protocol === "http:" || parsed.protocol === "https:") {
+      return parsed.toString();
+    }
+    return "";
+  } catch {
+    return "";
+  }
+}
+
 function parseBazaarPricesFromLines(lines) {
   if (lines.length <= 1) return [];
 
@@ -560,6 +574,7 @@ function parseBazaarPricesFromLines(lines) {
   const updateInfoIndex = headers.indexOf("update_info");
   const commentIndex = headers.indexOf("comment");
   const shopPriceIndex = headers.indexOf("shop_price");
+  const officialUrlIndex = headers.indexOf("official_url");
   console.info("[bazaar_prices.csv] header columns:", headers);
 
   if (
@@ -581,6 +596,9 @@ function parseBazaarPricesFromLines(lines) {
   }
   if (shopPriceIndex < 0) {
     console.warn("[bazaar_prices.csv] shop_price 列が見つからないため null で補完します");
+  }
+  if (officialUrlIndex < 0) {
+    console.warn("[bazaar_prices.csv] official_url 列が見つからないため空文字で補完します");
   }
 
   const rows = lines
@@ -607,6 +625,7 @@ function parseBazaarPricesFromLines(lines) {
         updatedAt: updatedAtIndex >= 0 ? String(row[updatedAtIndex] || "").trim() : "",
         updateInfo: updateInfoIndex >= 0 ? String(row[updateInfoIndex] || "").trim() : "",
         comment: String(row[commentIndex] || "").trim(),
+        officialUrl: officialUrlIndex >= 0 ? parseOfficialUrl(row[officialUrlIndex]) : "",
       };
     })
     .filter((row) => row.materialName !== "")
@@ -825,6 +844,7 @@ function renderBazaarPrices() {
           const changeRate = getBazaarRowChangeRate(row);
           const changePresentation = getBazaarChangePresentation(changeRate);
           const isFavorite = isBazaarFavoriteRow(row);
+          const hasOfficialUrl = row.officialUrl !== "";
           const changeArrowHtml = changePresentation.isComputable
             ? `<span class="bazaar-change-arrow ${changePresentation.toneClass}" aria-hidden="true">${changePresentation.arrow}</span>`
             : "";
@@ -863,6 +883,21 @@ function renderBazaarPrices() {
                   </div>
                 </dl>
               </div>
+              ${
+                hasOfficialUrl
+                  ? `<div class="bazaar-actions">
+                      <a
+                        class="bazaar-official-link-button"
+                        href="${row.officialUrl}"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        aria-label="${row.materialName}の公式相場サイトを新しいタブで開く"
+                      >
+                        公式相場サイトで確認
+                      </a>
+                    </div>`
+                  : ""
+              }
             </article>
           `;
               })
