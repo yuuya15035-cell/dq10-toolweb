@@ -7,6 +7,7 @@ const RECIPE_CSV_PATH = "./data/recipe.csv";
 const TOOLS_CSV_PATH = "./data/tools.csv";
 const BAZAAR_CSV_PATH = "./data/bazaar_prices.csv";
 const LAST_UPDATED_JSON_PATH = "./data/last-updated.json";
+const BAZAAR_FAVORITES_STORAGE_KEY = "dq10_toolweb_bazaar_favorites_v1";
 const BAZAAR_CATEGORY_ORDER = ["石系", "植物系", "モンスター系", "その他", "消費アイテム"];
 const BAZAAR_SORT_OPTIONS = [
   { value: "rate_desc", label: "変動率高い順" },
@@ -221,6 +222,42 @@ function loadStoredData() {
   }
 }
 
+function loadBazaarFavoriteState() {
+  const raw = localStorage.getItem(BAZAAR_FAVORITES_STORAGE_KEY);
+  if (!raw) {
+    return {
+      showFavoritesOnly: false,
+      favoriteMaterialKeys: new Set(),
+    };
+  }
+
+  try {
+    const parsed = JSON.parse(raw);
+    const keys = Array.isArray(parsed?.favoriteMaterialKeys) ? parsed.favoriteMaterialKeys : [];
+    return {
+      showFavoritesOnly: Boolean(parsed?.showFavoritesOnly),
+      favoriteMaterialKeys: new Set(keys.map((key) => String(key || "").trim()).filter((key) => key !== "")),
+    };
+  } catch {
+    return {
+      showFavoritesOnly: false,
+      favoriteMaterialKeys: new Set(),
+    };
+  }
+}
+
+function saveBazaarFavoriteState() {
+  localStorage.setItem(
+    BAZAAR_FAVORITES_STORAGE_KEY,
+    JSON.stringify({
+      version: 1,
+      keyType: "materialName",
+      favoriteMaterialKeys: Array.from(bazaarFavoriteMaterialKeys),
+      showFavoritesOnly: showBazaarFavoritesOnly,
+    })
+  );
+}
+
 function saveData() {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
 }
@@ -267,6 +304,8 @@ let bazaarPrices = [];
 let selectedBazaarCategory = "";
 let selectedBazaarSort = BAZAAR_SORT_OPTIONS[0].value;
 let bazaarCsvUpdatedAt = "-";
+let showBazaarFavoritesOnly = false;
+let bazaarFavoriteMaterialKeys = new Set();
 // 利益計算画面だけで使う「今回計算用の一時単価」。
 // - キー: materialId
 // - 値: 画面上で上書きした単価
@@ -499,6 +538,7 @@ function parseBazaarPricesFromLines(lines) {
       return {
         id: `bazaar-row-${rowIndex}`,
         materialName: String(row[materialNameIndex] || "").trim(),
+        materialKey: makeMaterialId(String(row[materialNameIndex] || "").trim()),
         itemCategory: String(row[itemCategoryIndex] || "").trim(),
         sortOrder: Number.isFinite(sortOrderRaw) ? sortOrderRaw : Number.MAX_SAFE_INTEGER,
         todayPrice,
@@ -569,6 +609,16 @@ function getSortedBazaarRows(rows, currentCategory, currentSort) {
   });
 }
 
+function isBazaarFavoriteRow(row) {
+  return bazaarFavoriteMaterialKeys.has(row?.materialKey);
+}
+
+function getVisibleBazaarRows() {
+  const targetRows = bazaarPrices.filter((row) => selectedBazaarCategory === "" || row.itemCategory === selectedBazaarCategory);
+  const filteredRows = showBazaarFavoritesOnly ? targetRows.filter((row) => isBazaarFavoriteRow(row)) : targetRows;
+  return getSortedBazaarRows(filteredRows, selectedBazaarCategory, selectedBazaarSort);
+}
+
 function renderBazaarPrices() {
   if (!bazaarListWrap) return;
 
@@ -594,13 +644,9 @@ function renderBazaarPrices() {
     selectedBazaarCategory = "";
   }
 
-  const visibleRows = getSortedBazaarRows(
-    bazaarPrices.filter((row) => selectedBazaarCategory === "" || row.itemCategory === selectedBazaarCategory),
-    selectedBazaarCategory,
-    selectedBazaarSort
-  );
+  const visibleRows = getVisibleBazaarRows();
   console.info(
-    `[bazaar] render rows: total=${bazaarPrices.length}, visible=${visibleRows.length}, category=${selectedBazaarCategory || "all"}, sort=${selectedBazaarSort}`
+    `[bazaar] render rows: total=${bazaarPrices.length}, visible=${visibleRows.length}, category=${selectedBazaarCategory || "all"}, sort=${selectedBazaarSort}, favoritesOnly=${showBazaarFavoritesOnly}`
   );
 
   bazaarListWrap.innerHTML = `
@@ -628,16 +674,21 @@ function renderBazaarPrices() {
           ).join("")}
         </select>
       </label>
+      <label class="field inline-field bazaar-favorite-filter-field">
+        <input id="bazaarFavoritesOnlyToggle" type="checkbox" ${showBazaarFavoritesOnly ? "checked" : ""} />
+        <span>お気に入りのみ表示</span>
+      </label>
     </div>
     <div class="bazaar-list">
       ${
         visibleRows.length === 0
-          ? `<p>選択したジャンルのデータがありません。</p>`
+          ? `<p>${showBazaarFavoritesOnly ? "お気に入り登録された素材がありません。" : "選択した条件のデータがありません。"}</p>`
           : visibleRows
               .map((row) => {
           const todayPriceHtml = formatBazaarPriceWithUnit(row.displayPrice);
           const changeRate = getBazaarRowChangeRate(row);
           const changePresentation = getBazaarChangePresentation(changeRate);
+          const isFavorite = isBazaarFavoriteRow(row);
           const changeArrowHtml = changePresentation.isComputable
             ? `<span class="bazaar-change-arrow ${changePresentation.toneClass}" aria-hidden="true">${changePresentation.arrow}</span>`
             : "";
@@ -649,6 +700,15 @@ function renderBazaarPrices() {
                   <h3>${row.materialName}</h3>
                   <p class="bazaar-category">${row.itemCategory || "-"}</p>
                 </div>
+                <button
+                  type="button"
+                  class="bazaar-favorite-button ${isFavorite ? "is-active" : ""}"
+                  aria-label="${row.materialName}をお気に入り${isFavorite ? "解除" : "登録"}"
+                  aria-pressed="${isFavorite ? "true" : "false"}"
+                  data-bazaar-row-id="${row.id}"
+                >
+                  ♥
+                </button>
               </header>
               <div class="bazaar-main">
                 <div class="bazaar-primary">
@@ -692,6 +752,33 @@ function renderBazaarPrices() {
       renderBazaarPrices();
     });
   }
+
+  const bazaarFavoritesOnlyToggle = bazaarListWrap.querySelector("#bazaarFavoritesOnlyToggle");
+  if (bazaarFavoritesOnlyToggle) {
+    bazaarFavoritesOnlyToggle.checked = showBazaarFavoritesOnly;
+    bazaarFavoritesOnlyToggle.addEventListener("change", (event) => {
+      showBazaarFavoritesOnly = Boolean(event.target.checked);
+      saveBazaarFavoriteState();
+      renderBazaarPrices();
+    });
+  }
+
+  bazaarListWrap.querySelectorAll("[data-bazaar-row-id]").forEach((button) => {
+    button.addEventListener("click", () => {
+      const rowId = String(button.dataset.bazaarRowId || "");
+      const row = bazaarPrices.find((item) => item.id === rowId);
+      if (!row?.materialKey) return;
+
+      if (bazaarFavoriteMaterialKeys.has(row.materialKey)) {
+        bazaarFavoriteMaterialKeys.delete(row.materialKey);
+      } else {
+        bazaarFavoriteMaterialKeys.add(row.materialKey);
+      }
+
+      saveBazaarFavoriteState();
+      renderBazaarPrices();
+    });
+  });
 }
 
 function normalizeSalePrices(salePrices, fallbackSalePrice = 0) {
@@ -1580,6 +1667,7 @@ if (importMaterialPricesButton && importMaterialPricesInput) {
 // 3) 画面描画
 async function initialize() {
   const storedData = loadStoredData();
+  const favoriteState = loadBazaarFavoriteState();
 
   try {
     const csvData = await loadDataFromCsv();
@@ -1605,6 +1693,8 @@ async function initialize() {
 
   selectedEquipmentId = state.equipments[0]?.id || "";
   selectedToolId = "";
+  showBazaarFavoritesOnly = favoriteState.showFavoritesOnly;
+  bazaarFavoriteMaterialKeys = favoriteState.favoriteMaterialKeys;
   saveData();
   rerenderAll();
 }
