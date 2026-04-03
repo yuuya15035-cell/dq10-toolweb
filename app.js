@@ -346,7 +346,10 @@ let selectedToolId = "";
 let bazaarPrices = [];
 let selectedBazaarCategory = "";
 let selectedBazaarSort = "standard";
-let bazaarSearchKeyword = "";
+let bazaarSearchText = "";
+let selectedBazaarMaterialName = "";
+let isBazaarSearchComposing = false;
+let shouldRefocusBazaarSearchInput = false;
 let bazaarCsvUpdatedAt = "-";
 let showBazaarFavoritesOnly = false;
 let activeFavoritesTabId = "recipes";
@@ -696,7 +699,7 @@ function getBazaarSearchCandidates(keyword) {
 function getVisibleBazaarRows() {
   const targetRows = bazaarPrices.filter((row) => selectedBazaarCategory === "" || row.itemCategory === selectedBazaarCategory);
   const favoriteFilteredRows = showBazaarFavoritesOnly ? targetRows.filter((row) => isBazaarFavoriteRow(row)) : targetRows;
-  const normalizedKeyword = normalizeBazaarSearchText(bazaarSearchKeyword);
+  const normalizedKeyword = normalizeBazaarSearchText(bazaarSearchText);
   const keywordFilteredRows =
     normalizedKeyword === ""
       ? favoriteFilteredRows
@@ -731,11 +734,12 @@ function renderBazaarPrices() {
   }
 
   const visibleRows = getVisibleBazaarRows();
-  const searchKeyword = String(bazaarSearchKeyword || "").trim();
-  const searchCandidates = getBazaarSearchCandidates(searchKeyword);
-  const showSearchCandidates = searchKeyword !== "";
+  const searchText = String(bazaarSearchText || "");
+  const trimmedSearchText = searchText.trim();
+  const searchCandidates = getBazaarSearchCandidates(trimmedSearchText);
+  const showSearchCandidates = trimmedSearchText !== "";
   console.info(
-    `[bazaar] render rows: total=${bazaarPrices.length}, visible=${visibleRows.length}, category=${selectedBazaarCategory || "all"}, sort=${selectedBazaarSort}, favoritesOnly=${showBazaarFavoritesOnly}, search=${searchKeyword || "-"}`
+    `[bazaar] render rows: total=${bazaarPrices.length}, visible=${visibleRows.length}, category=${selectedBazaarCategory || "all"}, sort=${selectedBazaarSort}, favoritesOnly=${showBazaarFavoritesOnly}, search=${trimmedSearchText || "-"}`
   );
 
   bazaarListWrap.innerHTML = `
@@ -780,7 +784,7 @@ function renderBazaarPrices() {
             type="button"
             class="bazaar-search-clear-button"
             aria-label="素材検索をクリア"
-            ${searchKeyword === "" ? "disabled" : ""}
+            ${trimmedSearchText === "" ? "disabled" : ""}
           >
             ×
           </button>
@@ -897,9 +901,27 @@ function renderBazaarPrices() {
 
   const bazaarSearchInput = bazaarListWrap.querySelector("#bazaarSearchInput");
   if (bazaarSearchInput) {
-    bazaarSearchInput.value = searchKeyword;
+    bazaarSearchInput.value = searchText;
+    if (shouldRefocusBazaarSearchInput) {
+      bazaarSearchInput.focus({ preventScroll: true });
+      bazaarSearchInput.setSelectionRange(searchText.length, searchText.length);
+      shouldRefocusBazaarSearchInput = false;
+    }
+    bazaarSearchInput.addEventListener("compositionstart", () => {
+      isBazaarSearchComposing = true;
+    });
+    bazaarSearchInput.addEventListener("compositionend", (event) => {
+      isBazaarSearchComposing = false;
+      bazaarSearchText = String(event.target.value || "");
+      selectedBazaarMaterialName = "";
+      shouldRefocusBazaarSearchInput = true;
+      renderBazaarPrices();
+    });
     bazaarSearchInput.addEventListener("input", (event) => {
-      bazaarSearchKeyword = String(event.target.value || "");
+      bazaarSearchText = String(event.target.value || "");
+      selectedBazaarMaterialName = "";
+      if (isBazaarSearchComposing) return;
+      shouldRefocusBazaarSearchInput = true;
       renderBazaarPrices();
     });
   }
@@ -907,14 +929,18 @@ function renderBazaarPrices() {
   const bazaarSearchClearButton = bazaarListWrap.querySelector("#bazaarSearchClearButton");
   if (bazaarSearchClearButton) {
     bazaarSearchClearButton.addEventListener("click", () => {
-      bazaarSearchKeyword = "";
+      bazaarSearchText = "";
+      selectedBazaarMaterialName = "";
+      shouldRefocusBazaarSearchInput = true;
       renderBazaarPrices();
     });
   }
 
   bazaarListWrap.querySelectorAll(".bazaar-search-candidate-button").forEach((button) => {
     button.addEventListener("click", () => {
-      bazaarSearchKeyword = String(button.textContent || "").trim();
+      selectedBazaarMaterialName = String(button.textContent || "").trim();
+      bazaarSearchText = selectedBazaarMaterialName;
+      shouldRefocusBazaarSearchInput = true;
       renderBazaarPrices();
     });
   });
@@ -977,7 +1003,8 @@ function openRecipeFromFavorite(equipmentId) {
 function openBazaarFromFavorite(materialKey) {
   switchTab("bazaar");
   pendingBazaarFocusMaterialKey = materialKey || "";
-  bazaarSearchKeyword = "";
+  bazaarSearchText = "";
+  selectedBazaarMaterialName = "";
   navigateByAppParams({ tab: "bazaar", equipmentId: "", materialKey: materialKey || "" });
   renderBazaarPrices();
   document.getElementById("bazaar")?.scrollIntoView({ block: "start", behavior: "smooth" });
