@@ -10,6 +10,8 @@ const LAST_UPDATED_JSON_PATH = "./data/last-updated.json";
 const BAZAAR_FAVORITES_STORAGE_KEY = "dq10_toolweb_bazaar_favorites_v1";
 const RECIPE_FAVORITES_STORAGE_KEY = "dq10_toolweb_recipe_favorites_v1";
 const RECIPE_FAVORITE_CATEGORY_VALUE = "__favorites__";
+const TAB_IDS = new Set(["profit", "bazaar", "favorites", "data"]);
+const RECIPE_SUMMARY_MATERIAL_LIMIT = 4;
 const BAZAAR_CATEGORY_ORDER = ["石系", "植物系", "モンスター系", "その他", "消費アイテム"];
 const BAZAAR_SORT_OPTIONS = [
   { value: "standard", label: "標準順" },
@@ -348,6 +350,8 @@ let showBazaarFavoritesOnly = false;
 let bazaarFavoriteMaterialKeys = new Set();
 let recipeFavoriteKeys = new Set();
 let selectedRecipeSort = RECIPE_SORT_OPTIONS[0].value;
+let activeTabId = "profit";
+let pendingBazaarFocusMaterialKey = "";
 // 利益計算画面だけで使う「今回計算用の一時単価」。
 // - キー: materialId
 // - 値: 画面上で上書きした単価
@@ -397,6 +401,8 @@ const importMaterialPricesButton = getRequiredElementById("importMaterialPricesB
 const importMaterialPricesInput = getRequiredElementById("importMaterialPricesInput");
 const materialDataTransferMessage = getRequiredElementById("materialDataTransferMessage");
 const bazaarListWrap = getRequiredElementById("bazaarListWrap");
+const favoriteRecipesListWrap = getRequiredElementById("favoriteRecipesListWrap");
+const favoriteMaterialsListWrap = getRequiredElementById("favoriteMaterialsListWrap");
 
 const perCraftToolCostEl = getRequiredElementById("perCraftToolCost");
 const totalMaterialCostEl = getRequiredElementById("totalMaterialCost");
@@ -742,7 +748,7 @@ function renderBazaarPrices() {
             : "";
 
           return `
-            <article class="bazaar-card">
+            <article class="bazaar-card ${pendingBazaarFocusMaterialKey !== "" && row.materialKey === pendingBazaarFocusMaterialKey ? "is-focused" : ""}" data-bazaar-material-key="${row.materialKey}">
               <header class="bazaar-card-header">
                 <div>
                   <h3>${row.materialName}</h3>
@@ -825,8 +831,152 @@ function renderBazaarPrices() {
 
       saveBazaarFavoriteState();
       renderBazaarPrices();
+      renderFavoritesPage();
     });
   });
+
+  if (pendingBazaarFocusMaterialKey !== "") {
+    const focusTarget = bazaarListWrap.querySelector(`[data-bazaar-material-key="${pendingBazaarFocusMaterialKey}"]`);
+    if (focusTarget) {
+      focusTarget.scrollIntoView({ block: "center", behavior: "smooth" });
+    }
+    pendingBazaarFocusMaterialKey = "";
+  }
+}
+
+function getRecipeRowsForEquipment(equipmentId) {
+  return state.recipes.filter((row) => row.equipmentId === equipmentId);
+}
+
+function getFavoriteRecipeMaterialSummary(equipmentId) {
+  const rows = getRecipeRowsForEquipment(equipmentId);
+  if (rows.length === 0) return "必要素材データなし";
+  const summary = rows
+    .slice()
+    .sort((a, b) => b.quantity - a.quantity)
+    .slice(0, RECIPE_SUMMARY_MATERIAL_LIMIT)
+    .map((row) => {
+      const material = state.materials.find((item) => item.id === row.materialId);
+      const materialName = material?.name || "(削除済み素材)";
+      return `${materialName}×${row.quantity}`;
+    });
+  return summary.join(" / ");
+}
+
+function openRecipeFromFavorite(equipmentId) {
+  if (!equipmentId) return;
+  selectedEquipmentId = equipmentId;
+  switchTab("profit");
+  navigateByAppParams({ tab: "profit", equipmentId, materialKey: "" });
+  rerenderAll();
+  document.getElementById("profit")?.scrollIntoView({ block: "start", behavior: "smooth" });
+}
+
+function openBazaarFromFavorite(materialKey) {
+  switchTab("bazaar");
+  pendingBazaarFocusMaterialKey = materialKey || "";
+  navigateByAppParams({ tab: "bazaar", equipmentId: "", materialKey: materialKey || "" });
+  renderBazaarPrices();
+  document.getElementById("bazaar")?.scrollIntoView({ block: "start", behavior: "smooth" });
+}
+
+function renderFavoriteRecipesSection() {
+  if (!favoriteRecipesListWrap) return;
+  const favoriteEquipments = state.equipments
+    .filter((equipment) => isRecipeFavorite(equipment))
+    .sort(compareEquipmentsByBaseSort);
+
+  if (favoriteEquipments.length === 0) {
+    favoriteRecipesListWrap.innerHTML = `<p class="favorites-empty">お気に入りレシピはまだありません。</p>`;
+    return;
+  }
+
+  favoriteRecipesListWrap.innerHTML = `
+    <div class="favorites-list">
+      ${favoriteEquipments
+        .map((equipment) => {
+          return `
+            <article class="favorite-item-card">
+              <header class="favorite-item-header">
+                <button type="button" class="favorite-item-title-button" data-favorite-recipe-id="${equipment.id}">
+                  ${equipment.name}
+                </button>
+              </header>
+              <p class="favorite-item-meta">原価目安: ${formatGold(getRoundedEquipmentMaterialCost(equipment.id))}</p>
+              <p class="favorite-item-meta">必要素材: ${getFavoriteRecipeMaterialSummary(equipment.id)}</p>
+              <a href="#" class="favorite-link-button" data-favorite-recipe-link-id="${equipment.id}">レシピ検索で開く</a>
+            </article>
+          `;
+        })
+        .join("")}
+    </div>
+  `;
+
+  favoriteRecipesListWrap.querySelectorAll("[data-favorite-recipe-id]").forEach((button) => {
+    button.addEventListener("click", () => {
+      openRecipeFromFavorite(String(button.dataset.favoriteRecipeId || ""));
+    });
+  });
+  favoriteRecipesListWrap.querySelectorAll("[data-favorite-recipe-link-id]").forEach((link) => {
+    link.addEventListener("click", (event) => {
+      event.preventDefault();
+      openRecipeFromFavorite(String(link.dataset.favoriteRecipeLinkId || ""));
+    });
+  });
+}
+
+function renderFavoriteMaterialsSection() {
+  if (!favoriteMaterialsListWrap) return;
+  const favoriteRows = getSortedBazaarRows(
+    bazaarPrices.filter((row) => bazaarFavoriteMaterialKeys.has(row.materialKey)),
+    "",
+    "standard"
+  );
+
+  if (favoriteRows.length === 0) {
+    favoriteMaterialsListWrap.innerHTML = `<p class="favorites-empty">お気に入り素材はまだありません。</p>`;
+    return;
+  }
+
+  favoriteMaterialsListWrap.innerHTML = `
+    <div class="favorites-list">
+      ${favoriteRows
+        .map((row) => {
+          const changeRate = getBazaarRowChangeRate(row);
+          const changePresentation = getBazaarChangePresentation(changeRate);
+          return `
+            <article class="favorite-item-card">
+              <header class="favorite-item-header">
+                <button type="button" class="favorite-item-title-button" data-favorite-material-key="${row.materialKey}">
+                  ${row.materialName}
+                </button>
+              </header>
+              <p class="favorite-item-meta">現在価格: ${formatBazaarPriceWithUnit(row.displayPrice)}</p>
+              <p class="favorite-item-meta">前日比: ${changePresentation.text}</p>
+              <a href="#" class="favorite-link-button" data-favorite-material-link-key="${row.materialKey}">バザー一覧で開く</a>
+            </article>
+          `;
+        })
+        .join("")}
+    </div>
+  `;
+
+  favoriteMaterialsListWrap.querySelectorAll("[data-favorite-material-key]").forEach((button) => {
+    button.addEventListener("click", () => {
+      openBazaarFromFavorite(String(button.dataset.favoriteMaterialKey || ""));
+    });
+  });
+  favoriteMaterialsListWrap.querySelectorAll("[data-favorite-material-link-key]").forEach((link) => {
+    link.addEventListener("click", (event) => {
+      event.preventDefault();
+      openBazaarFromFavorite(String(link.dataset.favoriteMaterialLinkKey || ""));
+    });
+  });
+}
+
+function renderFavoritesPage() {
+  renderFavoriteRecipesSection();
+  renderFavoriteMaterialsSection();
 }
 
 function normalizeSalePrices(salePrices, fallbackSalePrice = 0) {
@@ -942,8 +1092,49 @@ function applyImportedMaterialPrices(rows) {
 }
 
 function switchTab(target) {
-  tabButtons.forEach((btn) => btn.classList.toggle("active", btn.dataset.tab === target));
-  tabContents.forEach((tab) => tab.classList.toggle("active", tab.id === target));
+  const normalizedTarget = TAB_IDS.has(target) ? target : "profit";
+  activeTabId = normalizedTarget;
+  tabButtons.forEach((btn) => btn.classList.toggle("active", btn.dataset.tab === normalizedTarget));
+  tabContents.forEach((tab) => tab.classList.toggle("active", tab.id === normalizedTarget));
+}
+
+function buildAppQueryParams(nextValues = {}) {
+  const currentParams = new URLSearchParams(window.location.search);
+  const tab = TAB_IDS.has(nextValues.tab) ? nextValues.tab : TAB_IDS.has(currentParams.get("tab")) ? currentParams.get("tab") : activeTabId;
+  const params = new URLSearchParams();
+  if (tab && tab !== "profit") params.set("tab", tab);
+  if (nextValues.equipmentId) params.set("equipmentId", nextValues.equipmentId);
+  if (nextValues.materialKey) params.set("materialKey", nextValues.materialKey);
+  return params;
+}
+
+function navigateByAppParams(nextValues = {}, options = {}) {
+  const { replace = false } = options;
+  const params = buildAppQueryParams(nextValues);
+  const query = params.toString();
+  const nextUrl = `${window.location.pathname}${query ? `?${query}` : ""}${window.location.hash}`;
+  if (replace) {
+    window.history.replaceState({}, "", nextUrl);
+  } else {
+    window.history.pushState({}, "", nextUrl);
+  }
+}
+
+function applyAppRouteFromUrl() {
+  const params = new URLSearchParams(window.location.search);
+  const tab = params.get("tab");
+  if (TAB_IDS.has(tab)) {
+    switchTab(tab);
+  } else {
+    switchTab("profit");
+  }
+
+  const equipmentId = String(params.get("equipmentId") || "").trim();
+  if (equipmentId && state.equipments.some((equipment) => equipment.id === equipmentId)) {
+    selectedEquipmentId = equipmentId;
+  }
+
+  pendingBazaarFocusMaterialKey = String(params.get("materialKey") || "").trim();
 }
 
 function setMenuOpen(isOpen) {
@@ -957,6 +1148,11 @@ function setMenuOpen(isOpen) {
 function scrollToBlock(blockId) {
   if (!blockId) return;
   switchTab(blockId);
+  navigateByAppParams({
+    tab: blockId,
+    equipmentId: blockId === "profit" ? selectedEquipmentId : "",
+    materialKey: "",
+  });
   const target = document.getElementById(blockId);
   if (!target) return;
   target.scrollIntoView({ block: "start", behavior: "smooth" });
@@ -991,6 +1187,11 @@ document.addEventListener("keydown", (event) => {
   if (event.key === "Escape") {
     setMenuOpen(false);
   }
+});
+
+window.addEventListener("popstate", () => {
+  applyAppRouteFromUrl();
+  rerenderAll();
 });
 
 function renderEquipmentSelectors() {
@@ -1591,12 +1792,16 @@ function rerenderAll() {
   renderRecipeAdminList();
   calcAndRenderSummary();
   renderBazaarPrices();
+  renderFavoritesPage();
 }
 
 // --- イベント定義 ---
 if (equipmentSelect) {
   equipmentSelect.addEventListener("change", (e) => {
     selectedEquipmentId = e.target.value;
+    if (activeTabId === "profit") {
+      navigateByAppParams({ tab: "profit", equipmentId: selectedEquipmentId, materialKey: "" });
+    }
     const eq = getSelectedEquipment();
     const salePrices = getSalePricesForEquipment(eq);
     if (salePriceStar0Input) salePriceStar0Input.value = salePrices.star0;
@@ -1847,6 +2052,15 @@ async function initialize() {
   showBazaarFavoritesOnly = favoriteState.showFavoritesOnly;
   bazaarFavoriteMaterialKeys = favoriteState.favoriteMaterialKeys;
   recipeFavoriteKeys = loadedRecipeFavoriteKeys;
+  applyAppRouteFromUrl();
+  navigateByAppParams(
+    {
+      tab: activeTabId,
+      equipmentId: activeTabId === "profit" ? selectedEquipmentId : "",
+      materialKey: activeTabId === "bazaar" ? pendingBazaarFocusMaterialKey : "",
+    },
+    { replace: true }
+  );
   saveData();
   rerenderAll();
 }

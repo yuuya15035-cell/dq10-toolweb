@@ -32,6 +32,9 @@
           <button type="button" class="side-menu-item" data-menu-target="bazaar">
             バザー価格一覧
           </button>
+          <button type="button" class="side-menu-item" data-menu-target="favorites">
+            お気に入り
+          </button>
         </nav>
       </aside>
 
@@ -204,6 +207,21 @@
       <section id="bazaar" class="tab-content" aria-label="バザー価格一覧画面">
         <h2>バザー価格一覧</h2>
         <div id="bazaarListWrap"></div>
+      </section>
+
+      <section id="favorites" class="tab-content" aria-label="お気に入り一覧画面">
+        <h2>お気に入り</h2>
+        <div class="favorites-layout">
+          <section class="card favorites-section" aria-labelledby="favoriteRecipesHeading">
+            <h3 id="favoriteRecipesHeading">お気に入りレシピ</h3>
+            <div id="favoriteRecipesListWrap"></div>
+          </section>
+
+          <section class="card favorites-section" aria-labelledby="favoriteMaterialsHeading">
+            <h3 id="favoriteMaterialsHeading">お気に入り素材</h3>
+            <div id="favoriteMaterialsListWrap"></div>
+          </section>
+        </div>
       </section>
 
       <section id="data" class="tab-content" aria-label="データ追加画面">
