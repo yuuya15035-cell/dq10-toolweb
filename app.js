@@ -7,6 +7,10 @@ const RECIPE_CSV_PATH = "./data/recipe.csv";
 const TOOLS_CSV_PATH = "./data/tools.csv";
 const BAZAAR_CSV_PATH = "./data/bazaar_prices.csv";
 const BAZAAR_CATEGORY_ORDER = ["石系", "植物系", "モンスター系", "その他", "消費アイテム"];
+const BAZAAR_SORT_OPTIONS = [
+  { value: "rate_desc", label: "変動率高い順" },
+  { value: "rate_asc", label: "変動率低い順" },
+];
 
 // 初期データ（CSVが読み込めない場合のフォールバック）
 const defaultData = {
@@ -256,6 +260,7 @@ let selectedCategory = "";
 let selectedToolId = "";
 let bazaarPrices = [];
 let selectedBazaarCategory = "";
+let selectedBazaarSort = BAZAAR_SORT_OPTIONS[0].value;
 // 利益計算画面だけで使う「今回計算用の一時単価」。
 // - キー: materialId
 // - 値: 画面上で上書きした単価
@@ -362,6 +367,13 @@ function formatBazaarUpdatedAt(rawValue) {
   }).format(parsed);
 }
 
+function parseNullableNumber(value) {
+  const normalized = String(value ?? "").trim();
+  if (normalized === "") return null;
+  const parsed = Number(normalized);
+  return Number.isFinite(parsed) ? parsed : null;
+}
+
 function renderLastUpdated() {
   if (!lastUpdatedValueEl) return;
 
@@ -416,16 +428,15 @@ function parseBazaarPricesFromLines(lines) {
       const todayPriceRaw = String(row[todayPriceIndex] || "").trim();
       const shopPriceRaw = String(row[shopPriceIndex] || "").trim();
       const displayPriceRaw = todayPriceRaw !== "" ? todayPriceRaw : shopPriceRaw;
-      const previousDayPriceRaw = String(row[previousDayPriceIndex] || "").trim();
       return {
         id: `bazaar-row-${rowIndex}`,
         materialName: String(row[materialNameIndex] || "").trim(),
         itemCategory: String(row[itemCategoryIndex] || "").trim(),
         sortOrder: Number.isFinite(sortOrderRaw) ? sortOrderRaw : Number.MAX_SAFE_INTEGER,
-        todayPrice: todayPriceRaw === "" ? null : Number(todayPriceRaw),
-        shopPrice: shopPriceRaw === "" ? null : Number(shopPriceRaw),
-        displayPrice: displayPriceRaw === "" ? null : Number(displayPriceRaw),
-        previousDayPrice: previousDayPriceRaw === "" ? null : Number(previousDayPriceRaw),
+        todayPrice: parseNullableNumber(todayPriceRaw),
+        shopPrice: parseNullableNumber(shopPriceRaw),
+        displayPrice: parseNullableNumber(displayPriceRaw),
+        previousDayPrice: parseNullableNumber(row[previousDayPriceIndex]),
         updatedAt: String(row[updatedAtIndex] || "").trim(),
         updateInfo: String(row[updateInfoIndex] || "").trim(),
         comment: String(row[commentIndex] || "").trim(),
@@ -449,6 +460,39 @@ function getUpdateInfoBadgeClass(updateInfo) {
 function getBazaarCategoryPriority(category) {
   const index = BAZAAR_CATEGORY_ORDER.indexOf(String(category || "").trim());
   return index >= 0 ? index : Number.MAX_SAFE_INTEGER;
+}
+
+function calculatePriceChangeRate(todayPrice, yesterdayPrice) {
+  if (!Number.isFinite(todayPrice)) return null;
+  if (!Number.isFinite(yesterdayPrice) || yesterdayPrice === 0) return null;
+  return ((todayPrice - yesterdayPrice) / yesterdayPrice) * 100;
+}
+
+function compareNullableNumbers(a, b, direction = "desc") {
+  const aIsValid = Number.isFinite(a);
+  const bIsValid = Number.isFinite(b);
+  if (!aIsValid && !bIsValid) return 0;
+  if (!aIsValid) return 1;
+  if (!bIsValid) return -1;
+  return direction === "asc" ? a - b : b - a;
+}
+
+function getSortedBazaarRows(rows, currentCategory, currentSort) {
+  return rows.slice().sort((a, b) => {
+    if (currentCategory === "") {
+      const categoryDiff = getBazaarCategoryPriority(a.itemCategory) - getBazaarCategoryPriority(b.itemCategory);
+      if (categoryDiff !== 0) return categoryDiff;
+    }
+
+    const aRate = calculatePriceChangeRate(a.todayPrice, a.previousDayPrice);
+    const bRate = calculatePriceChangeRate(b.todayPrice, b.previousDayPrice);
+    const sortDirection = currentSort === "rate_asc" ? "asc" : "desc";
+    const rateDiff = compareNullableNumbers(aRate, bRate, sortDirection);
+    if (rateDiff !== 0) return rateDiff;
+
+    if (a.sortOrder !== b.sortOrder) return a.sortOrder - b.sortOrder;
+    return String(a.materialName || "").localeCompare(String(b.materialName || ""), "ja");
+  });
 }
 
 function renderBazaarPrices() {
@@ -475,24 +519,14 @@ function renderBazaarPrices() {
     selectedBazaarCategory = "";
   }
 
-  const visibleRows = bazaarPrices
-    .filter((row) => selectedBazaarCategory === "" || row.itemCategory === selectedBazaarCategory)
-    .slice()
-    .sort((a, b) => {
-      if (selectedBazaarCategory === "") {
-        const categoryDiff = getBazaarCategoryPriority(a.itemCategory) - getBazaarCategoryPriority(b.itemCategory);
-        if (categoryDiff !== 0) return categoryDiff;
-      }
-
-      if (a.sortOrder !== b.sortOrder) {
-        return a.sortOrder - b.sortOrder;
-      }
-
-      return String(a.materialName || "").localeCompare(String(b.materialName || ""), "ja");
-    });
+  const visibleRows = getSortedBazaarRows(
+    bazaarPrices.filter((row) => selectedBazaarCategory === "" || row.itemCategory === selectedBazaarCategory),
+    selectedBazaarCategory,
+    selectedBazaarSort
+  );
 
   bazaarListWrap.innerHTML = `
-    <div class="bazaar-category-select-wrap">
+    <div class="bazaar-control-wrap">
       <label class="field bazaar-category-field">
         <span>ジャンル切り替え</span>
         <select id="bazaarCategorySelect" aria-label="ジャンル切り替え">
@@ -504,6 +538,16 @@ function renderBazaarPrices() {
               `
             )
             .join("")}
+        </select>
+      </label>
+      <label class="field bazaar-sort-field">
+        <span>並び替え</span>
+        <select id="bazaarSortSelect" aria-label="並び替え">
+          ${BAZAAR_SORT_OPTIONS.map(
+            (option) => `
+              <option value="${option.value}" ${selectedBazaarSort === option.value ? "selected" : ""}>${option.label}</option>
+            `
+          ).join("")}
         </select>
       </label>
     </div>
@@ -558,6 +602,15 @@ function renderBazaarPrices() {
     bazaarCategorySelect.value = selectedBazaarCategory;
     bazaarCategorySelect.addEventListener("change", (event) => {
       selectedBazaarCategory = String(event.target.value || "");
+      renderBazaarPrices();
+    });
+  }
+
+  const bazaarSortSelect = bazaarListWrap.querySelector("#bazaarSortSelect");
+  if (bazaarSortSelect) {
+    bazaarSortSelect.value = selectedBazaarSort;
+    bazaarSortSelect.addEventListener("change", (event) => {
+      selectedBazaarSort = String(event.target.value || BAZAAR_SORT_OPTIONS[0].value);
       renderBazaarPrices();
     });
   }
