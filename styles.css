@@ -471,6 +471,17 @@ button {
   font-weight: 700;
 }
 
+.bazaar-change-rate {
+  margin: 2px 0 0;
+  font-size: 0.92rem;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.bazaar-change-rate span {
+  color: #184ec8;
+}
+
 .bazaar-previous-price {
   margin: 2px 0 0;
   color: #4f5d75;
@@ -565,6 +576,10 @@ button {
 
   .bazaar-today-price span {
     font-size: 0.7rem;
+  }
+
+  .bazaar-change-rate {
+    font-size: 0.8rem;
   }
 
   .bazaar-previous-price {
