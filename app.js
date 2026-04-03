@@ -12,6 +12,7 @@ const RECIPE_FAVORITES_STORAGE_KEY = "dq10_toolweb_recipe_favorites_v1";
 const RECIPE_FAVORITE_CATEGORY_VALUE = "__favorites__";
 const BAZAAR_CATEGORY_ORDER = ["石系", "植物系", "モンスター系", "その他", "消費アイテム"];
 const BAZAAR_SORT_OPTIONS = [
+  { value: "standard", label: "標準順" },
   { value: "rate_desc", label: "変動率高い順" },
   { value: "rate_asc", label: "変動率低い順" },
 ];
@@ -341,7 +342,7 @@ let selectedCategory = "";
 let selectedToolId = "";
 let bazaarPrices = [];
 let selectedBazaarCategory = "";
-let selectedBazaarSort = BAZAAR_SORT_OPTIONS[0].value;
+let selectedBazaarSort = "standard";
 let bazaarCsvUpdatedAt = "-";
 let showBazaarFavoritesOnly = false;
 let bazaarFavoriteMaterialKeys = new Set();
@@ -632,18 +633,22 @@ function compareNullableNumbers(a, b, direction = "desc") {
 }
 
 function getSortedBazaarRows(rows, currentCategory, currentSort) {
-  const shouldKeepCategoryOrder = currentCategory === "" && currentSort === "category";
+  const normalizedSort = BAZAAR_SORT_OPTIONS.some((option) => option.value === currentSort) ? currentSort : "standard";
   return rows.slice().sort((a, b) => {
-    // 「すべて」表示時でも、変動率ソート中はカテゴリ単位の並びを優先しない。
-    // 将来カテゴリ順ソートを追加したくなった場合のみ、明示的に category を指定して有効化する。
-    if (shouldKeepCategoryOrder) {
-      const categoryDiff = getBazaarCategoryPriority(a.itemCategory) - getBazaarCategoryPriority(b.itemCategory);
-      if (categoryDiff !== 0) return categoryDiff;
+    if (normalizedSort === "standard") {
+      // 「標準順」は変動率では並べ替えず、元の並びに戻す。
+      // 「すべて」表示時のみカテゴリ既定順を先に適用し、カテゴリ内は CSV 既定順で表示する。
+      if (currentCategory === "") {
+        const categoryDiff = getBazaarCategoryPriority(a.itemCategory) - getBazaarCategoryPriority(b.itemCategory);
+        if (categoryDiff !== 0) return categoryDiff;
+      }
+      if (a.sortOrder !== b.sortOrder) return a.sortOrder - b.sortOrder;
+      return String(a.materialName || "").localeCompare(String(b.materialName || ""), "ja");
     }
 
     const aRate = getBazaarRowChangeRate(a);
     const bRate = getBazaarRowChangeRate(b);
-    const sortDirection = currentSort === "rate_asc" ? "asc" : "desc";
+    const sortDirection = normalizedSort === "rate_asc" ? "asc" : "desc";
     const rateDiff = compareNullableNumbers(aRate, bRate, sortDirection);
     if (rateDiff !== 0) return rateDiff;
 
