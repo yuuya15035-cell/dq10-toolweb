@@ -409,6 +409,17 @@ button {
   color: #4f5d75;
 }
 
+.bazaar-favorite-filter-field {
+  margin-bottom: 0;
+  align-self: end;
+  gap: 8px;
+}
+
+.bazaar-favorite-filter-field span {
+  font-size: 0.82rem;
+  color: #4f5d75;
+}
+
 .bazaar-category-field select,
 .bazaar-sort-field select {
   background: #fff;
@@ -424,7 +435,7 @@ button {
 .bazaar-card-header {
   display: flex;
   align-items: flex-start;
-  justify-content: flex-start;
+  justify-content: space-between;
   gap: 8px;
 }
 
@@ -439,6 +450,29 @@ button {
   color: #4f5d75;
   font-size: 0.8rem;
   line-height: 1.2;
+}
+
+.bazaar-favorite-button {
+  width: 36px;
+  height: 36px;
+  border-radius: 999px;
+  border: 1px solid #d7dce5;
+  background: #f7f9fc;
+  color: #9aa5b5;
+  font-size: 1.1rem;
+  line-height: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.bazaar-favorite-button.is-active {
+  border-color: #f0b4bf;
+  background: #fff3f6;
+  color: #d64f6a;
 }
 
 .bazaar-main {
@@ -559,7 +593,8 @@ button {
   }
 
   .bazaar-category-field span,
-  .bazaar-sort-field span {
+  .bazaar-sort-field span,
+  .bazaar-favorite-filter-field span {
     font-size: 0.75rem;
   }
 
@@ -570,6 +605,12 @@ button {
 
   .bazaar-card-header {
     gap: 6px;
+  }
+
+  .bazaar-favorite-button {
+    width: 34px;
+    height: 34px;
+    font-size: 1.02rem;
   }
 
   .bazaar-card-header h3 {
@@ -619,7 +660,7 @@ button {
 
 @media (min-width: 560px) {
   .bazaar-control-wrap {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 }
 
