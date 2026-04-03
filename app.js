@@ -505,8 +505,11 @@ function compareNullableNumbers(a, b, direction = "desc") {
 }
 
 function getSortedBazaarRows(rows, currentCategory, currentSort) {
+  const shouldKeepCategoryOrder = currentCategory === "" && currentSort === "category";
   return rows.slice().sort((a, b) => {
-    if (currentCategory === "") {
+    // 「すべて」表示時でも、変動率ソート中はカテゴリ単位の並びを優先しない。
+    // 将来カテゴリ順ソートを追加したくなった場合のみ、明示的に category を指定して有効化する。
+    if (shouldKeepCategoryOrder) {
       const categoryDiff = getBazaarCategoryPriority(a.itemCategory) - getBazaarCategoryPriority(b.itemCategory);
       if (categoryDiff !== 0) return categoryDiff;
     }
