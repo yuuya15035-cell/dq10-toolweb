@@ -211,15 +211,56 @@
 
       <section id="favorites" class="tab-content" aria-label="お気に入り一覧画面">
         <h2>お気に入り</h2>
+        <div class="favorites-tabs" role="tablist" aria-label="お気に入り表示切替">
+          <button
+            type="button"
+            class="favorites-tab-button is-active"
+            id="favoritesTabRecipes"
+            role="tab"
+            aria-selected="true"
+            aria-controls="favoritesRecipesPanel"
+            data-favorites-tab="recipes"
+          >
+            レシピ
+          </button>
+          <button
+            type="button"
+            class="favorites-tab-button"
+            id="favoritesTabMaterials"
+            role="tab"
+            aria-selected="false"
+            aria-controls="favoritesMaterialsPanel"
+            data-favorites-tab="materials"
+            tabindex="-1"
+          >
+            素材
+          </button>
+        </div>
+
         <div class="favorites-layout">
-          <section class="card favorites-section" aria-labelledby="favoriteRecipesHeading">
-            <h3 id="favoriteRecipesHeading">お気に入りレシピ</h3>
-            <div id="favoriteRecipesListWrap"></div>
+          <section
+            id="favoritesRecipesPanel"
+            class="favorites-panel is-active"
+            role="tabpanel"
+            aria-labelledby="favoritesTabRecipes"
+          >
+            <section class="card favorites-section" aria-labelledby="favoriteRecipesHeading">
+              <h3 id="favoriteRecipesHeading">お気に入りレシピ</h3>
+              <div id="favoriteRecipesListWrap"></div>
+            </section>
           </section>
 
-          <section class="card favorites-section" aria-labelledby="favoriteMaterialsHeading">
-            <h3 id="favoriteMaterialsHeading">お気に入り素材</h3>
-            <div id="favoriteMaterialsListWrap"></div>
+          <section
+            id="favoritesMaterialsPanel"
+            class="favorites-panel"
+            role="tabpanel"
+            aria-labelledby="favoritesTabMaterials"
+            hidden
+          >
+            <section class="card favorites-section" aria-labelledby="favoriteMaterialsHeading">
+              <h3 id="favoriteMaterialsHeading">お気に入り素材</h3>
+              <div id="favoriteMaterialsListWrap"></div>
+            </section>
           </section>
         </div>
       </section>

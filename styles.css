@@ -618,6 +618,38 @@ button {
   gap: 12px;
 }
 
+.favorites-tabs {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.favorites-tab-button {
+  min-height: 46px;
+  border: 1px solid #cbd8ff;
+  border-radius: 10px;
+  background: #f5f8ff;
+  color: #3b4b70;
+  font-size: 0.95rem;
+  font-weight: 700;
+  padding: 10px 12px;
+}
+
+.favorites-tab-button.is-active {
+  border-color: #8dadff;
+  background: #e6eeff;
+  color: #1f2a44;
+}
+
+.favorites-panel {
+  display: none;
+}
+
+.favorites-panel.is-active {
+  display: block;
+}
+
 .favorites-section h3 {
   margin-top: 0;
 }
@@ -806,6 +838,17 @@ button {
 
   .favorite-material-link-button {
     min-height: 42px;
+  }
+
+  .favorites-tabs {
+    gap: 6px;
+    margin-bottom: 8px;
+  }
+
+  .favorites-tab-button {
+    min-height: 48px;
+    font-size: 0.92rem;
+    padding: 10px;
   }
 
   .bazaar-list {
