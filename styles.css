@@ -554,7 +554,7 @@ button {
 }
 
 .bazaar-main {
-  margin-top: 6px;
+  margin-top: 5px;
 }
 
 .bazaar-sub-row {
@@ -574,17 +574,18 @@ button {
 }
 
 .bazaar-footer-row {
-  margin-top: 8px;
+  margin-top: 5px;
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: space-between;
-  gap: 10px;
+  gap: 8px;
 }
 
 .bazaar-actions {
   display: flex;
   justify-content: flex-start;
   flex-shrink: 0;
+  margin-top: 1px;
 }
 
 .bazaar-official-link-button {
@@ -592,8 +593,8 @@ button {
   align-items: center;
   justify-content: center;
   gap: 5px;
-  min-height: 36px;
-  padding: 7px 10px;
+  min-height: 35px;
+  padding: 6px 10px;
   border: 1px solid #d4def1;
   border-radius: 8px;
   background: #f7faff;
@@ -638,7 +639,7 @@ button {
 }
 
 .bazaar-change-rate {
-  margin: 2px 0 0;
+  margin: 1px 0 0;
   font-size: 0.92rem;
   font-weight: 700;
   line-height: 1.2;
@@ -679,7 +680,7 @@ button {
 }
 
 .bazaar-previous-price {
-  margin: 0;
+  margin: 1px 0 0;
   color: #4f5d75;
   font-size: 0.78rem;
   line-height: 1.2;
@@ -975,7 +976,7 @@ button {
   }
 
   .bazaar-card {
-    padding: 8px 9px;
+    padding: 8px 9px 7px;
     border-radius: 10px;
   }
 
@@ -1008,18 +1009,18 @@ button {
   }
 
   .bazaar-main {
-    margin-top: 4px;
+    margin-top: 3px;
   }
 
   .bazaar-footer-row {
-    margin-top: 6px;
-    gap: 8px;
+    margin-top: 4px;
+    gap: 7px;
   }
 
   .bazaar-official-link-button {
-    min-height: 38px;
+    min-height: 37px;
     font-size: 0.74rem;
-    padding: 7px 9px;
+    padding: 6px 9px;
   }
 
   .bazaar-today-price {
@@ -1037,6 +1038,7 @@ button {
 
   .bazaar-previous-price {
     font-size: 0.72rem;
+    margin-top: 0;
   }
 
 }
