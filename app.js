@@ -9,6 +9,7 @@ const BAZAAR_CSV_PATH = "./data/bazaar_prices.csv";
 const LAST_UPDATED_JSON_PATH = "./data/last-updated.json";
 const BAZAAR_FAVORITES_STORAGE_KEY = "dq10_toolweb_bazaar_favorites_v1";
 const RECIPE_FAVORITES_STORAGE_KEY = "dq10_toolweb_recipe_favorites_v1";
+const RECIPE_FAVORITE_CATEGORY_VALUE = "__favorites__";
 const BAZAAR_CATEGORY_ORDER = ["石系", "植物系", "モンスター系", "その他", "消費アイテム"];
 const BAZAAR_SORT_OPTIONS = [
   { value: "rate_desc", label: "変動率高い順" },
@@ -271,7 +272,15 @@ function loadRecipeFavoriteState() {
   try {
     const parsed = JSON.parse(raw);
     const keys = Array.isArray(parsed?.favoriteRecipeKeys) ? parsed.favoriteRecipeKeys : [];
-    return new Set(keys.map((key) => String(key || "").trim()).filter((key) => key !== ""));
+    return new Set(
+      keys
+        .map((key) => String(key || "").trim())
+        .filter((key) => key !== "")
+        .map((key) => {
+          if (key.startsWith("id:") || key.startsWith("name:")) return key;
+          return `name:${key}`;
+        })
+    );
   } catch {
     return new Set();
   }
@@ -361,7 +370,7 @@ const sideMenuItems = document.querySelectorAll(".side-menu-item");
 
 const equipmentSelect = getRequiredElementById("equipmentSelect");
 const recipeSortSelect = getRequiredElementById("recipeSortSelect");
-const recipeSearchResultList = getRequiredElementById("recipeSearchResultList");
+const recipeFavoriteActionWrap = getRequiredElementById("recipeFavoriteActionWrap");
 const equipmentSearchInput = getRequiredElementById("equipmentSearchInput");
 const materialSearchInput = getRequiredElementById("materialSearchInput");
 const craftsmanFilterSelect = getRequiredElementById("craftsmanFilterSelect");
@@ -998,19 +1007,29 @@ function renderEquipmentSelectors() {
   equipmentSelect.innerHTML = "";
   recipeEquipmentSelect.innerHTML = "";
 
-  filteredEquipments.forEach((equipment) => {
-    const roundedMaterialCost = getRoundedEquipmentMaterialCost(equipment.id);
-    let label = `${equipment.name}（原価: ${roundedMaterialCost.toLocaleString("ja-JP")} G）`;
-    if (normalizedMaterialKeyword !== "") {
-      const matchedMaterials = matchedRecipeByEquipmentId.get(equipment.id) || [];
-      if (matchedMaterials.length > 0) {
-        const details = matchedMaterials.map((m) => `${m.materialName}×${m.quantity}`).join(" / ");
-        label = `${label}（${details}）`;
+  if (filteredEquipments.length === 0) {
+    const emptyLabel =
+      selectedCategory === RECIPE_FAVORITE_CATEGORY_VALUE
+        ? "お気に入り登録済み装備がありません"
+        : "条件に一致する装備がありません";
+    equipmentSelect.add(new Option(emptyLabel, ""));
+    equipmentSelect.disabled = true;
+  } else {
+    equipmentSelect.disabled = false;
+    filteredEquipments.forEach((equipment) => {
+      const roundedMaterialCost = getRoundedEquipmentMaterialCost(equipment.id);
+      let label = `${equipment.name}（原価: ${roundedMaterialCost.toLocaleString("ja-JP")} G）`;
+      if (normalizedMaterialKeyword !== "") {
+        const matchedMaterials = matchedRecipeByEquipmentId.get(equipment.id) || [];
+        if (matchedMaterials.length > 0) {
+          const details = matchedMaterials.map((m) => `${m.materialName}×${m.quantity}`).join(" / ");
+          label = `${label}（${details}）`;
+        }
       }
-    }
-    const option = new Option(label, equipment.id);
-    equipmentSelect.add(option);
-  });
+      const option = new Option(label, equipment.id);
+      equipmentSelect.add(option);
+    });
+  }
 
   // レシピ管理側の装備選択は従来どおり全件表示にしておく
   state.equipments.forEach((equipment) => {
@@ -1022,12 +1041,12 @@ function renderEquipmentSelectors() {
     selectedEquipmentId = filteredEquipments[0]?.id || "";
   }
 
-  if (!state.equipments.some((e) => e.id === selectedEquipmentId)) {
+  if (filteredEquipments.length > 0 && !state.equipments.some((e) => e.id === selectedEquipmentId)) {
     selectedEquipmentId = state.equipments[0]?.id || "";
   }
   equipmentSelect.value = selectedEquipmentId;
   recipeEquipmentSelect.value = selectedEquipmentId;
-  renderRecipeSearchResultList(filteredEquipments);
+  renderRecipeFavoriteAction();
 }
 
 function renderFilterSelectors() {
@@ -1061,11 +1080,12 @@ function renderFilterSelectors() {
   categories.forEach((category) => {
     categoryFilterSelect.add(new Option(category, category));
   });
+  categoryFilterSelect.add(new Option("お気に入り", RECIPE_FAVORITE_CATEGORY_VALUE));
 
   // 選択中の値が候補になければ未選択（全件）へ戻す。
   // 職人を変更したときにカテゴリが無効化された場合も、ここで自然に「全ジャンル」へ戻ります。
   if (!craftsmen.includes(selectedCraftsman)) selectedCraftsman = "";
-  if (!categories.includes(selectedCategory)) selectedCategory = "";
+  if (selectedCategory !== RECIPE_FAVORITE_CATEGORY_VALUE && !categories.includes(selectedCategory)) selectedCategory = "";
 
   craftsmanFilterSelect.value = selectedCraftsman;
   categoryFilterSelect.value = selectedCategory;
@@ -1128,9 +1148,14 @@ function getFilteredEquipmentContext() {
   const filteredEquipments = state.equipments
     .filter((equipment) => {
       const matchesMaterial = normalizedMaterialKeyword === "" || matchedRecipeByEquipmentId.has(equipment.id);
+      const matchesFavoriteCategory =
+        selectedCategory !== RECIPE_FAVORITE_CATEGORY_VALUE || isRecipeFavorite(equipment);
       return (
         (selectedCraftsman === "" || equipment.craftsman === selectedCraftsman) &&
-        (selectedCategory === "" || equipment.category === selectedCategory) &&
+        (selectedCategory === "" ||
+          selectedCategory === RECIPE_FAVORITE_CATEGORY_VALUE ||
+          equipment.category === selectedCategory) &&
+        matchesFavoriteCategory &&
         (equipmentSearchKeyword === "" || equipment.name.toLowerCase().includes(equipmentSearchKeyword.toLowerCase())) &&
         matchesMaterial
       );
@@ -1146,70 +1171,46 @@ function getFilteredEquipmentContext() {
   return { filteredEquipments, matchedRecipeByEquipmentId, normalizedMaterialKeyword };
 }
 
-function renderRecipeSearchResultList(filteredEquipments) {
-  if (!recipeSearchResultList) return;
+function renderRecipeFavoriteAction() {
+  if (!recipeFavoriteActionWrap) return;
 
-  if (filteredEquipments.length === 0) {
-    recipeSearchResultList.innerHTML = "<p class=\"helper-text\">条件に一致する装備がありません。</p>";
+  const equipment = getSelectedEquipment();
+  if (!equipment) {
+    recipeFavoriteActionWrap.innerHTML = `
+      <div class="recipe-favorite-action">
+        <button type="button" class="recipe-favorite-toggle-button" disabled>☆ お気に入り登録</button>
+        <p class="helper-text">装備を選択すると、お気に入り登録できます。</p>
+      </div>
+    `;
     return;
   }
 
-  recipeSearchResultList.innerHTML = filteredEquipments
-    .map((equipment) => {
-      const roundedMaterialCost = getRoundedEquipmentMaterialCost(equipment.id);
-      const isFavorite = isRecipeFavorite(equipment);
-      const isSelected = equipment.id === selectedEquipmentId;
-      return `
-        <article class="recipe-search-card ${isSelected ? "is-selected" : ""}">
-          <header class="recipe-search-card-header">
-            <h3>${equipment.name}</h3>
-            <button
-              type="button"
-              class="bazaar-favorite-button recipe-favorite-button ${isFavorite ? "is-active" : ""}"
-              data-toggle-recipe-favorite-id="${equipment.id}"
-              aria-label="${equipment.name}をお気に入り${isFavorite ? "解除" : "登録"}"
-            >
-              ${isFavorite ? "♥" : "♡"}
-            </button>
-          </header>
-          <p class="recipe-search-card-cost">原価目安: <strong>${roundedMaterialCost.toLocaleString("ja-JP")} G</strong></p>
-          <button
-            type="button"
-            class="secondary-btn recipe-search-select-button"
-            data-select-equipment-id="${equipment.id}"
-          >
-            ${isSelected ? "表示中" : "この装備を表示"}
-          </button>
-        </article>
-      `;
-    })
-    .join("");
+  const isFavorite = isRecipeFavorite(equipment);
+  recipeFavoriteActionWrap.innerHTML = `
+    <div class="recipe-favorite-action">
+      <button
+        type="button"
+        class="recipe-favorite-toggle-button ${isFavorite ? "is-active" : ""}"
+        data-toggle-selected-recipe-favorite="true"
+        aria-label="${equipment.name}をお気に入り${isFavorite ? "解除" : "登録"}"
+      >
+        ${isFavorite ? "★ お気に入り解除" : "☆ お気に入り登録"}
+      </button>
+    </div>
+  `;
 
-  recipeSearchResultList.querySelectorAll("[data-select-equipment-id]").forEach((button) => {
-    button.addEventListener("click", (event) => {
-      const nextId = event.currentTarget.dataset.selectEquipmentId || "";
-      if (!nextId) return;
-      selectedEquipmentId = nextId;
-      rerenderAll();
-    });
-  });
-
-  recipeSearchResultList.querySelectorAll("[data-toggle-recipe-favorite-id]").forEach((button) => {
-    button.addEventListener("click", (event) => {
-      event.stopPropagation();
-      const equipmentId = event.currentTarget.dataset.toggleRecipeFavoriteId || "";
-      const equipment = state.equipments.find((row) => row.id === equipmentId);
-      const favoriteKey = getRecipeFavoriteKey(equipment);
-      if (!favoriteKey) return;
-
-      if (recipeFavoriteKeys.has(favoriteKey)) {
-        recipeFavoriteKeys.delete(favoriteKey);
-      } else {
-        recipeFavoriteKeys.add(favoriteKey);
-      }
-      saveRecipeFavoriteState();
-      renderEquipmentSelectors();
-    });
+  const toggleButton = recipeFavoriteActionWrap.querySelector("[data-toggle-selected-recipe-favorite]");
+  if (!toggleButton) return;
+  toggleButton.addEventListener("click", () => {
+    const favoriteKey = getRecipeFavoriteKey(equipment);
+    if (!favoriteKey) return;
+    if (recipeFavoriteKeys.has(favoriteKey)) {
+      recipeFavoriteKeys.delete(favoriteKey);
+    } else {
+      recipeFavoriteKeys.add(favoriteKey);
+    }
+    saveRecipeFavoriteState();
+    rerenderAll();
   });
 }
 
