@@ -424,7 +424,7 @@ button {
 .bazaar-card-header {
   display: flex;
   align-items: flex-start;
-  justify-content: space-between;
+  justify-content: flex-start;
   gap: 8px;
 }
 
@@ -471,10 +471,38 @@ button {
   font-size: 0.92rem;
   font-weight: 700;
   line-height: 1.2;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  flex-wrap: wrap;
 }
 
-.bazaar-change-rate span {
-  color: #184ec8;
+.bazaar-change-value,
+.bazaar-change-arrow {
+  font-weight: 800;
+}
+
+.bazaar-change-value.is-positive,
+.bazaar-change-arrow.is-positive {
+  color: #c0392b;
+}
+
+.bazaar-change-value.is-neutral,
+.bazaar-change-arrow.is-neutral {
+  color: #4f5d75;
+}
+
+.bazaar-change-value.is-negative,
+.bazaar-change-arrow.is-negative {
+  color: #1d4ed8;
+}
+
+.bazaar-change-value.is-unavailable {
+  color: #4f5d75;
+}
+
+.bazaar-change-arrow {
+  opacity: 0.82;
 }
 
 .bazaar-previous-price {
@@ -516,16 +544,6 @@ button {
   text-overflow: ellipsis;
 }
 
-.bazaar-badge {
-  display: inline-block;
-  border-radius: 999px;
-  padding: 3px 8px;
-  font-size: 0.72rem;
-  font-weight: 700;
-  background: #e8edf8;
-  color: #33415c;
-  white-space: nowrap;
-}
 
 @media (max-width: 480px) {
   .bazaar-list {
@@ -575,6 +593,7 @@ button {
 
   .bazaar-change-rate {
     font-size: 0.8rem;
+    gap: 3px;
   }
 
   .bazaar-previous-price {
@@ -594,26 +613,12 @@ button {
     font-size: 0.68rem;
   }
 
-  .bazaar-badge {
-    padding: 2px 7px;
-    font-size: 0.64rem;
-  }
 }
 
 @media (min-width: 560px) {
   .bazaar-control-wrap {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
-}
-
-.bazaar-badge.is-rising {
-  background: #ffe7e7;
-  color: #b42318;
-}
-
-.bazaar-badge.is-dropping {
-  background: #e7f1ff;
-  color: #1d4ed8;
 }
 
 @media (min-width: 700px) {
