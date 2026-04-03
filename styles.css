@@ -580,52 +580,32 @@ button {
   text-overflow: ellipsis;
 }
 
-.recipe-search-result-list {
-  display: grid;
-  gap: 8px;
+.recipe-favorite-action {
+  margin-top: -4px;
   margin-bottom: 10px;
 }
 
-.recipe-search-card {
-  border: 1px solid var(--line);
+.recipe-favorite-toggle-button {
+  width: 100%;
+  min-height: 48px;
+  border: 1px solid #d4def1;
   border-radius: 12px;
   background: #fff;
-  padding: 10px;
+  color: #1a2540;
+  font-size: 1rem;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  padding: 10px 14px;
 }
 
-.recipe-search-card.is-selected {
-  border-color: #a8c2ff;
-  box-shadow: 0 0 0 1px #d6e3ff inset;
+.recipe-favorite-toggle-button.is-active {
+  border-color: #ffcb66;
+  background: #fff7e6;
+  color: #8f5300;
 }
 
-.recipe-search-card-header {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 8px;
-}
-
-.recipe-search-card-header h3 {
-  margin: 0;
-  font-size: 0.96rem;
-  line-height: 1.25;
-}
-
-.recipe-favorite-button {
-  width: 40px;
-  height: 40px;
-  font-size: 1.2rem;
-}
-
-.recipe-search-card-cost {
-  margin: 4px 0 8px;
-  color: #4f5d75;
-  font-size: 0.82rem;
-}
-
-.recipe-search-select-button {
-  width: 100%;
-  min-height: 40px;
+.recipe-favorite-toggle-button:disabled {
+  opacity: 0.6;
 }
 
 @media (max-width: 480px) {
@@ -650,23 +630,10 @@ button {
     border-radius: 10px;
   }
 
-  .recipe-search-card {
-    padding: 8px 9px;
-    border-radius: 10px;
-  }
-
-  .recipe-favorite-button {
-    width: 38px;
-    height: 38px;
-    font-size: 1.14rem;
-  }
-
-  .recipe-search-card-header h3 {
-    font-size: 0.9rem;
-  }
-
-  .recipe-search-card-cost {
-    font-size: 0.75rem;
+  .recipe-favorite-toggle-button {
+    min-height: 50px;
+    font-size: 0.98rem;
+    padding: 11px 12px;
   }
 
   .bazaar-card-header {
