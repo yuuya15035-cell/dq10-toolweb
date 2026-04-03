@@ -6,6 +6,7 @@ const STORAGE_KEY = "dq10_toolweb_data_v1";
 const RECIPE_CSV_PATH = "./data/recipe.csv";
 const TOOLS_CSV_PATH = "./data/tools.csv";
 const BAZAAR_CSV_PATH = "./data/bazaar_prices.csv";
+const LAST_UPDATED_JSON_PATH = "./data/last-updated.json";
 const BAZAAR_CATEGORY_ORDER = ["石系", "植物系", "モンスター系", "その他", "消費アイテム"];
 const BAZAAR_SORT_OPTIONS = [
   { value: "rate_desc", label: "変動率高い順" },
@@ -265,6 +266,7 @@ let selectedToolId = "";
 let bazaarPrices = [];
 let selectedBazaarCategory = "";
 let selectedBazaarSort = BAZAAR_SORT_OPTIONS[0].value;
+let bazaarCsvUpdatedAt = "-";
 // 利益計算画面だけで使う「今回計算用の一時単価」。
 // - キー: materialId
 // - 値: 画面上で上書きした単価
@@ -331,7 +333,6 @@ const totalProfitStar3ValueEl = getRequiredElementById("totalProfitStar3Value");
 const totalFeeValueEl = getRequiredElementById("totalFeeValue");
 const averageNetSalesValueEl = getRequiredElementById("averageNetSalesValue");
 const totalProfitValueEl = getRequiredElementById("totalProfitValue");
-const lastUpdatedValueEl = getRequiredElementById("lastUpdatedValue");
 
 const materialForm = getRequiredElementById("materialForm");
 const equipmentForm = getRequiredElementById("equipmentForm");
@@ -366,7 +367,8 @@ function formatBazaarUpdatedAt(rawValue) {
   const normalized = String(rawValue || "").trim();
   if (normalized === "") return "-";
 
-  const parsed = new Date(normalized);
+  const normalizedDateText = normalized.replace(/-/g, "/");
+  const parsed = new Date(normalizedDateText);
   if (Number.isNaN(parsed.getTime())) return normalized;
 
   return new Intl.DateTimeFormat("ja-JP", {
@@ -377,29 +379,29 @@ function formatBazaarUpdatedAt(rawValue) {
   }).format(parsed);
 }
 
+async function loadBazaarLastUpdatedAt() {
+  try {
+    console.info(`[last-updated.json] fetch start: ${LAST_UPDATED_JSON_PATH}`);
+    const response = await fetch(LAST_UPDATED_JSON_PATH);
+    if (!response.ok) {
+      throw new Error(`status=${response.status}`);
+    }
+
+    const payload = await response.json();
+    const formatted = formatBazaarUpdatedAt(payload?.bazaarCsvUpdatedAt);
+    console.info(`[last-updated.json] fetch success: bazaarCsvUpdatedAt=${formatted}`);
+    return formatted;
+  } catch (error) {
+    console.warn("[last-updated.json] 読み込みに失敗したため、更新時刻は '-' を表示します", error);
+    return "-";
+  }
+}
+
 function parseNullableNumber(value) {
   const normalized = String(value ?? "").trim();
   if (normalized === "") return null;
   const parsed = Number(normalized);
   return Number.isFinite(parsed) ? parsed : null;
-}
-
-function renderLastUpdated() {
-  if (!lastUpdatedValueEl) return;
-
-  const parsed = new Date(document.lastModified);
-  if (Number.isNaN(parsed.getTime())) {
-    lastUpdatedValueEl.textContent = "-";
-    return;
-  }
-
-  lastUpdatedValueEl.textContent = new Intl.DateTimeFormat("ja-JP", {
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-    hour: "2-digit",
-    minute: "2-digit",
-  }).format(parsed);
 }
 
 function parseBazaarPricesFromLines(lines) {
@@ -423,7 +425,6 @@ function parseBazaarPricesFromLines(lines) {
     sortOrderIndex < 0 ||
     todayPriceIndex < 0 ||
     previousDayPriceIndex < 0 ||
-    updatedAtIndex < 0 ||
     commentIndex < 0
   ) {
     throw new Error("bazaar_prices.csv ヘッダーが想定と一致しません");
@@ -431,6 +432,9 @@ function parseBazaarPricesFromLines(lines) {
 
   if (updateInfoIndex < 0) {
     console.warn("[bazaar_prices.csv] update_info 列が見つからないため空文字で補完します");
+  }
+  if (updatedAtIndex < 0) {
+    console.warn("[bazaar_prices.csv] updated_at 列が見つからないため参照しません");
   }
   if (shopPriceIndex < 0) {
     console.warn("[bazaar_prices.csv] shop_price 列が見つからないため null で補完します");
@@ -456,7 +460,7 @@ function parseBazaarPricesFromLines(lines) {
         displayPrice: parseNullableNumber(displayPriceRaw),
         previousDayPrice,
         priceChangeRate: calculatePriceChangeRate(todayPrice, previousDayPrice),
-        updatedAt: String(row[updatedAtIndex] || "").trim(),
+        updatedAt: updatedAtIndex >= 0 ? String(row[updatedAtIndex] || "").trim() : "",
         updateInfo: updateInfoIndex >= 0 ? String(row[updateInfoIndex] || "").trim() : "",
         comment: String(row[commentIndex] || "").trim(),
       };
@@ -616,8 +620,8 @@ function renderBazaarPrices() {
                 </div>
                 <dl class="bazaar-meta">
                   <div class="bazaar-meta-item">
-                    <dt>更新時</dt>
-                    <dd>${formatBazaarUpdatedAt(row.updatedAt)}</dd>
+                    <dt>更新時刻</dt>
+                    <dd>${bazaarCsvUpdatedAt}</dd>
                   </div>
                   <div class="bazaar-meta-item">
                     <dt>コメント</dt>
@@ -1554,6 +1558,8 @@ async function initialize() {
     bazaarPrices = [];
   }
 
+  bazaarCsvUpdatedAt = await loadBazaarLastUpdatedAt();
+
   // CSV側が空でも初期表示で一覧が空にならないようフォールバックを維持
   if ((state.equipments || []).length === 0 || (state.recipes || []).length === 0) {
     state = mergeWithStoredData(structuredClone(defaultData), storedData);
@@ -1561,7 +1567,6 @@ async function initialize() {
 
   selectedEquipmentId = state.equipments[0]?.id || "";
   selectedToolId = "";
-  renderLastUpdated();
   saveData();
   rerenderAll();
 }
