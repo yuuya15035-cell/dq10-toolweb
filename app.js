@@ -82,13 +82,17 @@ function makeToolId(profession, toolName) {
 }
 
 async function fetchCsvLines(path) {
+  console.info(`[CSV] fetch start: ${path}`);
   const response = await fetch(path);
   if (!response.ok) {
+    console.error(`[CSV] fetch failed: path=${path}, status=${response.status}`);
     throw new Error(`CSVの読み込みに失敗しました: ${path} (${response.status})`);
   }
   const csvText = await response.text();
   const normalized = csvText.replace(/^\uFEFF/, "");
-  return normalized.split(/\r?\n/).filter((line) => line.trim().length > 0);
+  const lines = normalized.split(/\r?\n/).filter((line) => line.trim().length > 0);
+  console.info(`[CSV] fetch success: path=${path}, lines=${lines.length}`);
+  return lines;
 }
 
 function parseToolsFromLines(lines) {
@@ -405,6 +409,7 @@ function parseBazaarPricesFromLines(lines) {
   const updateInfoIndex = headers.indexOf("update_info");
   const commentIndex = headers.indexOf("comment");
   const shopPriceIndex = headers.indexOf("shop_price");
+  console.info("[bazaar_prices.csv] header columns:", headers);
 
   if (
     materialNameIndex < 0 ||
@@ -413,20 +418,25 @@ function parseBazaarPricesFromLines(lines) {
     todayPriceIndex < 0 ||
     previousDayPriceIndex < 0 ||
     updatedAtIndex < 0 ||
-    updateInfoIndex < 0 ||
-    commentIndex < 0 ||
-    shopPriceIndex < 0
+    commentIndex < 0
   ) {
     throw new Error("bazaar_prices.csv ヘッダーが想定と一致しません");
   }
 
-  return lines
+  if (updateInfoIndex < 0) {
+    console.warn("[bazaar_prices.csv] update_info 列が見つからないため空文字で補完します");
+  }
+  if (shopPriceIndex < 0) {
+    console.warn("[bazaar_prices.csv] shop_price 列が見つからないため null で補完します");
+  }
+
+  const rows = lines
     .slice(1)
     .map((line) => parseCsvLine(line))
     .map((row, rowIndex) => {
       const sortOrderRaw = Number(row[sortOrderIndex]);
       const todayPriceRaw = String(row[todayPriceIndex] || "").trim();
-      const shopPriceRaw = String(row[shopPriceIndex] || "").trim();
+      const shopPriceRaw = shopPriceIndex >= 0 ? String(row[shopPriceIndex] || "").trim() : "";
       const displayPriceRaw = todayPriceRaw !== "" ? todayPriceRaw : shopPriceRaw;
       return {
         id: `bazaar-row-${rowIndex}`,
@@ -438,12 +448,15 @@ function parseBazaarPricesFromLines(lines) {
         displayPrice: parseNullableNumber(displayPriceRaw),
         previousDayPrice: parseNullableNumber(row[previousDayPriceIndex]),
         updatedAt: String(row[updatedAtIndex] || "").trim(),
-        updateInfo: String(row[updateInfoIndex] || "").trim(),
+        updateInfo: updateInfoIndex >= 0 ? String(row[updateInfoIndex] || "").trim() : "",
         comment: String(row[commentIndex] || "").trim(),
       };
     })
     .filter((row) => row.materialName !== "")
     .sort((a, b) => a.sortOrder - b.sortOrder);
+
+  console.info(`[bazaar_prices.csv] parsed rows: ${rows.length}`);
+  return rows;
 }
 
 async function loadBazaarPricesCsv() {
@@ -499,6 +512,7 @@ function renderBazaarPrices() {
   if (!bazaarListWrap) return;
 
   if (!Array.isArray(bazaarPrices) || bazaarPrices.length === 0) {
+    console.warn(`[bazaar] render skipped: rows.length=${Array.isArray(bazaarPrices) ? bazaarPrices.length : "not-array"}`);
     bazaarListWrap.innerHTML = `<p>表示できる価格データがありません。CSV内容を確認してください。</p>`;
     return;
   }
@@ -523,6 +537,9 @@ function renderBazaarPrices() {
     bazaarPrices.filter((row) => selectedBazaarCategory === "" || row.itemCategory === selectedBazaarCategory),
     selectedBazaarCategory,
     selectedBazaarSort
+  );
+  console.info(
+    `[bazaar] render rows: total=${bazaarPrices.length}, visible=${visibleRows.length}, category=${selectedBazaarCategory || "all"}, sort=${selectedBazaarSort}`
   );
 
   bazaarListWrap.innerHTML = `
@@ -1514,7 +1531,7 @@ async function initialize() {
   try {
     bazaarPrices = await loadBazaarPricesCsv();
   } catch (error) {
-    console.warn("bazaar_prices.csv の読み込みに失敗しました", error);
+    console.error(`bazaar_prices.csv の読み込みに失敗しました: path=${BAZAAR_CSV_PATH}`, error);
     bazaarPrices = [];
   }
 
