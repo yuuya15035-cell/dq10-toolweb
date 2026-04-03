@@ -346,6 +346,7 @@ let selectedToolId = "";
 let bazaarPrices = [];
 let selectedBazaarCategory = "";
 let selectedBazaarSort = "standard";
+let bazaarSearchKeyword = "";
 let bazaarCsvUpdatedAt = "-";
 let showBazaarFavoritesOnly = false;
 let activeFavoritesTabId = "recipes";
@@ -671,9 +672,36 @@ function isBazaarFavoriteRow(row) {
   return bazaarFavoriteMaterialKeys.has(row?.materialKey);
 }
 
+function normalizeBazaarSearchText(value) {
+  return String(value || "").trim().toLocaleLowerCase("ja");
+}
+
+function getBazaarSearchCandidates(keyword) {
+  const normalizedKeyword = normalizeBazaarSearchText(keyword);
+  if (normalizedKeyword === "") return [];
+
+  const uniqueNames = new Set();
+  bazaarPrices.forEach((row) => {
+    const materialName = String(row?.materialName || "").trim();
+    if (materialName === "") return;
+    const normalizedName = normalizeBazaarSearchText(materialName);
+    if (normalizedName.includes(normalizedKeyword)) {
+      uniqueNames.add(materialName);
+    }
+  });
+
+  return Array.from(uniqueNames).sort((a, b) => a.localeCompare(b, "ja"));
+}
+
 function getVisibleBazaarRows() {
   const targetRows = bazaarPrices.filter((row) => selectedBazaarCategory === "" || row.itemCategory === selectedBazaarCategory);
-  const filteredRows = showBazaarFavoritesOnly ? targetRows.filter((row) => isBazaarFavoriteRow(row)) : targetRows;
+  const favoriteFilteredRows = showBazaarFavoritesOnly ? targetRows.filter((row) => isBazaarFavoriteRow(row)) : targetRows;
+  const normalizedKeyword = normalizeBazaarSearchText(bazaarSearchKeyword);
+  const keywordFilteredRows =
+    normalizedKeyword === ""
+      ? favoriteFilteredRows
+      : favoriteFilteredRows.filter((row) => normalizeBazaarSearchText(row.materialName).includes(normalizedKeyword));
+  const filteredRows = keywordFilteredRows;
   return getSortedBazaarRows(filteredRows, selectedBazaarCategory, selectedBazaarSort);
 }
 
@@ -703,8 +731,11 @@ function renderBazaarPrices() {
   }
 
   const visibleRows = getVisibleBazaarRows();
+  const searchKeyword = String(bazaarSearchKeyword || "").trim();
+  const searchCandidates = getBazaarSearchCandidates(searchKeyword);
+  const showSearchCandidates = searchKeyword !== "";
   console.info(
-    `[bazaar] render rows: total=${bazaarPrices.length}, visible=${visibleRows.length}, category=${selectedBazaarCategory || "all"}, sort=${selectedBazaarSort}, favoritesOnly=${showBazaarFavoritesOnly}`
+    `[bazaar] render rows: total=${bazaarPrices.length}, visible=${visibleRows.length}, category=${selectedBazaarCategory || "all"}, sort=${selectedBazaarSort}, favoritesOnly=${showBazaarFavoritesOnly}, search=${searchKeyword || "-"}`
   );
 
   bazaarListWrap.innerHTML = `
@@ -731,6 +762,49 @@ function renderBazaarPrices() {
             `
           ).join("")}
         </select>
+      </label>
+      <label class="field bazaar-search-field">
+        <span>素材検索</span>
+        <div class="bazaar-search-input-wrap">
+          <input
+            id="bazaarSearchInput"
+            type="search"
+            placeholder="素材名で検索"
+            aria-label="素材名で検索"
+            autocomplete="off"
+            autocapitalize="off"
+            spellcheck="false"
+          />
+          <button
+            id="bazaarSearchClearButton"
+            type="button"
+            class="bazaar-search-clear-button"
+            aria-label="素材検索をクリア"
+            ${searchKeyword === "" ? "disabled" : ""}
+          >
+            ×
+          </button>
+        </div>
+        ${
+          showSearchCandidates
+            ? `<div class="bazaar-search-candidates" role="listbox" aria-label="素材検索候補">
+                ${
+                  searchCandidates.length === 0
+                    ? `<p class="bazaar-search-empty">候補がありません</p>`
+                    : searchCandidates
+                        .slice(0, 30)
+                        .map(
+                          (candidate) => `
+                            <button type="button" class="bazaar-search-candidate-button">
+                              ${candidate}
+                            </button>
+                          `
+                        )
+                        .join("")
+                }
+              </div>`
+            : ""
+        }
       </label>
       <label class="field inline-field bazaar-favorite-filter-field">
         <input id="bazaarFavoritesOnlyToggle" type="checkbox" ${showBazaarFavoritesOnly ? "checked" : ""} />
@@ -821,6 +895,30 @@ function renderBazaarPrices() {
     });
   }
 
+  const bazaarSearchInput = bazaarListWrap.querySelector("#bazaarSearchInput");
+  if (bazaarSearchInput) {
+    bazaarSearchInput.value = searchKeyword;
+    bazaarSearchInput.addEventListener("input", (event) => {
+      bazaarSearchKeyword = String(event.target.value || "");
+      renderBazaarPrices();
+    });
+  }
+
+  const bazaarSearchClearButton = bazaarListWrap.querySelector("#bazaarSearchClearButton");
+  if (bazaarSearchClearButton) {
+    bazaarSearchClearButton.addEventListener("click", () => {
+      bazaarSearchKeyword = "";
+      renderBazaarPrices();
+    });
+  }
+
+  bazaarListWrap.querySelectorAll(".bazaar-search-candidate-button").forEach((button) => {
+    button.addEventListener("click", () => {
+      bazaarSearchKeyword = String(button.textContent || "").trim();
+      renderBazaarPrices();
+    });
+  });
+
   bazaarListWrap.querySelectorAll("[data-bazaar-row-id]").forEach((button) => {
     button.addEventListener("click", () => {
       const rowId = String(button.dataset.bazaarRowId || "");
@@ -879,6 +977,7 @@ function openRecipeFromFavorite(equipmentId) {
 function openBazaarFromFavorite(materialKey) {
   switchTab("bazaar");
   pendingBazaarFocusMaterialKey = materialKey || "";
+  bazaarSearchKeyword = "";
   navigateByAppParams({ tab: "bazaar", equipmentId: "", materialKey: materialKey || "" });
   renderBazaarPrices();
   document.getElementById("bazaar")?.scrollIntoView({ block: "start", behavior: "smooth" });
