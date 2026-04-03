@@ -11,6 +11,7 @@ const BAZAAR_FAVORITES_STORAGE_KEY = "dq10_toolweb_bazaar_favorites_v1";
 const RECIPE_FAVORITES_STORAGE_KEY = "dq10_toolweb_recipe_favorites_v1";
 const RECIPE_FAVORITE_CATEGORY_VALUE = "__favorites__";
 const TAB_IDS = new Set(["profit", "bazaar", "favorites", "data"]);
+const FAVORITES_TAB_IDS = new Set(["recipes", "materials"]);
 const RECIPE_SUMMARY_MATERIAL_LIMIT = 4;
 const BAZAAR_CATEGORY_ORDER = ["石系", "植物系", "モンスター系", "その他", "消費アイテム"];
 const BAZAAR_SORT_OPTIONS = [
@@ -347,6 +348,7 @@ let selectedBazaarCategory = "";
 let selectedBazaarSort = "standard";
 let bazaarCsvUpdatedAt = "-";
 let showBazaarFavoritesOnly = false;
+let activeFavoritesTabId = "recipes";
 let bazaarFavoriteMaterialKeys = new Set();
 let recipeFavoriteKeys = new Set();
 let selectedRecipeSort = RECIPE_SORT_OPTIONS[0].value;
@@ -403,6 +405,8 @@ const materialDataTransferMessage = getRequiredElementById("materialDataTransfer
 const bazaarListWrap = getRequiredElementById("bazaarListWrap");
 const favoriteRecipesListWrap = getRequiredElementById("favoriteRecipesListWrap");
 const favoriteMaterialsListWrap = getRequiredElementById("favoriteMaterialsListWrap");
+const favoritesTabButtons = document.querySelectorAll("[data-favorites-tab]");
+const favoritesPanels = document.querySelectorAll(".favorites-panel");
 
 const perCraftToolCostEl = getRequiredElementById("perCraftToolCost");
 const totalMaterialCostEl = getRequiredElementById("totalMaterialCost");
@@ -880,6 +884,26 @@ function openBazaarFromFavorite(materialKey) {
   document.getElementById("bazaar")?.scrollIntoView({ block: "start", behavior: "smooth" });
 }
 
+function switchFavoritesTab(targetTabId) {
+  const normalizedTarget = FAVORITES_TAB_IDS.has(targetTabId) ? targetTabId : "recipes";
+  activeFavoritesTabId = normalizedTarget;
+
+  favoritesTabButtons.forEach((button) => {
+    const isActive = button.dataset.favoritesTab === normalizedTarget;
+    button.classList.toggle("is-active", isActive);
+    button.setAttribute("aria-selected", isActive ? "true" : "false");
+    button.tabIndex = isActive ? 0 : -1;
+  });
+
+  favoritesPanels.forEach((panel) => {
+    const shouldShow =
+      (panel.id === "favoritesRecipesPanel" && normalizedTarget === "recipes") ||
+      (panel.id === "favoritesMaterialsPanel" && normalizedTarget === "materials");
+    panel.classList.toggle("is-active", shouldShow);
+    panel.hidden = !shouldShow;
+  });
+}
+
 function renderFavoriteRecipesSection() {
   if (!favoriteRecipesListWrap) return;
   const favoriteEquipments = state.equipments
@@ -990,6 +1014,7 @@ function renderFavoriteMaterialsSection() {
 function renderFavoritesPage() {
   renderFavoriteRecipesSection();
   renderFavoriteMaterialsSection();
+  switchFavoritesTab(activeFavoritesTabId);
 }
 
 function normalizeSalePrices(salePrices, fallbackSalePrice = 0) {
@@ -1173,6 +1198,12 @@ function scrollToBlock(blockId) {
 
 tabButtons.forEach((btn) => {
   btn.addEventListener("click", () => switchTab(btn.dataset.tab));
+});
+
+favoritesTabButtons.forEach((button) => {
+  button.addEventListener("click", () => {
+    switchFavoritesTab(button.dataset.favoritesTab);
+  });
 });
 
 if (menuToggleButton) {
