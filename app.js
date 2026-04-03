@@ -357,10 +357,56 @@ function formatBazaarPriceWithUnit(value) {
   return text === "-" ? "-" : `${text} G`;
 }
 
+function normalizeBazaarRate(rate) {
+  if (!Number.isFinite(rate)) return null;
+  return Math.abs(rate) < 0.05 ? 0 : rate;
+}
+
 function formatBazaarChangeRate(rate) {
-  if (!Number.isFinite(rate)) return "-";
-  const normalizedRate = Math.abs(rate) < 0.05 ? 0 : rate;
-  return `${normalizedRate.toFixed(1)}%`;
+  const normalizedRate = normalizeBazaarRate(rate);
+  if (!Number.isFinite(normalizedRate)) return "-";
+
+  const absRate = Math.abs(normalizedRate);
+  const signPrefix = normalizedRate > 0 ? "+" : "";
+  const displayRate = absRate === 0 ? 0 : normalizedRate;
+  return `${signPrefix}${displayRate.toFixed(1)}%`;
+}
+
+function getBazaarChangeArrow(rate) {
+  const normalizedRate = normalizeBazaarRate(rate);
+  if (!Number.isFinite(normalizedRate)) return "";
+  if (normalizedRate >= 100) return "↑";
+  if (normalizedRate >= 1) return "↗";
+  if (normalizedRate <= -100) return "↓";
+  if (normalizedRate <= -1) return "↘";
+  return "→";
+}
+
+function getBazaarChangeToneClass(rate) {
+  const normalizedRate = normalizeBazaarRate(rate);
+  if (!Number.isFinite(normalizedRate)) return "is-unavailable";
+  if (normalizedRate > 0) return "is-positive";
+  if (normalizedRate < 0) return "is-negative";
+  return "is-neutral";
+}
+
+function getBazaarChangePresentation(rate) {
+  const normalizedRate = normalizeBazaarRate(rate);
+  if (!Number.isFinite(normalizedRate)) {
+    return {
+      text: "-",
+      arrow: "",
+      toneClass: "is-unavailable",
+      isComputable: false,
+    };
+  }
+
+  return {
+    text: formatBazaarChangeRate(normalizedRate),
+    arrow: getBazaarChangeArrow(normalizedRate),
+    toneClass: getBazaarChangeToneClass(normalizedRate),
+    isComputable: true,
+  };
 }
 
 function formatBazaarUpdatedAt(rawValue) {
@@ -477,12 +523,6 @@ async function loadBazaarPricesCsv() {
   return parseBazaarPricesFromLines(lines);
 }
 
-function getUpdateInfoBadgeClass(updateInfo) {
-  if (updateInfo === "急騰") return "is-rising";
-  if (updateInfo === "急落") return "is-dropping";
-  return "";
-}
-
 function getBazaarCategoryPriority(category) {
   const index = BAZAAR_CATEGORY_ORDER.indexOf(String(category || "").trim());
   return index >= 0 ? index : Number.MAX_SAFE_INTEGER;
@@ -595,13 +635,12 @@ function renderBazaarPrices() {
           ? `<p>選択したジャンルのデータがありません。</p>`
           : visibleRows
               .map((row) => {
-          const badgeClass = getUpdateInfoBadgeClass(row.updateInfo);
-          const badgeHtml =
-            row.updateInfo === ""
-              ? ""
-              : `<span class="bazaar-badge ${badgeClass}">${row.updateInfo}</span>`;
           const todayPriceHtml = formatBazaarPriceWithUnit(row.displayPrice);
           const changeRate = getBazaarRowChangeRate(row);
+          const changePresentation = getBazaarChangePresentation(changeRate);
+          const changeArrowHtml = changePresentation.isComputable
+            ? `<span class="bazaar-change-arrow ${changePresentation.toneClass}" aria-hidden="true">${changePresentation.arrow}</span>`
+            : "";
 
           return `
             <article class="bazaar-card">
@@ -610,12 +649,11 @@ function renderBazaarPrices() {
                   <h3>${row.materialName}</h3>
                   <p class="bazaar-category">${row.itemCategory || "-"}</p>
                 </div>
-                ${badgeHtml}
               </header>
               <div class="bazaar-main">
                 <div class="bazaar-primary">
                   <p class="bazaar-today-price">${todayPriceHtml}</p>
-                  <p class="bazaar-change-rate">前日比: <span>${formatBazaarChangeRate(changeRate)}</span></p>
+                  <p class="bazaar-change-rate">前日比: <span class="bazaar-change-value ${changePresentation.toneClass}">${changePresentation.text}</span>${changeArrowHtml}</p>
                   <p class="bazaar-previous-price">前日: ${formatBazaarPriceWithUnit(row.previousDayPrice)}</p>
                 </div>
                 <dl class="bazaar-meta">
