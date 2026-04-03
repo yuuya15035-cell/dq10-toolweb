@@ -513,6 +513,10 @@ button {
   gap: 8px;
 }
 
+.bazaar-card-title-group {
+  min-width: 0;
+}
+
 .bazaar-card-header h3 {
   margin: 0;
   font-size: 0.98rem;
@@ -551,16 +555,36 @@ button {
 
 .bazaar-main {
   margin-top: 6px;
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+}
+
+.bazaar-sub-row {
+  margin-top: 3px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
   gap: 8px;
-  align-items: end;
+}
+
+.bazaar-updated-at {
+  margin: 0;
+  color: #4f5d75;
+  font-size: 0.76rem;
+  line-height: 1.2;
+  white-space: nowrap;
+}
+
+.bazaar-footer-row {
+  margin-top: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
 }
 
 .bazaar-actions {
-  margin-top: 10px;
   display: flex;
-  justify-content: flex-end;
+  justify-content: flex-start;
+  flex-shrink: 0;
 }
 
 .bazaar-official-link-button {
@@ -568,16 +592,17 @@ button {
   align-items: center;
   justify-content: center;
   gap: 5px;
-  min-height: 40px;
-  padding: 9px 12px;
+  min-height: 36px;
+  padding: 7px 10px;
   border: 1px solid #d4def1;
-  border-radius: 10px;
+  border-radius: 8px;
   background: #f7faff;
   color: #1f4fbf;
-  font-size: 0.82rem;
+  font-size: 0.78rem;
   font-weight: 700;
   line-height: 1.2;
   text-decoration: none;
+  white-space: nowrap;
 }
 
 .bazaar-official-link-button::after {
@@ -654,42 +679,10 @@ button {
 }
 
 .bazaar-previous-price {
-  margin: 2px 0 0;
-  color: #4f5d75;
-  font-size: 0.8rem;
-  line-height: 1.2;
-}
-
-.bazaar-meta {
   margin: 0;
-  display: grid;
-  gap: 4px;
-}
-
-.bazaar-meta-item {
-  display: flex;
-  gap: 6px;
-  min-width: 0;
-}
-
-.bazaar-meta dt {
   color: #4f5d75;
-  font-size: 0.74rem;
-  flex-shrink: 0;
+  font-size: 0.78rem;
   line-height: 1.2;
-}
-
-.bazaar-meta dd {
-  margin: 0;
-  word-break: break-word;
-  font-size: 0.76rem;
-  line-height: 1.2;
-}
-
-.bazaar-comment {
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
 }
 
 .recipe-favorite-action {
@@ -1010,19 +1003,23 @@ button {
     font-size: 0.72rem;
   }
 
-  .bazaar-main {
-    margin-top: 4px;
-    gap: 6px;
+  .bazaar-updated-at {
+    font-size: 0.68rem;
   }
 
-  .bazaar-actions {
-    margin-top: 8px;
+  .bazaar-main {
+    margin-top: 4px;
+  }
+
+  .bazaar-footer-row {
+    margin-top: 6px;
+    gap: 8px;
   }
 
   .bazaar-official-link-button {
-    min-height: 42px;
-    font-size: 0.78rem;
-    padding: 9px 11px;
+    min-height: 38px;
+    font-size: 0.74rem;
+    padding: 7px 9px;
   }
 
   .bazaar-today-price {
@@ -1040,19 +1037,6 @@ button {
 
   .bazaar-previous-price {
     font-size: 0.72rem;
-  }
-
-  .bazaar-meta {
-    gap: 3px;
-  }
-
-  .bazaar-meta-item {
-    gap: 4px;
-  }
-
-  .bazaar-meta dt,
-  .bazaar-meta dd {
-    font-size: 0.68rem;
   }
 
 }

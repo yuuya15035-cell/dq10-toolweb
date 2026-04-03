@@ -852,9 +852,8 @@ function renderBazaarPrices() {
           return `
             <article class="bazaar-card ${pendingBazaarFocusMaterialKey !== "" && row.materialKey === pendingBazaarFocusMaterialKey ? "is-focused" : ""}" data-bazaar-material-key="${row.materialKey}">
               <header class="bazaar-card-header">
-                <div>
+                <div class="bazaar-card-title-group">
                   <h3>${row.materialName}</h3>
-                  <p class="bazaar-category">${row.itemCategory || "-"}</p>
                 </div>
                 <button
                   type="button"
@@ -866,26 +865,21 @@ function renderBazaarPrices() {
                   ♥
                 </button>
               </header>
+              <div class="bazaar-sub-row" aria-label="ジャンルと更新日">
+                <p class="bazaar-category">${row.itemCategory || "-"}</p>
+                <p class="bazaar-updated-at">更新: ${bazaarCsvUpdatedAt}</p>
+              </div>
               <div class="bazaar-main">
                 <div class="bazaar-primary">
                   <p class="bazaar-today-price">${todayPriceHtml}</p>
                   <p class="bazaar-change-rate">前日比: <span class="bazaar-change-value ${changePresentation.toneClass}">${changePresentation.text}</span>${changeArrowHtml}</p>
-                  <p class="bazaar-previous-price">前日: ${formatBazaarPriceWithUnit(row.previousDayPrice)}</p>
                 </div>
-                <dl class="bazaar-meta">
-                  <div class="bazaar-meta-item">
-                    <dt>更新時刻</dt>
-                    <dd>${bazaarCsvUpdatedAt}</dd>
-                  </div>
-                  <div class="bazaar-meta-item">
-                    <dt>コメント</dt>
-                    <dd class="bazaar-comment">${row.comment || "-"}</dd>
-                  </div>
-                </dl>
               </div>
-              ${
-                hasOfficialUrl
-                  ? `<div class="bazaar-actions">
+              <div class="bazaar-footer-row">
+                <p class="bazaar-previous-price">前日: ${formatBazaarPriceWithUnit(row.previousDayPrice)}</p>
+                ${
+                  hasOfficialUrl
+                    ? `<div class="bazaar-actions">
                       <a
                         class="bazaar-official-link-button"
                         href="${row.officialUrl}"
@@ -893,11 +887,12 @@ function renderBazaarPrices() {
                         rel="noopener noreferrer"
                         aria-label="${row.materialName}の公式相場サイトを新しいタブで開く"
                       >
-                        公式相場サイトで確認
+                        公式相場サイト
                       </a>
                     </div>`
-                  : ""
-              }
+                    : ""
+                }
+              </div>
             </article>
           `;
               })
