@@ -6,6 +6,7 @@ const STORAGE_KEY = "dq10_toolweb_data_v1";
 const RECIPE_CSV_PATH = "./data/recipe.csv";
 const TOOLS_CSV_PATH = "./data/tools.csv";
 const BAZAAR_CSV_PATH = "./data/bazaar_prices.csv";
+const LAST_UPDATED_JSON_PATH = "./data/last-updated.json";
 const BAZAAR_CATEGORY_ORDER = ["石系", "植物系", "モンスター系", "その他", "消費アイテム"];
 const BAZAAR_SORT_OPTIONS = [
   { value: "rate_desc", label: "変動率高い順" },
@@ -265,6 +266,7 @@ let selectedToolId = "";
 let bazaarPrices = [];
 let selectedBazaarCategory = "";
 let selectedBazaarSort = BAZAAR_SORT_OPTIONS[0].value;
+let bazaarCsvUpdatedAt = "-";
 // 利益計算画面だけで使う「今回計算用の一時単価」。
 // - キー: materialId
 // - 値: 画面上で上書きした単価
@@ -331,7 +333,6 @@ const totalProfitStar3ValueEl = getRequiredElementById("totalProfitStar3Value");
 const totalFeeValueEl = getRequiredElementById("totalFeeValue");
 const averageNetSalesValueEl = getRequiredElementById("averageNetSalesValue");
 const totalProfitValueEl = getRequiredElementById("totalProfitValue");
-const lastUpdatedValueEl = getRequiredElementById("lastUpdatedValue");
 
 const materialForm = getRequiredElementById("materialForm");
 const equipmentForm = getRequiredElementById("equipmentForm");
@@ -366,6 +367,15 @@ function formatBazaarUpdatedAt(rawValue) {
   const normalized = String(rawValue || "").trim();
   if (normalized === "") return "-";
 
+  const matched = normalized.match(/^(\d{4})[-/](\d{1,2})[-/](\d{1,2})(?:[ T](\d{1,2}):(\d{2}))?$/);
+  if (matched) {
+    const month = Number(matched[2]);
+    const day = Number(matched[3]);
+    const hour = Number(matched[4] || 0);
+    const minute = Number(matched[5] || 0);
+    return `${month}/${day} ${String(hour).padStart(2, "0")}:${String(minute).padStart(2, "0")}`;
+  }
+
   const parsed = new Date(normalized);
   if (Number.isNaN(parsed.getTime())) return normalized;
 
@@ -382,24 +392,6 @@ function parseNullableNumber(value) {
   if (normalized === "") return null;
   const parsed = Number(normalized);
   return Number.isFinite(parsed) ? parsed : null;
-}
-
-function renderLastUpdated() {
-  if (!lastUpdatedValueEl) return;
-
-  const parsed = new Date(document.lastModified);
-  if (Number.isNaN(parsed.getTime())) {
-    lastUpdatedValueEl.textContent = "-";
-    return;
-  }
-
-  lastUpdatedValueEl.textContent = new Intl.DateTimeFormat("ja-JP", {
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-    hour: "2-digit",
-    minute: "2-digit",
-  }).format(parsed);
 }
 
 function parseBazaarPricesFromLines(lines) {
@@ -471,6 +463,28 @@ function parseBazaarPricesFromLines(lines) {
 async function loadBazaarPricesCsv() {
   const lines = await fetchCsvLines(BAZAAR_CSV_PATH);
   return parseBazaarPricesFromLines(lines);
+}
+
+async function loadBazaarCsvUpdatedAt() {
+  try {
+    const response = await fetch(LAST_UPDATED_JSON_PATH);
+    if (!response.ok) {
+      console.error(`[last-updated.json] fetch failed: path=${LAST_UPDATED_JSON_PATH}, status=${response.status}`);
+      return "-";
+    }
+
+    const payload = await response.json();
+    const updatedAt = String(payload?.bazaarCsvUpdatedAt || "").trim();
+    if (updatedAt === "") {
+      console.warn("[last-updated.json] bazaarCsvUpdatedAt が空のため '-' を表示します");
+      return "-";
+    }
+
+    return updatedAt;
+  } catch (error) {
+    console.error(`[last-updated.json] load failed: path=${LAST_UPDATED_JSON_PATH}`, error);
+    return "-";
+  }
 }
 
 function getUpdateInfoBadgeClass(updateInfo) {
@@ -617,7 +631,7 @@ function renderBazaarPrices() {
                 <dl class="bazaar-meta">
                   <div class="bazaar-meta-item">
                     <dt>更新時</dt>
-                    <dd>${formatBazaarUpdatedAt(row.updatedAt)}</dd>
+                    <dd>${formatBazaarUpdatedAt(bazaarCsvUpdatedAt)}</dd>
                   </div>
                   <div class="bazaar-meta-item">
                     <dt>コメント</dt>
@@ -1554,6 +1568,8 @@ async function initialize() {
     bazaarPrices = [];
   }
 
+  bazaarCsvUpdatedAt = await loadBazaarCsvUpdatedAt();
+
   // CSV側が空でも初期表示で一覧が空にならないようフォールバックを維持
   if ((state.equipments || []).length === 0 || (state.recipes || []).length === 0) {
     state = mergeWithStoredData(structuredClone(defaultData), storedData);
@@ -1561,7 +1577,6 @@ async function initialize() {
 
   selectedEquipmentId = state.equipments[0]?.id || "";
   selectedToolId = "";
-  renderLastUpdated();
   saveData();
   rerenderAll();
 }
