@@ -356,6 +356,12 @@ function formatBazaarPriceWithUnit(value) {
   return text === "-" ? "-" : `${text} G`;
 }
 
+function formatBazaarChangeRate(rate) {
+  if (!Number.isFinite(rate)) return "-";
+  const normalizedRate = Math.abs(rate) < 0.05 ? 0 : rate;
+  return `${normalizedRate.toFixed(1)}%`;
+}
+
 function formatBazaarUpdatedAt(rawValue) {
   const normalized = String(rawValue || "").trim();
   if (normalized === "") return "-";
@@ -438,15 +444,18 @@ function parseBazaarPricesFromLines(lines) {
       const todayPriceRaw = String(row[todayPriceIndex] || "").trim();
       const shopPriceRaw = shopPriceIndex >= 0 ? String(row[shopPriceIndex] || "").trim() : "";
       const displayPriceRaw = todayPriceRaw !== "" ? todayPriceRaw : shopPriceRaw;
+      const todayPrice = parseNullableNumber(todayPriceRaw);
+      const previousDayPrice = parseNullableNumber(row[previousDayPriceIndex]);
       return {
         id: `bazaar-row-${rowIndex}`,
         materialName: String(row[materialNameIndex] || "").trim(),
         itemCategory: String(row[itemCategoryIndex] || "").trim(),
         sortOrder: Number.isFinite(sortOrderRaw) ? sortOrderRaw : Number.MAX_SAFE_INTEGER,
-        todayPrice: parseNullableNumber(todayPriceRaw),
+        todayPrice,
         shopPrice: parseNullableNumber(shopPriceRaw),
         displayPrice: parseNullableNumber(displayPriceRaw),
-        previousDayPrice: parseNullableNumber(row[previousDayPriceIndex]),
+        previousDayPrice,
+        priceChangeRate: calculatePriceChangeRate(todayPrice, previousDayPrice),
         updatedAt: String(row[updatedAtIndex] || "").trim(),
         updateInfo: updateInfoIndex >= 0 ? String(row[updateInfoIndex] || "").trim() : "",
         comment: String(row[commentIndex] || "").trim(),
@@ -481,6 +490,11 @@ function calculatePriceChangeRate(todayPrice, yesterdayPrice) {
   return ((todayPrice - yesterdayPrice) / yesterdayPrice) * 100;
 }
 
+function getBazaarRowChangeRate(row) {
+  if (Number.isFinite(row?.priceChangeRate)) return row.priceChangeRate;
+  return calculatePriceChangeRate(row?.todayPrice, row?.previousDayPrice);
+}
+
 function compareNullableNumbers(a, b, direction = "desc") {
   const aIsValid = Number.isFinite(a);
   const bIsValid = Number.isFinite(b);
@@ -497,8 +511,8 @@ function getSortedBazaarRows(rows, currentCategory, currentSort) {
       if (categoryDiff !== 0) return categoryDiff;
     }
 
-    const aRate = calculatePriceChangeRate(a.todayPrice, a.previousDayPrice);
-    const bRate = calculatePriceChangeRate(b.todayPrice, b.previousDayPrice);
+    const aRate = getBazaarRowChangeRate(a);
+    const bRate = getBazaarRowChangeRate(b);
     const sortDirection = currentSort === "rate_asc" ? "asc" : "desc";
     const rateDiff = compareNullableNumbers(aRate, bRate, sortDirection);
     if (rateDiff !== 0) return rateDiff;
@@ -580,6 +594,7 @@ function renderBazaarPrices() {
               ? ""
               : `<span class="bazaar-badge ${badgeClass}">${row.updateInfo}</span>`;
           const todayPriceHtml = formatBazaarPriceWithUnit(row.displayPrice);
+          const changeRate = getBazaarRowChangeRate(row);
 
           return `
             <article class="bazaar-card">
@@ -593,6 +608,7 @@ function renderBazaarPrices() {
               <div class="bazaar-main">
                 <div class="bazaar-primary">
                   <p class="bazaar-today-price">${todayPriceHtml}</p>
+                  <p class="bazaar-change-rate">前日比: <span>${formatBazaarChangeRate(changeRate)}</span></p>
                   <p class="bazaar-previous-price">前日: ${formatBazaarPriceWithUnit(row.previousDayPrice)}</p>
                 </div>
                 <dl class="bazaar-meta">
