@@ -136,6 +136,21 @@ DQ10（ドラゴンクエスト10）の職人向けに、
   - `favoriteMaterialKeys`: 素材名ベースキー（`m:${materialName}`）の配列
   - `showFavoritesOnly`: お気に入りのみ表示トグル状態（`true/false`）
 
+### レシピお気に入り保存（ブラウザローカル）
+
+- 参照先: `localStorage` キー `dq10_toolweb_recipe_favorites_v1`
+- 用途:
+  - レシピ検索結果（装備）のお気に入り状態（ON/OFF）を保存
+  - レシピ検索結果の「お気に入り優先」ソートに利用
+- 保存形式（JSON）:
+  - `version`: `1`
+  - `keyType`: `"equipmentId"`（ID優先で保持。将来拡張しやすい形式）
+  - `favoriteRecipeKeys`: 装備IDベースキー（`id:${equipmentId}`）の配列
+- 補足:
+  - 素材お気に入り（`dq10_toolweb_bazaar_favorites_v1`）とは完全に別キーで管理
+  - レシピ検索画面で「表示順」に `お気に入り優先` を追加
+  - お気に入り優先時は、お気に入り装備を先頭に寄せ、同順位内は既存並び（原価順→装備名）を維持
+
 ### バザー更新時刻表示
 
 - 参照先: `data/last-updated.json`（相対パス: `./data/last-updated.json`）

@@ -8,10 +8,16 @@ const TOOLS_CSV_PATH = "./data/tools.csv";
 const BAZAAR_CSV_PATH = "./data/bazaar_prices.csv";
 const LAST_UPDATED_JSON_PATH = "./data/last-updated.json";
 const BAZAAR_FAVORITES_STORAGE_KEY = "dq10_toolweb_bazaar_favorites_v1";
+const RECIPE_FAVORITES_STORAGE_KEY = "dq10_toolweb_recipe_favorites_v1";
 const BAZAAR_CATEGORY_ORDER = ["石系", "植物系", "モンスター系", "その他", "消費アイテム"];
 const BAZAAR_SORT_OPTIONS = [
   { value: "rate_desc", label: "変動率高い順" },
   { value: "rate_asc", label: "変動率低い順" },
+];
+const RECIPE_SORT_OPTIONS = [
+  { value: "cost_desc", label: "原価高い順" },
+  { value: "cost_asc", label: "原価低い順" },
+  { value: "favorite_first", label: "お気に入り優先" },
 ];
 
 // 初期データ（CSVが読み込めない場合のフォールバック）
@@ -258,6 +264,30 @@ function saveBazaarFavoriteState() {
   );
 }
 
+function loadRecipeFavoriteState() {
+  const raw = localStorage.getItem(RECIPE_FAVORITES_STORAGE_KEY);
+  if (!raw) return new Set();
+
+  try {
+    const parsed = JSON.parse(raw);
+    const keys = Array.isArray(parsed?.favoriteRecipeKeys) ? parsed.favoriteRecipeKeys : [];
+    return new Set(keys.map((key) => String(key || "").trim()).filter((key) => key !== ""));
+  } catch {
+    return new Set();
+  }
+}
+
+function saveRecipeFavoriteState() {
+  localStorage.setItem(
+    RECIPE_FAVORITES_STORAGE_KEY,
+    JSON.stringify({
+      version: 1,
+      keyType: "equipmentId",
+      favoriteRecipeKeys: Array.from(recipeFavoriteKeys),
+    })
+  );
+}
+
 function saveData() {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
 }
@@ -306,6 +336,8 @@ let selectedBazaarSort = BAZAAR_SORT_OPTIONS[0].value;
 let bazaarCsvUpdatedAt = "-";
 let showBazaarFavoritesOnly = false;
 let bazaarFavoriteMaterialKeys = new Set();
+let recipeFavoriteKeys = new Set();
+let selectedRecipeSort = RECIPE_SORT_OPTIONS[0].value;
 // 利益計算画面だけで使う「今回計算用の一時単価」。
 // - キー: materialId
 // - 値: 画面上で上書きした単価
@@ -328,6 +360,8 @@ const menuOverlay = getRequiredElementById("menuOverlay");
 const sideMenuItems = document.querySelectorAll(".side-menu-item");
 
 const equipmentSelect = getRequiredElementById("equipmentSelect");
+const recipeSortSelect = getRequiredElementById("recipeSortSelect");
+const recipeSearchResultList = getRequiredElementById("recipeSearchResultList");
 const equipmentSearchInput = getRequiredElementById("equipmentSearchInput");
 const materialSearchInput = getRequiredElementById("materialSearchInput");
 const craftsmanFilterSelect = getRequiredElementById("craftsmanFilterSelect");
@@ -948,46 +982,18 @@ document.addEventListener("keydown", (event) => {
 function renderEquipmentSelectors() {
   if (!equipmentSelect || !recipeEquipmentSelect) return;
 
-  // 利益計算画面の装備候補は、職人種別・ジャンル・検索キーワードをAND条件で絞り込みます。
-  // - 職人種別未選択: 全職人対象
-  // - ジャンル未選択: 全ジャンル対象
-  // - 検索欄空: 文字条件は無効（他の絞り込み条件のみで表示）
-  const normalizedMaterialKeyword = materialSearchKeyword.trim().toLowerCase();
-  const matchedRecipeByEquipmentId = new Map();
-
-  if (normalizedMaterialKeyword !== "") {
-    state.recipes.forEach((row) => {
-      const material = state.materials.find((m) => m.id === row.materialId);
-      const materialName = material?.name?.trim().toLowerCase() ?? "";
-      if (!materialName.includes(normalizedMaterialKeyword)) return;
-
-      if (!matchedRecipeByEquipmentId.has(row.equipmentId)) {
-        matchedRecipeByEquipmentId.set(row.equipmentId, []);
-      }
-      matchedRecipeByEquipmentId.get(row.equipmentId).push({
-        materialName: material?.name ?? "",
-        quantity: row.quantity,
-      });
+  if (recipeSortSelect) {
+    recipeSortSelect.innerHTML = "";
+    RECIPE_SORT_OPTIONS.forEach((option) => {
+      recipeSortSelect.add(new Option(option.label, option.value));
     });
+    if (!RECIPE_SORT_OPTIONS.some((option) => option.value === selectedRecipeSort)) {
+      selectedRecipeSort = RECIPE_SORT_OPTIONS[0].value;
+    }
+    recipeSortSelect.value = selectedRecipeSort;
   }
 
-  const filteredEquipments = state.equipments
-    .filter((equipment) => {
-      const matchesMaterial = normalizedMaterialKeyword === "" || matchedRecipeByEquipmentId.has(equipment.id);
-      return (
-        (selectedCraftsman === "" || equipment.craftsman === selectedCraftsman) &&
-        (selectedCategory === "" || equipment.category === selectedCategory) &&
-        (equipmentSearchKeyword === "" || equipment.name.toLowerCase().includes(equipmentSearchKeyword.toLowerCase())) &&
-        matchesMaterial
-      );
-    })
-    .sort((a, b) => {
-      // 装備一覧は「原価が高い順」をデフォルトにする。
-      // 並びの基準はプルダウン表示と一致させるため、四捨五入後の原価を使う。
-      const roundedCostDiff = getRoundedEquipmentMaterialCost(b.id) - getRoundedEquipmentMaterialCost(a.id);
-      if (roundedCostDiff !== 0) return roundedCostDiff;
-      return a.name.localeCompare(b.name, "ja");
-    });
+  const { filteredEquipments, matchedRecipeByEquipmentId, normalizedMaterialKeyword } = getFilteredEquipmentContext();
 
   equipmentSelect.innerHTML = "";
   recipeEquipmentSelect.innerHTML = "";
@@ -1021,6 +1027,7 @@ function renderEquipmentSelectors() {
   }
   equipmentSelect.value = selectedEquipmentId;
   recipeEquipmentSelect.value = selectedEquipmentId;
+  renderRecipeSearchResultList(filteredEquipments);
 }
 
 function renderFilterSelectors() {
@@ -1075,6 +1082,135 @@ function renderMaterialSelector() {
 
 function getSelectedEquipment() {
   return state.equipments.find((e) => e.id === selectedEquipmentId);
+}
+
+function getRecipeFavoriteKey(equipment) {
+  if (equipment?.id) return `id:${equipment.id}`;
+  if (equipment?.name) return `name:${equipment.name}`;
+  return "";
+}
+
+function isRecipeFavorite(equipment) {
+  const key = getRecipeFavoriteKey(equipment);
+  return key !== "" && recipeFavoriteKeys.has(key);
+}
+
+function compareEquipmentsByBaseSort(a, b) {
+  const costDiff = getRoundedEquipmentMaterialCost(a.id) - getRoundedEquipmentMaterialCost(b.id);
+  if (selectedRecipeSort === "cost_asc") {
+    if (costDiff !== 0) return costDiff;
+  } else {
+    if (costDiff !== 0) return -costDiff;
+  }
+  return a.name.localeCompare(b.name, "ja");
+}
+
+function getFilteredEquipmentContext() {
+  const normalizedMaterialKeyword = materialSearchKeyword.trim().toLowerCase();
+  const matchedRecipeByEquipmentId = new Map();
+
+  if (normalizedMaterialKeyword !== "") {
+    state.recipes.forEach((row) => {
+      const material = state.materials.find((m) => m.id === row.materialId);
+      const materialName = material?.name?.trim().toLowerCase() ?? "";
+      if (!materialName.includes(normalizedMaterialKeyword)) return;
+
+      if (!matchedRecipeByEquipmentId.has(row.equipmentId)) {
+        matchedRecipeByEquipmentId.set(row.equipmentId, []);
+      }
+      matchedRecipeByEquipmentId.get(row.equipmentId).push({
+        materialName: material?.name ?? "",
+        quantity: row.quantity,
+      });
+    });
+  }
+
+  const filteredEquipments = state.equipments
+    .filter((equipment) => {
+      const matchesMaterial = normalizedMaterialKeyword === "" || matchedRecipeByEquipmentId.has(equipment.id);
+      return (
+        (selectedCraftsman === "" || equipment.craftsman === selectedCraftsman) &&
+        (selectedCategory === "" || equipment.category === selectedCategory) &&
+        (equipmentSearchKeyword === "" || equipment.name.toLowerCase().includes(equipmentSearchKeyword.toLowerCase())) &&
+        matchesMaterial
+      );
+    })
+    .sort((a, b) => {
+      if (selectedRecipeSort === "favorite_first") {
+        const favoriteDiff = Number(isRecipeFavorite(b)) - Number(isRecipeFavorite(a));
+        if (favoriteDiff !== 0) return favoriteDiff;
+      }
+      return compareEquipmentsByBaseSort(a, b);
+    });
+
+  return { filteredEquipments, matchedRecipeByEquipmentId, normalizedMaterialKeyword };
+}
+
+function renderRecipeSearchResultList(filteredEquipments) {
+  if (!recipeSearchResultList) return;
+
+  if (filteredEquipments.length === 0) {
+    recipeSearchResultList.innerHTML = "<p class=\"helper-text\">条件に一致する装備がありません。</p>";
+    return;
+  }
+
+  recipeSearchResultList.innerHTML = filteredEquipments
+    .map((equipment) => {
+      const roundedMaterialCost = getRoundedEquipmentMaterialCost(equipment.id);
+      const isFavorite = isRecipeFavorite(equipment);
+      const isSelected = equipment.id === selectedEquipmentId;
+      return `
+        <article class="recipe-search-card ${isSelected ? "is-selected" : ""}">
+          <header class="recipe-search-card-header">
+            <h3>${equipment.name}</h3>
+            <button
+              type="button"
+              class="bazaar-favorite-button recipe-favorite-button ${isFavorite ? "is-active" : ""}"
+              data-toggle-recipe-favorite-id="${equipment.id}"
+              aria-label="${equipment.name}をお気に入り${isFavorite ? "解除" : "登録"}"
+            >
+              ${isFavorite ? "♥" : "♡"}
+            </button>
+          </header>
+          <p class="recipe-search-card-cost">原価目安: <strong>${roundedMaterialCost.toLocaleString("ja-JP")} G</strong></p>
+          <button
+            type="button"
+            class="secondary-btn recipe-search-select-button"
+            data-select-equipment-id="${equipment.id}"
+          >
+            ${isSelected ? "表示中" : "この装備を表示"}
+          </button>
+        </article>
+      `;
+    })
+    .join("");
+
+  recipeSearchResultList.querySelectorAll("[data-select-equipment-id]").forEach((button) => {
+    button.addEventListener("click", (event) => {
+      const nextId = event.currentTarget.dataset.selectEquipmentId || "";
+      if (!nextId) return;
+      selectedEquipmentId = nextId;
+      rerenderAll();
+    });
+  });
+
+  recipeSearchResultList.querySelectorAll("[data-toggle-recipe-favorite-id]").forEach((button) => {
+    button.addEventListener("click", (event) => {
+      event.stopPropagation();
+      const equipmentId = event.currentTarget.dataset.toggleRecipeFavoriteId || "";
+      const equipment = state.equipments.find((row) => row.id === equipmentId);
+      const favoriteKey = getRecipeFavoriteKey(equipment);
+      if (!favoriteKey) return;
+
+      if (recipeFavoriteKeys.has(favoriteKey)) {
+        recipeFavoriteKeys.delete(favoriteKey);
+      } else {
+        recipeFavoriteKeys.add(favoriteKey);
+      }
+      saveRecipeFavoriteState();
+      renderEquipmentSelectors();
+    });
+  });
 }
 
 function getSalePricesForEquipment(equipment) {
@@ -1464,6 +1600,14 @@ if (equipmentSelect) {
     renderRecipeTable();
     renderToolSection();
     calcAndRenderSummary();
+    renderEquipmentSelectors();
+  });
+}
+
+if (recipeSortSelect) {
+  recipeSortSelect.addEventListener("change", (e) => {
+    selectedRecipeSort = e.target.value;
+    renderEquipmentSelectors();
   });
 }
 
@@ -1668,6 +1812,7 @@ if (importMaterialPricesButton && importMaterialPricesInput) {
 async function initialize() {
   const storedData = loadStoredData();
   const favoriteState = loadBazaarFavoriteState();
+  const loadedRecipeFavoriteKeys = loadRecipeFavoriteState();
 
   try {
     const csvData = await loadDataFromCsv();
@@ -1695,6 +1840,7 @@ async function initialize() {
   selectedToolId = "";
   showBazaarFavoritesOnly = favoriteState.showFavoritesOnly;
   bazaarFavoriteMaterialKeys = favoriteState.favoriteMaterialKeys;
+  recipeFavoriteKeys = loadedRecipeFavoriteKeys;
   saveData();
   rerenderAll();
 }
