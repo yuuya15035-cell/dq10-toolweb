@@ -791,7 +791,8 @@ function parseFieldFarmingMonstersFromLines(lines) {
         rareDrop: String(row[rareDropIndex] || "").trim(),
         note: noteIndex >= 0 ? String(row[noteIndex] || "").trim() : "",
         mapUrl:
-          mapUrlIndex >= 0 && /^\/maps\/[^?#]+\.(png|jpe?g|webp|gif|svg)$/i.test(String(row[mapUrlIndex] || "").trim())
+          mapUrlIndex >= 0 &&
+          /^\/public\/maps\/[^?#]+\.(png|jpe?g|webp|gif|svg)$/i.test(String(row[mapUrlIndex] || "").trim())
             ? String(row[mapUrlIndex] || "").trim()
             : "",
       };
@@ -1821,13 +1822,24 @@ function openFieldFarmingMapModal(rowId) {
   const areaLabel = row.area ? `（${row.area}）` : "";
   fieldFarmingMapModalBody.innerHTML = `
     <h3 class="field-farming-map-modal-title">${row.monsterName || row.monsterArea}${areaLabel}</h3>
-    <img
+    <div class="field-farming-map-image-wrap">
+      <img
       class="field-farming-map-image"
       src="${row.mapUrl}"
       alt="${row.monsterName || "モンスター"}の出現マップ"
       loading="lazy"
-    />
+      />
+      <p class="field-farming-map-image-fallback" hidden>マップ画像を読み込めませんでした。</p>
+    </div>
   `;
+  const mapImage = fieldFarmingMapModalBody.querySelector(".field-farming-map-image");
+  const fallbackMessage = fieldFarmingMapModalBody.querySelector(".field-farming-map-image-fallback");
+  if (mapImage && fallbackMessage) {
+    mapImage.addEventListener("error", () => {
+      mapImage.classList.add("is-hidden");
+      fallbackMessage.hidden = false;
+    });
+  }
   activeFieldFarmingMapModalRowId = row.id;
   fieldFarmingMapModalOverlay.hidden = false;
   fieldFarmingMapModalOverlay.classList.add("is-open");

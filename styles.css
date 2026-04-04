@@ -429,6 +429,27 @@ body.is-modal-open {
   background: #fffdf8;
 }
 
+.field-farming-map-image-wrap {
+  min-height: 180px;
+}
+
+.field-farming-map-image.is-hidden {
+  display: none;
+}
+
+.field-farming-map-image-fallback {
+  margin: 0;
+  min-height: 180px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid #c5ab8d;
+  border-radius: 8px;
+  background: #fffdf8;
+  color: #80583b;
+  font-size: 0.9rem;
+}
+
 .card {
   background: var(--card);
   border: 1px solid var(--panel-border);
