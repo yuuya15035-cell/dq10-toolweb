@@ -151,6 +151,13 @@ body.is-modal-open {
 }
 
 .assist-section-title {
+  margin: 0 0 12px;
+  border: 1px solid #5d6e63;
+  border-radius: 10px;
+  padding: 11px 12px;
+  background: linear-gradient(180deg, #8ea296 0%, #74877d 100%);
+  color: #f7f3ea;
+  box-shadow: inset 0 0 0 1px rgba(240, 248, 239, 0.22);
   text-align: center;
   font-weight: 800;
   display: flex;
@@ -161,15 +168,16 @@ body.is-modal-open {
 }
 
 .assist-section-title-main {
+  color: #fdf9f1;
   line-height: 1.2;
 }
 
 .assist-section-title-note {
   font-size: 0.69rem;
   line-height: 1.35;
-  color: rgba(255, 247, 232, 0.92);
+  color: rgba(246, 252, 246, 0.9);
   letter-spacing: 0;
-  font-weight: 600;
+  font-weight: 700;
 }
 
 .tab-content {
@@ -698,9 +706,9 @@ button {
   width: 36px;
   height: 36px;
   border-radius: 999px;
-  border: 1px solid #d0bda7;
-  background: #f7ecdd;
-  color: #9a856f;
+  border: 1px solid #725742;
+  background: #8a6a52;
+  color: #ffffff;
   font-size: 1.1rem;
   line-height: 1;
   display: inline-flex;
@@ -711,10 +719,20 @@ button {
   flex-shrink: 0;
 }
 
+.bazaar-favorite-button:hover {
+  background: #7d5f49;
+  color: #ffffff;
+}
+
 .bazaar-favorite-button.is-active {
-  border-color: #d0a774;
-  background: #fff3df;
-  color: #9a5d1f;
+  border-color: #c67a9d;
+  background: #fff2f8;
+  color: #ea4f9f;
+}
+
+.bazaar-favorite-button.is-active:hover {
+  background: #fde8f3;
+  color: #d93d8e;
 }
 
 .bazaar-main {
