@@ -1,6 +1,6 @@
 :root {
   color-scheme: light;
-  --bg: #ece2d4;
+  --bg: #f2eadf;
   --card: #fffdf9;
   --text: #2a2016;
   --primary: #2e67d6;
@@ -21,7 +21,7 @@
 body {
   margin: 0;
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Hiragino Kaku Gothic ProN", "Noto Sans JP", sans-serif;
-  background: linear-gradient(180deg, #e9dece 0%, var(--bg) 50%, #e3d5c3 100%);
+  background: linear-gradient(180deg, #f8f3ea 0%, var(--bg) 52%, #ece0d0 100%);
   color: var(--text);
 }
 
@@ -540,9 +540,10 @@ button {
 .bazaar-card {
   border: 1px solid var(--panel-border);
   border-radius: 12px;
-  background: linear-gradient(180deg, #fffdfa 0%, #f5ebdc 100%);
+  border-color: #b79876;
+  background: linear-gradient(180deg, #f5e8d8 0%, #e8d6bf 100%);
   padding: 10px;
-  box-shadow: 0 4px 12px var(--panel-shadow);
+  box-shadow: 0 4px 12px rgba(68, 45, 24, 0.16);
 }
 
 .bazaar-card.is-focused {
