@@ -1655,8 +1655,11 @@ function renderFieldFarmingRanking() {
               <p class="field-farming-rank">${rank}位</p>
               <h3 class="field-farming-monster-area">${row.monsterArea}</h3>
               <p class="field-farming-hp">HP: ${Number.isFinite(row.hp) ? row.hp.toLocaleString("ja-JP") : "-"}</p>
-              <p class="field-farming-drop field-farming-drop-normal">通常ドロップ: ${row.normalDrop} / <strong>${normalPriceText}</strong></p>
-              <div class="field-farming-drop-link-row">
+              <p class="field-farming-drop field-farming-drop-normal">
+                <span class="field-farming-drop-label">通常ドロップ:</span>
+                <span class="field-farming-drop-material">${row.normalDrop}</span>
+                <span class="field-farming-drop-divider">/</span>
+                <strong>${normalPriceText}</strong>
                 <a
                   class="field-farming-price-link field-farming-price-link-normal"
                   href="${normalDropOfficialUrl}"
@@ -1664,9 +1667,12 @@ function renderFieldFarmingRanking() {
                   rel="noopener noreferrer"
                   aria-label="${row.normalDrop}の公式相場ページを新しいタブで開く"
                 >通常相場</a>
-              </div>
-              <p class="field-farming-drop field-farming-drop-rare">レアドロップ: ${row.rareDrop || "-"} / ${rarePriceText}</p>
-              <div class="field-farming-drop-link-row">
+              </p>
+              <p class="field-farming-drop field-farming-drop-rare">
+                <span class="field-farming-drop-label">レアドロップ:</span>
+                <span class="field-farming-drop-material">${row.rareDrop || "-"}</span>
+                <span class="field-farming-drop-divider">/</span>
+                <span class="field-farming-rare-price">${rarePriceText}</span>
                 ${
                   hasRareDrop
                     ? `
@@ -1680,7 +1686,7 @@ function renderFieldFarmingRanking() {
                     `
                     : `<span class="field-farming-price-link field-farming-price-link-disabled" aria-hidden="true">レア相場</span>`
                 }
-              </div>
+              </p>
               <p class="field-farming-note">備考: ${row.note || "-"}</p>
             </article>
           `;
