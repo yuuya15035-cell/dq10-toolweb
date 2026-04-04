@@ -94,6 +94,25 @@ body.is-modal-open {
   gap: 8px;
 }
 
+.side-menu-group {
+  border: 1px solid rgba(239, 213, 176, 0.3);
+  border-radius: 10px;
+  padding: 8px;
+  background: rgba(46, 29, 17, 0.2);
+}
+
+.side-menu-group-title {
+  margin: 0 0 8px;
+  font-size: 0.82rem;
+  color: #f7e5c7;
+  letter-spacing: 0.06em;
+}
+
+.side-menu-sub-list {
+  display: grid;
+  gap: 6px;
+}
+
 .side-menu-item {
   width: 100%;
   text-align: left;
@@ -104,6 +123,11 @@ body.is-modal-open {
   padding: 12px 14px;
   font-weight: 700;
   border-left: 3px solid var(--accent-gold);
+}
+
+.side-menu-sub-item {
+  padding: 10px 12px;
+  font-size: 0.92rem;
 }
 
 .app-header h1 {
@@ -186,6 +210,61 @@ body.is-modal-open {
 
 .tab-content.active {
   display: block;
+}
+
+.field-farming-description {
+  margin-top: 0;
+  margin-bottom: 12px;
+  font-size: 0.9rem;
+  line-height: 1.6;
+}
+
+.field-farming-list {
+  display: grid;
+  gap: 10px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.field-farming-card {
+  background: #f1e3cf;
+  border: 1px solid #bda282;
+  border-radius: 12px;
+  padding: 10px;
+  box-shadow: 0 3px 10px rgba(70, 45, 24, 0.14);
+}
+
+.field-farming-rank {
+  margin: 0 0 6px;
+  font-weight: 800;
+  color: #5b3a1f;
+}
+
+.field-farming-monster-area {
+  margin: 0;
+  font-size: 1rem;
+  line-height: 1.4;
+  color: #2f2419;
+}
+
+.field-farming-hp,
+.field-farming-drop,
+.field-farming-note {
+  margin: 6px 0 0;
+  font-size: 0.87rem;
+  line-height: 1.45;
+}
+
+.field-farming-drop-normal strong {
+  color: #7b1f1f;
+}
+
+.field-farming-drop-rare {
+  color: #5d4a36;
+}
+
+.field-farming-note {
+  color: #4a3d31;
+  font-size: 0.8rem;
 }
 
 .card {
@@ -1308,6 +1387,15 @@ button {
 }
 
 @media (max-width: 480px) {
+  .field-farming-list {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+
+  .field-farming-card {
+    padding: 9px;
+  }
+
   .favorite-materials-grid {
     grid-template-columns: 1fr;
   }
@@ -1457,6 +1545,10 @@ button {
 }
 
 @media (max-width: 699px) {
+  .field-farming-list {
+    grid-template-columns: 1fr;
+  }
+
   .bazaar-material-name-button {
     min-height: 32px;
     display: inline-flex;
