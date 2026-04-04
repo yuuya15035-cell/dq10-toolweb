@@ -8,13 +8,14 @@ const TOOLS_CSV_PATH = "./data/tools.csv";
 const BAZAAR_CSV_PATH = "./data/bazaar_prices.csv";
 const BAZAAR_HISTORY_CSV_PATH = "./data/bazaar_prices_history.csv";
 const PRESENT_CODES_CSV_PATH = "./data/datapresent_codes.csv";
+const FIELD_FARMING_CSV_PATH = "./data/field_farming_monsters.csv";
 const LAST_UPDATED_JSON_PATH = "./data/last-updated.json";
 const OFFICIAL_BAZAAR_TOP_URL = "https://dqx-souba.game-blog.app/";
 const OFFICIAL_PRESENT_CODE_URL = "https://hiroba.dqx.jp/sc/campaignCode/itemcode/";
 const BAZAAR_FAVORITES_STORAGE_KEY = "dq10_toolweb_bazaar_favorites_v1";
 const RECIPE_FAVORITES_STORAGE_KEY = "dq10_toolweb_recipe_favorites_v1";
 const RECIPE_FAVORITE_CATEGORY_VALUE = "__favorites__";
-const TAB_IDS = new Set(["profit", "present-codes", "bazaar", "favorites", "data"]);
+const TAB_IDS = new Set(["profit", "present-codes", "bazaar", "favorites", "data", "field-farming"]);
 const FAVORITES_TAB_IDS = new Set(["recipes", "materials"]);
 const RECIPE_SUMMARY_MATERIAL_LIMIT = 4;
 const BAZAAR_CATEGORY_ORDER = ["石系", "植物系", "モンスター系", "その他", "消費アイテム"];
@@ -415,6 +416,7 @@ let selectedBazaarChartRangeDays = DEFAULT_BAZAAR_CHART_RANGE_DAYS;
 let expandedBazaarChartMaterialKeyMobile = "";
 let activeFavoriteMaterialModalKey = "";
 let presentCodes = [];
+let fieldFarmingMonsters = [];
 // 利益計算画面だけで使う「今回計算用の一時単価」。
 // - キー: materialId
 // - 値: 画面上で上書きした単価
@@ -473,6 +475,7 @@ const bazaarHistorySnapshotDateInput = getRequiredElementById("bazaarHistorySnap
 const bazaarHistorySaveMessage = getRequiredElementById("bazaarHistorySaveMessage");
 const bazaarListWrap = getRequiredElementById("bazaarListWrap");
 const presentCodeListWrap = getRequiredElementById("presentCodeListWrap");
+const fieldFarmingListWrap = getRequiredElementById("fieldFarmingListWrap");
 const favoriteRecipesListWrap = getRequiredElementById("favoriteRecipesListWrap");
 const favoriteMaterialsListWrap = getRequiredElementById("favoriteMaterialsListWrap");
 const favoriteMaterialModalOverlay = getRequiredElementById("favoriteMaterialModalOverlay");
@@ -743,6 +746,49 @@ async function loadPresentCodesCsv() {
   const lines = await fetchCsvLines(PRESENT_CODES_CSV_PATH);
   const rows = parsePresentCodesFromLines(lines);
   console.info(`[datapresent_codes.csv] parsed rows: ${rows.length}`);
+  return rows;
+}
+
+function parseFieldFarmingMonstersFromLines(lines) {
+  if (!Array.isArray(lines) || lines.length <= 1) return [];
+  const headers = parseCsvLine(lines[0]).map((header) => String(header || "").replace(/^\uFEFF/, "").trim());
+  const monsterAreaIndex = headers.indexOf("monster_area");
+  const monsterNameIndex = headers.indexOf("monster_name");
+  const areaIndex = headers.indexOf("area");
+  const hpIndex = headers.indexOf("hp");
+  const normalDropIndex = headers.indexOf("normal_dr") >= 0 ? headers.indexOf("normal_dr") : headers.indexOf("normal_drop");
+  const rareDropIndex = headers.indexOf("rare_drop");
+  const noteIndex = headers.indexOf("note");
+
+  if (hpIndex < 0 || normalDropIndex < 0 || rareDropIndex < 0) {
+    throw new Error("field_farming_monsters.csv ヘッダーが想定と一致しません");
+  }
+
+  return lines
+    .slice(1)
+    .map((line) => parseCsvLine(line))
+    .map((row, index) => {
+      const monsterAreaRaw =
+        monsterAreaIndex >= 0
+          ? String(row[monsterAreaIndex] || "").trim()
+          : [String(row[monsterNameIndex] || "").trim(), String(row[areaIndex] || "").trim()].filter(Boolean).join(" / ");
+      const hp = parseNullableNumber(row[hpIndex]);
+      return {
+        id: `field-farming-row-${index}`,
+        monsterArea: monsterAreaRaw,
+        hp: Number.isFinite(hp) ? Math.round(hp) : null,
+        normalDrop: String(row[normalDropIndex] || "").trim(),
+        rareDrop: String(row[rareDropIndex] || "").trim(),
+        note: noteIndex >= 0 ? String(row[noteIndex] || "").trim() : "",
+      };
+    })
+    .filter((row) => row.monsterArea !== "" && row.normalDrop !== "");
+}
+
+async function loadFieldFarmingMonstersCsv() {
+  const lines = await fetchCsvLines(FIELD_FARMING_CSV_PATH);
+  const rows = parseFieldFarmingMonstersFromLines(lines);
+  console.info(`[field_farming_monsters.csv] parsed rows: ${rows.length}`);
   return rows;
 }
 
@@ -1547,6 +1593,65 @@ function renderPresentCodes() {
             </article>
           `
         )
+        .join("")}
+    </div>
+  `;
+}
+
+function getFieldFarmingPriceByMaterialName() {
+  const map = new Map();
+  (bazaarPrices || []).forEach((row) => {
+    const materialName = normalizeMaterialNameKey(row?.materialName);
+    const preferredPrice = getPreferredBazaarUnitPrice(row);
+    if (!materialName || !Number.isFinite(preferredPrice)) return;
+    map.set(materialName, preferredPrice);
+  });
+  return map;
+}
+
+function renderFieldFarmingRanking() {
+  if (!fieldFarmingListWrap) return;
+  if (!Array.isArray(fieldFarmingMonsters) || fieldFarmingMonsters.length === 0) {
+    fieldFarmingListWrap.innerHTML = `<p class="card">表示できるフィールド狩りデータがありません。CSV内容を確認してください。</p>`;
+    return;
+  }
+
+  const priceByMaterialName = getFieldFarmingPriceByMaterialName();
+  const rankedRows = fieldFarmingMonsters
+    .map((monster) => {
+      const normalDropPrice = priceByMaterialName.get(normalizeMaterialNameKey(monster.normalDrop));
+      const rareDropPrice = priceByMaterialName.get(normalizeMaterialNameKey(monster.rareDrop));
+      return {
+        ...monster,
+        normalDropPrice: Number.isFinite(normalDropPrice) ? normalDropPrice : null,
+        rareDropPrice: Number.isFinite(rareDropPrice) ? rareDropPrice : null,
+      };
+    })
+    .sort((a, b) => {
+      const aPrice = Number.isFinite(a.normalDropPrice) ? a.normalDropPrice : -1;
+      const bPrice = Number.isFinite(b.normalDropPrice) ? b.normalDropPrice : -1;
+      if (aPrice !== bPrice) return bPrice - aPrice;
+      return a.monsterArea.localeCompare(b.monsterArea, "ja");
+    });
+
+  fieldFarmingListWrap.innerHTML = `
+    <div class="field-farming-list">
+      ${rankedRows
+        .map((row, index) => {
+          const rank = index + 1;
+          const normalPriceText = Number.isFinite(row.normalDropPrice) ? formatGold(row.normalDropPrice) : "価格不明";
+          const rarePriceText = Number.isFinite(row.rareDropPrice) ? formatGold(row.rareDropPrice) : "-";
+          return `
+            <article class="field-farming-card">
+              <p class="field-farming-rank">${rank}位</p>
+              <h3 class="field-farming-monster-area">${row.monsterArea}</h3>
+              <p class="field-farming-hp">HP: ${Number.isFinite(row.hp) ? row.hp.toLocaleString("ja-JP") : "-"}</p>
+              <p class="field-farming-drop field-farming-drop-normal">通常ドロップ: ${row.normalDrop} / <strong>${normalPriceText}</strong></p>
+              <p class="field-farming-drop field-farming-drop-rare">レアドロップ: ${row.rareDrop || "-"} / ${rarePriceText}</p>
+              <p class="field-farming-note">備考: ${row.note || "-"}</p>
+            </article>
+          `;
+        })
         .join("")}
     </div>
   `;
@@ -2637,6 +2742,7 @@ function rerenderAll() {
   renderRecipeAdminList();
   calcAndRenderSummary();
   renderPresentCodes();
+  renderFieldFarmingRanking();
   renderBazaarPrices();
   renderFavoritesPage();
 }
@@ -2922,6 +3028,13 @@ async function initialize() {
   } catch (error) {
     console.error(`datapresent_codes.csv の読み込みに失敗しました: path=${PRESENT_CODES_CSV_PATH}`, error);
     presentCodes = [];
+  }
+
+  try {
+    fieldFarmingMonsters = await loadFieldFarmingMonstersCsv();
+  } catch (error) {
+    console.error(`field_farming_monsters.csv の読み込みに失敗しました: path=${FIELD_FARMING_CSV_PATH}`, error);
+    fieldFarmingMonsters = [];
   }
 
   try {
