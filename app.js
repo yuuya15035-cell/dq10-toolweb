@@ -330,7 +330,7 @@ function mergeWithStoredData(csvData, storedData) {
 }
 
 let state = structuredClone(defaultData);
-let selectedEquipmentId = state.equipments[0]?.id || "";
+let selectedEquipmentId = "";
 // 装備検索キーワード（利益計算画面の装備プルダウン用）
 let equipmentSearchKeyword = "";
 let materialSearchKeyword = "";
@@ -1404,6 +1404,7 @@ function renderEquipmentSelectors() {
     equipmentSelect.disabled = true;
   } else {
     equipmentSelect.disabled = false;
+    equipmentSelect.add(new Option("装備を選択してください", ""));
     filteredEquipments.forEach((equipment) => {
       const roundedMaterialCost = getRoundedEquipmentMaterialCost(equipment.id);
       let label = `${equipment.name}（原価: ${roundedMaterialCost.toLocaleString("ja-JP")} G）`;
@@ -1426,14 +1427,12 @@ function renderEquipmentSelectors() {
 
   // 現在選択中の装備がフィルタ結果に存在しない場合は先頭に寄せる
   if (!filteredEquipments.some((e) => e.id === selectedEquipmentId)) {
-    selectedEquipmentId = filteredEquipments[0]?.id || "";
+    selectedEquipmentId = "";
   }
 
-  if (filteredEquipments.length > 0 && !state.equipments.some((e) => e.id === selectedEquipmentId)) {
-    selectedEquipmentId = state.equipments[0]?.id || "";
-  }
+  if (filteredEquipments.length > 0 && !state.equipments.some((e) => e.id === selectedEquipmentId)) selectedEquipmentId = "";
   equipmentSelect.value = selectedEquipmentId;
-  recipeEquipmentSelect.value = selectedEquipmentId;
+  recipeEquipmentSelect.value = selectedEquipmentId || state.equipments[0]?.id || "";
   renderRecipeFavoriteAction();
 }
 
@@ -1661,6 +1660,11 @@ function normalizeProductionCountInput() {
 function renderRecipeTable() {
   if (!recipeTableWrap) return;
 
+  if (!getSelectedEquipment()) {
+    recipeTableWrap.innerHTML = "<p>装備を選ぶと必要素材が表示されます。</p>";
+    return;
+  }
+
   const rows = getRecipeRowsForSelectedEquipment();
   if (rows.length === 0) {
     recipeTableWrap.innerHTML = "<p>この装備のレシピが未登録です。</p>";
@@ -1763,6 +1767,17 @@ function renderRecipeTable() {
 
 function renderToolSection() {
   if (!toolWrap || !toolSelect || !toolDurabilityInput || !toolPurchasePriceInput) return;
+
+  if (!getSelectedEquipment()) {
+    selectedToolId = "";
+    toolSelect.innerHTML = "";
+    toolSelect.add(new Option("装備を選ぶと候補が表示されます", ""));
+    toolSelect.disabled = true;
+    toolPurchasePriceInput.disabled = true;
+    toolPurchasePriceInput.value = "";
+    toolDurabilityInput.value = "";
+    return;
+  }
 
   const tools = getToolsForSelectedEquipment();
   toolSelect.innerHTML = "";
@@ -2212,7 +2227,7 @@ async function initialize() {
     state = mergeWithStoredData(structuredClone(defaultData), storedData);
   }
 
-  selectedEquipmentId = state.equipments[0]?.id || "";
+  selectedEquipmentId = "";
   selectedToolId = "";
   showBazaarFavoritesOnly = favoriteState.showFavoritesOnly;
   bazaarFavoriteMaterialKeys = favoriteState.favoriteMaterialKeys;
