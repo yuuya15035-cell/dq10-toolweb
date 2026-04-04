@@ -295,6 +295,33 @@ button {
   display: none;
 }
 
+.search-toggle-group {
+  margin-bottom: 8px;
+}
+
+.search-toggle-group-inline {
+  grid-column: 1 / -1;
+}
+
+.search-toggle-button {
+  width: 100%;
+  text-align: left;
+  background: linear-gradient(180deg, #8a6243 0%, #6f4a31 100%);
+  border: 1px solid #7a5638;
+  color: #fff8ef;
+  padding: 8px 12px;
+  line-height: 1.2;
+}
+
+.search-field-collapsible {
+  margin-top: 8px;
+  margin-bottom: 0;
+}
+
+.search-field-collapsible[hidden] {
+  display: none;
+}
+
 .material-header-actions {
   display: flex;
   align-items: flex-end;
@@ -1382,6 +1409,10 @@ button {
   }
 
   .search-filter-grid > :nth-child(3) {
+    grid-column: auto;
+  }
+
+  .search-toggle-group-inline {
     grid-column: auto;
   }
 
