@@ -103,11 +103,56 @@ async function fetchCsvLines(path) {
     console.error(`[CSV] fetch failed: path=${path}, status=${response.status}`);
     throw new Error(`CSVの読み込みに失敗しました: ${path} (${response.status})`);
   }
-  const csvText = await response.text();
+  const bytes = new Uint8Array(await response.arrayBuffer());
+  const csvText = decodeCsvText(path, bytes);
   const normalized = csvText.replace(/^\uFEFF/, "");
   const lines = normalized.split(/\r?\n/).filter((line) => line.trim().length > 0);
   console.info(`[CSV] fetch success: path=${path}, lines=${lines.length}`);
   return lines;
+}
+
+function decodeCsvText(path, bytes) {
+  const candidates = ["utf-8", "shift_jis"];
+  const validateFn = getCsvValidator(path);
+
+  for (const encoding of candidates) {
+    try {
+      const decoded = new TextDecoder(encoding, { fatal: true }).decode(bytes);
+      if (validateFn(decoded)) {
+        console.info(`[CSV] decode success: path=${path}, encoding=${encoding}`);
+        return decoded;
+      }
+    } catch {
+      // 次の候補へフォールバック
+    }
+  }
+
+  throw new Error(`CSVの文字コード判定に失敗しました: ${path}`);
+}
+
+function getCsvValidator(path) {
+  if (path === BAZAAR_CSV_PATH) {
+    return (text) => validateCsvHeader(text, ["materialName", "today_price"], 1);
+  }
+  if (path === BAZAAR_HISTORY_CSV_PATH) {
+    return (text) => validateCsvHeader(text, ["date", "material_name"], 1);
+  }
+  return (text) => validateCsvHeader(text, [], 0);
+}
+
+function validateCsvHeader(text, requiredHeaders, minDataRows = 0) {
+  const lines = String(text || "")
+    .replace(/^\uFEFF/, "")
+    .split(/\r?\n/)
+    .filter((line) => line.trim().length > 0);
+  if (lines.length === 0) return false;
+
+  const headers = parseCsvLine(lines[0]).map((header) => String(header || "").replace(/^\uFEFF/, "").trim());
+  const hasHeaders = requiredHeaders.every((header) => headers.includes(header));
+  if (!hasHeaders) return false;
+  if (lines.length - 1 < minDataRows) return false;
+  if (lines.length > 1 && lines[1].includes("�")) return false;
+  return true;
 }
 
 function parseToolsFromLines(lines) {
@@ -773,7 +818,7 @@ async function handleSaveBazaarHistoryClick() {
     const snapshotRows = buildBazaarHistorySnapshotRows(snapshotDate);
     const existingLines = await fetchCsvLines(BAZAAR_HISTORY_CSV_PATH);
     const merged = mergeBazaarHistoryLines(existingLines, snapshotRows, { skipDuplicates: true });
-    const csvText = `${merged.lines.join("\n")}\n`;
+    const csvText = `\uFEFF${merged.lines.join("\n")}\n`;
     const blob = new Blob([csvText], { type: "text/csv;charset=utf-8" });
     const link = document.createElement("a");
     link.href = URL.createObjectURL(blob);

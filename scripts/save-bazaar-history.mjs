@@ -30,14 +30,18 @@ function validateBazaarCsv(text) {
   const lines = text.replace(/^\uFEFF/, "").split(/\r?\n/).filter((line) => line.trim().length > 0);
   if (lines.length === 0) return false;
   const headers = parseCsvLine(lines[0]).map((header) => String(header || "").replace(/^\uFEFF/, "").trim());
-  return headers.includes("materialName") && headers.includes("today_price");
+  if (!headers.includes("materialName") || !headers.includes("today_price")) return false;
+  const firstDataLine = lines[1] || "";
+  return !firstDataLine.includes("�");
 }
 
 function validateHistoryCsv(text) {
   const lines = text.replace(/^\uFEFF/, "").split(/\r?\n/).filter((line) => line.trim().length > 0);
   if (lines.length === 0) return true;
   const headers = parseCsvLine(lines[0]).map((header) => String(header || "").replace(/^\uFEFF/, "").trim());
-  return headers.includes("date") && headers.includes("material_name");
+  if (!headers.includes("date") || !headers.includes("material_name")) return false;
+  const firstDataLine = lines[1] || "";
+  return !firstDataLine.includes("�");
 }
 
 function parseCsvLine(line) {
@@ -243,12 +247,12 @@ async function main() {
 
   const bazaarDecoded = tryDecodeCsv(
     bazaarBytes,
-    ["utf-8", "utf-8-sig", "shift_jis", "windows-31j", "cp932"],
+    ["utf-8", "shift_jis", "windows-31j", "cp932"],
     validateBazaarCsv
   );
   const historyDecoded = tryDecodeCsv(
     historyBytes,
-    ["utf-8", "utf-8-sig", "shift_jis", "windows-31j", "cp932"],
+    ["utf-8", "shift_jis", "windows-31j", "cp932"],
     validateHistoryCsv
   );
 

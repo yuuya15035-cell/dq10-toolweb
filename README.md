@@ -239,6 +239,7 @@ DQ10（ドラゴンクエスト10）の職人向けに、
 ### バザー履歴CSV（価格推移チャート用）
 
 - 参照先: `data/bazaar_prices_history.csv`（相対パス: `./data/bazaar_prices_history.csv`）
+- 正本: `data/bazaar_prices_history.csv` のみ（`bazaar_prices_history_backup_broken.csv` は参照しない）
 - 用途:
   - バザー価格一覧カードのミニチャート表示
   - 素材別の価格推移データ保持（縦持ち）
@@ -261,6 +262,7 @@ DQ10（ドラゴンクエスト10）の職人向けに、
   - **管理画面（補助）**
     - 「データ追加」タブ内の「バザー履歴保存（運用）」で履歴CSVを生成・ダウンロード
     - ダウンロードした `bazaar_prices_history.csv` で `data/bazaar_prices_history.csv` を置換
+    - 生成CSVは UTF-8(BOM付き) のため、VS Code / Excel の両方で開きやすい形式
 
 ### 未参照（現行実装）
 
