@@ -6,6 +6,7 @@ const STORAGE_KEY = "dq10_toolweb_data_v1";
 const RECIPE_CSV_PATH = "./data/recipe.csv";
 const TOOLS_CSV_PATH = "./data/tools.csv";
 const BAZAAR_CSV_PATH = "./data/bazaar_prices.csv";
+const BAZAAR_HISTORY_CSV_PATH = "./data/bazaar_prices_history.csv";
 const LAST_UPDATED_JSON_PATH = "./data/last-updated.json";
 const BAZAAR_FAVORITES_STORAGE_KEY = "dq10_toolweb_bazaar_favorites_v1";
 const RECIPE_FAVORITES_STORAGE_KEY = "dq10_toolweb_recipe_favorites_v1";
@@ -19,6 +20,12 @@ const BAZAAR_SORT_OPTIONS = [
   { value: "rate_desc", label: "変動率高い順" },
   { value: "rate_asc", label: "変動率低い順" },
 ];
+const BAZAAR_CHART_RANGE_DAYS = {
+  week: 7,
+  month: 30,
+  threeMonths: 90,
+};
+const DEFAULT_BAZAAR_CHART_RANGE_DAYS = BAZAAR_CHART_RANGE_DAYS.month;
 
 // 初期データ（CSVが読み込めない場合のフォールバック）
 const defaultData = {
@@ -352,6 +359,9 @@ let bazaarFavoriteMaterialKeys = new Set();
 let recipeFavoriteKeys = new Set();
 let activeTabId = "profit";
 let pendingBazaarFocusMaterialKey = "";
+let bazaarPriceHistoryByMaterialKey = new Map();
+let selectedBazaarChartRangeDays = DEFAULT_BAZAAR_CHART_RANGE_DAYS;
+let expandedBazaarChartMaterialKeyMobile = "";
 // 利益計算画面だけで使う「今回計算用の一時単価」。
 // - キー: materialId
 // - 値: 画面上で上書きした単価
@@ -633,6 +643,102 @@ async function loadBazaarPricesCsv() {
   return parseBazaarPricesFromLines(lines);
 }
 
+function parseBazaarHistoryDate(value) {
+  const normalized = String(value || "").trim();
+  if (normalized === "") return null;
+  const parsed = new Date(normalized.replace(/-/g, "/"));
+  if (Number.isNaN(parsed.getTime())) return null;
+  return parsed;
+}
+
+function parseBazaarPriceHistoryFromLines(lines) {
+  if (lines.length <= 1) return new Map();
+
+  const headers = parseCsvLine(lines[0]).map((header) => String(header || "").replace(/^\uFEFF/, "").trim());
+  const dateIndex = headers.indexOf("date");
+  const materialNameIndex = headers.indexOf("material_name");
+  const priceIndex = headers.indexOf("price");
+  if (dateIndex < 0 || materialNameIndex < 0 || priceIndex < 0) {
+    throw new Error("bazaar_prices_history.csv ヘッダーが想定と一致しません");
+  }
+
+  const historyMap = new Map();
+  lines.slice(1).forEach((line) => {
+    const row = parseCsvLine(line);
+    const materialName = String(row[materialNameIndex] || "").trim();
+    const materialKey = makeMaterialId(materialName);
+    const price = parseNullableNumber(row[priceIndex]);
+    const parsedDate = parseBazaarHistoryDate(row[dateIndex]);
+    if (!materialName || !Number.isFinite(price) || !parsedDate) return;
+    const dateText = parsedDate.toISOString().slice(0, 10);
+    if (!historyMap.has(materialKey)) {
+      historyMap.set(materialKey, []);
+    }
+    historyMap.get(materialKey).push({
+      date: dateText,
+      timestamp: parsedDate.getTime(),
+      price,
+    });
+  });
+
+  historyMap.forEach((rows, materialKey) => {
+    const dedupedByDate = new Map();
+    rows.forEach((row) => {
+      dedupedByDate.set(row.date, row);
+    });
+    const sorted = Array.from(dedupedByDate.values()).sort((a, b) => a.timestamp - b.timestamp);
+    historyMap.set(materialKey, sorted);
+  });
+
+  console.info(`[bazaar_prices_history.csv] parsed materials: ${historyMap.size}`);
+  return historyMap;
+}
+
+async function loadBazaarPriceHistoryCsv() {
+  const lines = await fetchCsvLines(BAZAAR_HISTORY_CSV_PATH);
+  return parseBazaarPriceHistoryFromLines(lines);
+}
+
+function getBazaarHistoryForRange(materialKey, rangeDays = DEFAULT_BAZAAR_CHART_RANGE_DAYS) {
+  const history = bazaarPriceHistoryByMaterialKey.get(materialKey) || [];
+  if (history.length === 0) return [];
+  const lastTimestamp = history[history.length - 1].timestamp;
+  const rangeStartTimestamp = lastTimestamp - (Number(rangeDays) - 1) * 24 * 60 * 60 * 1000;
+  return history.filter((point) => point.timestamp >= rangeStartTimestamp);
+}
+
+function buildBazaarSparklineSvg(history, options = {}) {
+  const width = Number(options.width) || 240;
+  const height = Number(options.height) || 80;
+  const chartStroke = options.stroke || "#8b5e3c";
+  const areaFill = options.areaFill || "rgba(139, 94, 60, 0.18)";
+  const points = Array.isArray(history) ? history.filter((item) => Number.isFinite(item?.price)) : [];
+  if (points.length === 0) return "";
+
+  const prices = points.map((point) => point.price);
+  const minPrice = Math.min(...prices);
+  const maxPrice = Math.max(...prices);
+  const safeRange = Math.max(maxPrice - minPrice, 1);
+  const xDivisor = Math.max(points.length - 1, 1);
+  const coords = points.map((point, index) => {
+    const x = (index / xDivisor) * width;
+    const normalizedY = (point.price - minPrice) / safeRange;
+    const y = height - normalizedY * height;
+    return { x, y };
+  });
+  const polylinePoints = coords.map((coord) => `${coord.x.toFixed(2)},${coord.y.toFixed(2)}`).join(" ");
+  const areaPoints = [`0,${height}`, polylinePoints, `${width},${height}`].join(" ");
+  const latestPrice = points[points.length - 1].price;
+  const firstPrice = points[0].price;
+  const trendClass = latestPrice > firstPrice ? "is-positive" : latestPrice < firstPrice ? "is-negative" : "is-neutral";
+  return `
+    <svg viewBox="0 0 ${width} ${height}" preserveAspectRatio="none" class="bazaar-mini-chart-svg ${trendClass}" aria-hidden="true" focusable="false">
+      <polyline points="${areaPoints}" class="bazaar-mini-chart-area" style="fill:${areaFill};"></polyline>
+      <polyline points="${polylinePoints}" class="bazaar-mini-chart-line" style="stroke:${chartStroke};"></polyline>
+    </svg>
+  `;
+}
+
 function getBazaarCategoryPriority(category) {
   const index = BAZAAR_CATEGORY_ORDER.indexOf(String(category || "").trim());
   return index >= 0 ? index : Number.MAX_SAFE_INTEGER;
@@ -838,6 +944,11 @@ function renderBazaarPrices() {
           const changePresentation = getBazaarChangePresentation(changeRate);
           const isFavorite = isBazaarFavoriteRow(row);
           const hasOfficialUrl = row.officialUrl !== "";
+          const history = getBazaarHistoryForRange(row.materialKey, selectedBazaarChartRangeDays);
+          const hasHistory = history.length > 0;
+          const isMobileExpanded = expandedBazaarChartMaterialKeyMobile === row.materialKey;
+          const isExpandableOnMobile = hasHistory;
+          const sparklineSvg = hasHistory ? buildBazaarSparklineSvg(history) : "";
           const changeArrowHtml = changePresentation.isComputable
             ? `<span class="bazaar-change-arrow ${changePresentation.toneClass}" aria-hidden="true">${changePresentation.arrow}</span>`
             : "";
@@ -846,7 +957,14 @@ function renderBazaarPrices() {
             <article class="bazaar-card ${pendingBazaarFocusMaterialKey !== "" && row.materialKey === pendingBazaarFocusMaterialKey ? "is-focused" : ""}" data-bazaar-material-key="${row.materialKey}">
               <header class="bazaar-card-header">
                 <div class="bazaar-card-title-group">
-                  <h3>${row.materialName}</h3>
+                  <h3>
+                    <button
+                      type="button"
+                      class="bazaar-material-name-button ${isExpandableOnMobile ? "is-expandable" : ""}"
+                      data-bazaar-chart-toggle-key="${row.materialKey}"
+                      aria-expanded="${isMobileExpanded ? "true" : "false"}"
+                    >${row.materialName}</button>
+                  </h3>
                 </div>
                 <button
                   type="button"
@@ -867,6 +985,27 @@ function renderBazaarPrices() {
                   <p class="bazaar-today-price">${todayPriceHtml}</p>
                   <p class="bazaar-change-rate">前日比: <span class="bazaar-change-value ${changePresentation.toneClass}">${changePresentation.text}</span>${changeArrowHtml}</p>
                 </div>
+                <div class="bazaar-mini-chart-wrap" aria-label="${row.materialName}の価格推移（直近${selectedBazaarChartRangeDays}日）">
+                  ${
+                    hasHistory
+                      ? `
+                        ${sparklineSvg}
+                        <p class="bazaar-mini-chart-meta">${history.length}件 / 直近${selectedBazaarChartRangeDays}日</p>
+                      `
+                      : `<p class="bazaar-mini-chart-empty">履歴なし</p>`
+                  }
+                </div>
+              </div>
+              <div class="bazaar-mobile-chart-panel ${isMobileExpanded ? "is-open" : ""}">
+                ${
+                  hasHistory
+                    ? `
+                      ${sparklineSvg}
+                      <p class="bazaar-mini-chart-meta">表示期間: 直近${selectedBazaarChartRangeDays}日（${history.length}件）</p>
+                      <p class="bazaar-mobile-chart-latest">最新価格: ${formatBazaarPriceWithUnit(history[history.length - 1].price)}</p>
+                    `
+                    : `<p class="bazaar-mini-chart-empty">表示できる履歴がありません。</p>`
+                }
               </div>
               <div class="bazaar-footer-row">
                 <p class="bazaar-previous-price">前日: ${formatBazaarPriceWithUnit(row.previousDayPrice)}</p>
@@ -983,6 +1122,21 @@ function renderBazaarPrices() {
       saveBazaarFavoriteState();
       renderBazaarPrices();
       renderFavoritesPage();
+    });
+  });
+
+  bazaarListWrap.querySelectorAll("[data-bazaar-chart-toggle-key]").forEach((button) => {
+    button.addEventListener("click", () => {
+      const materialKey = String(button.dataset.bazaarChartToggleKey || "");
+      if (materialKey === "") return;
+      const isMobile = window.matchMedia("(max-width: 700px)").matches;
+      if (!isMobile) return;
+      if (expandedBazaarChartMaterialKeyMobile === materialKey) {
+        expandedBazaarChartMaterialKeyMobile = "";
+      } else {
+        expandedBazaarChartMaterialKeyMobile = materialKey;
+      }
+      renderBazaarPrices();
     });
   });
 
@@ -2218,6 +2372,13 @@ async function initialize() {
   } catch (error) {
     console.error(`bazaar_prices.csv の読み込みに失敗しました: path=${BAZAAR_CSV_PATH}`, error);
     bazaarPrices = [];
+  }
+
+  try {
+    bazaarPriceHistoryByMaterialKey = await loadBazaarPriceHistoryCsv();
+  } catch (error) {
+    console.error(`bazaar_prices_history.csv の読み込みに失敗しました: path=${BAZAAR_HISTORY_CSV_PATH}`, error);
+    bazaarPriceHistoryByMaterialKey = new Map();
   }
 
   bazaarCsvUpdatedAt = await loadBazaarLastUpdatedAt();
