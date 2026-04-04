@@ -594,7 +594,7 @@ async function loadBazaarLastUpdatedAt() {
 function parseNullableNumber(value) {
   const normalized = String(value ?? "").trim();
   if (normalized === "") return null;
-  const parsed = Number(normalized);
+  const parsed = Number(normalized.replace(/,/g, ""));
   return Number.isFinite(parsed) ? parsed : null;
 }
 
@@ -699,7 +699,24 @@ async function loadBazaarPricesCsv() {
 function parseBazaarHistoryDate(value) {
   const normalized = String(value || "").trim();
   if (normalized === "") return null;
-  const parsed = new Date(normalized.replace(/-/g, "/"));
+  const matched = normalized.match(/^(\d{4})[\/\-](\d{1,2})[\/\-](\d{1,2})$/);
+  if (matched) {
+    const year = Number(matched[1]);
+    const month = Number(matched[2]);
+    const day = Number(matched[3]);
+    if (!Number.isFinite(year) || !Number.isFinite(month) || !Number.isFinite(day)) return null;
+    if (month < 1 || month > 12 || day < 1 || day > 31) return null;
+    const parsedUtc = new Date(Date.UTC(year, month - 1, day));
+    if (
+      parsedUtc.getUTCFullYear() !== year ||
+      parsedUtc.getUTCMonth() !== month - 1 ||
+      parsedUtc.getUTCDate() !== day
+    ) {
+      return null;
+    }
+    return parsedUtc;
+  }
+  const parsed = new Date(normalized);
   if (Number.isNaN(parsed.getTime())) return null;
   return parsed;
 }
@@ -897,9 +914,18 @@ function getBazaarHistoryForRange(materialKey, rangeDays = DEFAULT_BAZAAR_CHART_
 function buildBazaarSparklineSvg(history, options = {}) {
   const width = Number(options.width) || 240;
   const height = Number(options.height) || 80;
+  const paddingY = Number(options.paddingY) || 6;
+  const pointRadius = Number(options.pointRadius) || 2.2;
   const chartStroke = options.stroke || "#8b5e3c";
   const areaFill = options.areaFill || "rgba(139, 94, 60, 0.18)";
-  const points = Array.isArray(history) ? history.filter((item) => Number.isFinite(item?.price)) : [];
+  const points = Array.isArray(history)
+    ? history
+        .map((item) => ({
+          ...item,
+          price: Number(item?.price),
+        }))
+        .filter((item) => Number.isFinite(item?.price))
+    : [];
   if (points.length === 0) return "";
 
   const prices = points.map((point) => point.price);
@@ -910,11 +936,17 @@ function buildBazaarSparklineSvg(history, options = {}) {
   const coords = points.map((point, index) => {
     const x = (index / xDivisor) * width;
     const normalizedY = (point.price - minPrice) / safeRange;
-    const y = height - normalizedY * height;
+    const y = height - paddingY - normalizedY * Math.max(height - paddingY * 2, 1);
     return { x, y };
   });
   const polylinePoints = coords.map((coord) => `${coord.x.toFixed(2)},${coord.y.toFixed(2)}`).join(" ");
-  const areaPoints = [`0,${height}`, polylinePoints, `${width},${height}`].join(" ");
+  const areaPoints = [`0,${height - paddingY}`, polylinePoints, `${width},${height - paddingY}`].join(" ");
+  const pointDots = coords
+    .map(
+      (coord) =>
+        `<circle cx="${coord.x.toFixed(2)}" cy="${coord.y.toFixed(2)}" r="${pointRadius}" class="bazaar-mini-chart-point"></circle>`
+    )
+    .join("");
   const latestPrice = points[points.length - 1].price;
   const firstPrice = points[0].price;
   const trendClass = latestPrice > firstPrice ? "is-positive" : latestPrice < firstPrice ? "is-negative" : "is-neutral";
@@ -922,6 +954,7 @@ function buildBazaarSparklineSvg(history, options = {}) {
     <svg viewBox="0 0 ${width} ${height}" preserveAspectRatio="none" class="bazaar-mini-chart-svg ${trendClass}" aria-hidden="true" focusable="false">
       <polyline points="${areaPoints}" class="bazaar-mini-chart-area" style="fill:${areaFill};"></polyline>
       <polyline points="${polylinePoints}" class="bazaar-mini-chart-line" style="stroke:${chartStroke};"></polyline>
+      ${pointDots}
     </svg>
   `;
 }
