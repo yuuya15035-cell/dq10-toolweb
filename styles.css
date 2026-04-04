@@ -1,10 +1,17 @@
 :root {
   color-scheme: light;
-  --bg: #f5f7fb;
-  --card: #ffffff;
-  --text: #222;
-  --primary: #2463eb;
-  --line: #d6deee;
+  --bg: #f2ece2;
+  --card: #fffdf8;
+  --text: #2f251b;
+  --primary: #2e67d6;
+  --line: #dacfbf;
+  --panel-border: #ccb89f;
+  --panel-shadow: rgba(78, 53, 30, 0.12);
+  --heading-band: #6f4a2e;
+  --heading-band-soft: #8a6344;
+  --accent-gold: #d7bb84;
+  --surface-soft: #f8f1e7;
+  --menu-surface: #4f3522;
 }
 
 * {
@@ -14,7 +21,7 @@
 body {
   margin: 0;
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Hiragino Kaku Gothic ProN", "Noto Sans JP", sans-serif;
-  background: var(--bg);
+  background: linear-gradient(180deg, #f4eee4 0%, var(--bg) 48%, #efe5d8 100%);
   color: var(--text);
 }
 
@@ -32,9 +39,9 @@ body {
   width: 48px;
   height: 48px;
   border-radius: 12px;
-  border: 1px solid var(--line);
-  background: #fff;
-  color: #1f2a44;
+  border: 1px solid var(--panel-border);
+  background: linear-gradient(180deg, #f8f1e4 0%, #ead9c1 100%);
+  color: #4f3522;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -47,7 +54,7 @@ body {
 .menu-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(10, 15, 30, 0.45);
+  background: rgba(37, 23, 11, 0.5);
   z-index: 1000;
 }
 
@@ -57,9 +64,9 @@ body {
   left: 0;
   width: min(80vw, 320px);
   height: 100%;
-  background: #fff;
-  border-right: 1px solid var(--line);
-  box-shadow: 2px 0 18px rgba(0, 0, 0, 0.18);
+  background: linear-gradient(180deg, #6b4a31 0%, var(--menu-surface) 100%);
+  border-right: 1px solid #3e2819;
+  box-shadow: 2px 0 18px rgba(30, 17, 8, 0.3);
   padding: 16px 14px;
   transform: translateX(-100%);
   transition: transform 0.2s ease;
@@ -73,6 +80,9 @@ body {
 .side-menu-header h2 {
   margin: 8px 0 12px;
   font-size: 1.1rem;
+  color: #fdf2df;
+  border-bottom: 1px solid rgba(245, 219, 176, 0.42);
+  padding-bottom: 10px;
 }
 
 .side-menu-nav {
@@ -83,30 +93,46 @@ body {
 .side-menu-item {
   width: 100%;
   text-align: left;
-  border: 1px solid var(--line);
-  background: #f6f9ff;
-  color: #1f2a44;
+  border: 1px solid #89674a;
+  background: linear-gradient(180deg, #f4e7d5 0%, #e5d1b7 100%);
+  color: #422b1b;
   border-radius: 10px;
   padding: 12px 14px;
   font-weight: 700;
+  border-left: 3px solid var(--accent-gold);
 }
 
 .app-header h1 {
   margin: 0 0 8px;
   font-size: 1.5rem;
+  color: #4f3522;
+  letter-spacing: 0.01em;
 }
 
 .app-header p {
   margin: 0;
-  color: #4f5d75;
+  color: #5c4430;
 }
 
 .app-header {
   margin-bottom: 14px;
   padding: 12px 14px;
-  border: 1px solid var(--line);
+  border: 1px solid var(--panel-border);
   border-radius: 12px;
-  background: #fff;
+  background: linear-gradient(180deg, #f9f3e8 0%, #efdfca 100%);
+  box-shadow: 0 2px 10px var(--panel-shadow);
+}
+
+.tab-content > h2 {
+  margin: 0 0 10px;
+  border: 1px solid #795338;
+  border-radius: 10px;
+  padding: 10px 12px;
+  background: linear-gradient(180deg, var(--heading-band-soft) 0%, var(--heading-band) 100%);
+  color: #fff8ec;
+  font-size: 1.02rem;
+  letter-spacing: 0.01em;
+  box-shadow: inset 0 0 0 1px rgba(255, 232, 194, 0.25);
 }
 
 .tab-content {
@@ -119,10 +145,11 @@ body {
 
 .card {
   background: var(--card);
-  border: 1px solid var(--line);
+  border: 1px solid var(--panel-border);
   border-radius: 12px;
   padding: 10px;
   margin: 10px 0;
+  box-shadow: 0 2px 8px var(--panel-shadow);
 }
 
 .compact-card {
@@ -154,6 +181,8 @@ select {
   padding: 8px 10px;
   width: 100%;
   min-height: 38px;
+  background: #fffdf9;
+  color: var(--text);
 }
 
 button {
@@ -169,8 +198,9 @@ button {
 .market-link-button {
   display: inline-block;
   border-radius: 8px;
-  background: var(--primary);
-  color: #fff;
+  border: 1px solid #bda283;
+  background: linear-gradient(180deg, #f5e7d2 0%, #e9d4b8 100%);
+  color: #57361e;
   padding: 10px 14px;
   font-weight: 700;
   text-decoration: none;
@@ -200,6 +230,17 @@ button {
 
 .recipe-section-header h3 {
   margin: 0;
+  color: #563b27;
+}
+
+.card > h3,
+.favorites-section > h3 {
+  margin-top: 0;
+  margin-bottom: 10px;
+  padding-bottom: 6px;
+  border-bottom: 2px solid #e3d0b3;
+  color: #5b3f2a;
+  font-size: 1rem;
 }
 
 .recipe-cost-note {
@@ -224,7 +265,7 @@ button {
 
 .helper-text {
   margin: 2px 0 8px;
-  color: #4f5d75;
+  color: #6a5340;
   font-size: 0.82rem;
 }
 
@@ -276,9 +317,9 @@ button {
   grid-template-columns: auto minmax(0, 1fr) 86px;
   gap: 6px;
   align-items: end;
-  border: 1px solid #e3e9f7;
+  border: 1px solid #ddccb6;
   border-radius: 10px;
-  background: #fbfcff;
+  background: #f8f1e7;
   padding: 7px;
 }
 
@@ -287,9 +328,9 @@ button {
   font-size: 0.75rem;
   font-weight: 800;
   letter-spacing: 0.02em;
-  color: #1f2a44;
-  background: #eaf0ff;
-  border: 1px solid #d8e2fb;
+  color: #543a26;
+  background: #efe3cf;
+  border: 1px solid #d4bc95;
   border-radius: 999px;
   padding: 4px 7px;
   align-self: center;
@@ -340,13 +381,14 @@ button {
 }
 
 .summary-header small {
-  color: #4f5d75;
+  color: #715943;
   font-size: 0.8rem;
 }
 
 .summary-column h4 {
   margin: 0 0 6px;
   font-size: 0.95rem;
+  color: #5b3f29;
 }
 
 .summary-column p {
@@ -406,7 +448,7 @@ button {
 .bazaar-category-field span,
 .bazaar-sort-field span {
   font-size: 0.82rem;
-  color: #4f5d75;
+  color: #6e553e;
 }
 
 .bazaar-search-field {
@@ -415,7 +457,7 @@ button {
 
 .bazaar-search-field span {
   font-size: 0.82rem;
-  color: #4f5d75;
+  color: #6e553e;
 }
 
 .bazaar-search-input-wrap {
@@ -433,10 +475,10 @@ button {
 .bazaar-search-clear-button {
   min-width: 42px;
   min-height: 42px;
-  border: 1px solid #d5dbe8;
+  border: 1px solid #cfbba2;
   border-radius: 10px;
   background: #fff;
-  color: #4f5d75;
+  color: #5f4a36;
   font-size: 1rem;
   font-weight: 700;
   padding: 0 10px;
@@ -448,7 +490,7 @@ button {
 
 .bazaar-search-candidates {
   margin-top: 6px;
-  border: 1px solid #e0e6f0;
+  border: 1px solid #ddccb7;
   border-radius: 10px;
   background: #fff;
   max-height: 188px;
@@ -463,8 +505,8 @@ button {
   min-height: 42px;
   border: none;
   border-radius: 8px;
-  background: #f7f9fc;
-  color: #1f2a44;
+  background: #f7efe4;
+  color: #452f1f;
   text-align: left;
   padding: 8px 10px;
   font-size: 0.9rem;
@@ -474,7 +516,7 @@ button {
 .bazaar-search-empty {
   margin: 0;
   padding: 10px;
-  color: #4f5d75;
+  color: #6c5440;
   font-size: 0.84rem;
 }
 
@@ -486,7 +528,7 @@ button {
 
 .bazaar-favorite-filter-field span {
   font-size: 0.82rem;
-  color: #4f5d75;
+  color: #6e553e;
 }
 
 .bazaar-category-field select,
@@ -495,15 +537,16 @@ button {
 }
 
 .bazaar-card {
-  border: 1px solid var(--line);
+  border: 1px solid var(--panel-border);
   border-radius: 12px;
-  background: #fff;
+  background: linear-gradient(180deg, #fffdfa 0%, #f5ebdc 100%);
   padding: 10px;
+  box-shadow: 0 2px 7px var(--panel-shadow);
 }
 
 .bazaar-card.is-focused {
-  border-color: #2463eb;
-  box-shadow: 0 0 0 2px rgba(36, 99, 235, 0.22);
+  border-color: #8a623d;
+  box-shadow: 0 0 0 2px rgba(138, 98, 61, 0.22);
 }
 
 .bazaar-card-header {
@@ -525,7 +568,7 @@ button {
 
 .bazaar-category {
   margin: 2px 0 0;
-  color: #4f5d75;
+  color: #6c5540;
   font-size: 0.8rem;
   line-height: 1.2;
 }
@@ -534,9 +577,9 @@ button {
   width: 36px;
   height: 36px;
   border-radius: 999px;
-  border: 1px solid #d7dce5;
-  background: #f7f9fc;
-  color: #9aa5b5;
+  border: 1px solid #d0bda7;
+  background: #f7ecdd;
+  color: #9a856f;
   font-size: 1.1rem;
   line-height: 1;
   display: inline-flex;
@@ -548,9 +591,9 @@ button {
 }
 
 .bazaar-favorite-button.is-active {
-  border-color: #f0b4bf;
-  background: #fff3f6;
-  color: #d64f6a;
+  border-color: #d0a774;
+  background: #fff3df;
+  color: #9a5d1f;
 }
 
 .bazaar-main {
@@ -567,7 +610,7 @@ button {
 
 .bazaar-updated-at {
   margin: 0;
-  color: #4f5d75;
+  color: #6c5440;
   font-size: 0.76rem;
   line-height: 1.2;
   white-space: nowrap;
@@ -595,10 +638,10 @@ button {
   gap: 5px;
   min-height: 35px;
   padding: 6px 10px;
-  border: 1px solid #d4def1;
+  border: 1px solid #ccb08d;
   border-radius: 8px;
-  background: #f7faff;
-  color: #1f4fbf;
+  background: #f7ebdb;
+  color: #5a3c25;
   font-size: 0.78rem;
   font-weight: 700;
   line-height: 1.2;
@@ -613,7 +656,7 @@ button {
 }
 
 .bazaar-official-link-button:hover {
-  background: #eef4ff;
+  background: #f2e2cc;
 }
 
 .bazaar-official-link-button:focus-visible {
@@ -629,7 +672,7 @@ button {
   margin: 0;
   font-size: 1.2rem;
   font-weight: 800;
-  color: #184ec8;
+  color: #3f2d1d;
   line-height: 1.1;
 }
 
@@ -681,7 +724,7 @@ button {
 
 .bazaar-previous-price {
   margin: 1px 0 0;
-  color: #4f5d75;
+  color: #6d5643;
   font-size: 0.78rem;
   line-height: 1.2;
 }
@@ -694,10 +737,10 @@ button {
 .recipe-favorite-toggle-button {
   width: 100%;
   min-height: 48px;
-  border: 1px solid #d4def1;
+  border: 1px solid #c9ad8b;
   border-radius: 12px;
-  background: #fff;
-  color: #1a2540;
+  background: #fbf0e0;
+  color: #4d341f;
   font-size: 1rem;
   font-weight: 700;
   letter-spacing: 0.01em;
@@ -705,9 +748,9 @@ button {
 }
 
 .recipe-favorite-toggle-button.is-active {
-  border-color: #ffcb66;
-  background: #fff7e6;
-  color: #8f5300;
+  border-color: #b58142;
+  background: #f9e3bf;
+  color: #6e4315;
 }
 
 .recipe-favorite-toggle-button:disabled {
@@ -728,19 +771,19 @@ button {
 
 .favorites-tab-button {
   min-height: 46px;
-  border: 1px solid #cbd8ff;
+  border: 1px solid #c9b59a;
   border-radius: 10px;
-  background: #f5f8ff;
-  color: #3b4b70;
+  background: #f8ecdb;
+  color: #644a34;
   font-size: 0.95rem;
   font-weight: 700;
   padding: 10px 12px;
 }
 
 .favorites-tab-button.is-active {
-  border-color: #8dadff;
-  background: #e6eeff;
-  color: #1f2a44;
+  border-color: #8f6846;
+  background: #ecd7bd;
+  color: #3f2b1b;
 }
 
 .favorites-panel {
@@ -757,7 +800,7 @@ button {
 
 .favorites-empty {
   margin: 6px 0 0;
-  color: #4f5d75;
+  color: #715942;
 }
 
 .favorites-list {
@@ -766,10 +809,10 @@ button {
 }
 
 .favorite-item-card {
-  border: 1px solid var(--line);
+  border: 1px solid var(--panel-border);
   border-radius: 10px;
   padding: 10px;
-  background: #fff;
+  background: #fffdf8;
 }
 
 .favorite-item-header {
@@ -783,7 +826,7 @@ button {
 .favorite-item-title-button {
   border: none;
   background: transparent;
-  color: #1f2a44;
+  color: #4b3322;
   font-size: 1rem;
   font-weight: 700;
   text-align: left;
@@ -797,7 +840,7 @@ button {
 
 .favorite-item-meta {
   margin: 8px 0 0;
-  color: #4f5d75;
+  color: #705844;
   font-size: 0.88rem;
 }
 
@@ -805,8 +848,8 @@ button {
   display: inline-block;
   margin-top: 10px;
   border-radius: 8px;
-  background: var(--primary);
-  color: #fff;
+  background: #8c623e;
+  color: #fff9f1;
   padding: 8px 12px;
   font-size: 0.88rem;
   font-weight: 700;
@@ -820,10 +863,10 @@ button {
 }
 
 .favorite-material-card {
-  border: 1px solid var(--line);
+  border: 1px solid var(--panel-border);
   border-radius: 10px;
   padding: 9px;
-  background: #fff;
+  background: #fffdf9;
   display: grid;
   gap: 6px;
 }
@@ -836,9 +879,9 @@ button {
   width: 100%;
   min-height: 44px;
   border: none;
-  background: #f6f9ff;
+  background: #f6ecdd;
   border-radius: 8px;
-  color: #1f2a44;
+  color: #4a3221;
   font-size: 0.92rem;
   font-weight: 700;
   text-align: left;
@@ -853,7 +896,7 @@ button {
 .favorite-material-price,
 .favorite-material-change {
   margin: 0;
-  color: #4f5d75;
+  color: #715942;
   font-size: 0.82rem;
   line-height: 1.25;
 }
@@ -902,9 +945,9 @@ button {
   min-height: 40px;
   margin-top: 2px;
   border-radius: 8px;
-  border: 1px solid #c4d5ff;
-  background: #eaf0ff;
-  color: #1f2a44;
+  border: 1px solid #ccb08f;
+  background: #f4e7d3;
+  color: #573c27;
   padding: 8px 10px;
   font-size: 0.82rem;
   font-weight: 700;
@@ -1143,10 +1186,10 @@ button {
 }
 
 .recipe-material-card {
-  border: 1px solid var(--line);
+  border: 1px solid var(--panel-border);
   border-radius: 10px;
   padding: 7px 8px;
-  background: #fff;
+  background: #fffdf9;
 }
 
 .recipe-material-name {
@@ -1163,13 +1206,13 @@ button {
   gap: 5px;
   flex-wrap: wrap;
   font-size: 0.77rem;
-  color: #56637b;
+  color: #6b5440;
   line-height: 1.2;
 }
 
 .recipe-material-count-line strong {
   font-size: 0.98rem;
-  color: #1f2a44;
+  color: #4f3524;
   font-weight: 800;
 }
 
@@ -1205,7 +1248,7 @@ button {
   top: 50%;
   transform: translateY(-50%);
   font-size: 0.73rem;
-  color: #627089;
+  color: #7a624c;
   font-weight: 700;
   pointer-events: none;
 }
@@ -1223,7 +1266,7 @@ button {
 
 .recipe-material-subtotal span {
   font-size: 0.72rem;
-  color: #56637b;
+  color: #6c5440;
   font-weight: 600;
 }
 
@@ -1234,7 +1277,7 @@ button {
 
 .recipe-material-subtotal strong span {
   font-size: 0.76rem;
-  color: #627089;
+  color: #7a624c;
   font-weight: 600;
 }
 
