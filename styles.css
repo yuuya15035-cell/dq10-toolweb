@@ -450,6 +450,17 @@ body.is-modal-open {
   font-size: 0.9rem;
 }
 
+@media (min-width: 768px) {
+  .field-farming-map-modal {
+    width: min(860px, 100%);
+  }
+
+  .field-farming-map-image {
+    max-height: 72vh;
+    object-fit: contain;
+  }
+}
+
 .card {
   background: var(--card);
   border: 1px solid var(--panel-border);
