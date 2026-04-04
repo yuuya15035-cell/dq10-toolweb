@@ -1569,7 +1569,7 @@ function renderFavoriteRecipesSection() {
               </header>
               <p class="favorite-item-meta">原価目安: ${formatGold(getRoundedEquipmentMaterialCost(equipment.id))}</p>
               <p class="favorite-item-meta">必要素材: ${getFavoriteRecipeMaterialSummary(equipment.id)}</p>
-              <a href="#" class="favorite-link-button" data-favorite-recipe-link-id="${equipment.id}">レシピ検索で開く</a>
+              <a href="#" class="favorite-link-button" data-favorite-recipe-link-id="${equipment.id}">職人アシストで開く</a>
             </article>
           `;
         })
