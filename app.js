@@ -415,6 +415,7 @@ let bazaarPriceHistoryByMaterialKey = new Map();
 let selectedBazaarChartRangeDays = DEFAULT_BAZAAR_CHART_RANGE_DAYS;
 let expandedBazaarChartMaterialKeyMobile = "";
 let activeFavoriteMaterialModalKey = "";
+let activeFieldFarmingMapModalMonsterId = "";
 let presentCodes = [];
 let fieldFarmingMonsters = [];
 let selectedFieldFarmingSort = "normal_desc";
@@ -484,6 +485,11 @@ const favoriteMaterialModalOverlay = getRequiredElementById("favoriteMaterialMod
 const favoriteMaterialModalDialog = getRequiredElementById("favoriteMaterialModalDialog");
 const favoriteMaterialModalCloseButton = getRequiredElementById("favoriteMaterialModalCloseButton");
 const favoriteMaterialModalBody = getRequiredElementById("favoriteMaterialModalBody");
+const fieldFarmingMapModalOverlay = getRequiredElementById("fieldFarmingMapModalOverlay");
+const fieldFarmingMapModalDialog = getRequiredElementById("fieldFarmingMapModalDialog");
+const fieldFarmingMapModalCloseButton = getRequiredElementById("fieldFarmingMapModalCloseButton");
+const fieldFarmingMapModalTitle = getRequiredElementById("fieldFarmingMapModalTitle");
+const fieldFarmingMapModalImage = getRequiredElementById("fieldFarmingMapModalImage");
 const favoritesTabButtons = document.querySelectorAll("[data-favorites-tab]");
 const favoritesPanels = document.querySelectorAll(".favorites-panel");
 
@@ -636,6 +642,13 @@ function parseOfficialUrl(value) {
   }
 }
 
+function parseMapUrl(value) {
+  const normalized = String(value || "").trim();
+  if (normalized === "") return "";
+  if (!normalized.startsWith("/maps/")) return "";
+  return normalized;
+}
+
 function parseBazaarPricesFromLines(lines) {
   if (lines.length <= 1) return [];
 
@@ -761,6 +774,7 @@ function parseFieldFarmingMonstersFromLines(lines) {
   const normalDropIndex = headers.indexOf("normal_dr") >= 0 ? headers.indexOf("normal_dr") : headers.indexOf("normal_drop");
   const rareDropIndex = headers.indexOf("rare_drop");
   const noteIndex = headers.indexOf("note");
+  const mapUrlIndex = headers.indexOf("map_url");
 
   if (hpIndex < 0 || normalDropIndex < 0 || rareDropIndex < 0) {
     throw new Error("field_farming_monsters.csv ヘッダーが想定と一致しません");
@@ -770,18 +784,25 @@ function parseFieldFarmingMonstersFromLines(lines) {
     .slice(1)
     .map((line) => parseCsvLine(line))
     .map((row, index) => {
+      const monsterName = String(row[monsterNameIndex] || "").trim();
+      const area = String(row[areaIndex] || "").trim();
       const monsterAreaRaw =
         monsterAreaIndex >= 0
           ? String(row[monsterAreaIndex] || "").trim()
-          : [String(row[monsterNameIndex] || "").trim(), String(row[areaIndex] || "").trim()].filter(Boolean).join(" / ");
+          : [monsterName, area].filter(Boolean).join(" / ");
       const hp = parseNullableNumber(row[hpIndex]);
+      const displayMonsterName = monsterName || monsterAreaRaw.split("/")[0].trim();
+      const displayArea = area || monsterAreaRaw.replace(displayMonsterName, "").replace(/^\/\s*/, "").trim();
       return {
         id: `field-farming-row-${index}`,
+        monsterName: displayMonsterName || "モンスター",
+        area: displayArea,
         monsterArea: monsterAreaRaw,
         hp: Number.isFinite(hp) ? Math.round(hp) : null,
         normalDrop: String(row[normalDropIndex] || "").trim(),
         rareDrop: String(row[rareDropIndex] || "").trim(),
         note: noteIndex >= 0 ? String(row[noteIndex] || "").trim() : "",
+        mapUrl: mapUrlIndex >= 0 ? parseMapUrl(row[mapUrlIndex]) : "",
       };
     })
     .filter((row) => row.monsterArea !== "" && row.normalDrop !== "");
@@ -1650,10 +1671,23 @@ function renderFieldFarmingRanking() {
           const normalDropOfficialUrl = getOfficialBazaarUrlByMaterialName(row.normalDrop);
           const rareDropOfficialUrl = getOfficialBazaarUrlByMaterialName(row.rareDrop);
           const hasRareDrop = row.rareDrop && row.rareDrop !== "-";
+          const monsterNameHtml = row.mapUrl
+            ? `
+                <button
+                  type="button"
+                  class="field-farming-monster-button"
+                  data-field-farming-map-id="${row.id}"
+                  aria-label="${row.monsterName}の出現マップを開く"
+                >${row.monsterName}</button>
+              `
+            : `<span class="field-farming-monster-text">${row.monsterName}</span>`;
           return `
             <article class="field-farming-card">
               <p class="field-farming-rank">${rank}位</p>
-              <h3 class="field-farming-monster-area">${row.monsterArea}</h3>
+              <h3 class="field-farming-monster-area">
+                ${monsterNameHtml}
+                ${row.area ? `<span class="field-farming-area-text"> / ${row.area}</span>` : ""}
+              </h3>
               <p class="field-farming-hp">HP: ${Number.isFinite(row.hp) ? row.hp.toLocaleString("ja-JP") : "-"}</p>
               <p class="field-farming-drop field-farming-drop-normal">
                 <span class="field-farming-drop-label">通常ドロップ:</span>
@@ -1744,8 +1778,8 @@ function closeFavoriteMaterialModal() {
   if (!favoriteMaterialModalOverlay) return;
   favoriteMaterialModalOverlay.hidden = true;
   favoriteMaterialModalOverlay.classList.remove("is-open");
-  document.body.classList.remove("is-modal-open");
   activeFavoriteMaterialModalKey = "";
+  syncModalOpenState();
 }
 
 function openFavoriteMaterialModal(materialKey) {
@@ -1774,8 +1808,37 @@ function openFavoriteMaterialModal(materialKey) {
   activeFavoriteMaterialModalKey = row.materialKey;
   favoriteMaterialModalOverlay.hidden = false;
   favoriteMaterialModalOverlay.classList.add("is-open");
-  document.body.classList.add("is-modal-open");
+  syncModalOpenState();
   favoriteMaterialModalDialog?.focus();
+}
+
+function syncModalOpenState() {
+  const hasOpenModal = Boolean(activeFavoriteMaterialModalKey) || Boolean(activeFieldFarmingMapModalMonsterId);
+  document.body.classList.toggle("is-modal-open", hasOpenModal);
+}
+
+function closeFieldFarmingMapModal() {
+  if (!fieldFarmingMapModalOverlay || !fieldFarmingMapModalImage) return;
+  fieldFarmingMapModalOverlay.hidden = true;
+  fieldFarmingMapModalOverlay.classList.remove("is-open");
+  fieldFarmingMapModalImage.removeAttribute("src");
+  fieldFarmingMapModalImage.alt = "";
+  activeFieldFarmingMapModalMonsterId = "";
+  syncModalOpenState();
+}
+
+function openFieldFarmingMapModal(row) {
+  if (!fieldFarmingMapModalOverlay || !fieldFarmingMapModalImage || !row?.mapUrl) return;
+  activeFieldFarmingMapModalMonsterId = row.id;
+  if (fieldFarmingMapModalTitle) {
+    fieldFarmingMapModalTitle.textContent = `${row.monsterName} の出現マップ`;
+  }
+  fieldFarmingMapModalImage.src = row.mapUrl;
+  fieldFarmingMapModalImage.alt = `${row.monsterName} の出現マップ`;
+  fieldFarmingMapModalOverlay.hidden = false;
+  fieldFarmingMapModalOverlay.classList.add("is-open");
+  syncModalOpenState();
+  fieldFarmingMapModalDialog?.focus();
 }
 
 function switchFavoritesTab(targetTabId) {
@@ -2120,6 +2183,31 @@ if (favoriteMaterialModalCloseButton) {
   });
 }
 
+if (fieldFarmingMapModalOverlay) {
+  fieldFarmingMapModalOverlay.addEventListener("click", (event) => {
+    if (event.target === fieldFarmingMapModalOverlay) {
+      closeFieldFarmingMapModal();
+    }
+  });
+}
+
+if (fieldFarmingMapModalCloseButton) {
+  fieldFarmingMapModalCloseButton.addEventListener("click", () => {
+    closeFieldFarmingMapModal();
+  });
+}
+
+if (fieldFarmingListWrap) {
+  fieldFarmingListWrap.addEventListener("click", (event) => {
+    const mapButton = event.target.closest("[data-field-farming-map-id]");
+    if (!mapButton) return;
+    const rowId = String(mapButton.dataset.fieldFarmingMapId || "").trim();
+    const targetRow = fieldFarmingMonsters.find((row) => row.id === rowId);
+    if (!targetRow || !targetRow.mapUrl) return;
+    openFieldFarmingMapModal(targetRow);
+  });
+}
+
 sideMenuItems.forEach((item) => {
   item.addEventListener("click", () => {
     const targetId = item.dataset.menuTarget || "";
@@ -2130,6 +2218,10 @@ sideMenuItems.forEach((item) => {
 
 document.addEventListener("keydown", (event) => {
   if (event.key === "Escape") {
+    if (activeFieldFarmingMapModalMonsterId) {
+      closeFieldFarmingMapModal();
+      return;
+    }
     if (activeFavoriteMaterialModalKey) {
       closeFavoriteMaterialModal();
       return;

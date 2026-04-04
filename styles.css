@@ -267,6 +267,30 @@ body.is-modal-open {
   color: #2f2419;
 }
 
+.field-farming-monster-button {
+  appearance: none;
+  border: 0;
+  background: transparent;
+  padding: 0;
+  margin: 0;
+  color: #6f2e24;
+  font: inherit;
+  font-weight: 800;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  cursor: pointer;
+}
+
+.field-farming-monster-text {
+  font-weight: 800;
+}
+
+.field-farming-area-text {
+  font-weight: 600;
+  color: #3f3227;
+  font-size: 0.9em;
+}
+
 .field-farming-hp,
 .field-farming-drop,
 .field-farming-note {
@@ -1452,6 +1476,65 @@ button {
   text-decoration: none;
 }
 
+.field-farming-map-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(24, 15, 9, 0.56);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding: 14px;
+  z-index: 1210;
+}
+
+.field-farming-map-modal-overlay.is-open {
+  display: flex;
+}
+
+.field-farming-map-modal {
+  width: min(560px, 100%);
+  max-height: min(85vh, 720px);
+  overflow: auto;
+  border: 1px solid #997656;
+  border-radius: 12px;
+  background: #f6ead9;
+  box-shadow: 0 12px 34px rgba(22, 13, 7, 0.32);
+  padding: 12px;
+  position: relative;
+}
+
+.field-farming-map-modal-close {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  width: 34px;
+  height: 34px;
+  border-radius: 999px;
+  border: 1px solid #b89370;
+  background: #fff9f0;
+  color: #4a3120;
+  font-size: 1.2rem;
+  line-height: 1;
+  padding: 0;
+}
+
+.field-farming-map-modal-title {
+  margin: 0 40px 10px 0;
+  color: #4b321f;
+  font-size: 1rem;
+}
+
+.field-farming-map-modal-image {
+  display: block;
+  width: 100%;
+  height: auto;
+  max-height: 70vh;
+  border-radius: 8px;
+  border: 1px solid #c4ac8f;
+  background: #fffdf8;
+  object-fit: contain;
+}
+
 @media (min-width: 768px) {
   .favorite-materials-grid {
     grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -1502,6 +1585,14 @@ button {
     min-height: 28px;
     padding: 2px 8px;
     font-size: 0.71rem;
+  }
+
+  .field-farming-map-modal {
+    padding: 10px;
+  }
+
+  .field-farming-map-modal-image {
+    max-height: 66vh;
   }
 
   .favorite-materials-grid {
