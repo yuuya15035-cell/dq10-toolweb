@@ -8,6 +8,7 @@ const TOOLS_CSV_PATH = "./data/tools.csv";
 const BAZAAR_CSV_PATH = "./data/bazaar_prices.csv";
 const BAZAAR_HISTORY_CSV_PATH = "./data/bazaar_prices_history.csv";
 const LAST_UPDATED_JSON_PATH = "./data/last-updated.json";
+const OFFICIAL_BAZAAR_TOP_URL = "https://dqx-souba.game-blog.app/";
 const BAZAAR_FAVORITES_STORAGE_KEY = "dq10_toolweb_bazaar_favorites_v1";
 const RECIPE_FAVORITES_STORAGE_KEY = "dq10_toolweb_recipe_favorites_v1";
 const RECIPE_FAVORITE_CATEGORY_VALUE = "__favorites__";
@@ -737,6 +738,17 @@ function syncMaterialPricesWithBazaar(materials, bazaarRows) {
     matchedCount,
     updatedCount,
   };
+}
+
+function getOfficialBazaarUrlByMaterialName(materialName) {
+  const normalizedMaterialName = normalizeMaterialNameKey(materialName);
+  if (normalizedMaterialName !== "") {
+    const matchedRow = bazaarPrices.find((row) => normalizeMaterialNameKey(row?.materialName) === normalizedMaterialName);
+    if (matchedRow?.officialUrl) {
+      return matchedRow.officialUrl;
+    }
+  }
+  return OFFICIAL_BAZAAR_TOP_URL;
 }
 
 async function loadBazaarPricesCsv() {
@@ -2097,6 +2109,7 @@ function renderRecipeTable() {
   const htmlRows = rows
     .map((row) => {
       const material = state.materials.find((m) => m.id === row.materialId);
+      const marketUrl = getOfficialBazaarUrlByMaterialName(material?.name);
       const price = getEffectiveMaterialPrice(row.materialId);
       const totalRequired = row.quantity * productionCount;
       const subtotal = price * totalRequired;
@@ -2118,6 +2131,16 @@ function renderRecipeTable() {
               >
             </td>
             <td>${formatGold(subtotal)}</td>
+            <td class="recipe-market-link-cell">
+              <a
+                class="market-link-button recipe-market-link-button"
+                href="${marketUrl}"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                相場確認
+              </a>
+            </td>
           </tr>
         `,
         card: `
@@ -2148,6 +2171,16 @@ function renderRecipeTable() {
                 <strong>${formatGold(subtotal)}</strong>
               </p>
             </div>
+            <div class="recipe-material-market-link-wrap">
+              <a
+                class="market-link-button recipe-market-link-button"
+                href="${marketUrl}"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                相場確認
+              </a>
+            </div>
           </article>
         `,
       };
@@ -2164,6 +2197,7 @@ function renderRecipeTable() {
             <th>総必要数</th>
             <th>単価</th>
             <th>総小計</th>
+            <th class="recipe-market-link-header">相場</th>
           </tr>
         </thead>
         <tbody>${htmlRows.map((row) => row.table).join("")}</tbody>

@@ -420,6 +420,24 @@ button {
   vertical-align: middle;
 }
 
+.recipe-market-link-header {
+  width: 1%;
+  white-space: nowrap;
+  text-align: right;
+}
+
+.recipe-market-link-cell {
+  text-align: right !important;
+  white-space: nowrap;
+}
+
+.recipe-market-link-button {
+  margin: 0;
+  padding: 7px 11px;
+  font-size: 0.84rem;
+  white-space: nowrap;
+}
+
 .inline-input {
   width: 96px;
 }
@@ -1398,9 +1416,10 @@ button {
   font-weight: 600;
 }
 
-.material-header-actions .market-link-button {
-  padding: 9px 12px;
-  font-size: 0.9rem;
+.recipe-material-market-link-wrap {
+  margin-top: 6px;
+  display: flex;
+  justify-content: flex-end;
 }
 
 @media (min-width: 700px) {
