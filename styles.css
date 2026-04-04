@@ -698,6 +698,10 @@ button {
   vector-effect: non-scaling-stroke;
 }
 
+.bazaar-mini-chart-point {
+  fill: currentColor;
+}
+
 .bazaar-mini-chart-svg.is-positive .bazaar-mini-chart-line {
   stroke: #2d8b4a !important;
 }
@@ -708,6 +712,18 @@ button {
 
 .bazaar-mini-chart-svg.is-neutral .bazaar-mini-chart-line {
   stroke: #7a644f !important;
+}
+
+.bazaar-mini-chart-svg.is-positive .bazaar-mini-chart-point {
+  color: #2d8b4a;
+}
+
+.bazaar-mini-chart-svg.is-negative .bazaar-mini-chart-point {
+  color: #c95f2b;
+}
+
+.bazaar-mini-chart-svg.is-neutral .bazaar-mini-chart-point {
+  color: #7a644f;
 }
 
 .bazaar-mini-chart-meta,
@@ -1175,7 +1191,7 @@ button {
 
 @media (min-width: 700px) {
   .bazaar-main {
-    grid-template-columns: minmax(0, 1fr) minmax(180px, 240px);
+    grid-template-columns: minmax(0, 1fr) minmax(210px, 270px);
     align-items: center;
   }
 
