@@ -450,6 +450,10 @@ body.is-modal-open {
   font-size: 0.9rem;
 }
 
+.field-farming-map-image-fallback[hidden] {
+  display: none;
+}
+
 @media (min-width: 768px) {
   .field-farming-map-modal {
     width: min(860px, 100%);
