@@ -19,11 +19,6 @@ const BAZAAR_SORT_OPTIONS = [
   { value: "rate_desc", label: "変動率高い順" },
   { value: "rate_asc", label: "変動率低い順" },
 ];
-const RECIPE_SORT_OPTIONS = [
-  { value: "cost_desc", label: "原価高い順" },
-  { value: "cost_asc", label: "原価低い順" },
-  { value: "favorite_first", label: "お気に入り優先" },
-];
 
 // 初期データ（CSVが読み込めない場合のフォールバック）
 const defaultData = {
@@ -355,7 +350,6 @@ let showBazaarFavoritesOnly = false;
 let activeFavoritesTabId = "recipes";
 let bazaarFavoriteMaterialKeys = new Set();
 let recipeFavoriteKeys = new Set();
-let selectedRecipeSort = RECIPE_SORT_OPTIONS[0].value;
 let activeTabId = "profit";
 let pendingBazaarFocusMaterialKey = "";
 // 利益計算画面だけで使う「今回計算用の一時単価」。
@@ -380,7 +374,6 @@ const menuOverlay = getRequiredElementById("menuOverlay");
 const sideMenuItems = document.querySelectorAll(".side-menu-item");
 
 const equipmentSelect = getRequiredElementById("equipmentSelect");
-const recipeSortSelect = getRequiredElementById("recipeSortSelect");
 const recipeFavoriteActionWrap = getRequiredElementById("recipeFavoriteActionWrap");
 const equipmentSearchInput = getRequiredElementById("equipmentSearchInput");
 const materialSearchInput = getRequiredElementById("materialSearchInput");
@@ -1397,17 +1390,6 @@ window.addEventListener("popstate", () => {
 function renderEquipmentSelectors() {
   if (!equipmentSelect || !recipeEquipmentSelect) return;
 
-  if (recipeSortSelect) {
-    recipeSortSelect.innerHTML = "";
-    RECIPE_SORT_OPTIONS.forEach((option) => {
-      recipeSortSelect.add(new Option(option.label, option.value));
-    });
-    if (!RECIPE_SORT_OPTIONS.some((option) => option.value === selectedRecipeSort)) {
-      selectedRecipeSort = RECIPE_SORT_OPTIONS[0].value;
-    }
-    recipeSortSelect.value = selectedRecipeSort;
-  }
-
   const { filteredEquipments, matchedRecipeByEquipmentId, normalizedMaterialKeyword } = getFilteredEquipmentContext();
 
   equipmentSelect.innerHTML = "";
@@ -1483,10 +1465,10 @@ function renderFilterSelectors() {
     craftsmanFilterSelect.add(new Option(craftsman, craftsman));
   });
 
+  categoryFilterSelect.add(new Option("お気に入り", RECIPE_FAVORITE_CATEGORY_VALUE));
   categories.forEach((category) => {
     categoryFilterSelect.add(new Option(category, category));
   });
-  categoryFilterSelect.add(new Option("お気に入り", RECIPE_FAVORITE_CATEGORY_VALUE));
 
   // 選択中の値が候補になければ未選択（全件）へ戻す。
   // 職人を変更したときにカテゴリが無効化された場合も、ここで自然に「全ジャンル」へ戻ります。
@@ -1523,11 +1505,7 @@ function isRecipeFavorite(equipment) {
 
 function compareEquipmentsByBaseSort(a, b) {
   const costDiff = getRoundedEquipmentMaterialCost(a.id) - getRoundedEquipmentMaterialCost(b.id);
-  if (selectedRecipeSort === "cost_asc") {
-    if (costDiff !== 0) return costDiff;
-  } else {
-    if (costDiff !== 0) return -costDiff;
-  }
+  if (costDiff !== 0) return -costDiff;
   return a.name.localeCompare(b.name, "ja");
 }
 
@@ -1566,13 +1544,7 @@ function getFilteredEquipmentContext() {
         matchesMaterial
       );
     })
-    .sort((a, b) => {
-      if (selectedRecipeSort === "favorite_first") {
-        const favoriteDiff = Number(isRecipeFavorite(b)) - Number(isRecipeFavorite(a));
-        if (favoriteDiff !== 0) return favoriteDiff;
-      }
-      return compareEquipmentsByBaseSort(a, b);
-    });
+    .sort(compareEquipmentsByBaseSort);
 
   return { filteredEquipments, matchedRecipeByEquipmentId, normalizedMaterialKeyword };
 }
@@ -2011,13 +1983,6 @@ if (equipmentSelect) {
     renderRecipeTable();
     renderToolSection();
     calcAndRenderSummary();
-    renderEquipmentSelectors();
-  });
-}
-
-if (recipeSortSelect) {
-  recipeSortSelect.addEventListener("change", (e) => {
-    selectedRecipeSort = e.target.value;
     renderEquipmentSelectors();
   });
 }
