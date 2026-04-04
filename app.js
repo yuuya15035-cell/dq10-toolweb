@@ -31,6 +31,24 @@ const BAZAAR_CHART_RANGE_DAYS = {
 };
 const DEFAULT_BAZAAR_CHART_RANGE_DAYS = BAZAAR_CHART_RANGE_DAYS.month;
 
+function resolveProjectScopedAssetUrl(path) {
+  if (!path) return "";
+  if (/^(?:[a-z]+:)?\/\//i.test(path) || path.startsWith("data:") || path.startsWith("blob:")) {
+    return path;
+  }
+  if (!path.startsWith("/")) return path;
+
+  const pathname = window.location.pathname || "/";
+  const normalizedPathname = pathname.endsWith(".html") ? pathname.replace(/[^/]*$/, "/") : pathname;
+  const projectSegment = normalizedPathname.split("/").filter(Boolean)[0];
+  const projectBasePath = projectSegment ? `/${projectSegment}` : "";
+
+  if (!projectBasePath || path.startsWith(`${projectBasePath}/`)) {
+    return path;
+  }
+  return `${projectBasePath}${path}`;
+}
+
 // 初期データ（CSVが読み込めない場合のフォールバック）
 const defaultData = {
   feeRate: 5,
@@ -1826,7 +1844,7 @@ function openFieldFarmingMapModal(rowId) {
   const mapImage = fieldFarmingMapModalBody.querySelector(".field-farming-map-image");
   const fallbackMessage = fieldFarmingMapModalBody.querySelector(".field-farming-map-image-fallback");
   if (mapImage && fallbackMessage) {
-    mapImage.setAttribute("src", row.mapUrl);
+    mapImage.setAttribute("src", resolveProjectScopedAssetUrl(row.mapUrl));
     mapImage.addEventListener("error", () => {
       mapImage.classList.add("is-hidden");
       fallbackMessage.hidden = false;
