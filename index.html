@@ -45,6 +45,7 @@
 
       <section id="profit" class="tab-content active" aria-label="レシピ検索画面">
         <h2>レシピ検索</h2>
+        <div id="profitPriceNoticeWrap"></div>
 
         <label class="field">
           <span>装備名検索（部分一致）</span>
@@ -77,7 +78,7 @@
             <div class="recipe-section-header">
               <h3>必要素材一覧</h3>
               <p class="recipe-cost-note">
-                ※ 表示中の原価は、素材価格の更新内容を参考にした概算です。
+                ※ 表示中の原価は更新時間の価格です。実際の価格は公式相場をご確認お願いします。
               </p>
             </div>
             <div class="material-header-actions">
@@ -194,11 +195,13 @@
 
       <section id="bazaar" class="tab-content" aria-label="バザー価格一覧画面">
         <h2>バザー価格一覧</h2>
+        <div id="bazaarPriceNoticeWrap"></div>
         <div id="bazaarListWrap"></div>
       </section>
 
       <section id="favorites" class="tab-content" aria-label="お気に入り一覧画面">
         <h2>お気に入り</h2>
+        <div id="favoritesPriceNoticeWrap"></div>
         <div class="favorites-tabs" role="tablist" aria-label="お気に入り表示切替">
           <button
             type="button"

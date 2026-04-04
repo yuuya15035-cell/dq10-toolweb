@@ -27,6 +27,8 @@ const BAZAAR_CHART_RANGE_DAYS = {
   threeMonths: 90,
 };
 const DEFAULT_BAZAAR_CHART_RANGE_DAYS = BAZAAR_CHART_RANGE_DAYS.month;
+const SHARED_PRICE_NOTICE_TEXT =
+  "※ 価格・原価はゲーム内確認ベースのため、更新タイミングや相場変動により実際の価格と差が出る場合があります。ご了承ください。";
 
 // 初期データ（CSVが読み込めない場合のフォールバック）
 const defaultData = {
@@ -459,6 +461,9 @@ const saveBazaarHistoryButton = getRequiredElementById("saveBazaarHistoryButton"
 const bazaarHistorySnapshotDateInput = getRequiredElementById("bazaarHistorySnapshotDateInput");
 const bazaarHistorySaveMessage = getRequiredElementById("bazaarHistorySaveMessage");
 const bazaarListWrap = getRequiredElementById("bazaarListWrap");
+const profitPriceNoticeWrap = getRequiredElementById("profitPriceNoticeWrap");
+const bazaarPriceNoticeWrap = getRequiredElementById("bazaarPriceNoticeWrap");
+const favoritesPriceNoticeWrap = getRequiredElementById("favoritesPriceNoticeWrap");
 const favoriteRecipesListWrap = getRequiredElementById("favoriteRecipesListWrap");
 const favoriteMaterialsListWrap = getRequiredElementById("favoriteMaterialsListWrap");
 const favoritesTabButtons = document.querySelectorAll("[data-favorites-tab]");
@@ -504,6 +509,13 @@ function formatBazaarPrice(value) {
 function formatBazaarPriceWithUnit(value) {
   const text = formatBazaarPrice(value);
   return text === "-" ? "-" : `${text} G`;
+}
+
+function renderSharedPriceNotices() {
+  [profitPriceNoticeWrap, bazaarPriceNoticeWrap, favoritesPriceNoticeWrap].forEach((wrap) => {
+    if (!wrap) return;
+    wrap.innerHTML = `<p class="page-price-note">${SHARED_PRICE_NOTICE_TEXT}</p>`;
+  });
 }
 
 function normalizeBazaarRate(rate) {
@@ -2670,6 +2682,7 @@ window.mergeBazaarHistoryLines = mergeBazaarHistoryLines;
 // 2) ローカル保存の価格情報をマージ
 // 3) 画面描画
 async function initialize() {
+  renderSharedPriceNotices();
   const storedData = loadStoredData();
   const favoriteState = loadBazaarFavoriteState();
   const loadedRecipeFavoriteKeys = loadRecipeFavoriteState();
