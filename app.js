@@ -790,11 +790,7 @@ function parseFieldFarmingMonstersFromLines(lines) {
         normalDrop: String(row[normalDropIndex] || "").trim(),
         rareDrop: String(row[rareDropIndex] || "").trim(),
         note: noteIndex >= 0 ? String(row[noteIndex] || "").trim() : "",
-        mapUrl:
-          mapUrlIndex >= 0 &&
-          /^\/public\/maps\/[^?#]+\.(png|jpe?g|webp|gif|svg)$/i.test(String(row[mapUrlIndex] || "").trim())
-            ? String(row[mapUrlIndex] || "").trim()
-            : "",
+        mapUrl: mapUrlIndex >= 0 ? String(row[mapUrlIndex] || "").trim() : "",
       };
     })
     .filter((row) => row.monsterArea !== "" && row.normalDrop !== "");
@@ -1823,18 +1819,14 @@ function openFieldFarmingMapModal(rowId) {
   fieldFarmingMapModalBody.innerHTML = `
     <h3 class="field-farming-map-modal-title">${row.monsterName || row.monsterArea}${areaLabel}</h3>
     <div class="field-farming-map-image-wrap">
-      <img
-      class="field-farming-map-image"
-      src="${row.mapUrl}"
-      alt="${row.monsterName || "モンスター"}の出現マップ"
-      loading="lazy"
-      />
+      <img class="field-farming-map-image" alt="${row.monsterName || "モンスター"}の出現マップ" loading="lazy" />
       <p class="field-farming-map-image-fallback" hidden>マップ画像を読み込めませんでした。</p>
     </div>
   `;
   const mapImage = fieldFarmingMapModalBody.querySelector(".field-farming-map-image");
   const fallbackMessage = fieldFarmingMapModalBody.querySelector(".field-farming-map-image-fallback");
   if (mapImage && fallbackMessage) {
+    mapImage.setAttribute("src", row.mapUrl);
     mapImage.addEventListener("error", () => {
       mapImage.classList.add("is-hidden");
       fallbackMessage.hidden = false;
