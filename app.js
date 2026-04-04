@@ -7,12 +7,14 @@ const RECIPE_CSV_PATH = "./data/recipe.csv";
 const TOOLS_CSV_PATH = "./data/tools.csv";
 const BAZAAR_CSV_PATH = "./data/bazaar_prices.csv";
 const BAZAAR_HISTORY_CSV_PATH = "./data/bazaar_prices_history.csv";
+const PRESENT_CODES_CSV_PATH = "./data/datapresent_codes.csv";
 const LAST_UPDATED_JSON_PATH = "./data/last-updated.json";
 const OFFICIAL_BAZAAR_TOP_URL = "https://dqx-souba.game-blog.app/";
+const OFFICIAL_PRESENT_CODE_URL = "https://hiroba.dqx.jp/sc/campaignCode/itemcode/";
 const BAZAAR_FAVORITES_STORAGE_KEY = "dq10_toolweb_bazaar_favorites_v1";
 const RECIPE_FAVORITES_STORAGE_KEY = "dq10_toolweb_recipe_favorites_v1";
 const RECIPE_FAVORITE_CATEGORY_VALUE = "__favorites__";
-const TAB_IDS = new Set(["profit", "bazaar", "favorites", "data"]);
+const TAB_IDS = new Set(["profit", "present-codes", "bazaar", "favorites", "data"]);
 const FAVORITES_TAB_IDS = new Set(["recipes", "materials"]);
 const RECIPE_SUMMARY_MATERIAL_LIMIT = 4;
 const BAZAAR_CATEGORY_ORDER = ["石系", "植物系", "モンスター系", "その他", "消費アイテム"];
@@ -412,6 +414,7 @@ let bazaarPriceHistoryByMaterialKey = new Map();
 let selectedBazaarChartRangeDays = DEFAULT_BAZAAR_CHART_RANGE_DAYS;
 let expandedBazaarChartMaterialKeyMobile = "";
 let activeFavoriteMaterialModalKey = "";
+let presentCodes = [];
 // 利益計算画面だけで使う「今回計算用の一時単価」。
 // - キー: materialId
 // - 値: 画面上で上書きした単価
@@ -469,6 +472,7 @@ const saveBazaarHistoryButton = getRequiredElementById("saveBazaarHistoryButton"
 const bazaarHistorySnapshotDateInput = getRequiredElementById("bazaarHistorySnapshotDateInput");
 const bazaarHistorySaveMessage = getRequiredElementById("bazaarHistorySaveMessage");
 const bazaarListWrap = getRequiredElementById("bazaarListWrap");
+const presentCodeListWrap = getRequiredElementById("presentCodeListWrap");
 const favoriteRecipesListWrap = getRequiredElementById("favoriteRecipesListWrap");
 const favoriteMaterialsListWrap = getRequiredElementById("favoriteMaterialsListWrap");
 const favoriteMaterialModalOverlay = getRequiredElementById("favoriteMaterialModalOverlay");
@@ -704,6 +708,40 @@ function parseBazaarPricesFromLines(lines) {
 
   console.info(`[bazaar_prices.csv] parsed rows: ${rows.length}`);
   return rows;
+}
+
+function parsePresentCodesFromLines(lines) {
+  if (!Array.isArray(lines) || lines.length <= 1) return [];
+  const headers = parseCsvLine(lines[0]);
+  const codeIndex = headers.indexOf("code");
+  const rewardIndex = headers.indexOf("reward");
+  const expiresAtIndex = headers.indexOf("expires_at");
+  if (codeIndex < 0 || rewardIndex < 0 || expiresAtIndex < 0) {
+    throw new Error("datapresent_codes.csv ヘッダーが想定と一致しません");
+  }
+
+  const rows = [];
+  for (let i = 1; i < lines.length; i += 1) {
+    const row = parseCsvLine(lines[i]);
+    const code = String(row[codeIndex] || "").trim();
+    const reward = String(row[rewardIndex] || "").trim();
+    const expiresAt = String(row[expiresAtIndex] || "").trim();
+    if (!code || !reward || !expiresAt) continue;
+    rows.push({ code, reward, expiresAt });
+  }
+  return rows;
+}
+
+async function loadPresentCodesCsv() {
+  const lines = await fetchCsvLines(PRESENT_CODES_CSV_PATH);
+  const rows = parsePresentCodesFromLines(lines);
+  console.info(`[datapresent_codes.csv] parsed rows: ${rows.length}`);
+  return rows;
+}
+
+function buildPresentCodeUrl(code) {
+  const encodedCode = encodeURIComponent(String(code || "").trim());
+  return `${OFFICIAL_PRESENT_CODE_URL}?code=${encodedCode}`;
 }
 
 function normalizeMaterialNameKey(name) {
@@ -1441,6 +1479,48 @@ function renderBazaarPrices() {
     }
     pendingBazaarFocusMaterialKey = "";
   }
+}
+
+function formatPresentCodeReward(rewardText) {
+  return String(rewardText || "")
+    .split("/")
+    .map((part) => part.trim())
+    .filter((part) => part !== "")
+    .join("<br>");
+}
+
+function renderPresentCodes() {
+  if (!presentCodeListWrap) return;
+  if (!Array.isArray(presentCodes) || presentCodes.length === 0) {
+    presentCodeListWrap.innerHTML = `<p class="card">表示できるプレゼントのじゅもんがありません。CSV内容を確認してください。</p>`;
+    return;
+  }
+
+  presentCodeListWrap.innerHTML = `
+    <div class="present-code-list">
+      ${presentCodes
+        .map(
+          (row) => `
+            <article class="present-code-card">
+              <p class="present-code-label">じゅもん</p>
+              <p class="present-code-name">
+                <a
+                  class="present-code-link"
+                  href="${buildPresentCodeUrl(row.code)}"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >${row.code}</a>
+              </p>
+              <p class="present-code-label">報酬</p>
+              <p class="present-code-reward">${formatPresentCodeReward(row.reward)}</p>
+              <p class="present-code-label">期限</p>
+              <p class="present-code-expire">${row.expiresAt}</p>
+            </article>
+          `
+        )
+        .join("")}
+    </div>
+  `;
 }
 
 function getRecipeRowsForEquipment(equipmentId) {
@@ -2527,6 +2607,7 @@ function rerenderAll() {
   renderMaterialList();
   renderRecipeAdminList();
   calcAndRenderSummary();
+  renderPresentCodes();
   renderBazaarPrices();
   renderFavoritesPage();
 }
@@ -2805,6 +2886,13 @@ async function initialize() {
   } catch (error) {
     console.warn("recipe.csv の読み込みに失敗したため、フォールバックデータを使用します", error);
     state = mergeWithStoredData(structuredClone(defaultData), storedData);
+  }
+
+  try {
+    presentCodes = await loadPresentCodesCsv();
+  } catch (error) {
+    console.error(`datapresent_codes.csv の読み込みに失敗しました: path=${PRESENT_CODES_CSV_PATH}`, error);
+    presentCodes = [];
   }
 
   try {
