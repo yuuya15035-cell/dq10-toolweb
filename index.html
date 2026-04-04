@@ -95,20 +95,34 @@
 
         <div id="toolWrap" class="card">
           <h3>職人道具</h3>
-          <div class="grid-2">
+          <div class="tool-toggle-row">
+            <button
+              id="toolSectionToggleButton"
+              class="tool-toggle-button"
+              type="button"
+              aria-expanded="false"
+              aria-controls="toolSectionDetail"
+            >
+              ＋ 職人道具を原価に含める
+            </button>
+            <p class="tool-toggle-note">※ 職人道具代を原価に含める場合のみ、こちらを設定してください。</p>
+          </div>
+          <div id="toolSectionDetail" class="tool-detail-wrap" hidden>
+            <div class="grid-2">
+              <label class="field">
+                <span>使用職人道具</span>
+                <select id="toolSelect"></select>
+              </label>
+              <label class="field">
+                <span>耐久数（自動）</span>
+                <input id="toolDurabilityInput" type="text" readonly />
+              </label>
+            </div>
             <label class="field">
-              <span>使用職人道具</span>
-              <select id="toolSelect"></select>
-            </label>
-            <label class="field">
-              <span>耐久数（自動）</span>
-              <input id="toolDurabilityInput" type="text" readonly />
+              <span>道具購入単価（G）</span>
+              <input id="toolPurchasePriceInput" type="number" min="0" step="1" placeholder="購入単価を入力" />
             </label>
           </div>
-          <label class="field">
-            <span>道具購入単価（G）</span>
-            <input id="toolPurchasePriceInput" type="number" min="0" step="1" placeholder="購入単価を入力" />
-          </label>
         </div>
 
         <div class="card">
