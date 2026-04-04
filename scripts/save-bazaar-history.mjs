@@ -1,9 +1,44 @@
 #!/usr/bin/env node
 import fs from "node:fs/promises";
 import path from "node:path";
+import { TextDecoder } from "node:util";
 
 const DEFAULT_BAZAAR_CSV_PATH = "data/bazaar_prices.csv";
 const DEFAULT_HISTORY_CSV_PATH = "data/bazaar_prices_history.csv";
+const UTF8_BOM = "\uFEFF";
+
+function decodeText(bytes, encoding) {
+  return new TextDecoder(encoding, { fatal: true }).decode(bytes);
+}
+
+function tryDecodeCsv(bytes, candidates, validateFn) {
+  for (const encoding of candidates) {
+    try {
+      const text = decodeText(bytes, encoding);
+      if (validateFn(text)) {
+        return { text, encoding };
+      }
+    } catch {
+      // 次の候補へ
+    }
+  }
+
+  throw new Error(`CSV の文字コード判定に失敗しました（候補: ${candidates.join(", ")}）`);
+}
+
+function validateBazaarCsv(text) {
+  const lines = text.replace(/^\uFEFF/, "").split(/\r?\n/).filter((line) => line.trim().length > 0);
+  if (lines.length === 0) return false;
+  const headers = parseCsvLine(lines[0]).map((header) => String(header || "").replace(/^\uFEFF/, "").trim());
+  return headers.includes("materialName") && headers.includes("today_price");
+}
+
+function validateHistoryCsv(text) {
+  const lines = text.replace(/^\uFEFF/, "").split(/\r?\n/).filter((line) => line.trim().length > 0);
+  if (lines.length === 0) return true;
+  const headers = parseCsvLine(lines[0]).map((header) => String(header || "").replace(/^\uFEFF/, "").trim());
+  return headers.includes("date") && headers.includes("material_name");
+}
 
 function parseCsvLine(line) {
   const cells = [];
@@ -203,14 +238,25 @@ async function main() {
   const bazaarPath = path.resolve(options.bazaarPath);
   const historyPath = path.resolve(options.historyPath);
 
-  const bazaarText = await fs.readFile(bazaarPath, "utf8");
-  const historyText = await fs.readFile(historyPath, "utf8");
+  const bazaarBytes = await fs.readFile(bazaarPath);
+  const historyBytes = await fs.readFile(historyPath);
 
-  const bazaarLines = bazaarText
+  const bazaarDecoded = tryDecodeCsv(
+    bazaarBytes,
+    ["utf-8", "utf-8-sig", "shift_jis", "windows-31j", "cp932"],
+    validateBazaarCsv
+  );
+  const historyDecoded = tryDecodeCsv(
+    historyBytes,
+    ["utf-8", "utf-8-sig", "shift_jis", "windows-31j", "cp932"],
+    validateHistoryCsv
+  );
+
+  const bazaarLines = bazaarDecoded.text
     .replace(/^\uFEFF/, "")
     .split(/\r?\n/)
     .filter((line) => line.trim().length > 0);
-  const historyLines = historyText
+  const historyLines = historyDecoded.text
     .replace(/^\uFEFF/, "")
     .split(/\r?\n/)
     .filter((line) => line.trim().length > 0);
@@ -222,10 +268,10 @@ async function main() {
   const snapshotRows = parseBazaarRows(bazaarLines, options.date);
   const { lines, stats } = mergeHistoryLines(historyLines, snapshotRows, options.mode);
 
-  await fs.writeFile(historyPath, `${lines.join("\n")}\n`, "utf8");
+  await fs.writeFile(historyPath, `${UTF8_BOM}${lines.join("\n")}\n`, "utf8");
 
   console.log(
-    `[save-bazaar-history] done: date=${options.date}, appended=${stats.appendedCount}, skippedDuplicate=${stats.skippedDuplicateCount}, overwritten=${stats.overwrittenCount}, totalSnapshotRows=${snapshotRows.length}`
+    `[save-bazaar-history] done: date=${options.date}, bazaarEncoding=${bazaarDecoded.encoding}, historyEncoding=${historyDecoded.encoding}, appended=${stats.appendedCount}, skippedDuplicate=${stats.skippedDuplicateCount}, overwritten=${stats.overwrittenCount}, totalSnapshotRows=${snapshotRows.length}`
   );
 }
 
