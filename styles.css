@@ -1014,7 +1014,12 @@ button {
 
   .bazaar-footer-row {
     margin-top: 4px;
+    align-items: flex-start;
     gap: 7px;
+  }
+
+  .bazaar-actions {
+    margin-top: -2px;
   }
 
   .bazaar-official-link-button {
