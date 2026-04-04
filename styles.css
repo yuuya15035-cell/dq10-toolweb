@@ -1199,6 +1199,8 @@ button {
     display: block;
     border-left: 1px dashed rgba(111, 79, 50, 0.4);
     padding-left: 10px;
+    width: min(240px, 100%);
+    justify-self: center;
   }
 
   .bazaar-mobile-chart-panel {

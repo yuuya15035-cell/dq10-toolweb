@@ -691,6 +691,54 @@ function parseBazaarPricesFromLines(lines) {
   return rows;
 }
 
+function normalizeMaterialNameKey(name) {
+  return String(name || "").trim();
+}
+
+function getPreferredBazaarUnitPrice(row) {
+  if (Number.isFinite(row?.todayPrice)) return Math.round(row.todayPrice);
+  if (Number.isFinite(row?.displayPrice)) return Math.round(row.displayPrice);
+  return null;
+}
+
+function syncMaterialPricesWithBazaar(materials, bazaarRows) {
+  const bazaarPriceByName = new Map();
+  (bazaarRows || []).forEach((row) => {
+    const materialNameKey = normalizeMaterialNameKey(row?.materialName);
+    const preferredPrice = getPreferredBazaarUnitPrice(row);
+    if (materialNameKey === "" || !Number.isFinite(preferredPrice)) return;
+    bazaarPriceByName.set(materialNameKey, preferredPrice);
+  });
+
+  let matchedCount = 0;
+  let updatedCount = 0;
+  const nextMaterials = (materials || []).map((material) => {
+    const materialNameKey = normalizeMaterialNameKey(material?.name);
+    const bazaarPrice = bazaarPriceByName.get(materialNameKey);
+    if (!Number.isFinite(bazaarPrice)) {
+      return material;
+    }
+
+    matchedCount += 1;
+    const normalizedCurrentPrice = Number(material?.price || 0);
+    if (normalizedCurrentPrice === bazaarPrice) {
+      return material;
+    }
+
+    updatedCount += 1;
+    return {
+      ...material,
+      price: bazaarPrice,
+    };
+  });
+
+  return {
+    materials: nextMaterials,
+    matchedCount,
+    updatedCount,
+  };
+}
+
 async function loadBazaarPricesCsv() {
   const lines = await fetchCsvLines(BAZAAR_CSV_PATH);
   return parseBazaarPricesFromLines(lines);
@@ -2606,6 +2654,12 @@ async function initialize() {
     console.error(`bazaar_prices.csv の読み込みに失敗しました: path=${BAZAAR_CSV_PATH}`, error);
     bazaarPrices = [];
   }
+
+  const materialSyncResult = syncMaterialPricesWithBazaar(state.materials, bazaarPrices);
+  state.materials = materialSyncResult.materials;
+  console.info(
+    `[bazaar_prices.csv] レシピ素材単価を同期しました: matched=${materialSyncResult.matchedCount}, updated=${materialSyncResult.updatedCount}`
+  );
 
   try {
     bazaarPriceHistoryByMaterialKey = await loadBazaarPriceHistoryCsv();
