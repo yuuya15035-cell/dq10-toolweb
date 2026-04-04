@@ -46,6 +46,11 @@
               <button type="button" class="side-menu-item side-menu-sub-item" data-menu-target="field-farming">
                 フィールド狩り
               </button>
+            </div>
+          </section>
+          <section class="side-menu-group" aria-label="その他">
+            <h3 class="side-menu-group-title">その他</h3>
+            <div class="side-menu-sub-list">
               <button type="button" class="side-menu-item side-menu-sub-item" data-menu-target="present-codes">
                 プレゼントのじゅもん
               </button>
@@ -265,8 +270,17 @@
       <section id="field-farming" class="tab-content" aria-label="フィールド狩りランキング画面">
         <h2>金策 &gt; フィールド狩り</h2>
         <p class="field-farming-description card">
-          魔因細胞狩り向けに、魔界生息モンスターの通常ドロップ価格を基準にしたフィールド狩りランキングです。
+          魔因細胞狩り向けに、魔界生息モンスターの通常ドロップ価格を基準にしたフィールド狩りランキングです。価格は単価更新時点の参考価格です。
         </p>
+        <div class="field-farming-control-wrap card">
+          <label class="field field-farming-sort-field" for="fieldFarmingSortSelect">
+            <span>並び替え</span>
+            <select id="fieldFarmingSortSelect">
+              <option value="normal_desc">通常ドロップ価格が高い順</option>
+              <option value="rare_desc">レアドロップ価格が高い順</option>
+            </select>
+          </label>
+        </div>
         <div id="fieldFarmingListWrap"></div>
       </section>
 
