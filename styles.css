@@ -219,6 +219,17 @@ body.is-modal-open {
   line-height: 1.6;
 }
 
+.field-farming-control-wrap {
+  margin-top: 0;
+  margin-bottom: 10px;
+  padding: 8px 10px;
+}
+
+.field-farming-sort-field {
+  max-width: 380px;
+  margin-bottom: 0;
+}
+
 .field-farming-list {
   display: grid;
   gap: 10px;
@@ -260,6 +271,40 @@ body.is-modal-open {
 
 .field-farming-drop-rare {
   color: #5d4a36;
+}
+
+.field-farming-drop-link-row {
+  margin: 5px 0 0;
+}
+
+.field-farming-price-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 34px;
+  border-radius: 8px;
+  padding: 6px 11px;
+  border: 1px solid #ab8a67;
+  font-size: 0.79rem;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.field-farming-price-link-normal {
+  background: #f3e2cc;
+  color: #5d371c;
+}
+
+.field-farming-price-link-rare {
+  background: #efe0f2;
+  border-color: #a986b4;
+  color: #573466;
+}
+
+.field-farming-price-link-disabled {
+  background: #e3d8cc;
+  border-color: #b9a996;
+  color: #7c6c58;
 }
 
 .field-farming-note {
@@ -1387,6 +1432,20 @@ button {
 }
 
 @media (max-width: 480px) {
+  .field-farming-control-wrap {
+    padding: 8px;
+  }
+
+  .field-farming-sort-field select {
+    min-height: 44px;
+  }
+
+  .field-farming-price-link {
+    min-height: 38px;
+    padding: 7px 11px;
+    font-size: 0.8rem;
+  }
+
   .field-farming-list {
     grid-template-columns: 1fr;
     gap: 8px;

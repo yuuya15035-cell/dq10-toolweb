@@ -417,6 +417,7 @@ let expandedBazaarChartMaterialKeyMobile = "";
 let activeFavoriteMaterialModalKey = "";
 let presentCodes = [];
 let fieldFarmingMonsters = [];
+let selectedFieldFarmingSort = "normal_desc";
 // 利益計算画面だけで使う「今回計算用の一時単価」。
 // - キー: materialId
 // - 値: 画面上で上書きした単価
@@ -476,6 +477,7 @@ const bazaarHistorySaveMessage = getRequiredElementById("bazaarHistorySaveMessag
 const bazaarListWrap = getRequiredElementById("bazaarListWrap");
 const presentCodeListWrap = getRequiredElementById("presentCodeListWrap");
 const fieldFarmingListWrap = getRequiredElementById("fieldFarmingListWrap");
+const fieldFarmingSortSelect = getRequiredElementById("fieldFarmingSortSelect");
 const favoriteRecipesListWrap = getRequiredElementById("favoriteRecipesListWrap");
 const favoriteMaterialsListWrap = getRequiredElementById("favoriteMaterialsListWrap");
 const favoriteMaterialModalOverlay = getRequiredElementById("favoriteMaterialModalOverlay");
@@ -1611,6 +1613,9 @@ function getFieldFarmingPriceByMaterialName() {
 
 function renderFieldFarmingRanking() {
   if (!fieldFarmingListWrap) return;
+  if (fieldFarmingSortSelect) {
+    fieldFarmingSortSelect.value = selectedFieldFarmingSort;
+  }
   if (!Array.isArray(fieldFarmingMonsters) || fieldFarmingMonsters.length === 0) {
     fieldFarmingListWrap.innerHTML = `<p class="card">表示できるフィールド狩りデータがありません。CSV内容を確認してください。</p>`;
     return;
@@ -1628,8 +1633,9 @@ function renderFieldFarmingRanking() {
       };
     })
     .sort((a, b) => {
-      const aPrice = Number.isFinite(a.normalDropPrice) ? a.normalDropPrice : -1;
-      const bPrice = Number.isFinite(b.normalDropPrice) ? b.normalDropPrice : -1;
+      const targetPriceKey = selectedFieldFarmingSort === "rare_desc" ? "rareDropPrice" : "normalDropPrice";
+      const aPrice = Number.isFinite(a[targetPriceKey]) ? a[targetPriceKey] : -1;
+      const bPrice = Number.isFinite(b[targetPriceKey]) ? b[targetPriceKey] : -1;
       if (aPrice !== bPrice) return bPrice - aPrice;
       return a.monsterArea.localeCompare(b.monsterArea, "ja");
     });
@@ -1640,14 +1646,41 @@ function renderFieldFarmingRanking() {
         .map((row, index) => {
           const rank = index + 1;
           const normalPriceText = Number.isFinite(row.normalDropPrice) ? formatGold(row.normalDropPrice) : "価格不明";
-          const rarePriceText = Number.isFinite(row.rareDropPrice) ? formatGold(row.rareDropPrice) : "-";
+          const rarePriceText = Number.isFinite(row.rareDropPrice) ? formatGold(row.rareDropPrice) : "価格不明";
+          const normalDropOfficialUrl = getOfficialBazaarUrlByMaterialName(row.normalDrop);
+          const rareDropOfficialUrl = getOfficialBazaarUrlByMaterialName(row.rareDrop);
+          const hasRareDrop = row.rareDrop && row.rareDrop !== "-";
           return `
             <article class="field-farming-card">
               <p class="field-farming-rank">${rank}位</p>
               <h3 class="field-farming-monster-area">${row.monsterArea}</h3>
               <p class="field-farming-hp">HP: ${Number.isFinite(row.hp) ? row.hp.toLocaleString("ja-JP") : "-"}</p>
               <p class="field-farming-drop field-farming-drop-normal">通常ドロップ: ${row.normalDrop} / <strong>${normalPriceText}</strong></p>
+              <div class="field-farming-drop-link-row">
+                <a
+                  class="field-farming-price-link field-farming-price-link-normal"
+                  href="${normalDropOfficialUrl}"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  aria-label="${row.normalDrop}の公式相場ページを新しいタブで開く"
+                >通常相場</a>
+              </div>
               <p class="field-farming-drop field-farming-drop-rare">レアドロップ: ${row.rareDrop || "-"} / ${rarePriceText}</p>
+              <div class="field-farming-drop-link-row">
+                ${
+                  hasRareDrop
+                    ? `
+                      <a
+                        class="field-farming-price-link field-farming-price-link-rare"
+                        href="${rareDropOfficialUrl}"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        aria-label="${row.rareDrop}の公式相場ページを新しいタブで開く"
+                      >レア相場</a>
+                    `
+                    : `<span class="field-farming-price-link field-farming-price-link-disabled" aria-hidden="true">レア相場</span>`
+                }
+              </div>
               <p class="field-farming-note">備考: ${row.note || "-"}</p>
             </article>
           `;
@@ -3001,6 +3034,14 @@ if (saveBazaarHistoryButton) {
 
 if (bazaarHistorySnapshotDateInput) {
   bazaarHistorySnapshotDateInput.value = formatDateAsIsoText(new Date());
+}
+
+if (fieldFarmingSortSelect) {
+  fieldFarmingSortSelect.addEventListener("change", (event) => {
+    const nextSort = String(event.target.value || "normal_desc");
+    selectedFieldFarmingSort = nextSort === "rare_desc" ? "rare_desc" : "normal_desc";
+    renderFieldFarmingRanking();
+  });
 }
 
 window.buildBazaarHistorySnapshotRows = buildBazaarHistorySnapshotRows;
