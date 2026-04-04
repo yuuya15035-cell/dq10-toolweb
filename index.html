@@ -49,10 +49,21 @@
       <section id="profit" class="tab-content active" aria-label="レシピ検索画面">
         <h2>レシピ検索</h2>
 
-        <label class="field">
-          <span>装備名検索（部分一致）</span>
-          <input id="equipmentSearchInput" type="text" placeholder="例: はがね / つるぎ" />
-        </label>
+        <div class="search-toggle-group">
+          <button
+            id="equipmentSearchToggleButton"
+            class="search-toggle-button"
+            type="button"
+            aria-expanded="false"
+            aria-controls="equipmentSearchField"
+          >
+            ＋ 装備名で検索
+          </button>
+          <label id="equipmentSearchField" class="field search-field-collapsible" hidden>
+            <span>装備名検索（部分一致）</span>
+            <input id="equipmentSearchInput" type="text" placeholder="例: はがね / つるぎ" />
+          </label>
+        </div>
 
         <div class="search-filter-grid">
           <label class="field">
@@ -63,10 +74,21 @@
             <span>装備ジャンル</span>
             <select id="categoryFilterSelect"></select>
           </label>
-          <label class="field">
-            <span>素材で検索（部分一致）</span>
-            <input id="materialSearchInput" type="text" placeholder="例: 竜の涙" />
-          </label>
+          <div class="search-toggle-group search-toggle-group-inline">
+            <button
+              id="materialSearchToggleButton"
+              class="search-toggle-button"
+              type="button"
+              aria-expanded="false"
+              aria-controls="materialSearchField"
+            >
+              ＋ 素材で検索
+            </button>
+            <label id="materialSearchField" class="field search-field-collapsible" hidden>
+              <span>素材で検索（部分一致）</span>
+              <input id="materialSearchInput" type="text" placeholder="例: 竜の涙" />
+            </label>
+          </div>
         </div>
 
         <label class="field">

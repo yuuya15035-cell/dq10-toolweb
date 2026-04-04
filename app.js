@@ -392,6 +392,8 @@ let selectedCraftsman = "";
 let selectedCategory = "";
 let selectedToolId = "";
 let isToolCostIncluded = false;
+let isEquipmentSearchExpanded = false;
+let isMaterialSearchExpanded = false;
 let bazaarPrices = [];
 let selectedBazaarCategory = "";
 let selectedBazaarSort = "standard";
@@ -433,7 +435,11 @@ const sideMenuItems = document.querySelectorAll(".side-menu-item");
 
 const equipmentSelect = getRequiredElementById("equipmentSelect");
 const recipeFavoriteActionWrap = getRequiredElementById("recipeFavoriteActionWrap");
+const equipmentSearchToggleButton = getRequiredElementById("equipmentSearchToggleButton");
+const equipmentSearchField = getRequiredElementById("equipmentSearchField");
 const equipmentSearchInput = getRequiredElementById("equipmentSearchInput");
+const materialSearchToggleButton = getRequiredElementById("materialSearchToggleButton");
+const materialSearchField = getRequiredElementById("materialSearchField");
 const materialSearchInput = getRequiredElementById("materialSearchInput");
 const craftsmanFilterSelect = getRequiredElementById("craftsmanFilterSelect");
 const categoryFilterSelect = getRequiredElementById("categoryFilterSelect");
@@ -2335,6 +2341,20 @@ function renderToolSectionVisibility() {
   toolSectionToggleButton.textContent = isToolCostIncluded ? "－ 職人道具を原価から外す" : "＋ 職人道具を原価に含める";
 }
 
+function renderSearchFieldVisibility() {
+  if (equipmentSearchField && equipmentSearchToggleButton) {
+    equipmentSearchField.hidden = !isEquipmentSearchExpanded;
+    equipmentSearchToggleButton.setAttribute("aria-expanded", isEquipmentSearchExpanded ? "true" : "false");
+    equipmentSearchToggleButton.textContent = isEquipmentSearchExpanded ? "－ 装備名検索を閉じる" : "＋ 装備名で検索";
+  }
+
+  if (materialSearchField && materialSearchToggleButton) {
+    materialSearchField.hidden = !isMaterialSearchExpanded;
+    materialSearchToggleButton.setAttribute("aria-expanded", isMaterialSearchExpanded ? "true" : "false");
+    materialSearchToggleButton.textContent = isMaterialSearchExpanded ? "－ 素材検索を閉じる" : "＋ 素材で検索";
+  }
+}
+
 function applyProfitColor(element, value) {
   if (!element) return;
   element.classList.toggle("is-positive", value >= 0);
@@ -2502,6 +2522,7 @@ function rerenderAll() {
   if (salePriceStar3Input) salePriceStar3Input.value = salePrices.star3;
   renderRecipeTable();
   renderToolSectionVisibility();
+  renderSearchFieldVisibility();
   renderToolSection();
   renderMaterialList();
   renderRecipeAdminList();
@@ -2545,6 +2566,30 @@ if (toolSectionToggleButton) {
     isToolCostIncluded = !isToolCostIncluded;
     renderToolSectionVisibility();
     calcAndRenderSummary();
+  });
+}
+
+if (equipmentSearchToggleButton) {
+  equipmentSearchToggleButton.addEventListener("click", () => {
+    isEquipmentSearchExpanded = !isEquipmentSearchExpanded;
+    if (!isEquipmentSearchExpanded) {
+      equipmentSearchKeyword = "";
+      if (equipmentSearchInput) equipmentSearchInput.value = "";
+      rerenderAll();
+    }
+    renderSearchFieldVisibility();
+  });
+}
+
+if (materialSearchToggleButton) {
+  materialSearchToggleButton.addEventListener("click", () => {
+    isMaterialSearchExpanded = !isMaterialSearchExpanded;
+    if (!isMaterialSearchExpanded) {
+      materialSearchKeyword = "";
+      if (materialSearchInput) materialSearchInput.value = "";
+      rerenderAll();
+    }
+    renderSearchFieldVisibility();
   });
 }
 
