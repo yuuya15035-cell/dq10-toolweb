@@ -1844,6 +1844,12 @@ function openFieldFarmingMapModal(rowId) {
   const mapImage = fieldFarmingMapModalBody.querySelector(".field-farming-map-image");
   const fallbackMessage = fieldFarmingMapModalBody.querySelector(".field-farming-map-image-fallback");
   if (mapImage && fallbackMessage) {
+    mapImage.classList.remove("is-hidden");
+    fallbackMessage.hidden = true;
+    mapImage.addEventListener("load", () => {
+      mapImage.classList.remove("is-hidden");
+      fallbackMessage.hidden = true;
+    });
     mapImage.setAttribute("src", resolveProjectScopedAssetUrl(row.mapUrl));
     mapImage.addEventListener("error", () => {
       mapImage.classList.add("is-hidden");
