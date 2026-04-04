@@ -716,6 +716,9 @@ function parsePresentCodesFromLines(lines) {
   const codeIndex = headers.indexOf("code");
   const rewardIndex = headers.indexOf("reward");
   const expiresAtIndex = headers.indexOf("expires_at");
+  const linkTypeIndex = headers.indexOf("link_type");
+  const urlIndex = headers.indexOf("url");
+  const noteIndex = headers.indexOf("note");
   if (codeIndex < 0 || rewardIndex < 0 || expiresAtIndex < 0) {
     throw new Error("datapresent_codes.csv ヘッダーが想定と一致しません");
   }
@@ -726,8 +729,12 @@ function parsePresentCodesFromLines(lines) {
     const code = String(row[codeIndex] || "").trim();
     const reward = String(row[rewardIndex] || "").trim();
     const expiresAt = String(row[expiresAtIndex] || "").trim();
+    const rawLinkType = linkTypeIndex >= 0 ? String(row[linkTypeIndex] || "").trim().toLowerCase() : "";
+    const linkType = rawLinkType === "url" ? "url" : "code";
+    const url = urlIndex >= 0 ? String(row[urlIndex] || "").trim() : "";
+    const note = noteIndex >= 0 ? String(row[noteIndex] || "").trim() : "";
     if (!code || !reward || !expiresAt) continue;
-    rows.push({ code, reward, expiresAt });
+    rows.push({ code, reward, expiresAt, linkType, url, note });
   }
   return rows;
 }
@@ -742,6 +749,15 @@ async function loadPresentCodesCsv() {
 function buildPresentCodeUrl(code) {
   const encodedCode = encodeURIComponent(String(code || "").trim());
   return `${OFFICIAL_PRESENT_CODE_URL}?code=${encodedCode}`;
+}
+
+function buildPresentCodeLink(row) {
+  if (row?.linkType === "url" && row?.url) return row.url;
+  return buildPresentCodeUrl(row?.code);
+}
+
+function getPresentCodePrimaryLabel(row) {
+  return row?.linkType === "url" ? "受け取り" : "じゅもん";
 }
 
 function normalizeMaterialNameKey(name) {
@@ -1501,20 +1517,33 @@ function renderPresentCodes() {
       ${presentCodes
         .map(
           (row) => `
-            <article class="present-code-card">
-              <p class="present-code-label">じゅもん</p>
+            <article class="present-code-card${row.linkType === "url" ? " is-url" : ""}">
+              <p class="present-code-label">${getPresentCodePrimaryLabel(row)}</p>
               <p class="present-code-name">
                 <a
                   class="present-code-link"
-                  href="${buildPresentCodeUrl(row.code)}"
+                  href="${buildPresentCodeLink(row)}"
                   target="_blank"
                   rel="noopener noreferrer"
                 >${row.code}</a>
               </p>
+              ${
+                row.linkType === "url"
+                  ? '<p class="present-code-link-note">受け取りページへ</p>'
+                  : ""
+              }
               <p class="present-code-label">報酬</p>
               <p class="present-code-reward">${formatPresentCodeReward(row.reward)}</p>
               <p class="present-code-label">期限</p>
               <p class="present-code-expire">${row.expiresAt}</p>
+              ${
+                row.note
+                  ? `
+                    <p class="present-code-label">条件</p>
+                    <p class="present-code-note">${row.note}</p>
+                  `
+                  : ""
+              }
             </article>
           `
         )
