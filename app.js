@@ -391,6 +391,7 @@ let materialSearchKeyword = "";
 let selectedCraftsman = "";
 let selectedCategory = "";
 let selectedToolId = "";
+let isToolCostIncluded = false;
 let bazaarPrices = [];
 let selectedBazaarCategory = "";
 let selectedBazaarSort = "standard";
@@ -446,6 +447,8 @@ const countStar2Input = getRequiredElementById("countStar2Input");
 const countStar3Input = getRequiredElementById("countStar3Input");
 const recipeTableWrap = getRequiredElementById("recipeTableWrap");
 const toolWrap = getRequiredElementById("toolWrap");
+const toolSectionToggleButton = getRequiredElementById("toolSectionToggleButton");
+const toolSectionDetail = getRequiredElementById("toolSectionDetail");
 const toolSelect = getRequiredElementById("toolSelect");
 const toolDurabilityInput = getRequiredElementById("toolDurabilityInput");
 const toolPurchasePriceInput = getRequiredElementById("toolPurchasePriceInput");
@@ -2265,6 +2268,13 @@ function renderToolSection() {
   toolPurchasePriceInput.value = selectedTool ? String(getToolPurchasePrice(selectedTool.id)) : "";
 }
 
+function renderToolSectionVisibility() {
+  if (!toolSectionDetail || !toolSectionToggleButton) return;
+  toolSectionDetail.hidden = !isToolCostIncluded;
+  toolSectionToggleButton.setAttribute("aria-expanded", isToolCostIncluded ? "true" : "false");
+  toolSectionToggleButton.textContent = isToolCostIncluded ? "－ 職人道具を原価から外す" : "＋ 職人道具を原価に含める";
+}
+
 function applyProfitColor(element, value) {
   if (!element) return;
   element.classList.toggle("is-positive", value >= 0);
@@ -2290,7 +2300,8 @@ function calcAndRenderSummary() {
   );
   const tool = getSelectedTool();
   const toolPurchasePrice = tool ? getToolPurchasePrice(tool.id) : 0;
-  const perCraftToolCost = tool && tool.durability > 0 ? toolPurchasePrice / tool.durability : 0;
+  const toolCostIfEnabled = tool && tool.durability > 0 ? toolPurchasePrice / tool.durability : 0;
+  const perCraftToolCost = isToolCostIncluded ? toolCostIfEnabled : 0;
   const totalCount = countStar0 + countStar1 + countStar2 + countStar3;
   const feeRate = Number(state.feeRate || 5) / 100;
 
@@ -2430,6 +2441,7 @@ function rerenderAll() {
   if (salePriceStar2Input) salePriceStar2Input.value = salePrices.star2;
   if (salePriceStar3Input) salePriceStar3Input.value = salePrices.star3;
   renderRecipeTable();
+  renderToolSectionVisibility();
   renderToolSection();
   renderMaterialList();
   renderRecipeAdminList();
@@ -2464,6 +2476,14 @@ if (toolSelect) {
     const tool = getSelectedTool();
     if (toolDurabilityInput) toolDurabilityInput.value = tool ? String(tool.durability) : "";
     if (toolPurchasePriceInput) toolPurchasePriceInput.value = tool ? String(getToolPurchasePrice(tool.id)) : "";
+    calcAndRenderSummary();
+  });
+}
+
+if (toolSectionToggleButton) {
+  toolSectionToggleButton.addEventListener("click", () => {
+    isToolCostIncluded = !isToolCostIncluded;
+    renderToolSectionVisibility();
     calcAndRenderSummary();
   });
 }
