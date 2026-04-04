@@ -409,6 +409,9 @@ const exportMaterialPricesButton = getRequiredElementById("exportMaterialPricesB
 const importMaterialPricesButton = getRequiredElementById("importMaterialPricesButton");
 const importMaterialPricesInput = getRequiredElementById("importMaterialPricesInput");
 const materialDataTransferMessage = getRequiredElementById("materialDataTransferMessage");
+const saveBazaarHistoryButton = getRequiredElementById("saveBazaarHistoryButton");
+const bazaarHistorySnapshotDateInput = getRequiredElementById("bazaarHistorySnapshotDateInput");
+const bazaarHistorySaveMessage = getRequiredElementById("bazaarHistorySaveMessage");
 const bazaarListWrap = getRequiredElementById("bazaarListWrap");
 const favoriteRecipesListWrap = getRequiredElementById("favoriteRecipesListWrap");
 const favoriteMaterialsListWrap = getRequiredElementById("favoriteMaterialsListWrap");
@@ -577,6 +580,7 @@ function parseBazaarPricesFromLines(lines) {
   const updateInfoIndex = headers.indexOf("update_info");
   const commentIndex = headers.indexOf("comment");
   const shopPriceIndex = headers.indexOf("shop_price");
+  const listingCountIndex = headers.indexOf("listing_count");
   const officialUrlIndex = headers.indexOf("official_url");
   console.info("[bazaar_prices.csv] header columns:", headers);
 
@@ -599,6 +603,9 @@ function parseBazaarPricesFromLines(lines) {
   }
   if (shopPriceIndex < 0) {
     console.warn("[bazaar_prices.csv] shop_price 列が見つからないため null で補完します");
+  }
+  if (listingCountIndex < 0) {
+    console.warn("[bazaar_prices.csv] listing_count 列が見つからないため null で補完します");
   }
   if (officialUrlIndex < 0) {
     console.warn("[bazaar_prices.csv] official_url 列が見つからないため空文字で補完します");
@@ -623,6 +630,7 @@ function parseBazaarPricesFromLines(lines) {
         todayPrice,
         shopPrice: parseNullableNumber(shopPriceRaw),
         displayPrice: parseNullableNumber(displayPriceRaw),
+        listingCount: listingCountIndex >= 0 ? parseNullableNumber(row[listingCountIndex]) : null,
         previousDayPrice,
         priceChangeRate: calculatePriceChangeRate(todayPrice, previousDayPrice),
         updatedAt: updatedAtIndex >= 0 ? String(row[updatedAtIndex] || "").trim() : "",
@@ -649,6 +657,140 @@ function parseBazaarHistoryDate(value) {
   const parsed = new Date(normalized.replace(/-/g, "/"));
   if (Number.isNaN(parsed.getTime())) return null;
   return parsed;
+}
+
+function formatDateAsIsoText(date = new Date()) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
+function normalizeHistoryDateKey(value) {
+  const parsed = parseBazaarHistoryDate(value);
+  return parsed ? parsed.toISOString().slice(0, 10) : "";
+}
+
+function escapeCsvValue(value) {
+  const text = String(value ?? "");
+  if (!/[",\n]/.test(text)) return text;
+  return `"${text.replace(/"/g, '""')}"`;
+}
+
+function buildBazaarHistorySnapshotRows(snapshotDateText) {
+  const normalizedDate = normalizeHistoryDateKey(snapshotDateText || formatDateAsIsoText(new Date()));
+  return bazaarPrices
+    .map((row) => {
+      if (!row?.materialName) return null;
+      if (Number.isFinite(row.todayPrice)) {
+        return {
+          date: normalizedDate,
+          materialName: row.materialName,
+          price: Math.round(row.todayPrice),
+          listingCount: Number.isFinite(row.listingCount) ? Math.round(row.listingCount) : "",
+          source: "today_price",
+        };
+      }
+      if (Number.isFinite(row.shopPrice)) {
+        return {
+          date: normalizedDate,
+          materialName: row.materialName,
+          price: Math.round(row.shopPrice),
+          listingCount: Number.isFinite(row.listingCount) ? Math.round(row.listingCount) : "",
+          source: "shop_price",
+        };
+      }
+      return null;
+    })
+    .filter((row) => row !== null);
+}
+
+function mergeBazaarHistoryLines(existingLines, incomingRows, options = {}) {
+  const skipDuplicates = options.skipDuplicates !== false;
+  const lines = Array.isArray(existingLines) ? existingLines : [];
+  const hasHeader = lines.length > 0;
+  const baseHeader = "date,material_name,price,listing_count,source";
+  const outputLines = hasHeader ? [...lines] : [baseHeader];
+  const existingKeys = new Set();
+  const payloadLines = hasHeader ? lines.slice(1) : [];
+  payloadLines.forEach((line) => {
+    const cols = parseCsvLine(line);
+    const key = `${normalizeHistoryDateKey(cols[0])}::${String(cols[1] || "").trim()}`;
+    if (key !== "::") {
+      existingKeys.add(key);
+    }
+  });
+
+  const result = {
+    appendedCount: 0,
+    skippedDuplicateCount: 0,
+    skippedInvalidCount: 0,
+    lines: outputLines,
+  };
+
+  incomingRows.forEach((row) => {
+    const dateKey = normalizeHistoryDateKey(row?.date);
+    const materialName = String(row?.materialName || "").trim();
+    const price = Number(row?.price);
+    if (!dateKey || !materialName || !Number.isFinite(price)) {
+      result.skippedInvalidCount += 1;
+      return;
+    }
+    const uniqueKey = `${dateKey}::${materialName}`;
+    if (skipDuplicates && existingKeys.has(uniqueKey)) {
+      result.skippedDuplicateCount += 1;
+      return;
+    }
+    const listingCount = row?.listingCount === "" ? "" : Number.isFinite(Number(row?.listingCount)) ? Math.round(Number(row.listingCount)) : "";
+    const source = String(row?.source || "manual").trim() || "manual";
+    const csvLine = [
+      escapeCsvValue(dateKey),
+      escapeCsvValue(materialName),
+      escapeCsvValue(Math.round(price)),
+      escapeCsvValue(listingCount),
+      escapeCsvValue(source),
+    ].join(",");
+    outputLines.push(csvLine);
+    existingKeys.add(uniqueKey);
+    result.appendedCount += 1;
+  });
+
+  return result;
+}
+
+function setBazaarHistorySaveMessage(message, isError = false) {
+  if (!bazaarHistorySaveMessage) return;
+  bazaarHistorySaveMessage.textContent = message;
+  bazaarHistorySaveMessage.style.color = isError ? "#d93025" : "#4f5d75";
+}
+
+async function handleSaveBazaarHistoryClick() {
+  if (!saveBazaarHistoryButton) return;
+  try {
+    saveBazaarHistoryButton.disabled = true;
+    setBazaarHistorySaveMessage("履歴CSVを作成中です…");
+    const snapshotDate = bazaarHistorySnapshotDateInput?.value || formatDateAsIsoText(new Date());
+    const snapshotRows = buildBazaarHistorySnapshotRows(snapshotDate);
+    const existingLines = await fetchCsvLines(BAZAAR_HISTORY_CSV_PATH);
+    const merged = mergeBazaarHistoryLines(existingLines, snapshotRows, { skipDuplicates: true });
+    const csvText = `${merged.lines.join("\n")}\n`;
+    const blob = new Blob([csvText], { type: "text/csv;charset=utf-8" });
+    const link = document.createElement("a");
+    link.href = URL.createObjectURL(blob);
+    link.download = "bazaar_prices_history.csv";
+    document.body.append(link);
+    link.click();
+    link.remove();
+    URL.revokeObjectURL(link.href);
+    setBazaarHistorySaveMessage(
+      `履歴CSVを作成しました（追加 ${merged.appendedCount} 件 / 重複スキップ ${merged.skippedDuplicateCount} 件）。ダウンロードしたCSVで data/bazaar_prices_history.csv を置き換えてください。`
+    );
+  } catch (error) {
+    console.error("バザー履歴保存CSVの作成に失敗しました", error);
+    setBazaarHistorySaveMessage(`履歴CSV作成に失敗しました: ${error instanceof Error ? error.message : String(error)}`, true);
+  } finally {
+    saveBazaarHistoryButton.disabled = false;
+  }
 }
 
 function parseBazaarPriceHistoryFromLines(lines) {
@@ -2349,6 +2491,19 @@ if (importMaterialPricesButton && importMaterialPricesInput) {
     }
   });
 }
+
+if (saveBazaarHistoryButton) {
+  saveBazaarHistoryButton.addEventListener("click", () => {
+    handleSaveBazaarHistoryClick();
+  });
+}
+
+if (bazaarHistorySnapshotDateInput) {
+  bazaarHistorySnapshotDateInput.value = formatDateAsIsoText(new Date());
+}
+
+window.buildBazaarHistorySnapshotRows = buildBazaarHistorySnapshotRows;
+window.mergeBazaarHistoryLines = mergeBazaarHistoryLines;
 
 // 初期化処理。
 // 1) CSVを読み込む

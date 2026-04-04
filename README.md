@@ -236,12 +236,36 @@ DQ10（ドラゴンクエスト10）の職人向けに、
 - 更新方法:
   - **コード更新（固定値参照）**
 
+### バザー履歴CSV（価格推移チャート用）
+
+- 参照先: `data/bazaar_prices_history.csv`（相対パス: `./data/bazaar_prices_history.csv`）
+- 用途:
+  - バザー価格一覧カードのミニチャート表示
+  - 素材別の価格推移データ保持（縦持ち）
+- 想定列:
+  - `date`
+  - `material_name`
+  - `price`
+  - `listing_count`
+  - `source`
+- 履歴保存ルール:
+  - `today_price` があれば `price` に採用
+  - `today_price` が空欄なら `shop_price` を採用
+  - 採用元は `source` に `today_price` / `shop_price` を保存
+  - `date + material_name` が既存にある場合は重複追加しない（デフォルト）
+- 更新方法（運用用）:
+  - **CLI運用（推奨）**
+    - `node scripts/save-bazaar-history.mjs --date YYYY-MM-DD`
+    - 例: `node scripts/save-bazaar-history.mjs --date 2026-04-04`
+    - 既定では重複時スキップ。`--mode overwrite` で同日同素材を上書き可能
+  - **管理画面（補助）**
+    - 「データ追加」タブ内の「バザー履歴保存（運用）」で履歴CSVを生成・ダウンロード
+    - ダウンロードした `bazaar_prices_history.csv` で `data/bazaar_prices_history.csv` を置換
+
 ### 未参照（現行実装）
 
 - キラキラ拾い系データ:
   - 現在のコード上で専用の JSON/CSV は参照していません。
-- `data/bazaar_prices_history.csv`:
-  - リポジトリ上にはありますが、現行実装からは読込していません。
 
 ## 画面構成
 

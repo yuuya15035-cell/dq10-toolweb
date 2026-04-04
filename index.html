@@ -331,6 +331,25 @@
           <h3>登録済みレシピ一覧</h3>
           <div id="recipeAdminListWrap"></div>
         </div>
+
+        <div class="card">
+          <h3>バザー履歴保存（運用）</h3>
+          <p class="helper-text">
+            更新前の <code>bazaar_prices.csv</code> を履歴化し、重複チェック後の
+            <code>bazaar_prices_history.csv</code> をダウンロードします。
+          </p>
+          <div class="grid-2">
+            <label class="field">
+              <span>保存日付</span>
+              <input id="bazaarHistorySnapshotDateInput" type="date" />
+            </label>
+            <label class="field">
+              <span>&nbsp;</span>
+              <button id="saveBazaarHistoryButton" type="button">履歴保存CSVを作成</button>
+            </label>
+          </div>
+          <p id="bazaarHistorySaveMessage" class="helper-text" aria-live="polite"></p>
+        </div>
       </section>
     </main>
 
