@@ -219,6 +219,16 @@ body.is-modal-open {
   line-height: 1.6;
 }
 
+.field-farming-beginner-note {
+  color: #5c4027;
+}
+
+.field-farming-party-note {
+  display: inline-block;
+  margin-top: 2px;
+  color: #4f2f16;
+}
+
 .field-farming-control-wrap {
   margin-top: 0;
   margin-bottom: 10px;
