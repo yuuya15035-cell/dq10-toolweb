@@ -1706,3 +1706,46 @@ button {
     display: none;
   }
 }
+
+.site-footer {
+  margin: 16px auto 20px;
+  padding: 0 14px;
+  max-width: 920px;
+}
+
+.site-footer-inner {
+  border: 1px solid #c8b399;
+  border-radius: 10px;
+  background: rgba(244, 235, 221, 0.86);
+  padding: 10px 12px;
+  box-shadow: 0 2px 8px rgba(70, 48, 30, 0.12);
+}
+
+.site-footer p {
+  margin: 0;
+  color: #5d4532;
+  font-size: 0.73rem;
+  line-height: 1.55;
+}
+
+.site-footer p + p {
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid rgba(121, 91, 63, 0.24);
+}
+
+@media (max-width: 640px) {
+  .site-footer {
+    margin-top: 14px;
+    padding: 0 12px 16px;
+  }
+
+  .site-footer-inner {
+    padding: 9px 10px;
+  }
+
+  .site-footer p {
+    font-size: 0.69rem;
+    line-height: 1.6;
+  }
+}
