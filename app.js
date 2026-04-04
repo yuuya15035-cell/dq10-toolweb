@@ -409,6 +409,7 @@ let pendingBazaarFocusMaterialKey = "";
 let bazaarPriceHistoryByMaterialKey = new Map();
 let selectedBazaarChartRangeDays = DEFAULT_BAZAAR_CHART_RANGE_DAYS;
 let expandedBazaarChartMaterialKeyMobile = "";
+let activeFavoriteMaterialModalKey = "";
 // 利益計算画面だけで使う「今回計算用の一時単価」。
 // - キー: materialId
 // - 値: 画面上で上書きした単価
@@ -464,6 +465,10 @@ const bazaarHistorySaveMessage = getRequiredElementById("bazaarHistorySaveMessag
 const bazaarListWrap = getRequiredElementById("bazaarListWrap");
 const favoriteRecipesListWrap = getRequiredElementById("favoriteRecipesListWrap");
 const favoriteMaterialsListWrap = getRequiredElementById("favoriteMaterialsListWrap");
+const favoriteMaterialModalOverlay = getRequiredElementById("favoriteMaterialModalOverlay");
+const favoriteMaterialModalDialog = getRequiredElementById("favoriteMaterialModalDialog");
+const favoriteMaterialModalCloseButton = getRequiredElementById("favoriteMaterialModalCloseButton");
+const favoriteMaterialModalBody = getRequiredElementById("favoriteMaterialModalBody");
 const favoritesTabButtons = document.querySelectorAll("[data-favorites-tab]");
 const favoritesPanels = document.querySelectorAll(".favorites-panel");
 
@@ -1470,6 +1475,50 @@ function openBazaarFromFavorite(materialKey) {
   document.getElementById("bazaar")?.scrollIntoView({ block: "start", behavior: "smooth" });
 }
 
+function getBazaarRowByMaterialKey(materialKey) {
+  const normalizedKey = String(materialKey || "").trim();
+  if (normalizedKey === "") return null;
+  return bazaarPrices.find((row) => row?.materialKey === normalizedKey) || null;
+}
+
+function closeFavoriteMaterialModal() {
+  if (!favoriteMaterialModalOverlay) return;
+  favoriteMaterialModalOverlay.hidden = true;
+  favoriteMaterialModalOverlay.classList.remove("is-open");
+  document.body.classList.remove("is-modal-open");
+  activeFavoriteMaterialModalKey = "";
+}
+
+function openFavoriteMaterialModal(materialKey) {
+  if (!favoriteMaterialModalOverlay || !favoriteMaterialModalBody) return;
+  const row = getBazaarRowByMaterialKey(materialKey);
+  if (!row) return;
+
+  const chartHistory = getBazaarHistoryForRange(row.materialKey, DEFAULT_BAZAAR_CHART_RANGE_DAYS);
+  const chartSvg = buildBazaarSparklineSvg(chartHistory, { width: 228, height: 62, pointRadius: 1.9 });
+  const chartHtml =
+    chartHistory.length > 0
+      ? `
+        <div class="favorite-material-modal-chart">${chartSvg}</div>
+        <p class="favorite-material-modal-chart-meta">価格履歴: 直近${DEFAULT_BAZAAR_CHART_RANGE_DAYS}日（${chartHistory.length}件）</p>
+      `
+      : `<p class="favorite-material-modal-chart-empty">表示できる価格履歴がありません。</p>`;
+
+  favoriteMaterialModalBody.innerHTML = `
+    <h3 class="favorite-material-modal-title">${row.materialName}</h3>
+    <p class="favorite-material-modal-price">現在価格: <strong>${formatBazaarPriceWithUnit(row.displayPrice)}</strong></p>
+    <p class="favorite-material-modal-previous">前日単価: ${formatBazaarPriceWithUnit(row.previousDayPrice)}</p>
+    ${chartHtml}
+    <a class="favorite-material-modal-link" href="${getOfficialBazaarUrlByMaterialName(row.materialName)}" target="_blank" rel="noopener noreferrer">公式相場サイトで確認</a>
+  `;
+
+  activeFavoriteMaterialModalKey = row.materialKey;
+  favoriteMaterialModalOverlay.hidden = false;
+  favoriteMaterialModalOverlay.classList.add("is-open");
+  document.body.classList.add("is-modal-open");
+  favoriteMaterialModalDialog?.focus();
+}
+
 function switchFavoritesTab(targetTabId) {
   const normalizedTarget = FAVORITES_TAB_IDS.has(targetTabId) ? targetTabId : "recipes";
   activeFavoritesTabId = normalizedTarget;
@@ -1565,7 +1614,7 @@ function renderFavoriteMaterialsSection() {
                   type="button"
                   class="favorite-material-title-button"
                   data-favorite-material-key="${row.materialKey}"
-                  aria-label="${row.materialName}をバザー一覧で開く"
+                  aria-label="${row.materialName}の詳細を表示"
                 >
                   ${row.materialName}
                 </button>
@@ -1576,7 +1625,6 @@ function renderFavoriteMaterialsSection() {
                 <span class="favorite-material-change-value ${changePresentation.toneClass}">${changePresentation.text}</span>
                 ${changeArrowHtml}
               </p>
-              <a href="#" class="favorite-material-link-button" data-favorite-material-link-key="${row.materialKey}">バザー一覧へ</a>
             </article>
           `;
         })
@@ -1586,13 +1634,7 @@ function renderFavoriteMaterialsSection() {
 
   favoriteMaterialsListWrap.querySelectorAll("[data-favorite-material-key]").forEach((button) => {
     button.addEventListener("click", () => {
-      openBazaarFromFavorite(String(button.dataset.favoriteMaterialKey || ""));
-    });
-  });
-  favoriteMaterialsListWrap.querySelectorAll("[data-favorite-material-link-key]").forEach((link) => {
-    link.addEventListener("click", (event) => {
-      event.preventDefault();
-      openBazaarFromFavorite(String(link.dataset.favoriteMaterialLinkKey || ""));
+      openFavoriteMaterialModal(String(button.dataset.favoriteMaterialKey || ""));
     });
   });
 }
@@ -1805,6 +1847,20 @@ if (menuOverlay) {
   });
 }
 
+if (favoriteMaterialModalOverlay) {
+  favoriteMaterialModalOverlay.addEventListener("click", (event) => {
+    if (event.target === favoriteMaterialModalOverlay) {
+      closeFavoriteMaterialModal();
+    }
+  });
+}
+
+if (favoriteMaterialModalCloseButton) {
+  favoriteMaterialModalCloseButton.addEventListener("click", () => {
+    closeFavoriteMaterialModal();
+  });
+}
+
 sideMenuItems.forEach((item) => {
   item.addEventListener("click", () => {
     const targetId = item.dataset.menuTarget || "";
@@ -1815,6 +1871,10 @@ sideMenuItems.forEach((item) => {
 
 document.addEventListener("keydown", (event) => {
   if (event.key === "Escape") {
+    if (activeFavoriteMaterialModalKey) {
+      closeFavoriteMaterialModal();
+      return;
+    }
     setMenuOpen(false);
   }
 });
