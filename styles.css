@@ -267,6 +267,31 @@ body.is-modal-open {
   color: #2f2419;
 }
 
+.field-farming-map-trigger {
+  appearance: none;
+  border: 0;
+  background: none;
+  color: #4a3120;
+  font: inherit;
+  font-weight: 700;
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 2px;
+  padding: 0;
+  cursor: pointer;
+}
+
+.field-farming-map-trigger-disabled {
+  text-decoration: none;
+  cursor: default;
+}
+
+.field-farming-area-label {
+  font-size: 0.88rem;
+  color: #5f4a37;
+  font-weight: 500;
+}
+
 .field-farming-hp,
 .field-farming-drop,
 .field-farming-note {
@@ -344,6 +369,64 @@ body.is-modal-open {
   color: #4a3d31;
   font-size: 0.8rem;
   line-height: 1.35;
+}
+
+.field-farming-map-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(24, 15, 9, 0.56);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding: 10px;
+  z-index: 1210;
+}
+
+.field-farming-map-modal-overlay.is-open {
+  display: flex;
+}
+
+.field-farming-map-modal {
+  width: min(920px, 100%);
+  max-height: 90vh;
+  overflow: auto;
+  border: 1px solid #9e7d5f;
+  border-radius: 12px;
+  background: #f6ead9;
+  box-shadow: 0 12px 34px rgba(22, 13, 7, 0.32);
+  padding: 10px;
+  position: relative;
+}
+
+.field-farming-map-modal-close {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  width: 34px;
+  height: 34px;
+  border-radius: 999px;
+  border: 1px solid #b89370;
+  background: #fff9f0;
+  color: #4a3120;
+  font-size: 1.2rem;
+  line-height: 1;
+  padding: 0;
+}
+
+.field-farming-map-modal-title {
+  margin: 0 44px 8px 0;
+  font-size: 0.92rem;
+  color: #5a402c;
+}
+
+.field-farming-map-image {
+  display: block;
+  width: 100%;
+  height: auto;
+  max-width: 100%;
+  border: 1px solid #c5ab8d;
+  border-radius: 8px;
+  background: #fffdf8;
 }
 
 .card {
@@ -1502,6 +1585,19 @@ button {
     min-height: 28px;
     padding: 2px 8px;
     font-size: 0.71rem;
+  }
+
+  .field-farming-map-modal-overlay {
+    padding: 8px;
+  }
+
+  .field-farming-map-modal {
+    max-height: 92vh;
+    padding: 8px;
+  }
+
+  .field-farming-map-modal-title {
+    font-size: 0.86rem;
   }
 
   .favorite-materials-grid {

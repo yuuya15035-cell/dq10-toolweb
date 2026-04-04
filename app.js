@@ -418,6 +418,7 @@ let activeFavoriteMaterialModalKey = "";
 let presentCodes = [];
 let fieldFarmingMonsters = [];
 let selectedFieldFarmingSort = "normal_desc";
+let activeFieldFarmingMapModalRowId = "";
 // 利益計算画面だけで使う「今回計算用の一時単価」。
 // - キー: materialId
 // - 値: 画面上で上書きした単価
@@ -478,6 +479,10 @@ const bazaarListWrap = getRequiredElementById("bazaarListWrap");
 const presentCodeListWrap = getRequiredElementById("presentCodeListWrap");
 const fieldFarmingListWrap = getRequiredElementById("fieldFarmingListWrap");
 const fieldFarmingSortSelect = getRequiredElementById("fieldFarmingSortSelect");
+const fieldFarmingMapModalOverlay = getRequiredElementById("fieldFarmingMapModalOverlay");
+const fieldFarmingMapModalDialog = getRequiredElementById("fieldFarmingMapModalDialog");
+const fieldFarmingMapModalCloseButton = getRequiredElementById("fieldFarmingMapModalCloseButton");
+const fieldFarmingMapModalBody = getRequiredElementById("fieldFarmingMapModalBody");
 const favoriteRecipesListWrap = getRequiredElementById("favoriteRecipesListWrap");
 const favoriteMaterialsListWrap = getRequiredElementById("favoriteMaterialsListWrap");
 const favoriteMaterialModalOverlay = getRequiredElementById("favoriteMaterialModalOverlay");
@@ -761,6 +766,7 @@ function parseFieldFarmingMonstersFromLines(lines) {
   const normalDropIndex = headers.indexOf("normal_dr") >= 0 ? headers.indexOf("normal_dr") : headers.indexOf("normal_drop");
   const rareDropIndex = headers.indexOf("rare_drop");
   const noteIndex = headers.indexOf("note");
+  const mapUrlIndex = headers.indexOf("map_url");
 
   if (hpIndex < 0 || normalDropIndex < 0 || rareDropIndex < 0) {
     throw new Error("field_farming_monsters.csv ヘッダーが想定と一致しません");
@@ -777,11 +783,17 @@ function parseFieldFarmingMonstersFromLines(lines) {
       const hp = parseNullableNumber(row[hpIndex]);
       return {
         id: `field-farming-row-${index}`,
+        monsterName: String(row[monsterNameIndex] || "").trim(),
+        area: String(row[areaIndex] || "").trim(),
         monsterArea: monsterAreaRaw,
         hp: Number.isFinite(hp) ? Math.round(hp) : null,
         normalDrop: String(row[normalDropIndex] || "").trim(),
         rareDrop: String(row[rareDropIndex] || "").trim(),
         note: noteIndex >= 0 ? String(row[noteIndex] || "").trim() : "",
+        mapUrl:
+          mapUrlIndex >= 0 && /^\/maps\/[^?#]+\.(png|jpe?g|webp|gif|svg)$/i.test(String(row[mapUrlIndex] || "").trim())
+            ? String(row[mapUrlIndex] || "").trim()
+            : "",
       };
     })
     .filter((row) => row.monsterArea !== "" && row.normalDrop !== "");
@@ -1650,10 +1662,14 @@ function renderFieldFarmingRanking() {
           const normalDropOfficialUrl = getOfficialBazaarUrlByMaterialName(row.normalDrop);
           const rareDropOfficialUrl = getOfficialBazaarUrlByMaterialName(row.rareDrop);
           const hasRareDrop = row.rareDrop && row.rareDrop !== "-";
+          const mapTriggerHtml = row.mapUrl
+            ? `<button type="button" class="field-farming-map-trigger" data-field-map-row-id="${row.id}" aria-label="${row.monsterName || "モンスター"}の出現マップを表示">${row.monsterName || row.monsterArea}</button>`
+            : `<span class="field-farming-map-trigger field-farming-map-trigger-disabled">${row.monsterName || row.monsterArea}</span>`;
+          const areaLabelHtml = row.area ? `<span class="field-farming-area-label"> / ${row.area}</span>` : "";
           return `
             <article class="field-farming-card">
               <p class="field-farming-rank">${rank}位</p>
-              <h3 class="field-farming-monster-area">${row.monsterArea}</h3>
+              <h3 class="field-farming-monster-area">${mapTriggerHtml}${areaLabelHtml}</h3>
               <p class="field-farming-hp">HP: ${Number.isFinite(row.hp) ? row.hp.toLocaleString("ja-JP") : "-"}</p>
               <p class="field-farming-drop field-farming-drop-normal">
                 <span class="field-farming-drop-label">通常ドロップ:</span>
@@ -1694,6 +1710,12 @@ function renderFieldFarmingRanking() {
         .join("")}
     </div>
   `;
+
+  fieldFarmingListWrap.querySelectorAll("[data-field-map-row-id]").forEach((button) => {
+    button.addEventListener("click", () => {
+      openFieldFarmingMapModal(String(button.dataset.fieldMapRowId || ""));
+    });
+  });
 }
 
 function getRecipeRowsForEquipment(equipmentId) {
@@ -1740,12 +1762,17 @@ function getBazaarRowByMaterialKey(materialKey) {
   return bazaarPrices.find((row) => row?.materialKey === normalizedKey) || null;
 }
 
+function syncBodyModalOpenState() {
+  const hasOpenModal = Boolean(activeFavoriteMaterialModalKey || activeFieldFarmingMapModalRowId);
+  document.body.classList.toggle("is-modal-open", hasOpenModal);
+}
+
 function closeFavoriteMaterialModal() {
   if (!favoriteMaterialModalOverlay) return;
   favoriteMaterialModalOverlay.hidden = true;
   favoriteMaterialModalOverlay.classList.remove("is-open");
-  document.body.classList.remove("is-modal-open");
   activeFavoriteMaterialModalKey = "";
+  syncBodyModalOpenState();
 }
 
 function openFavoriteMaterialModal(materialKey) {
@@ -1774,8 +1801,38 @@ function openFavoriteMaterialModal(materialKey) {
   activeFavoriteMaterialModalKey = row.materialKey;
   favoriteMaterialModalOverlay.hidden = false;
   favoriteMaterialModalOverlay.classList.add("is-open");
-  document.body.classList.add("is-modal-open");
+  syncBodyModalOpenState();
   favoriteMaterialModalDialog?.focus();
+}
+
+function closeFieldFarmingMapModal() {
+  if (!fieldFarmingMapModalOverlay) return;
+  fieldFarmingMapModalOverlay.hidden = true;
+  fieldFarmingMapModalOverlay.classList.remove("is-open");
+  activeFieldFarmingMapModalRowId = "";
+  syncBodyModalOpenState();
+}
+
+function openFieldFarmingMapModal(rowId) {
+  if (!fieldFarmingMapModalOverlay || !fieldFarmingMapModalBody) return;
+  const row = fieldFarmingMonsters.find((monster) => monster.id === rowId);
+  if (!row?.mapUrl) return;
+
+  const areaLabel = row.area ? `（${row.area}）` : "";
+  fieldFarmingMapModalBody.innerHTML = `
+    <h3 class="field-farming-map-modal-title">${row.monsterName || row.monsterArea}${areaLabel}</h3>
+    <img
+      class="field-farming-map-image"
+      src="${row.mapUrl}"
+      alt="${row.monsterName || "モンスター"}の出現マップ"
+      loading="lazy"
+    />
+  `;
+  activeFieldFarmingMapModalRowId = row.id;
+  fieldFarmingMapModalOverlay.hidden = false;
+  fieldFarmingMapModalOverlay.classList.add("is-open");
+  syncBodyModalOpenState();
+  fieldFarmingMapModalDialog?.focus();
 }
 
 function switchFavoritesTab(targetTabId) {
@@ -2114,9 +2171,23 @@ if (favoriteMaterialModalOverlay) {
   });
 }
 
+if (fieldFarmingMapModalOverlay) {
+  fieldFarmingMapModalOverlay.addEventListener("click", (event) => {
+    if (event.target === fieldFarmingMapModalOverlay) {
+      closeFieldFarmingMapModal();
+    }
+  });
+}
+
 if (favoriteMaterialModalCloseButton) {
   favoriteMaterialModalCloseButton.addEventListener("click", () => {
     closeFavoriteMaterialModal();
+  });
+}
+
+if (fieldFarmingMapModalCloseButton) {
+  fieldFarmingMapModalCloseButton.addEventListener("click", () => {
+    closeFieldFarmingMapModal();
   });
 }
 
@@ -2130,6 +2201,10 @@ sideMenuItems.forEach((item) => {
 
 document.addEventListener("keydown", (event) => {
   if (event.key === "Escape") {
+    if (activeFieldFarmingMapModalRowId) {
+      closeFieldFarmingMapModal();
+      return;
+    }
     if (activeFavoriteMaterialModalKey) {
       closeFavoriteMaterialModal();
       return;
