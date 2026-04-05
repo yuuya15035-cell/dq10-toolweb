@@ -1,0 +1,7 @@
+{
+  "name": "dq10-toolweb",
+  "private": true,
+  "scripts": {
+    "update:last-updated": "node scripts/update-last-updated.js"
+  }
+}
