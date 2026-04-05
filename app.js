@@ -1314,6 +1314,26 @@ function formatBazaarChartDateLabel(timestamp) {
   return new Intl.DateTimeFormat("ja-JP", { month: "numeric", day: "numeric" }).format(parsed);
 }
 
+function buildBazaarChartExternalYAxisLabels(history) {
+  const points = Array.isArray(history)
+    ? history
+        .map((item) => Number(item?.price))
+        .filter((price) => Number.isFinite(price))
+    : [];
+  if (points.length === 0) return "";
+
+  const minPrice = Math.min(...points);
+  const maxPrice = Math.max(...points);
+  const middlePrice = (maxPrice + minPrice) / 2;
+  return `
+    <div class="bazaar-mini-chart-y-axis" aria-hidden="true">
+      <span class="bazaar-mini-chart-y-label bazaar-mini-chart-y-label-max">${formatBazaarPrice(maxPrice)} G</span>
+      <span class="bazaar-mini-chart-y-label bazaar-mini-chart-y-label-middle">${formatBazaarPrice(middlePrice)} G</span>
+      <span class="bazaar-mini-chart-y-label bazaar-mini-chart-y-label-min">${formatBazaarPrice(minPrice)} G</span>
+    </div>
+  `;
+}
+
 function buildBazaarSparklineSvg(history, options = {}) {
   const width = Number(options.width) || 320;
   const height = Number(options.height) || 108;
@@ -1325,6 +1345,7 @@ function buildBazaarSparklineSvg(history, options = {}) {
   const latestPointRadius = Number(options.latestPointRadius) || 4;
   const chartStroke = options.stroke || "#8b5e3c";
   const areaFill = options.areaFill || "rgba(139, 94, 60, 0.18)";
+  const includeYAxisLabels = options.includeYAxisLabels !== false;
   const points = Array.isArray(history)
     ? history
         .map((item) => ({
@@ -1371,12 +1392,14 @@ function buildBazaarSparklineSvg(history, options = {}) {
     { price: middlePrice, className: "bazaar-mini-chart-axis-label-middle" },
     { price: minPrice, className: "bazaar-mini-chart-axis-label-min" },
   ];
-  const yAxisLabelsHtml = yAxisLabels
-    .map(({ price, className }) => {
-      const y = yForPrice(price);
-      return `<text x="${paddingLeft + 2}" y="${y.toFixed(2)}" class="bazaar-mini-chart-axis-label ${className}">${formatBazaarPrice(price)} G</text>`;
-    })
-    .join("");
+  const yAxisLabelsHtml = includeYAxisLabels
+    ? yAxisLabels
+        .map(({ price, className }) => {
+          const y = yForPrice(price);
+          return `<text x="${paddingLeft + 2}" y="${y.toFixed(2)}" class="bazaar-mini-chart-axis-label ${className}">${formatBazaarPrice(price)} G</text>`;
+        })
+        .join("")
+    : "";
 
   const xAxisIndexes =
     points.length <= 1
@@ -1627,7 +1650,9 @@ function renderBazaarPrices() {
           const hasHistory = history.length > 0;
           const isMobileExpanded = expandedBazaarChartMaterialKeyMobile === row.materialKey;
           const isExpandableOnMobile = hasHistory;
-          const sparklineSvg = hasHistory ? buildBazaarSparklineSvg(history) : "";
+          const sparklineSvgDesktop = hasHistory ? buildBazaarSparklineSvg(history, { includeYAxisLabels: false }) : "";
+          const sparklineSvgMobile = hasHistory ? buildBazaarSparklineSvg(history) : "";
+          const externalYAxisLabels = hasHistory ? buildBazaarChartExternalYAxisLabels(history) : "";
           const changeArrowHtml = changePresentation.isComputable
             ? `<span class="bazaar-change-arrow ${changePresentation.toneClass}" aria-hidden="true">${changePresentation.arrow}</span>`
             : "";
@@ -1668,7 +1693,12 @@ function renderBazaarPrices() {
                   ${
                     hasHistory
                       ? `
-                        ${sparklineSvg}
+                        <div class="bazaar-mini-chart-plot">
+                          ${externalYAxisLabels}
+                          <div class="bazaar-mini-chart-canvas">
+                            ${sparklineSvgDesktop}
+                          </div>
+                        </div>
                         <p class="bazaar-mini-chart-meta">${history.length}件 / 直近${selectedBazaarChartRangeDays}日</p>
                       `
                       : `<p class="bazaar-mini-chart-empty">履歴なし</p>`
@@ -1679,7 +1709,7 @@ function renderBazaarPrices() {
                 ${
                   hasHistory
                     ? `
-                      ${sparklineSvg}
+                      ${sparklineSvgMobile}
                       <p class="bazaar-mini-chart-meta">表示期間: 直近${selectedBazaarChartRangeDays}日（${history.length}件）</p>
                       <p class="bazaar-mobile-chart-latest">最新価格: ${formatBazaarPriceWithUnit(history[history.length - 1].price)}</p>
                     `
