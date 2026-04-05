@@ -1115,26 +1115,29 @@ button {
 }
 
 .bazaar-mini-chart-grid-line {
-  stroke: rgba(112, 84, 58, 0.22);
+  stroke: rgba(112, 84, 58, 0.14);
   stroke-width: 1;
   stroke-dasharray: 3 3;
 }
 
 .bazaar-mini-chart-grid-line.is-edge {
   stroke-dasharray: none;
-  stroke: rgba(112, 84, 58, 0.3);
+  stroke: rgba(112, 84, 58, 0.2);
 }
 
 .bazaar-mini-chart-axis-label,
 .bazaar-mini-chart-axis-date {
-  fill: #6a4f39;
-  font-size: 10px;
-  font-weight: 700;
+  fill: rgba(106, 79, 57, 0.86);
+  font-weight: 500;
   dominant-baseline: middle;
 }
 
+.bazaar-mini-chart-axis-label {
+  font-size: 8px;
+}
+
 .bazaar-mini-chart-axis-date {
-  font-size: 10.5px;
+  font-size: 9.5px;
   dominant-baseline: auto;
 }
 
@@ -1900,11 +1903,11 @@ button {
   }
 
   .bazaar-mobile-chart-panel .bazaar-mini-chart-axis-label {
-    font-size: 9px;
+    font-size: 8px;
   }
 
   .bazaar-mobile-chart-panel .bazaar-mini-chart-axis-date {
-    font-size: 9px;
+    font-size: 8.5px;
   }
 
   .bazaar-mobile-chart-panel .bazaar-mini-chart-axis-label-middle,
