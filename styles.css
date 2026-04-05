@@ -1015,7 +1015,7 @@ button {
 .bazaar-main {
   margin-top: 5px;
   display: grid;
-  gap: 6px;
+  gap: 4px;
 }
 
 .bazaar-sub-row {
@@ -1916,17 +1916,16 @@ button {
 
 @media (min-width: 700px) {
   .bazaar-main {
-    grid-template-columns: minmax(0, 1fr) minmax(300px, 420px);
+    grid-template-columns: max-content minmax(0, 1fr);
+    column-gap: 2px;
     align-items: center;
   }
 
   .bazaar-mini-chart-wrap {
     display: block;
     border-left: 1px dashed rgba(111, 79, 50, 0.28);
-    padding-left: 4px;
+    padding-left: 2px;
     width: 100%;
-    max-width: 410px;
-    justify-self: stretch;
   }
 
   .bazaar-mobile-chart-panel {
