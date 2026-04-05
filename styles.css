@@ -1015,7 +1015,7 @@ button {
 .bazaar-main {
   margin-top: 5px;
   display: grid;
-  gap: 8px;
+  gap: 6px;
 }
 
 .bazaar-sub-row {
@@ -1136,6 +1136,10 @@ button {
 .bazaar-mini-chart-axis-date {
   font-size: 10.5px;
   dominant-baseline: auto;
+}
+
+.bazaar-mini-chart-axis-date-middle {
+  opacity: 0.9;
 }
 
 .bazaar-mini-chart-svg.is-positive .bazaar-mini-chart-line {
@@ -1903,6 +1907,8 @@ button {
     font-size: 9px;
   }
 
+  .bazaar-mobile-chart-panel .bazaar-mini-chart-axis-label-middle,
+  .bazaar-mobile-chart-panel .bazaar-mini-chart-axis-date-middle,
   .bazaar-mobile-chart-panel .bazaar-mini-chart-axis-label-max {
     display: none;
   }
@@ -1910,16 +1916,17 @@ button {
 
 @media (min-width: 700px) {
   .bazaar-main {
-    grid-template-columns: minmax(0, 1fr) minmax(240px, 315px);
+    grid-template-columns: minmax(0, 1fr) minmax(300px, 420px);
     align-items: center;
   }
 
   .bazaar-mini-chart-wrap {
     display: block;
-    border-left: 1px dashed rgba(111, 79, 50, 0.4);
-    padding-left: 8px;
-    width: min(300px, 100%);
-    justify-self: center;
+    border-left: 1px dashed rgba(111, 79, 50, 0.28);
+    padding-left: 4px;
+    width: 100%;
+    max-width: 410px;
+    justify-self: stretch;
   }
 
   .bazaar-mobile-chart-panel {

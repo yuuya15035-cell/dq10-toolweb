@@ -1320,7 +1320,7 @@ function buildBazaarSparklineSvg(history, options = {}) {
   const paddingTop = Number(options.paddingTop) || 8;
   const paddingRight = Number(options.paddingRight) || 8;
   const paddingBottom = Number(options.paddingBottom) || 20;
-  const paddingLeft = Number(options.paddingLeft) || 44;
+  const paddingLeft = Number(options.paddingLeft) || 12;
   const pointRadius = Number(options.pointRadius) || 2;
   const latestPointRadius = Number(options.latestPointRadius) || 4;
   const chartStroke = options.stroke || "#8b5e3c";
@@ -1338,8 +1338,8 @@ function buildBazaarSparklineSvg(history, options = {}) {
   const prices = points.map((point) => point.price);
   const minPrice = Math.min(...prices);
   const maxPrice = Math.max(...prices);
+  const middlePrice = (maxPrice + minPrice) / 2;
   const safeRange = Math.max(maxPrice - minPrice, 1);
-  const middlePrice = minPrice + safeRange / 2;
   const xDivisor = Math.max(points.length - 1, 1);
   const chartHeight = Math.max(height - paddingTop - paddingBottom, 1);
   const chartWidth = Math.max(width - paddingLeft - paddingRight, 1);
@@ -1365,12 +1365,41 @@ function buildBazaarSparklineSvg(history, options = {}) {
   const latestPointDot = latestCoord
     ? `<circle cx="${latestCoord.x.toFixed(2)}" cy="${latestCoord.y.toFixed(2)}" r="${latestPointRadius}" class="bazaar-mini-chart-latest-point"></circle>`
     : "";
-  const minPriceLabel = `${formatBazaarPrice(minPrice)} G`;
-  const maxPriceLabel = `${formatBazaarPrice(maxPrice)} G`;
-  const startDateLabel = formatBazaarChartDateLabel(points[0].timestamp);
-  const endDateLabel = formatBazaarChartDateLabel(points[points.length - 1].timestamp);
-  const middleGridY = yForPrice(middlePrice).toFixed(2);
+
+  const yAxisLabels = [
+    { price: maxPrice, className: "bazaar-mini-chart-axis-label-max" },
+    { price: middlePrice, className: "bazaar-mini-chart-axis-label-middle" },
+    { price: minPrice, className: "bazaar-mini-chart-axis-label-min" },
+  ];
+  const yAxisLabelsHtml = yAxisLabels
+    .map(({ price, className }) => {
+      const y = yForPrice(price);
+      return `<text x="${paddingLeft + 2}" y="${y.toFixed(2)}" class="bazaar-mini-chart-axis-label ${className}">${formatBazaarPrice(price)} G</text>`;
+    })
+    .join("");
+
+  const xAxisIndexes =
+    points.length <= 1
+      ? [0]
+      : points.length === 2
+        ? [0, 1]
+        : [0, Math.floor((points.length - 1) / 2), points.length - 1];
+  const xAxisLabelIndexes = Array.from(new Set(xAxisIndexes));
+  const xAxisLabelsHtml = xAxisLabelIndexes
+    .map((index, orderIndex, array) => {
+      const point = points[index];
+      const coord = coords[index];
+      const isStart = orderIndex === 0;
+      const isEnd = orderIndex === array.length - 1;
+      const classNames = ["bazaar-mini-chart-axis-date"];
+      if (!isStart && !isEnd) classNames.push("bazaar-mini-chart-axis-date-middle");
+      const anchor = isStart ? "start" : isEnd ? "end" : "middle";
+      return `<text x="${coord.x.toFixed(2)}" y="${height - 3}" text-anchor="${anchor}" class="${classNames.join(" ")}">${formatBazaarChartDateLabel(point.timestamp)}</text>`;
+    })
+    .join("");
+
   const topGridY = yForPrice(maxPrice).toFixed(2);
+  const middleGridY = yForPrice(middlePrice).toFixed(2);
   const bottomGridY = yForPrice(minPrice).toFixed(2);
   const latestPrice = points[points.length - 1].price;
   const firstPrice = points[0].price;
@@ -1384,10 +1413,8 @@ function buildBazaarSparklineSvg(history, options = {}) {
       <polyline points="${polylinePoints}" class="bazaar-mini-chart-line" style="stroke:${chartStroke};"></polyline>
       ${pointDots}
       ${latestPointDot}
-      <text x="2" y="${Number(topGridY) + 3}" class="bazaar-mini-chart-axis-label bazaar-mini-chart-axis-label-max">${maxPriceLabel}</text>
-      <text x="2" y="${Number(bottomGridY) - 2}" class="bazaar-mini-chart-axis-label">${minPriceLabel}</text>
-      <text x="${paddingLeft}" y="${height - 3}" text-anchor="start" class="bazaar-mini-chart-axis-date">${startDateLabel}</text>
-      <text x="${width - paddingRight}" y="${height - 3}" text-anchor="end" class="bazaar-mini-chart-axis-date">${endDateLabel}</text>
+      ${yAxisLabelsHtml}
+      ${xAxisLabelsHtml}
     </svg>
   `;
 }
