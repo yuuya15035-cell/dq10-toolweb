@@ -1149,7 +1149,7 @@ button {
 }
 
 .bazaar-mini-chart-axis-date {
-  font-size: 8px;
+  font-size: 7px;
   dominant-baseline: auto;
 }
 
@@ -1919,7 +1919,7 @@ button {
   }
 
   .bazaar-mobile-chart-panel .bazaar-mini-chart-axis-date {
-    font-size: 8.5px;
+    font-size: 8px;
   }
 
   .bazaar-mobile-chart-panel .bazaar-mini-chart-axis-label-middle,
@@ -1967,7 +1967,7 @@ button {
   }
 
   .bazaar-mini-chart-canvas .bazaar-mini-chart-axis-date {
-    font-size: 0.72rem;
+    font-size: 0.66rem;
   }
 
   .bazaar-mini-chart-canvas .bazaar-mini-chart-axis-label {

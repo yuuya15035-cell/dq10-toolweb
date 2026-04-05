@@ -1401,13 +1401,14 @@ function buildBazaarSparklineSvg(history, options = {}) {
         .join("")
     : "";
 
+  const MAX_X_AXIS_LABELS = 3;
   const xAxisIndexes =
     points.length <= 1
       ? [0]
       : points.length === 2
-        ? [0, 1]
+        ? [0, points.length - 1]
         : [0, Math.floor((points.length - 1) / 2), points.length - 1];
-  const xAxisLabelIndexes = Array.from(new Set(xAxisIndexes));
+  const xAxisLabelIndexes = Array.from(new Set(xAxisIndexes)).slice(0, MAX_X_AXIS_LABELS);
   const xAxisLabelsHtml = xAxisLabelIndexes
     .map((index, orderIndex, array) => {
       const point = points[index];
