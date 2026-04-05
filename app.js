@@ -2558,14 +2558,7 @@ function renderCraftIdealValue() {
   craftIdealValueWrap.hidden = false;
   craftIdealValueWrap.innerHTML = `
     <section class="craft-ideal-card" aria-label="基準値カード">
-      <h3>基準値（★3）</h3>
-      <dl class="craft-ideal-meta">
-        <div><dt>装備名</dt><dd>${equipment.name}</dd></div>
-        <div><dt>職人種別</dt><dd>${idealValue.jobType}</dd></div>
-        <div><dt>部位</dt><dd>${idealValue.part || "-"}</dd></div>
-        <div><dt>使用マス数</dt><dd>${idealValue.gridType} マス</dd></div>
-        <div><dt>★3許容誤差</dt><dd>±${idealValue.star3Tolerance}</dd></div>
-      </dl>
+      <p class="craft-ideal-tolerance">★3誤差: 0〜${idealValue.star3Tolerance}</p>
       <ol class="craft-ideal-grid" aria-label="3×3基準値">${cellsHtml}</ol>
     </section>
   `;
