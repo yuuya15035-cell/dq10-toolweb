@@ -684,6 +684,78 @@ button {
   align-items: end;
 }
 
+#craftIdealValueWrap[hidden] {
+  display: none;
+}
+
+.craft-ideal-card-inner {
+  margin: 8px 0 2px;
+  padding: 9px;
+}
+
+.craft-ideal-card-inner > h3 {
+  margin-bottom: 8px;
+}
+
+.craft-ideal-meta-list {
+  margin: 0 0 8px;
+  display: grid;
+  gap: 4px;
+}
+
+.craft-ideal-meta-row {
+  display: grid;
+  grid-template-columns: 92px 1fr;
+  gap: 6px;
+  font-size: 0.82rem;
+}
+
+.craft-ideal-meta-row dt {
+  color: #65442c;
+  font-weight: 700;
+}
+
+.craft-ideal-meta-row dd {
+  margin: 0;
+  color: #3d2b1d;
+}
+
+.craft-ideal-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.craft-ideal-cell {
+  border: 1px solid #d5be9b;
+  border-radius: 8px;
+  min-height: 48px;
+  background: #fff8ed;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 4px;
+}
+
+.craft-ideal-cell.is-unused {
+  background: #f2e8d8;
+  opacity: 0.58;
+}
+
+.craft-ideal-cell-index {
+  font-size: 0.68rem;
+  font-weight: 700;
+  color: #775338;
+}
+
+.craft-ideal-cell-value {
+  font-size: 0.94rem;
+  font-weight: 800;
+  color: #50351f;
+  line-height: 1.1;
+}
+
 .sale-input-list {
   display: grid;
   gap: 8px;

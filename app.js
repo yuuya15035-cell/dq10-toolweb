@@ -9,6 +9,7 @@ const BAZAAR_CSV_PATH = "./data/bazaar_prices.csv";
 const BAZAAR_HISTORY_CSV_PATH = "./data/bazaar_prices_history.csv";
 const PRESENT_CODES_CSV_PATH = "./data/datapresent_codes.csv";
 const FIELD_FARMING_CSV_PATH = "./data/field_farming_monsters.csv";
+const CRAFT_IDEAL_VALUES_CSV_PATH = "./data/craft_ideal_values.csv";
 const LAST_UPDATED_JSON_PATH = "./data/last-updated.json";
 const OFFICIAL_BAZAAR_TOP_URL = "https://dqx-souba.game-blog.app/";
 const OFFICIAL_PRESENT_CODE_URL = "https://hiroba.dqx.jp/sc/campaignCode/itemcode/";
@@ -214,6 +215,92 @@ function parseToolsFromLines(lines) {
   }
 
   return tools;
+}
+
+function normalizeCraftIdealHeader(header) {
+  return String(header || "")
+    .trim()
+    .toLowerCase()
+    .replace(/[★☆]/g, "star")
+    .replace(/[（(]/g, "")
+    .replace(/[）)]/g, "")
+    .replace(/[　\s]/g, "")
+    .replace(/_/g, "");
+}
+
+function getCraftIdealHeaderIndexMap(headers) {
+  const indexByNormalizedHeader = new Map();
+  headers.forEach((header, index) => {
+    indexByNormalizedHeader.set(normalizeCraftIdealHeader(header), index);
+  });
+  return indexByNormalizedHeader;
+}
+
+function getCraftIdealColumnIndex(indexMap, aliases) {
+  for (const alias of aliases) {
+    const index = indexMap.get(normalizeCraftIdealHeader(alias));
+    if (Number.isInteger(index)) return index;
+  }
+  return -1;
+}
+
+function parseCraftIdealValuesFromLines(lines) {
+  if (lines.length <= 1) return new Map();
+
+  const headers = parseCsvLine(lines[0]);
+  const headerIndexMap = getCraftIdealHeaderIndexMap(headers);
+  const equipmentNameIndex = getCraftIdealColumnIndex(headerIndexMap, ["equipmentName", "equipment_name", "装備名"]);
+  const craftsmanIndex = getCraftIdealColumnIndex(headerIndexMap, ["craftsman", "craftsmanType", "職人種別", "職人"]);
+  const partIndex = getCraftIdealColumnIndex(headerIndexMap, ["part", "部位"]);
+  const usedCellCountIndex = getCraftIdealColumnIndex(headerIndexMap, ["usedCellCount", "cellsUsed", "使用マス数"]);
+  const star3ToleranceIndex = getCraftIdealColumnIndex(headerIndexMap, [
+    "star3Tolerance",
+    "toleranceStar3",
+    "star3許容誤差",
+    "★3許容誤差",
+  ]);
+  const starRankIndex = getCraftIdealColumnIndex(headerIndexMap, ["starRank", "star", "starLevel", "星"]);
+
+  if (equipmentNameIndex < 0 || craftsmanIndex < 0) {
+    throw new Error("craft_ideal_values.csv ヘッダーが想定と一致しません");
+  }
+
+  const cellIndexes = Array.from({ length: 9 }, (_, index) =>
+    getCraftIdealColumnIndex(headerIndexMap, [`cell_${index + 1}`, `cell${index + 1}`, `マス${index + 1}`])
+  );
+  const targetCraftsman = new Set(["裁縫職人", "木工職人"]);
+  const valuesByEquipmentId = new Map();
+
+  for (let i = 1; i < lines.length; i += 1) {
+    const row = parseCsvLine(lines[i]);
+    const equipmentName = String(row[equipmentNameIndex] || "").trim();
+    const craftsman = String(row[craftsmanIndex] || "").trim();
+    if (!equipmentName || !targetCraftsman.has(craftsman)) continue;
+
+    if (starRankIndex >= 0) {
+      const starRank = String(row[starRankIndex] || "").replace(/[^\d]/g, "");
+      if (starRank && starRank !== "3") continue;
+    }
+
+    const part = partIndex >= 0 ? String(row[partIndex] || "").trim() : "";
+    const usedCellCount = usedCellCountIndex >= 0 ? Number(row[usedCellCountIndex] || 0) : 0;
+    const star3Tolerance = star3ToleranceIndex >= 0 ? String(row[star3ToleranceIndex] || "").trim() : "";
+    const cells = cellIndexes.map((cellIndex) => {
+      if (cellIndex < 0) return "";
+      return String(row[cellIndex] || "").trim();
+    });
+
+    valuesByEquipmentId.set(makeEquipmentId(equipmentName), {
+      equipmentName,
+      craftsman,
+      part,
+      usedCellCount: Number.isFinite(usedCellCount) && usedCellCount > 0 ? usedCellCount : 0,
+      star3Tolerance,
+      cells,
+    });
+  }
+
+  return valuesByEquipmentId;
 }
 
 // recipe.csvを読み込み、画面で使うデータ構造に変換します。
@@ -437,6 +524,7 @@ let presentCodes = [];
 let fieldFarmingMonsters = [];
 let selectedFieldFarmingSort = "normal_desc";
 let activeFieldFarmingMapModalRowId = "";
+let craftIdealValuesByEquipmentId = new Map();
 // 利益計算画面だけで使う「今回計算用の一時単価」。
 // - キー: materialId
 // - 値: 画面上で上書きした単価
@@ -459,6 +547,7 @@ const menuOverlay = getRequiredElementById("menuOverlay");
 const sideMenuItems = document.querySelectorAll(".side-menu-item");
 
 const equipmentSelect = getRequiredElementById("equipmentSelect");
+const craftIdealValueWrap = getRequiredElementById("craftIdealValueWrap");
 const recipeFavoriteActionWrap = getRequiredElementById("recipeFavoriteActionWrap");
 const equipmentSearchToggleButton = getRequiredElementById("equipmentSearchToggleButton");
 const equipmentSearchField = getRequiredElementById("equipmentSearchField");
@@ -2293,6 +2382,7 @@ function renderEquipmentSelectors() {
   equipmentSelect.value = selectedEquipmentId;
   recipeEquipmentSelect.value = selectedEquipmentId || state.equipments[0]?.id || "";
   renderRecipeFavoriteAction();
+  renderCraftIdealValueCard();
 }
 
 function renderFilterSelectors() {
@@ -2448,6 +2538,59 @@ function renderRecipeFavoriteAction() {
     saveRecipeFavoriteState();
     rerenderAll();
   });
+}
+
+function renderCraftIdealValueCard() {
+  if (!craftIdealValueWrap) return;
+
+  const selectedEquipment = getSelectedEquipment();
+  const idealValue = selectedEquipment ? craftIdealValuesByEquipmentId.get(selectedEquipment.id) : null;
+  if (!selectedEquipment || !idealValue) {
+    craftIdealValueWrap.hidden = true;
+    craftIdealValueWrap.innerHTML = "";
+    return;
+  }
+
+  const metaRows = [
+    { label: "装備名", value: idealValue.equipmentName || selectedEquipment.name },
+    { label: "職人種別", value: idealValue.craftsman || selectedEquipment.craftsman || "-" },
+    { label: "部位", value: idealValue.part || "-" },
+    { label: "使用マス数", value: idealValue.usedCellCount > 0 ? `${idealValue.usedCellCount}` : "-" },
+    { label: "★3許容誤差", value: idealValue.star3Tolerance || "-" },
+  ];
+
+  const cellNodes = idealValue.cells.map((cellValue, index) => {
+    const valueText = String(cellValue || "").trim();
+    const isUnused = valueText === "" || valueText === "-" || valueText === "0";
+    return `
+      <div class="craft-ideal-cell${isUnused ? " is-unused" : ""}">
+        <span class="craft-ideal-cell-index">${index + 1}</span>
+        <span class="craft-ideal-cell-value">${isUnused ? "" : valueText}</span>
+      </div>
+    `;
+  });
+
+  craftIdealValueWrap.innerHTML = `
+    <div class="card craft-ideal-card-inner">
+      <h3>基準値（★3）</h3>
+      <dl class="craft-ideal-meta-list">
+        ${metaRows
+          .map(
+            (row) => `
+              <div class="craft-ideal-meta-row">
+                <dt>${row.label}</dt>
+                <dd>${row.value}</dd>
+              </div>
+            `
+          )
+          .join("")}
+      </dl>
+      <div class="craft-ideal-grid" aria-label="3×3基準値マス">
+        ${cellNodes.join("")}
+      </div>
+    </div>
+  `;
+  craftIdealValueWrap.hidden = false;
 }
 
 function getSalePricesForEquipment(equipment) {
@@ -3171,6 +3314,17 @@ async function initialize() {
   } catch (error) {
     console.warn("recipe.csv の読み込みに失敗したため、フォールバックデータを使用します", error);
     state = mergeWithStoredData(structuredClone(defaultData), storedData);
+  }
+
+  try {
+    const idealValueLines = await fetchCsvLines(CRAFT_IDEAL_VALUES_CSV_PATH);
+    craftIdealValuesByEquipmentId = parseCraftIdealValuesFromLines(idealValueLines);
+  } catch (error) {
+    console.warn(
+      `craft_ideal_values.csv の読み込みに失敗しました。基準値表示をスキップします: path=${CRAFT_IDEAL_VALUES_CSV_PATH}`,
+      error
+    );
+    craftIdealValuesByEquipmentId = new Map();
   }
 
   try {
