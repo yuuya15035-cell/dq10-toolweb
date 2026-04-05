@@ -1237,74 +1237,46 @@ button {
 }
 
 .craft-ideal-card {
-  margin: 0 0 10px;
-  padding: 10px;
+  margin: 0 0 8px;
+  padding: 8px;
   border: 1px solid #c7ab88;
-  border-radius: 12px;
+  border-radius: 10px;
   background: #f8efdf;
 }
 
-.craft-ideal-card h3 {
-  margin: 0 0 8px;
+.craft-ideal-tolerance {
+  margin: 0;
   color: #5b3f2a;
-  font-size: 0.95rem;
-}
-
-.craft-ideal-meta {
-  margin: 0;
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 6px 10px;
-}
-
-.craft-ideal-meta div {
-  margin: 0;
-}
-
-.craft-ideal-meta dt {
-  margin: 0;
-  color: #6b513b;
-  font-size: 0.72rem;
-  font-weight: 700;
-}
-
-.craft-ideal-meta dd {
-  margin: 1px 0 0;
-  color: #3d2a1c;
   font-size: 0.82rem;
   font-weight: 700;
+  line-height: 1.35;
 }
 
 .craft-ideal-grid {
   list-style: none;
-  margin: 8px 0 0;
+  margin: 6px 0 0;
   padding: 0;
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 6px;
+  gap: 5px;
 }
 
 .craft-ideal-grid-cell {
-  min-height: 34px;
+  min-height: 30px;
   border: 1px solid #ccb496;
-  border-radius: 8px;
+  border-radius: 7px;
   background: #fff9ef;
   display: flex;
   align-items: center;
   justify-content: center;
   color: #4d341f;
   font-weight: 700;
+  font-size: 0.9rem;
 }
 
 .craft-ideal-grid-cell.is-unused {
   background: #efe5d6;
   color: #b29a83;
-}
-
-@media (max-width: 480px) {
-  .craft-ideal-meta {
-    grid-template-columns: 1fr;
-  }
 }
 
 .favorites-layout {
