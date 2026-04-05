@@ -121,6 +121,14 @@ function makeToolId(profession, toolName) {
   return `t:${profession}:${toolName}`;
 }
 
+function parseEquipmentLevel(value) {
+  const normalized = String(value ?? "").trim();
+  if (normalized === "") return null;
+  const parsed = Number(normalized);
+  if (!Number.isFinite(parsed)) return null;
+  return parsed;
+}
+
 async function fetchCsvLines(path) {
   const response = await fetch(path);
   if (!response.ok) {
@@ -283,6 +291,7 @@ async function loadDataFromCsv() {
   const craftsmanIndex = headers.indexOf("craftsman");
   const categoryIndex = headers.indexOf("category");
   const equipmentNameIndex = headers.indexOf("equipmentName");
+  const equipmentLevelIndex = headers.indexOf("equipmentLevel");
   const materialNameIndex = headers.indexOf("materialName");
   const quantityIndex = headers.indexOf("quantity");
 
@@ -300,6 +309,7 @@ async function loadDataFromCsv() {
     const craftsman = row[craftsmanIndex];
     const category = row[categoryIndex];
     const equipmentName = row[equipmentNameIndex];
+    const equipmentLevel = parseEquipmentLevel(row[equipmentLevelIndex]);
     const materialName = row[materialNameIndex];
     const quantity = Number(row[quantityIndex] || 0);
 
@@ -311,9 +321,13 @@ async function loadDataFromCsv() {
         name: equipmentName,
         craftsman,
         category,
+        equipmentLevel: equipmentLevel ?? 0,
         // 販売価格はCSVに無いので0初期化（既存保存値があれば後で引き継ぎ）
         salePrices: { star0: 0, star1: 0, star2: 0, star3: 0 },
       });
+    } else if (equipmentLevel !== null) {
+      const equipment = equipmentMap.get(equipmentName);
+      equipment.equipmentLevel = equipmentLevel;
     }
 
     if (!materialMap.has(materialName)) {
@@ -2669,6 +2683,9 @@ function isRecipeFavorite(equipment) {
 }
 
 function compareEquipmentsByBaseSort(a, b) {
+  const aLevel = Number(a.equipmentLevel || 0);
+  const bLevel = Number(b.equipmentLevel || 0);
+  if (aLevel !== bLevel) return bLevel - aLevel;
   const costDiff = getRoundedEquipmentMaterialCost(a.id) - getRoundedEquipmentMaterialCost(b.id);
   if (costDiff !== 0) return -costDiff;
   return a.name.localeCompare(b.name, "ja");
