@@ -122,7 +122,6 @@ function makeToolId(profession, toolName) {
 }
 
 async function fetchCsvLines(path) {
-  console.info(`[CSV] fetch start: ${path}`);
   const response = await fetch(path);
   if (!response.ok) {
     console.error(`[CSV] fetch failed: path=${path}, status=${response.status}`);
@@ -132,7 +131,6 @@ async function fetchCsvLines(path) {
   const csvText = decodeCsvText(path, bytes);
   const normalized = csvText.replace(/^\uFEFF/, "");
   const lines = normalized.split(/\r?\n/).filter((line) => line.trim().length > 0);
-  console.info(`[CSV] fetch success: path=${path}, lines=${lines.length}`);
   return lines;
 }
 
@@ -144,7 +142,6 @@ function decodeCsvText(path, bytes) {
     try {
       const decoded = new TextDecoder(encoding, { fatal: true }).decode(bytes);
       if (validateFn(decoded)) {
-        console.info(`[CSV] decode success: path=${path}, encoding=${encoding}`);
         return decoded;
       }
     } catch {
@@ -275,11 +272,7 @@ function parseCraftIdealValuesFromLines(lines) {
 
 // recipe.csvを読み込み、画面で使うデータ構造に変換します。
 async function loadDataFromCsv() {
-  const [recipeLines, toolLines, craftIdealValueLines] = await Promise.all([
-    fetchCsvLines(RECIPE_CSV_PATH),
-    fetchCsvLines(TOOLS_CSV_PATH),
-    fetchCsvLines(CRAFT_IDEAL_VALUES_CSV_PATH),
-  ]);
+  const [recipeLines, toolLines] = await Promise.all([fetchCsvLines(RECIPE_CSV_PATH), fetchCsvLines(TOOLS_CSV_PATH)]);
   const lines = recipeLines;
   if (lines.length <= 1) {
     throw new Error("CSVにデータ行がありません");
@@ -341,8 +334,6 @@ async function loadDataFromCsv() {
   }
 
   const tools = parseToolsFromLines(toolLines);
-  const craftIdealValues = parseCraftIdealValuesFromLines(craftIdealValueLines);
-
   return {
     feeRate: 5,
     equipments: Array.from(equipmentMap.values()),
@@ -350,8 +341,13 @@ async function loadDataFromCsv() {
     recipes,
     tools,
     toolPurchasePrices: [],
-    craftIdealValues,
+    craftIdealValues: [],
   };
+}
+
+async function loadCraftIdealValuesCsv() {
+  const lines = await fetchCsvLines(CRAFT_IDEAL_VALUES_CSV_PATH);
+  return parseCraftIdealValuesFromLines(lines);
 }
 
 function loadStoredData() {
@@ -499,6 +495,22 @@ let expandedBazaarChartMaterialKeyMobile = "";
 let activeFavoriteMaterialModalKey = "";
 let presentCodes = [];
 let fieldFarmingMonsters = [];
+let hasLoadedPresentCodes = false;
+let hasLoadedFieldFarmingMonsters = false;
+let hasLoadedBazaarPrices = false;
+let hasLoadedBazaarPriceHistory = false;
+let hasLoadedCraftIdealValues = false;
+let hasSyncedMaterialPricesWithBazaar = false;
+let isPresentCodesLoading = false;
+let isFieldFarmingLoading = false;
+let isBazaarLoading = false;
+let isBazaarHistoryLoading = false;
+let isCraftIdealValuesLoading = false;
+let presentCodesLoadingPromise = null;
+let fieldFarmingLoadingPromise = null;
+let bazaarLoadingPromise = null;
+let bazaarHistoryLoadingPromise = null;
+let craftIdealValuesLoadingPromise = null;
 let selectedFieldFarmingSort = "normal_desc";
 let activeFieldFarmingMapModalRowId = "";
 // 利益計算画面だけで使う「今回計算用の一時単価」。
@@ -739,8 +751,6 @@ function parseBazaarPricesFromLines(lines) {
   const shopPriceIndex = headers.indexOf("shop_price");
   const listingCountIndex = headers.indexOf("listing_count");
   const officialUrlIndex = headers.indexOf("official_url");
-  console.info("[bazaar_prices.csv] header columns:", headers);
-
   if (
     materialNameIndex < 0 ||
     itemCategoryIndex < 0 ||
@@ -834,9 +844,7 @@ function parsePresentCodesFromLines(lines) {
 
 async function loadPresentCodesCsv() {
   const lines = await fetchCsvLines(PRESENT_CODES_CSV_PATH);
-  const rows = parsePresentCodesFromLines(lines);
-  console.info(`[datapresent_codes.csv] parsed rows: ${rows.length}`);
-  return rows;
+  return parsePresentCodesFromLines(lines);
 }
 
 function parseFieldFarmingMonstersFromLines(lines) {
@@ -881,9 +889,7 @@ function parseFieldFarmingMonstersFromLines(lines) {
 
 async function loadFieldFarmingMonstersCsv() {
   const lines = await fetchCsvLines(FIELD_FARMING_CSV_PATH);
-  const rows = parseFieldFarmingMonstersFromLines(lines);
-  console.info(`[field_farming_monsters.csv] parsed rows: ${rows.length}`);
-  return rows;
+  return parseFieldFarmingMonstersFromLines(lines);
 }
 
 function buildPresentCodeUrl(code) {
@@ -962,6 +968,129 @@ function getOfficialBazaarUrlByMaterialName(materialName) {
 async function loadBazaarPricesCsv() {
   const lines = await fetchCsvLines(BAZAAR_CSV_PATH);
   return parseBazaarPricesFromLines(lines);
+}
+
+async function ensureCraftIdealValuesLoaded() {
+  if (hasLoadedCraftIdealValues || isCraftIdealValuesLoading) return craftIdealValuesLoadingPromise;
+  isCraftIdealValuesLoading = true;
+  craftIdealValuesLoadingPromise = (async () => {
+    try {
+      state.craftIdealValues = await loadCraftIdealValuesCsv();
+      hasLoadedCraftIdealValues = true;
+    } catch (error) {
+      console.error(`craft_ideal_values.csv の読み込みに失敗しました: path=${CRAFT_IDEAL_VALUES_CSV_PATH}`, error);
+      state.craftIdealValues = [];
+    } finally {
+      isCraftIdealValuesLoading = false;
+    }
+  })();
+  return craftIdealValuesLoadingPromise;
+}
+
+async function ensurePresentCodesLoaded() {
+  if (hasLoadedPresentCodes || isPresentCodesLoading) return presentCodesLoadingPromise;
+  isPresentCodesLoading = true;
+  presentCodesLoadingPromise = (async () => {
+    try {
+      presentCodes = await loadPresentCodesCsv();
+      hasLoadedPresentCodes = true;
+    } catch (error) {
+      console.error(`datapresent_codes.csv の読み込みに失敗しました: path=${PRESENT_CODES_CSV_PATH}`, error);
+      presentCodes = [];
+    } finally {
+      isPresentCodesLoading = false;
+      if (activeTabId === "present-codes") renderPresentCodes();
+    }
+  })();
+  return presentCodesLoadingPromise;
+}
+
+async function ensureBazaarPricesLoaded() {
+  if (hasLoadedBazaarPrices || isBazaarLoading) return bazaarLoadingPromise;
+  isBazaarLoading = true;
+  bazaarLoadingPromise = (async () => {
+    try {
+      bazaarPrices = await loadBazaarPricesCsv();
+      hasLoadedBazaarPrices = true;
+      if (!hasSyncedMaterialPricesWithBazaar) {
+        const materialSyncResult = syncMaterialPricesWithBazaar(state.materials, bazaarPrices);
+        state.materials = materialSyncResult.materials;
+        hasSyncedMaterialPricesWithBazaar = true;
+        saveData();
+      }
+    } catch (error) {
+      console.error(`bazaar_prices.csv の読み込みに失敗しました: path=${BAZAAR_CSV_PATH}`, error);
+      bazaarPrices = [];
+    } finally {
+      isBazaarLoading = false;
+      if (activeTabId === "bazaar") renderBazaarPrices();
+      if (activeTabId === "field-farming") renderFieldFarmingRanking();
+      if (activeTabId === "favorites") renderFavoritesPage();
+      if (activeTabId === "profit") {
+        renderRecipeTable();
+        calcAndRenderSummary();
+      }
+    }
+  })();
+  return bazaarLoadingPromise;
+}
+
+async function ensureBazaarPriceHistoryLoaded() {
+  if (hasLoadedBazaarPriceHistory || isBazaarHistoryLoading) return bazaarHistoryLoadingPromise;
+  isBazaarHistoryLoading = true;
+  bazaarHistoryLoadingPromise = (async () => {
+    try {
+      bazaarPriceHistoryByMaterialKey = await loadBazaarPriceHistoryCsv();
+      hasLoadedBazaarPriceHistory = true;
+    } catch (error) {
+      console.error(`bazaar_prices_history.csv の読み込みに失敗しました: path=${BAZAAR_HISTORY_CSV_PATH}`, error);
+      bazaarPriceHistoryByMaterialKey = new Map();
+    } finally {
+      isBazaarHistoryLoading = false;
+      if (activeTabId === "favorites") renderFavoritesPage();
+      if (activeTabId === "bazaar") renderBazaarPrices();
+    }
+  })();
+  return bazaarHistoryLoadingPromise;
+}
+
+async function ensureFieldFarmingMonstersLoaded() {
+  if (hasLoadedFieldFarmingMonsters || isFieldFarmingLoading) return fieldFarmingLoadingPromise;
+  isFieldFarmingLoading = true;
+  fieldFarmingLoadingPromise = (async () => {
+    try {
+      fieldFarmingMonsters = await loadFieldFarmingMonstersCsv();
+      hasLoadedFieldFarmingMonsters = true;
+    } catch (error) {
+      console.error(`field_farming_monsters.csv の読み込みに失敗しました: path=${FIELD_FARMING_CSV_PATH}`, error);
+      fieldFarmingMonsters = [];
+    } finally {
+      isFieldFarmingLoading = false;
+      if (activeTabId === "field-farming") renderFieldFarmingRanking();
+    }
+  })();
+  return fieldFarmingLoadingPromise;
+}
+
+function prefetchDataForTab(tabId) {
+  if (tabId === "present-codes") {
+    void ensurePresentCodesLoaded();
+    return;
+  }
+  if (tabId === "field-farming") {
+    void ensureBazaarPricesLoaded();
+    void ensureFieldFarmingMonstersLoaded();
+    return;
+  }
+  if (tabId === "bazaar") {
+    void ensureBazaarPricesLoaded();
+    void ensureBazaarPriceHistoryLoaded();
+    return;
+  }
+  if (tabId === "favorites") {
+    void ensureBazaarPricesLoaded();
+    void ensureBazaarPriceHistoryLoaded();
+  }
 }
 
 function parseBazaarHistoryDate(value) {
@@ -1316,9 +1445,12 @@ function getVisibleBazaarRows() {
 
 function renderBazaarPrices() {
   if (!bazaarListWrap) return;
+  if (isBazaarLoading && !hasLoadedBazaarPrices) {
+    bazaarListWrap.innerHTML = `<p>バザー価格データを読み込み中です...</p>`;
+    return;
+  }
 
   if (!Array.isArray(bazaarPrices) || bazaarPrices.length === 0) {
-    console.warn(`[bazaar] render skipped: rows.length=${Array.isArray(bazaarPrices) ? bazaarPrices.length : "not-array"}`);
     bazaarListWrap.innerHTML = `<p>表示できる価格データがありません。CSV内容を確認してください。</p>`;
     return;
   }
@@ -1344,10 +1476,6 @@ function renderBazaarPrices() {
   const trimmedSearchText = searchText.trim();
   const searchCandidates = getBazaarSearchCandidates(trimmedSearchText);
   const showSearchCandidates = trimmedSearchText !== "";
-  console.info(
-    `[bazaar] render rows: total=${bazaarPrices.length}, visible=${visibleRows.length}, category=${selectedBazaarCategory || "all"}, sort=${selectedBazaarSort}, favoritesOnly=${showBazaarFavoritesOnly}, search=${trimmedSearchText || "-"}`
-  );
-
   bazaarListWrap.innerHTML = `
     <div class="bazaar-control-wrap">
       <label class="field bazaar-category-field">
@@ -1647,6 +1775,10 @@ function formatPresentCodeReward(rewardText) {
 
 function renderPresentCodes() {
   if (!presentCodeListWrap) return;
+  if (isPresentCodesLoading && !hasLoadedPresentCodes) {
+    presentCodeListWrap.innerHTML = `<p class="card">プレゼントのじゅもんを読み込み中です...</p>`;
+    return;
+  }
   if (!Array.isArray(presentCodes) || presentCodes.length === 0) {
     presentCodeListWrap.innerHTML = `<p class="card">表示できるプレゼントのじゅもんがありません。CSV内容を確認してください。</p>`;
     return;
@@ -1705,6 +1837,10 @@ function getFieldFarmingPriceByMaterialName() {
 
 function renderFieldFarmingRanking() {
   if (!fieldFarmingListWrap) return;
+  if (isFieldFarmingLoading && !hasLoadedFieldFarmingMonsters) {
+    fieldFarmingListWrap.innerHTML = `<p class="card">フィールド狩りデータを読み込み中です...</p>`;
+    return;
+  }
   if (fieldFarmingSortSelect) {
     fieldFarmingSortSelect.value = selectedFieldFarmingSort;
   }
@@ -1902,7 +2038,7 @@ function openFieldFarmingMapModal(rowId) {
   fieldFarmingMapModalBody.innerHTML = `
     <h3 class="field-farming-map-modal-title">${row.monsterName || row.monsterArea}${areaLabel}</h3>
     <div class="field-farming-map-image-wrap">
-      <img class="field-farming-map-image" alt="${row.monsterName || "モンスター"}の出現マップ" loading="lazy" />
+      <img class="field-farming-map-image" alt="${row.monsterName || "モンスター"}の出現マップ" loading="lazy" decoding="async" fetchpriority="low" />
       <p class="field-farming-map-image-fallback" hidden>マップ画像を読み込めませんでした。</p>
     </div>
   `;
@@ -2171,6 +2307,18 @@ function switchTab(target) {
   activeTabId = normalizedTarget;
   tabButtons.forEach((btn) => btn.classList.toggle("active", btn.dataset.tab === normalizedTarget));
   tabContents.forEach((tab) => tab.classList.toggle("active", tab.id === normalizedTarget));
+  if (normalizedTarget === "present-codes") {
+    renderPresentCodes();
+  } else if (normalizedTarget === "field-farming") {
+    renderFieldFarmingRanking();
+  } else if (normalizedTarget === "bazaar") {
+    renderBazaarPrices();
+  } else if (normalizedTarget === "favorites") {
+    renderFavoritesPage();
+  } else if (normalizedTarget === "profit") {
+    renderCraftIdealValue();
+  }
+  prefetchDataForTab(normalizedTarget);
 }
 
 function buildAppQueryParams(nextValues = {}) {
@@ -2537,6 +2685,16 @@ function renderCraftIdealValue() {
   if (!craftIdealValueWrap) return;
 
   const equipment = getSelectedEquipment();
+  if (
+    equipment &&
+    CRAFT_IDEAL_TARGET_JOBS.has(String(equipment.craftsman || "")) &&
+    !hasLoadedCraftIdealValues &&
+    !isCraftIdealValuesLoading
+  ) {
+    void ensureCraftIdealValuesLoaded().then(() => {
+      if (activeTabId === "profit") renderCraftIdealValue();
+    });
+  }
   const idealValue = getCraftIdealValueForSelectedEquipment();
   if (!equipment || !idealValue) {
     craftIdealValueWrap.innerHTML = "";
@@ -2990,10 +3148,10 @@ function rerenderAll() {
   renderMaterialList();
   renderRecipeAdminList();
   calcAndRenderSummary();
-  renderPresentCodes();
-  renderFieldFarmingRanking();
-  renderBazaarPrices();
-  renderFavoritesPage();
+  if (activeTabId === "present-codes") renderPresentCodes();
+  if (activeTabId === "field-farming") renderFieldFarmingRanking();
+  if (activeTabId === "bazaar") renderBazaarPrices();
+  if (activeTabId === "favorites") renderFavoritesPage();
 }
 
 // --- イベント定義 ---
@@ -3281,40 +3439,6 @@ async function initialize() {
     state = mergeWithStoredData(structuredClone(defaultData), storedData);
   }
 
-  try {
-    presentCodes = await loadPresentCodesCsv();
-  } catch (error) {
-    console.error(`datapresent_codes.csv の読み込みに失敗しました: path=${PRESENT_CODES_CSV_PATH}`, error);
-    presentCodes = [];
-  }
-
-  try {
-    fieldFarmingMonsters = await loadFieldFarmingMonstersCsv();
-  } catch (error) {
-    console.error(`field_farming_monsters.csv の読み込みに失敗しました: path=${FIELD_FARMING_CSV_PATH}`, error);
-    fieldFarmingMonsters = [];
-  }
-
-  try {
-    bazaarPrices = await loadBazaarPricesCsv();
-  } catch (error) {
-    console.error(`bazaar_prices.csv の読み込みに失敗しました: path=${BAZAAR_CSV_PATH}`, error);
-    bazaarPrices = [];
-  }
-
-  const materialSyncResult = syncMaterialPricesWithBazaar(state.materials, bazaarPrices);
-  state.materials = materialSyncResult.materials;
-  console.info(
-    `[bazaar_prices.csv] レシピ素材単価を同期しました: matched=${materialSyncResult.matchedCount}, updated=${materialSyncResult.updatedCount}`
-  );
-
-  try {
-    bazaarPriceHistoryByMaterialKey = await loadBazaarPriceHistoryCsv();
-  } catch (error) {
-    console.error(`bazaar_prices_history.csv の読み込みに失敗しました: path=${BAZAAR_HISTORY_CSV_PATH}`, error);
-    bazaarPriceHistoryByMaterialKey = new Map();
-  }
-
   bazaarCsvUpdatedAt = await loadBazaarLastUpdatedAt();
 
   // CSV側が空でも初期表示で一覧が空にならないようフォールバックを維持
@@ -3338,6 +3462,7 @@ async function initialize() {
   );
   saveData();
   rerenderAll();
+  prefetchDataForTab(activeTabId);
 }
 
 initialize();
