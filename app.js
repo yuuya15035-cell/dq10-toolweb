@@ -5,6 +5,7 @@ const STORAGE_KEY = "dq10_toolweb_data_v1";
 // recipe.csv の配置先。data ディレクトリ配下を正として扱います。
 const RECIPE_CSV_PATH = "./data/recipe.csv";
 const TOOLS_CSV_PATH = "./data/tools.csv";
+const CRAFT_IDEAL_VALUES_CSV_PATH = "./data/craft_ideal_values.csv";
 const BAZAAR_CSV_PATH = "./data/bazaar_prices.csv";
 const BAZAAR_HISTORY_CSV_PATH = "./data/bazaar_prices_history.csv";
 const PRESENT_CODES_CSV_PATH = "./data/datapresent_codes.csv";
@@ -18,6 +19,7 @@ const RECIPE_FAVORITE_CATEGORY_VALUE = "__favorites__";
 const TAB_IDS = new Set(["profit", "present-codes", "bazaar", "favorites", "data", "field-farming"]);
 const FAVORITES_TAB_IDS = new Set(["recipes", "materials"]);
 const RECIPE_SUMMARY_MATERIAL_LIMIT = 4;
+const CRAFT_IDEAL_TARGET_JOBS = new Set(["裁縫職人", "木工職人"]);
 const BAZAAR_CATEGORY_ORDER = ["石系", "植物系", "モンスター系", "その他", "消費アイテム"];
 const BAZAAR_SORT_OPTIONS = [
   { value: "standard", label: "標準順" },
@@ -68,6 +70,7 @@ const defaultData = {
   ],
   tools: [],
   toolPurchasePrices: [],
+  craftIdealValues: [],
 };
 
 // CSVの1行（カンマ区切り）を最低限パースする関数。
@@ -216,9 +219,67 @@ function parseToolsFromLines(lines) {
   return tools;
 }
 
+function parseCraftIdealValuesFromLines(lines) {
+  if (lines.length <= 1) {
+    return [];
+  }
+
+  const headers = parseCsvLine(lines[0]);
+  const jobTypeIndex = headers.indexOf("job_type");
+  const itemNameIndex = headers.indexOf("item_name");
+  const partIndex = headers.indexOf("part");
+  const gridTypeIndex = headers.indexOf("grid_type");
+  const star3ToleranceIndex = headers.indexOf("star3_tolerance");
+  const cellIndexes = Array.from({ length: 9 }, (_, index) => headers.indexOf(`cell_${index + 1}`));
+
+  if (
+    jobTypeIndex < 0 ||
+    itemNameIndex < 0 ||
+    partIndex < 0 ||
+    gridTypeIndex < 0 ||
+    star3ToleranceIndex < 0 ||
+    cellIndexes.some((index) => index < 0)
+  ) {
+    throw new Error("craft_ideal_values.csv ヘッダーが想定と一致しません");
+  }
+
+  const idealValues = [];
+  for (let i = 1; i < lines.length; i += 1) {
+    const row = parseCsvLine(lines[i]);
+    const jobType = String(row[jobTypeIndex] || "").trim();
+    const itemName = String(row[itemNameIndex] || "").trim();
+    if (!CRAFT_IDEAL_TARGET_JOBS.has(jobType) || itemName === "") continue;
+
+    const part = String(row[partIndex] || "").trim();
+    const gridType = Number(row[gridTypeIndex] || 0);
+    const star3Tolerance = Number(row[star3ToleranceIndex] || 0);
+    const cells = cellIndexes.map((cellIndex) => {
+      const raw = String(row[cellIndex] || "").trim();
+      if (raw === "") return null;
+      const parsed = Number(raw);
+      return Number.isFinite(parsed) ? parsed : null;
+    });
+
+    idealValues.push({
+      jobType,
+      itemName,
+      part,
+      gridType: Number.isFinite(gridType) ? gridType : 0,
+      star3Tolerance: Number.isFinite(star3Tolerance) ? star3Tolerance : 0,
+      cells,
+    });
+  }
+
+  return idealValues;
+}
+
 // recipe.csvを読み込み、画面で使うデータ構造に変換します。
 async function loadDataFromCsv() {
-  const [recipeLines, toolLines] = await Promise.all([fetchCsvLines(RECIPE_CSV_PATH), fetchCsvLines(TOOLS_CSV_PATH)]);
+  const [recipeLines, toolLines, craftIdealValueLines] = await Promise.all([
+    fetchCsvLines(RECIPE_CSV_PATH),
+    fetchCsvLines(TOOLS_CSV_PATH),
+    fetchCsvLines(CRAFT_IDEAL_VALUES_CSV_PATH),
+  ]);
   const lines = recipeLines;
   if (lines.length <= 1) {
     throw new Error("CSVにデータ行がありません");
@@ -280,6 +341,7 @@ async function loadDataFromCsv() {
   }
 
   const tools = parseToolsFromLines(toolLines);
+  const craftIdealValues = parseCraftIdealValuesFromLines(craftIdealValueLines);
 
   return {
     feeRate: 5,
@@ -288,6 +350,7 @@ async function loadDataFromCsv() {
     recipes,
     tools,
     toolPurchasePrices: [],
+    craftIdealValues,
   };
 }
 
@@ -400,6 +463,7 @@ function mergeWithStoredData(csvData, storedData) {
       toolId: tool.id,
       purchasePrice: toolPurchasePriceById.get(tool.id) || 0,
     })),
+    craftIdealValues: csvData.craftIdealValues || [],
   };
 }
 
@@ -460,6 +524,7 @@ const sideMenuItems = document.querySelectorAll(".side-menu-item");
 
 const equipmentSelect = getRequiredElementById("equipmentSelect");
 const recipeFavoriteActionWrap = getRequiredElementById("recipeFavoriteActionWrap");
+const craftIdealValueWrap = getRequiredElementById("craftIdealValueWrap");
 const equipmentSearchToggleButton = getRequiredElementById("equipmentSearchToggleButton");
 const equipmentSearchField = getRequiredElementById("equipmentSearchField");
 const equipmentSearchInput = getRequiredElementById("equipmentSearchInput");
@@ -2458,6 +2523,54 @@ function getRecipeRowsForSelectedEquipment() {
   return state.recipes.filter((row) => row.equipmentId === selectedEquipmentId);
 }
 
+function getCraftIdealValueForSelectedEquipment() {
+  const equipment = getSelectedEquipment();
+  if (!equipment?.name || !equipment?.craftsman) return null;
+  return (
+    (state.craftIdealValues || []).find(
+      (idealValue) => idealValue.itemName === equipment.name && idealValue.jobType === equipment.craftsman
+    ) || null
+  );
+}
+
+function renderCraftIdealValue() {
+  if (!craftIdealValueWrap) return;
+
+  const equipment = getSelectedEquipment();
+  const idealValue = getCraftIdealValueForSelectedEquipment();
+  if (!equipment || !idealValue) {
+    craftIdealValueWrap.innerHTML = "";
+    craftIdealValueWrap.hidden = true;
+    return;
+  }
+
+  const cellsHtml = idealValue.cells
+    .map((cellValue) => {
+      const isUnused = cellValue === null;
+      return `
+        <li class="craft-ideal-grid-cell ${isUnused ? "is-unused" : ""}">
+          <span>${isUnused ? "" : cellValue}</span>
+        </li>
+      `;
+    })
+    .join("");
+
+  craftIdealValueWrap.hidden = false;
+  craftIdealValueWrap.innerHTML = `
+    <section class="craft-ideal-card" aria-label="基準値カード">
+      <h3>基準値（★3）</h3>
+      <dl class="craft-ideal-meta">
+        <div><dt>装備名</dt><dd>${equipment.name}</dd></div>
+        <div><dt>職人種別</dt><dd>${idealValue.jobType}</dd></div>
+        <div><dt>部位</dt><dd>${idealValue.part || "-"}</dd></div>
+        <div><dt>使用マス数</dt><dd>${idealValue.gridType} マス</dd></div>
+        <div><dt>★3許容誤差</dt><dd>±${idealValue.star3Tolerance}</dd></div>
+      </dl>
+      <ol class="craft-ideal-grid" aria-label="3×3基準値">${cellsHtml}</ol>
+    </section>
+  `;
+}
+
 function getToolsForSelectedEquipment() {
   const profession = getSelectedEquipment()?.craftsman;
   if (!profession) return [];
@@ -2877,6 +2990,7 @@ function rerenderAll() {
   if (salePriceStar2Input) salePriceStar2Input.value = salePrices.star2;
   if (salePriceStar3Input) salePriceStar3Input.value = salePrices.star3;
   renderRecipeTable();
+  renderCraftIdealValue();
   renderToolSectionVisibility();
   renderSearchFieldVisibility();
   renderToolSection();
@@ -2903,6 +3017,7 @@ if (equipmentSelect) {
     if (salePriceStar2Input) salePriceStar2Input.value = salePrices.star2;
     if (salePriceStar3Input) salePriceStar3Input.value = salePrices.star3;
     renderRecipeTable();
+    renderCraftIdealValue();
     renderToolSection();
     calcAndRenderSummary();
     renderEquipmentSelectors();
