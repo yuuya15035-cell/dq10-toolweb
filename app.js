@@ -1308,11 +1308,21 @@ function getBazaarHistoryForRange(materialKey, rangeDays = DEFAULT_BAZAAR_CHART_
   return history.filter((point) => point.timestamp >= rangeStartTimestamp);
 }
 
+function formatBazaarChartDateLabel(timestamp) {
+  const parsed = new Date(timestamp);
+  if (Number.isNaN(parsed.getTime())) return "-";
+  return new Intl.DateTimeFormat("ja-JP", { month: "numeric", day: "numeric" }).format(parsed);
+}
+
 function buildBazaarSparklineSvg(history, options = {}) {
-  const width = Number(options.width) || 240;
-  const height = Number(options.height) || 80;
-  const paddingY = Number(options.paddingY) || 6;
-  const pointRadius = Number(options.pointRadius) || 2.2;
+  const width = Number(options.width) || 320;
+  const height = Number(options.height) || 108;
+  const paddingTop = Number(options.paddingTop) || 8;
+  const paddingRight = Number(options.paddingRight) || 8;
+  const paddingBottom = Number(options.paddingBottom) || 20;
+  const paddingLeft = Number(options.paddingLeft) || 44;
+  const pointRadius = Number(options.pointRadius) || 2;
+  const latestPointRadius = Number(options.latestPointRadius) || 4;
   const chartStroke = options.stroke || "#8b5e3c";
   const areaFill = options.areaFill || "rgba(139, 94, 60, 0.18)";
   const points = Array.isArray(history)
@@ -1329,29 +1339,55 @@ function buildBazaarSparklineSvg(history, options = {}) {
   const minPrice = Math.min(...prices);
   const maxPrice = Math.max(...prices);
   const safeRange = Math.max(maxPrice - minPrice, 1);
+  const middlePrice = minPrice + safeRange / 2;
   const xDivisor = Math.max(points.length - 1, 1);
+  const chartHeight = Math.max(height - paddingTop - paddingBottom, 1);
+  const chartWidth = Math.max(width - paddingLeft - paddingRight, 1);
+  const yForPrice = (price) => {
+    const normalizedY = (price - minPrice) / safeRange;
+    return paddingTop + (1 - normalizedY) * chartHeight;
+  };
   const coords = points.map((point, index) => {
-    const x = (index / xDivisor) * width;
-    const normalizedY = (point.price - minPrice) / safeRange;
-    const y = height - paddingY - normalizedY * Math.max(height - paddingY * 2, 1);
+    const x = paddingLeft + (index / xDivisor) * chartWidth;
+    const y = yForPrice(point.price);
     return { x, y };
   });
   const polylinePoints = coords.map((coord) => `${coord.x.toFixed(2)},${coord.y.toFixed(2)}`).join(" ");
-  const areaPoints = [`0,${height - paddingY}`, polylinePoints, `${width},${height - paddingY}`].join(" ");
+  const chartBottomY = height - paddingBottom;
+  const areaPoints = [`${paddingLeft},${chartBottomY}`, polylinePoints, `${width - paddingRight},${chartBottomY}`].join(" ");
   const pointDots = coords
     .map(
       (coord) =>
         `<circle cx="${coord.x.toFixed(2)}" cy="${coord.y.toFixed(2)}" r="${pointRadius}" class="bazaar-mini-chart-point"></circle>`
     )
     .join("");
+  const latestCoord = coords[coords.length - 1];
+  const latestPointDot = latestCoord
+    ? `<circle cx="${latestCoord.x.toFixed(2)}" cy="${latestCoord.y.toFixed(2)}" r="${latestPointRadius}" class="bazaar-mini-chart-latest-point"></circle>`
+    : "";
+  const minPriceLabel = `${formatBazaarPrice(minPrice)} G`;
+  const maxPriceLabel = `${formatBazaarPrice(maxPrice)} G`;
+  const startDateLabel = formatBazaarChartDateLabel(points[0].timestamp);
+  const endDateLabel = formatBazaarChartDateLabel(points[points.length - 1].timestamp);
+  const middleGridY = yForPrice(middlePrice).toFixed(2);
+  const topGridY = yForPrice(maxPrice).toFixed(2);
+  const bottomGridY = yForPrice(minPrice).toFixed(2);
   const latestPrice = points[points.length - 1].price;
   const firstPrice = points[0].price;
   const trendClass = latestPrice > firstPrice ? "is-positive" : latestPrice < firstPrice ? "is-negative" : "is-neutral";
   return `
     <svg viewBox="0 0 ${width} ${height}" preserveAspectRatio="none" class="bazaar-mini-chart-svg ${trendClass}" aria-hidden="true" focusable="false">
+      <line x1="${paddingLeft}" y1="${topGridY}" x2="${width - paddingRight}" y2="${topGridY}" class="bazaar-mini-chart-grid-line is-edge"></line>
+      <line x1="${paddingLeft}" y1="${middleGridY}" x2="${width - paddingRight}" y2="${middleGridY}" class="bazaar-mini-chart-grid-line"></line>
+      <line x1="${paddingLeft}" y1="${bottomGridY}" x2="${width - paddingRight}" y2="${bottomGridY}" class="bazaar-mini-chart-grid-line is-edge"></line>
       <polyline points="${areaPoints}" class="bazaar-mini-chart-area" style="fill:${areaFill};"></polyline>
       <polyline points="${polylinePoints}" class="bazaar-mini-chart-line" style="stroke:${chartStroke};"></polyline>
       ${pointDots}
+      ${latestPointDot}
+      <text x="2" y="${Number(topGridY) + 3}" class="bazaar-mini-chart-axis-label bazaar-mini-chart-axis-label-max">${maxPriceLabel}</text>
+      <text x="2" y="${Number(bottomGridY) - 2}" class="bazaar-mini-chart-axis-label">${minPriceLabel}</text>
+      <text x="${paddingLeft}" y="${height - 3}" text-anchor="start" class="bazaar-mini-chart-axis-date">${startDateLabel}</text>
+      <text x="${width - paddingRight}" y="${height - 3}" text-anchor="end" class="bazaar-mini-chart-axis-date">${endDateLabel}</text>
     </svg>
   `;
 }
