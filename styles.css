@@ -1897,18 +1897,25 @@ button {
   }
 
   .orb-monster-list {
-    grid-template-columns: 1fr;
-    gap: 3px 6px;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 4px 6px;
   }
 
   .orb-monster-list li {
     min-width: 0;
-    padding: 8px 10px;
+    padding: 6px 8px;
     font-size: 11px;
     line-height: 1.2;
-    white-space: nowrap;
-    overflow: visible;
-    text-overflow: clip;
+    min-height: 42px;
+    max-height: calc(11px * 1.2 * 2);
+    white-space: normal;
+    word-break: keep-all;
+    overflow-wrap: anywhere;
+    overflow: hidden;
+    text-align: center;
+    display: flex;
+    align-items: center;
+    justify-content: center;
   }
 
   .field-farming-list {
