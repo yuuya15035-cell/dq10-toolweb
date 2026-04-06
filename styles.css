@@ -1897,18 +1897,18 @@ button {
   }
 
   .orb-monster-list {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-columns: 1fr;
     gap: 3px 6px;
   }
 
   .orb-monster-list li {
     min-width: 0;
-    padding: 3px 5px;
+    padding: 8px 10px;
     font-size: 11px;
     line-height: 1.2;
     white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
+    overflow: visible;
+    text-overflow: clip;
   }
 
   .field-farming-list {
