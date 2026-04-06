@@ -56,6 +56,14 @@
               </button>
             </div>
           </section>
+          <section class="side-menu-group" aria-label="データベース">
+            <h3 class="side-menu-group-title">データベース</h3>
+            <div class="side-menu-sub-list">
+              <button type="button" class="side-menu-item side-menu-sub-item" data-menu-target="orbs">
+                宝珠
+              </button>
+            </div>
+          </section>
         </nav>
       </aside>
 
@@ -286,6 +294,18 @@
           </label>
         </div>
         <div id="fieldFarmingListWrap"></div>
+      </section>
+
+      <section id="orbs" class="tab-content" aria-label="宝珠データベース画面">
+        <h2>データベース &gt; 宝珠</h2>
+        <div class="orb-controls card">
+          <label class="field orb-search-field" for="orbSearchInput">
+            <span>検索（宝珠名・効果・モンスター名）</span>
+            <input id="orbSearchInput" type="search" placeholder="例: 炎 / 攻撃時 / キラーマシン" autocomplete="off" />
+          </label>
+          <div id="orbCategoryFilterWrap" class="orb-category-filter" aria-label="宝珠カテゴリ絞り込み"></div>
+        </div>
+        <div id="orbListWrap"></div>
       </section>
 
       <section id="favorites" class="tab-content" aria-label="お気に入り一覧画面">
