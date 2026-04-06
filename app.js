@@ -927,6 +927,29 @@ function splitMonsterNames(rawText) {
     .filter((name) => name !== "");
 }
 
+function mergeUniqueMonsterNames(currentNames, newNames) {
+  const merged = [...(Array.isArray(currentNames) ? currentNames : [])];
+  (Array.isArray(newNames) ? newNames : []).forEach((name) => {
+    const normalizedName = String(name || "").trim();
+    if (normalizedName !== "" && !merged.includes(normalizedName)) {
+      merged.push(normalizedName);
+    }
+  });
+  return merged;
+}
+
+function getOrbCategoryClassName(category) {
+  const normalizedCategory = String(category || "").trim();
+  const categoryClassMap = {
+    炎: "fire",
+    水: "water",
+    風: "wind",
+    光: "light",
+    闇: "dark",
+  };
+  return categoryClassMap[normalizedCategory] || "other";
+}
+
 async function loadOrbDataCsv() {
   const [orbLines, monsterLines] = await Promise.all([fetchCsvLines(ORB_DATA_CSV_PATH), fetchCsvLines(MONSTER_DATA_CSV_PATH)]);
   const orbHeaders = parseCsvLine(orbLines[0]).map((header) => String(header || "").replace(/^\uFEFF/, "").trim());
@@ -963,7 +986,8 @@ async function loadOrbDataCsv() {
       const row = parseCsvLine(orbLines[i]);
       const orbId = String(row[orbIdIndex] || "").trim();
       if (orbId === "") continue;
-      monsterNamesByOrbId.set(orbId, splitMonsterNames(row[monsterNamesIndex]));
+      const currentNames = monsterNamesByOrbId.get(orbId) || [];
+      monsterNamesByOrbId.set(orbId, mergeUniqueMonsterNames(currentNames, splitMonsterNames(row[monsterNamesIndex])));
     }
   }
 
@@ -984,31 +1008,50 @@ async function loadOrbDataCsv() {
             : monsterNameById.get(String(row[relationMonsterIdIndex] || "").trim()) || "";
         if (!resolvedMonsterName) continue;
         const currentNames = monsterNamesByOrbId.get(orbId) || [];
-        if (!currentNames.includes(resolvedMonsterName)) {
-          currentNames.push(resolvedMonsterName);
-        }
-        monsterNamesByOrbId.set(orbId, currentNames);
+        monsterNamesByOrbId.set(orbId, mergeUniqueMonsterNames(currentNames, [resolvedMonsterName]));
       }
     }
   } catch {
     // orb_monsters.csv は任意ファイル扱い
   }
 
-  return orbLines
+  const groupedEntriesByOrbId = new Map();
+  const groupedEntriesFallback = [];
+
+  orbLines
     .slice(1)
     .map((line) => parseCsvLine(line))
     .map((row, rowIndex) => {
       const orbId = String(row[orbIdIndex] || "").trim();
-      return {
+      const resolvedMonsterNames = mergeUniqueMonsterNames(monsterNamesByOrbId.get(orbId) || [], splitMonsterNames(row[monsterNamesIndex]));
+      const orbEntry = {
         id: orbId || `orb-row-${rowIndex + 1}`,
         orbId,
         orbName: String(row[orbNameIndex] || "").trim(),
         orbCategory: String(row[orbCategoryIndex] || "").trim(),
         effect: String(row[effectIndex] || "").trim(),
-        monsterNames: monsterNamesByOrbId.get(orbId) || [],
+        monsterNames: resolvedMonsterNames,
       };
-    })
-    .filter((row) => row.orbName !== "");
+      if (orbEntry.orbName === "") return;
+      if (orbId === "") {
+        groupedEntriesFallback.push(orbEntry);
+        return;
+      }
+      const existing = groupedEntriesByOrbId.get(orbId);
+      if (!existing) {
+        groupedEntriesByOrbId.set(orbId, orbEntry);
+        return;
+      }
+      groupedEntriesByOrbId.set(orbId, {
+        ...existing,
+        orbName: existing.orbName || orbEntry.orbName,
+        orbCategory: existing.orbCategory || orbEntry.orbCategory,
+        effect: existing.effect || orbEntry.effect,
+        monsterNames: mergeUniqueMonsterNames(existing.monsterNames, orbEntry.monsterNames),
+      });
+    });
+
+  return [...groupedEntriesByOrbId.values(), ...groupedEntriesFallback];
 }
 
 function buildPresentCodeUrl(code) {
@@ -2056,12 +2099,13 @@ function renderOrbCards() {
           : filteredRows
               .map((row) => {
                 const isExpanded = expandedOrbId === row.id;
+                const orbCategoryClass = getOrbCategoryClassName(row.orbCategory);
                 const monsterListHtml =
                   row.monsterNames.length > 0
                     ? `<ul class="orb-monster-list">${row.monsterNames.map((name) => `<li>${name}</li>`).join("")}</ul>`
                     : `<p class="orb-monster-empty">ドロップモンスター情報なし</p>`;
                 return `
-                  <article class="card orb-card ${isExpanded ? "is-expanded" : ""}">
+                  <article class="card orb-card orb-card-category-${orbCategoryClass} ${isExpanded ? "is-expanded" : ""}">
                     <button type="button" class="orb-card-toggle" data-orb-id="${row.id}" aria-expanded="${isExpanded ? "true" : "false"}">
                       <p class="orb-card-category">${row.orbCategory || "-"}</p>
                       <h3 class="orb-card-name">${row.orbName}</h3>

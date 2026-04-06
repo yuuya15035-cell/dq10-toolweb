@@ -2203,9 +2203,9 @@ button {
 }
 
 .orb-category-button.is-active {
-  background: #6d4d35;
-  color: #fff8ef;
-  border-color: #6d4d35;
+  background: #e7d6c2;
+  color: #4b3626;
+  border-color: #b4926f;
 }
 
 .orb-card-grid {
@@ -2217,6 +2217,8 @@ button {
 .orb-card {
   padding: 0;
   overflow: hidden;
+  border-color: #d6c5ad;
+  background: #fffaf5;
 }
 
 .orb-card-toggle {
@@ -2226,18 +2228,20 @@ button {
   background: transparent;
   padding: 12px;
   cursor: pointer;
+  color: #3f2f22;
 }
 
 .orb-card-category {
   margin: 0;
   font-size: 0.74rem;
-  color: #8a7157;
+  color: #5f4734;
   font-weight: 700;
 }
 
 .orb-card-name {
   margin: 4px 0 6px;
   font-size: 1.02rem;
+  color: #3c2d20;
 }
 
 .orb-card-effect {
@@ -2249,7 +2253,7 @@ button {
 
 .orb-card-monsters {
   border-top: 1px solid #dcc7ad;
-  background: #fff9f2;
+  background: rgba(255, 255, 255, 0.62);
   padding: 10px 12px 12px;
 }
 
@@ -2262,11 +2266,21 @@ button {
 
 .orb-monster-list {
   margin: 0;
-  padding-left: 18px;
+  padding-left: 0;
+  list-style: none;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   display: grid;
-  gap: 2px;
+  gap: 4px 8px;
   color: #4f3e2f;
   font-size: 0.82rem;
+}
+
+.orb-monster-list li {
+  border: 1px solid rgba(93, 70, 52, 0.16);
+  border-radius: 7px;
+  background: rgba(255, 253, 249, 0.82);
+  padding: 4px 6px;
+  line-height: 1.35;
 }
 
 .orb-monster-empty {
@@ -2277,6 +2291,30 @@ button {
 
 .orb-empty {
   grid-column: 1 / -1;
+}
+
+.orb-card-category-fire {
+  background: #f7e3df;
+}
+
+.orb-card-category-water {
+  background: #e2f2fb;
+}
+
+.orb-card-category-wind {
+  background: #e6f4e4;
+}
+
+.orb-card-category-light {
+  background: #faf4cf;
+}
+
+.orb-card-category-dark {
+  background: #ece8e4;
+}
+
+.orb-card-category-other {
+  background: #f6efe8;
 }
 
 @media (min-width: 900px) {
