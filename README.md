@@ -26,6 +26,20 @@ DQ10（ドラゴンクエスト10）の職人向けに、
 - 売値 - 素材合計 - 道具コスト で利益を表示
 - データを `localStorage` に保存（ブラウザローカル）
 
+
+## 宝珠×モンスターCSV生成
+
+`orb_data.csv` の `monster_names_raw` を `monster_data.csv` の `monster_name` 辞書で最長一致分解し、次のCSVを生成できます。
+
+- `data/orb_monsters.csv`
+- `data/orb_monsters_unmatched.csv`
+
+実行コマンド:
+
+```bash
+npm run build:orb-monsters
+```
+
 ## recipe.csv の前提
 
 `data/recipe.csv` の列は以下を想定しています。
