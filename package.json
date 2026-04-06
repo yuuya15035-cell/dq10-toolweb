@@ -2,6 +2,7 @@
   "name": "dq10-toolweb",
   "private": true,
   "scripts": {
-    "update:last-updated": "node scripts/update-last-updated.js"
+    "update:last-updated": "node scripts/update-last-updated.js",
+    "build:orb-monsters": "node scripts/build-orb-monsters.js"
   }
 }
