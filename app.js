@@ -10,13 +10,16 @@ const BAZAAR_CSV_PATH = "./data/bazaar_prices.csv";
 const BAZAAR_HISTORY_CSV_PATH = "./data/bazaar_prices_history.csv";
 const PRESENT_CODES_CSV_PATH = "./data/datapresent_codes.csv";
 const FIELD_FARMING_CSV_PATH = "./data/field_farming_monsters.csv";
+const ORB_DATA_CSV_PATH = "./data/orb_data.csv";
+const MONSTER_DATA_CSV_PATH = "./data/monster_data.csv";
+const ORB_MONSTERS_CSV_PATH = "./data/orb_monsters.csv";
 const LAST_UPDATED_JSON_PATH = "./data/last-updated.json";
 const OFFICIAL_BAZAAR_TOP_URL = "https://dqx-souba.game-blog.app/";
 const OFFICIAL_PRESENT_CODE_URL = "https://hiroba.dqx.jp/sc/campaignCode/itemcode/";
 const BAZAAR_FAVORITES_STORAGE_KEY = "dq10_toolweb_bazaar_favorites_v1";
 const RECIPE_FAVORITES_STORAGE_KEY = "dq10_toolweb_recipe_favorites_v1";
 const RECIPE_FAVORITE_CATEGORY_VALUE = "__favorites__";
-const TAB_IDS = new Set(["profit", "present-codes", "bazaar", "favorites", "data", "field-farming"]);
+const TAB_IDS = new Set(["profit", "present-codes", "bazaar", "favorites", "data", "field-farming", "orbs"]);
 const FAVORITES_TAB_IDS = new Set(["recipes", "materials"]);
 const RECIPE_SUMMARY_MATERIAL_LIMIT = 4;
 const CRAFT_IDEAL_TARGET_JOBS = new Set(["裁縫職人", "木工職人"]);
@@ -509,19 +512,26 @@ let expandedBazaarChartMaterialKeyMobile = "";
 let activeFavoriteMaterialModalKey = "";
 let presentCodes = [];
 let fieldFarmingMonsters = [];
+let orbEntries = [];
+let selectedOrbCategory = "";
+let orbSearchKeyword = "";
+let expandedOrbId = "";
 let hasLoadedPresentCodes = false;
 let hasLoadedFieldFarmingMonsters = false;
+let hasLoadedOrbData = false;
 let hasLoadedBazaarPrices = false;
 let hasLoadedBazaarPriceHistory = false;
 let hasLoadedCraftIdealValues = false;
 let hasSyncedMaterialPricesWithBazaar = false;
 let isPresentCodesLoading = false;
 let isFieldFarmingLoading = false;
+let isOrbDataLoading = false;
 let isBazaarLoading = false;
 let isBazaarHistoryLoading = false;
 let isCraftIdealValuesLoading = false;
 let presentCodesLoadingPromise = null;
 let fieldFarmingLoadingPromise = null;
+let orbDataLoadingPromise = null;
 let bazaarLoadingPromise = null;
 let bazaarHistoryLoadingPromise = null;
 let craftIdealValuesLoadingPromise = null;
@@ -587,6 +597,9 @@ const bazaarHistorySaveMessage = getRequiredElementById("bazaarHistorySaveMessag
 const bazaarListWrap = getRequiredElementById("bazaarListWrap");
 const presentCodeListWrap = getRequiredElementById("presentCodeListWrap");
 const fieldFarmingListWrap = getRequiredElementById("fieldFarmingListWrap");
+const orbListWrap = getRequiredElementById("orbListWrap");
+const orbSearchInput = getRequiredElementById("orbSearchInput");
+const orbCategoryFilterWrap = getRequiredElementById("orbCategoryFilterWrap");
 const fieldFarmingSortSelect = getRequiredElementById("fieldFarmingSortSelect");
 const fieldFarmingMapModalOverlay = getRequiredElementById("fieldFarmingMapModalOverlay");
 const fieldFarmingMapModalDialog = getRequiredElementById("fieldFarmingMapModalDialog");
@@ -906,6 +919,98 @@ async function loadFieldFarmingMonstersCsv() {
   return parseFieldFarmingMonstersFromLines(lines);
 }
 
+function splitMonsterNames(rawText) {
+  const normalized = String(rawText || "").replace(/[／・]/g, "/");
+  return normalized
+    .split(/[\/,\n、]/)
+    .map((name) => String(name || "").trim())
+    .filter((name) => name !== "");
+}
+
+async function loadOrbDataCsv() {
+  const [orbLines, monsterLines] = await Promise.all([fetchCsvLines(ORB_DATA_CSV_PATH), fetchCsvLines(MONSTER_DATA_CSV_PATH)]);
+  const orbHeaders = parseCsvLine(orbLines[0]).map((header) => String(header || "").replace(/^\uFEFF/, "").trim());
+  const orbIdIndex = orbHeaders.indexOf("orb_id");
+  const orbNameIndex = orbHeaders.indexOf("orb_name");
+  const orbCategoryIndex = orbHeaders.indexOf("orb_category");
+  const effectIndex = orbHeaders.indexOf("effect");
+  const monsterNamesIndex = orbHeaders.indexOf("monster_name");
+
+  if (orbIdIndex < 0 || orbNameIndex < 0 || orbCategoryIndex < 0 || effectIndex < 0) {
+    throw new Error("orb_data.csv ヘッダーが想定と一致しません");
+  }
+
+  const monsterHeaders = parseCsvLine(monsterLines[0]).map((header) => String(header || "").replace(/^\uFEFF/, "").trim());
+  const monsterIdIndex = monsterHeaders.indexOf("monster_id");
+  const monsterNameIndex = monsterHeaders.indexOf("monster_name");
+  if (monsterIdIndex < 0 || monsterNameIndex < 0) {
+    throw new Error("monster_data.csv ヘッダーが想定と一致しません");
+  }
+
+  const monsterNameById = new Map();
+  for (let i = 1; i < monsterLines.length; i += 1) {
+    const row = parseCsvLine(monsterLines[i]);
+    const monsterId = String(row[monsterIdIndex] || "").trim();
+    const monsterName = String(row[monsterNameIndex] || "").trim();
+    if (monsterId !== "" && monsterName !== "") {
+      monsterNameById.set(monsterId, monsterName);
+    }
+  }
+
+  const monsterNamesByOrbId = new Map();
+  if (monsterNamesIndex >= 0) {
+    for (let i = 1; i < orbLines.length; i += 1) {
+      const row = parseCsvLine(orbLines[i]);
+      const orbId = String(row[orbIdIndex] || "").trim();
+      if (orbId === "") continue;
+      monsterNamesByOrbId.set(orbId, splitMonsterNames(row[monsterNamesIndex]));
+    }
+  }
+
+  try {
+    const orbMonsterLines = await fetchCsvLines(ORB_MONSTERS_CSV_PATH);
+    const relationHeaders = parseCsvLine(orbMonsterLines[0]).map((header) => String(header || "").replace(/^\uFEFF/, "").trim());
+    const relationOrbIdIndex = relationHeaders.indexOf("orb_id");
+    const relationMonsterIdIndex = relationHeaders.indexOf("monster_id");
+    const relationMonsterNameIndex = relationHeaders.indexOf("monster_name");
+    if (relationOrbIdIndex >= 0 && (relationMonsterIdIndex >= 0 || relationMonsterNameIndex >= 0)) {
+      for (let i = 1; i < orbMonsterLines.length; i += 1) {
+        const row = parseCsvLine(orbMonsterLines[i]);
+        const orbId = String(row[relationOrbIdIndex] || "").trim();
+        if (orbId === "") continue;
+        const resolvedMonsterName =
+          relationMonsterNameIndex >= 0
+            ? String(row[relationMonsterNameIndex] || "").trim()
+            : monsterNameById.get(String(row[relationMonsterIdIndex] || "").trim()) || "";
+        if (!resolvedMonsterName) continue;
+        const currentNames = monsterNamesByOrbId.get(orbId) || [];
+        if (!currentNames.includes(resolvedMonsterName)) {
+          currentNames.push(resolvedMonsterName);
+        }
+        monsterNamesByOrbId.set(orbId, currentNames);
+      }
+    }
+  } catch {
+    // orb_monsters.csv は任意ファイル扱い
+  }
+
+  return orbLines
+    .slice(1)
+    .map((line) => parseCsvLine(line))
+    .map((row, rowIndex) => {
+      const orbId = String(row[orbIdIndex] || "").trim();
+      return {
+        id: orbId || `orb-row-${rowIndex + 1}`,
+        orbId,
+        orbName: String(row[orbNameIndex] || "").trim(),
+        orbCategory: String(row[orbCategoryIndex] || "").trim(),
+        effect: String(row[effectIndex] || "").trim(),
+        monsterNames: monsterNamesByOrbId.get(orbId) || [],
+      };
+    })
+    .filter((row) => row.orbName !== "");
+}
+
 function buildPresentCodeUrl(code) {
   const encodedCode = encodeURIComponent(String(code || "").trim());
   return `${OFFICIAL_PRESENT_CODE_URL}?code=${encodedCode}`;
@@ -1086,6 +1191,24 @@ async function ensureFieldFarmingMonstersLoaded() {
   return fieldFarmingLoadingPromise;
 }
 
+async function ensureOrbDataLoaded() {
+  if (hasLoadedOrbData || isOrbDataLoading) return orbDataLoadingPromise;
+  isOrbDataLoading = true;
+  orbDataLoadingPromise = (async () => {
+    try {
+      orbEntries = await loadOrbDataCsv();
+      hasLoadedOrbData = true;
+    } catch (error) {
+      console.error(`orb_data.csv の読み込みに失敗しました: path=${ORB_DATA_CSV_PATH}`, error);
+      orbEntries = [];
+    } finally {
+      isOrbDataLoading = false;
+      if (activeTabId === "orbs") renderOrbCards();
+    }
+  })();
+  return orbDataLoadingPromise;
+}
+
 function prefetchDataForTab(tabId) {
   if (tabId === "present-codes") {
     void ensurePresentCodesLoaded();
@@ -1104,6 +1227,10 @@ function prefetchDataForTab(tabId) {
   if (tabId === "favorites") {
     void ensureBazaarPricesLoaded();
     void ensureBazaarPriceHistoryLoaded();
+    return;
+  }
+  if (tabId === "orbs") {
+    void ensureOrbDataLoaded();
   }
 }
 
@@ -1881,6 +2008,93 @@ function formatPresentCodeReward(rewardText) {
     .join("<br>");
 }
 
+function getOrbFilteredRows() {
+  const normalizedKeyword = String(orbSearchKeyword || "").trim().toLowerCase();
+  return (orbEntries || []).filter((row) => {
+    if (selectedOrbCategory !== "" && row.orbCategory !== selectedOrbCategory) return false;
+    if (normalizedKeyword === "") return true;
+    return [row.orbName, row.effect, row.monsterNames.join(" ")]
+      .join(" ")
+      .toLowerCase()
+      .includes(normalizedKeyword);
+  });
+}
+
+function renderOrbCards() {
+  if (!orbListWrap || !orbCategoryFilterWrap) return;
+  if (orbSearchInput && orbSearchInput.value !== orbSearchKeyword) {
+    orbSearchInput.value = orbSearchKeyword;
+  }
+  if (isOrbDataLoading && !hasLoadedOrbData) {
+    orbListWrap.innerHTML = `<p class="card">宝珠データを読み込み中です...</p>`;
+    return;
+  }
+  if (!Array.isArray(orbEntries) || orbEntries.length === 0) {
+    orbListWrap.innerHTML = `<p class="card">表示できる宝珠データがありません。CSV内容を確認してください。</p>`;
+    orbCategoryFilterWrap.innerHTML = "";
+    return;
+  }
+
+  const categories = ["炎", "水", "風", "光", "闇"].filter((category) => orbEntries.some((row) => row.orbCategory === category));
+  orbCategoryFilterWrap.innerHTML = `
+    <button type="button" class="orb-category-button ${selectedOrbCategory === "" ? "is-active" : ""}" data-orb-category="">すべて</button>
+    ${categories
+      .map(
+        (category) => `
+          <button type="button" class="orb-category-button ${selectedOrbCategory === category ? "is-active" : ""}" data-orb-category="${category}">${category}</button>
+        `
+      )
+      .join("")}
+  `;
+
+  const filteredRows = getOrbFilteredRows();
+  orbListWrap.innerHTML = `
+    <div class="orb-card-grid">
+      ${
+        filteredRows.length === 0
+          ? `<p class="card orb-empty">条件に一致する宝珠がありません。</p>`
+          : filteredRows
+              .map((row) => {
+                const isExpanded = expandedOrbId === row.id;
+                const monsterListHtml =
+                  row.monsterNames.length > 0
+                    ? `<ul class="orb-monster-list">${row.monsterNames.map((name) => `<li>${name}</li>`).join("")}</ul>`
+                    : `<p class="orb-monster-empty">ドロップモンスター情報なし</p>`;
+                return `
+                  <article class="card orb-card ${isExpanded ? "is-expanded" : ""}">
+                    <button type="button" class="orb-card-toggle" data-orb-id="${row.id}" aria-expanded="${isExpanded ? "true" : "false"}">
+                      <p class="orb-card-category">${row.orbCategory || "-"}</p>
+                      <h3 class="orb-card-name">${row.orbName}</h3>
+                      <p class="orb-card-effect">${row.effect || "-"}</p>
+                    </button>
+                    <div class="orb-card-monsters ${isExpanded ? "is-open" : ""}" ${isExpanded ? "" : "hidden"}>
+                      <p class="orb-monster-title">ドロップモンスター</p>
+                      ${monsterListHtml}
+                    </div>
+                  </article>
+                `;
+              })
+              .join("")
+      }
+    </div>
+  `;
+
+  orbCategoryFilterWrap.querySelectorAll("[data-orb-category]").forEach((button) => {
+    button.addEventListener("click", () => {
+      selectedOrbCategory = String(button.dataset.orbCategory || "");
+      renderOrbCards();
+    });
+  });
+
+  orbListWrap.querySelectorAll("[data-orb-id]").forEach((button) => {
+    button.addEventListener("click", () => {
+      const clickedOrbId = String(button.dataset.orbId || "");
+      expandedOrbId = expandedOrbId === clickedOrbId ? "" : clickedOrbId;
+      renderOrbCards();
+    });
+  });
+}
+
 function renderPresentCodes() {
   if (!presentCodeListWrap) return;
   if (isPresentCodesLoading && !hasLoadedPresentCodes) {
@@ -2423,6 +2637,8 @@ function switchTab(target) {
     renderBazaarPrices();
   } else if (normalizedTarget === "favorites") {
     renderFavoritesPage();
+  } else if (normalizedTarget === "orbs") {
+    renderOrbCards();
   } else if (normalizedTarget === "profit") {
     renderCraftIdealValue();
   }
@@ -3263,6 +3479,7 @@ function rerenderAll() {
   if (activeTabId === "field-farming") renderFieldFarmingRanking();
   if (activeTabId === "bazaar") renderBazaarPrices();
   if (activeTabId === "favorites") renderFavoritesPage();
+  if (activeTabId === "orbs") renderOrbCards();
 }
 
 // --- イベント定義 ---
@@ -3527,6 +3744,13 @@ if (fieldFarmingSortSelect) {
     const nextSort = String(event.target.value || "normal_desc");
     selectedFieldFarmingSort = nextSort === "rare_desc" ? "rare_desc" : "normal_desc";
     renderFieldFarmingRanking();
+  });
+}
+
+if (orbSearchInput) {
+  orbSearchInput.addEventListener("input", (event) => {
+    orbSearchKeyword = String(event.target.value || "");
+    renderOrbCards();
   });
 }
 

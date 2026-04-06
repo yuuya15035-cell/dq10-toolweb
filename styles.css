@@ -2176,6 +2176,115 @@ button {
   justify-content: flex-end;
 }
 
+.orb-controls {
+  display: grid;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.orb-search-field {
+  margin-bottom: 0;
+}
+
+.orb-category-filter {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.orb-category-button {
+  border: 1px solid #c8b399;
+  border-radius: 999px;
+  background: #fffaf3;
+  color: #5f4734;
+  font-weight: 700;
+  padding: 6px 12px;
+  cursor: pointer;
+}
+
+.orb-category-button.is-active {
+  background: #6d4d35;
+  color: #fff8ef;
+  border-color: #6d4d35;
+}
+
+.orb-card-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.orb-card {
+  padding: 0;
+  overflow: hidden;
+}
+
+.orb-card-toggle {
+  width: 100%;
+  text-align: left;
+  border: 0;
+  background: transparent;
+  padding: 12px;
+  cursor: pointer;
+}
+
+.orb-card-category {
+  margin: 0;
+  font-size: 0.74rem;
+  color: #8a7157;
+  font-weight: 700;
+}
+
+.orb-card-name {
+  margin: 4px 0 6px;
+  font-size: 1.02rem;
+}
+
+.orb-card-effect {
+  margin: 0;
+  color: #5a4635;
+  font-size: 0.86rem;
+  line-height: 1.45;
+}
+
+.orb-card-monsters {
+  border-top: 1px solid #dcc7ad;
+  background: #fff9f2;
+  padding: 10px 12px 12px;
+}
+
+.orb-monster-title {
+  margin: 0 0 6px;
+  font-weight: 700;
+  color: #5f4734;
+  font-size: 0.84rem;
+}
+
+.orb-monster-list {
+  margin: 0;
+  padding-left: 18px;
+  display: grid;
+  gap: 2px;
+  color: #4f3e2f;
+  font-size: 0.82rem;
+}
+
+.orb-monster-empty {
+  margin: 0;
+  color: #7f6852;
+  font-size: 0.8rem;
+}
+
+.orb-empty {
+  grid-column: 1 / -1;
+}
+
+@media (min-width: 900px) {
+  .orb-card-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
 @media (min-width: 700px) {
   .recipe-table-desktop {
     display: block;
