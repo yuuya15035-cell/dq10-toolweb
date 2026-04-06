@@ -920,9 +920,8 @@ async function loadFieldFarmingMonstersCsv() {
 }
 
 function splitMonsterNames(rawText) {
-  const normalized = String(rawText || "").replace(/[／・]/g, "/");
-  return normalized
-    .split(/[\/,\n、]/)
+  return String(rawText || "")
+    .split(",")
     .map((name) => String(name || "").trim())
     .filter((name) => name !== "");
 }
@@ -948,6 +947,33 @@ function getOrbCategoryClassName(category) {
     闇: "dark",
   };
   return categoryClassMap[normalizedCategory] || "other";
+}
+
+function getOrbCategorySortOrder(category) {
+  const order = ["炎", "水", "風", "光", "闇"];
+  const index = order.indexOf(String(category || "").trim());
+  return index >= 0 ? index : Number.MAX_SAFE_INTEGER;
+}
+
+function compareOrbEntries(a, b) {
+  const categoryDiff = getOrbCategorySortOrder(a?.orbCategory) - getOrbCategorySortOrder(b?.orbCategory);
+  if (categoryDiff !== 0) return categoryDiff;
+
+  const orbIdA = String(a?.orbId || "").trim();
+  const orbIdB = String(b?.orbId || "").trim();
+  const hasOrbIdA = orbIdA !== "";
+  const hasOrbIdB = orbIdB !== "";
+  if (hasOrbIdA !== hasOrbIdB) return hasOrbIdA ? -1 : 1;
+  if (hasOrbIdA && hasOrbIdB) {
+    const numericA = Number(orbIdA);
+    const numericB = Number(orbIdB);
+    const bothNumeric = Number.isFinite(numericA) && Number.isFinite(numericB);
+    if (bothNumeric && numericA !== numericB) return numericA - numericB;
+    const orbIdTextDiff = orbIdA.localeCompare(orbIdB, "ja");
+    if (orbIdTextDiff !== 0) return orbIdTextDiff;
+  }
+
+  return String(a?.orbName || "").localeCompare(String(b?.orbName || ""), "ja");
 }
 
 async function loadOrbDataCsv() {
@@ -1051,7 +1077,7 @@ async function loadOrbDataCsv() {
       });
     });
 
-  return [...groupedEntriesByOrbId.values(), ...groupedEntriesFallback];
+  return [...groupedEntriesByOrbId.values(), ...groupedEntriesFallback].sort(compareOrbEntries);
 }
 
 function buildPresentCodeUrl(code) {
