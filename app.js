@@ -37,6 +37,54 @@ const BAZAAR_CHART_RANGE_DAYS = {
 };
 const DEFAULT_BAZAAR_CHART_RANGE_DAYS = BAZAAR_CHART_RANGE_DAYS.month;
 const WHITE_BOX_ARMOR_SLOTS = new Set(["頭", "からだ上", "からだ下", "腕", "足"]);
+const WHITE_BOX_WEAPON_SLOT_ORDER = [
+  "片手剣",
+  "両手剣",
+  "短剣",
+  "スティック",
+  "両手杖",
+  "槍",
+  "斧",
+  "棍",
+  "爪",
+  "ムチ",
+  "扇",
+  "ハンマー",
+  "ブーメラン",
+  "弓",
+  "鎌",
+  "小盾",
+  "大盾",
+];
+const WHITE_BOX_ARMOR_SLOT_ORDER = ["頭", "からだ上", "からだ下", "腕", "足"];
+const WHITE_BOX_SLOT_NORMALIZE_MAP = new Map([
+  ["片手剣", "片手剣"],
+  ["両手剣", "両手剣"],
+  ["短剣", "短剣"],
+  ["スティック", "スティック"],
+  ["杖", "両手杖"],
+  ["両手杖", "両手杖"],
+  ["ヤリ", "槍"],
+  ["槍", "槍"],
+  ["オノ", "斧"],
+  ["斧", "斧"],
+  ["棍", "棍"],
+  ["ツメ", "爪"],
+  ["爪", "爪"],
+  ["ムチ", "ムチ"],
+  ["扇", "扇"],
+  ["ハンマー", "ハンマー"],
+  ["ブーメラン", "ブーメラン"],
+  ["弓", "弓"],
+  ["鎌", "鎌"],
+  ["小盾", "小盾"],
+  ["大盾", "大盾"],
+  ["頭", "頭"],
+  ["からだ上", "からだ上"],
+  ["からだ下", "からだ下"],
+  ["腕", "腕"],
+  ["足", "足"],
+]);
 
 function resolveProjectScopedAssetUrl(path) {
   if (!path) return "";
@@ -521,7 +569,7 @@ let expandedOrbId = "";
 let whiteBoxEntries = [];
 let selectedWhiteBoxType = "weapon";
 let selectedWhiteBoxSlot = "";
-let selectedWhiteBoxSort = "level_asc";
+let selectedWhiteBoxSort = "level_desc";
 let expandedWhiteBoxItemId = "";
 let hasLoadedPresentCodes = false;
 let hasLoadedFieldFarmingMonsters = false;
@@ -1010,7 +1058,7 @@ function parseWhiteBoxCsvFromLines(lines) {
     const itemName = String(row[itemNameIndex] || "").trim();
     if (itemName === "") return;
 
-    const itemSlot = String(row[itemSlotIndex] || "").trim();
+    const itemSlot = normalizeWhiteBoxSlot(row[itemSlotIndex]);
     const equipmentLevel = parseEquipmentLevel(row[equipmentLevelIndex]);
     const monsterId = String(row[monsterIdIndex] || "").trim();
     const monsterName = String(row[monsterNameIndex] || "").trim();
@@ -1060,8 +1108,20 @@ function isArmorSlot(itemSlot) {
   return WHITE_BOX_ARMOR_SLOTS.has(String(itemSlot || "").trim());
 }
 
+function normalizeWhiteBoxSlot(rawSlot) {
+  const slot = String(rawSlot || "").trim();
+  if (slot === "") return "";
+  return WHITE_BOX_SLOT_NORMALIZE_MAP.get(slot) || slot;
+}
+
 function getWhiteBoxTypeBySlot(itemSlot) {
   return isArmorSlot(itemSlot) ? "armor" : "weapon";
+}
+
+function getWhiteBoxSlotSortOrder(itemSlot, type) {
+  const order = type === "armor" ? WHITE_BOX_ARMOR_SLOT_ORDER : WHITE_BOX_WEAPON_SLOT_ORDER;
+  const index = order.indexOf(String(itemSlot || "").trim());
+  return index >= 0 ? index : Number.MAX_SAFE_INTEGER;
 }
 
 function compareWhiteBoxEntries(a, b) {
@@ -1457,7 +1517,11 @@ function renderWhiteBoxCards() {
         .map((entry) => String(entry.itemSlot || "").trim())
         .filter((slot) => slot !== "")
     )
-  ).sort((a, b) => a.localeCompare(b, "ja"));
+  ).sort((a, b) => {
+    const sortDiff = getWhiteBoxSlotSortOrder(a, selectedWhiteBoxType) - getWhiteBoxSlotSortOrder(b, selectedWhiteBoxType);
+    if (sortDiff !== 0) return sortDiff;
+    return a.localeCompare(b, "ja");
+  });
 
   if (selectedWhiteBoxSlot !== "" && !slots.includes(selectedWhiteBoxSlot)) {
     selectedWhiteBoxSlot = "";
@@ -1485,7 +1549,7 @@ function renderWhiteBoxCards() {
                         .join("")}</ul>`
                     : `<p class="whitebox-monster-empty">白宝箱ドロップなし</p>`;
                 return `
-                  <article class="card whitebox-card ${isExpanded ? "is-expanded" : ""}">
+                  <article class="card whitebox-card whitebox-card-type-${selectedWhiteBoxType} ${isExpanded ? "is-expanded" : ""}">
                     <button type="button" class="whitebox-card-toggle" data-whitebox-item-id="${entry.id}" aria-expanded="${isExpanded ? "true" : "false"}">
                       <h3 class="whitebox-card-name">${entry.itemName}</h3>
                       <p class="whitebox-card-meta">${levelText}</p>
@@ -4038,7 +4102,7 @@ if (orbSearchInput) {
 
 if (whiteBoxSortSelect) {
   whiteBoxSortSelect.addEventListener("change", (event) => {
-    const nextSort = String(event.target.value || "level_asc");
+    const nextSort = String(event.target.value || "level_desc");
     selectedWhiteBoxSort = nextSort === "level_desc" ? "level_desc" : "level_asc";
     renderWhiteBoxCards();
   });
