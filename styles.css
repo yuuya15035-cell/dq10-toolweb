@@ -2297,6 +2297,16 @@ button {
   background: #fffaf5;
 }
 
+.whitebox-card.whitebox-card-type-weapon {
+  border-color: #d4a88b;
+  background: #f6e4da;
+}
+
+.whitebox-card.whitebox-card-type-armor {
+  border-color: #5f646d;
+  background: #444a54;
+}
+
 .whitebox-card-toggle {
   width: 100%;
   text-align: left;
@@ -2307,10 +2317,18 @@ button {
   color: #3f2f22;
 }
 
+.whitebox-card.whitebox-card-type-armor .whitebox-card-toggle {
+  color: #f2f5fb;
+}
+
 .whitebox-card-name {
   margin: 0 0 6px;
   font-size: 0.98rem;
   color: #3c2d20;
+}
+
+.whitebox-card.whitebox-card-type-armor .whitebox-card-name {
+  color: #f7f9ff;
 }
 
 .whitebox-card-meta {
@@ -2320,10 +2338,24 @@ button {
   line-height: 1.45;
 }
 
+.whitebox-card.whitebox-card-type-armor .whitebox-card-meta {
+  color: #dde3ee;
+}
+
 .whitebox-card-monsters {
   border-top: 1px solid #dcc7ad;
   background: rgba(255, 255, 255, 0.62);
   padding: 10px 12px 12px;
+}
+
+.whitebox-card.whitebox-card-type-weapon .whitebox-card-monsters {
+  border-top-color: #d9b39b;
+  background: rgba(255, 248, 243, 0.8);
+}
+
+.whitebox-card.whitebox-card-type-armor .whitebox-card-monsters {
+  border-top-color: rgba(196, 205, 220, 0.36);
+  background: rgba(23, 27, 34, 0.26);
 }
 
 .whitebox-monster-title {
@@ -2331,6 +2363,10 @@ button {
   font-weight: 700;
   color: #5f4734;
   font-size: 0.84rem;
+}
+
+.whitebox-card.whitebox-card-type-armor .whitebox-monster-title {
+  color: #edf1fb;
 }
 
 .whitebox-monster-list {
@@ -2351,10 +2387,23 @@ button {
   line-height: 1.35;
 }
 
+.whitebox-card.whitebox-card-type-armor .whitebox-monster-list {
+  color: #eff3fd;
+}
+
+.whitebox-card.whitebox-card-type-armor .whitebox-monster-list li {
+  border-color: rgba(214, 223, 238, 0.24);
+  background: rgba(32, 38, 48, 0.5);
+}
+
 .whitebox-monster-empty {
   margin: 0;
   color: #7f6852;
   font-size: 0.8rem;
+}
+
+.whitebox-card.whitebox-card-type-armor .whitebox-monster-empty {
+  color: #d8dfec;
 }
 
 .whitebox-empty {
