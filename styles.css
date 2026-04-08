@@ -2217,6 +2217,41 @@ button {
   margin-bottom: 12px;
 }
 
+.whitebox-controls {
+  display: grid;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.whitebox-type-tabs {
+  display: flex;
+  gap: 8px;
+}
+
+.whitebox-type-tab-button {
+  border: 1px solid #c8b399;
+  border-radius: 999px;
+  background: #fffaf3;
+  color: #5f4734;
+  font-weight: 700;
+  padding: 6px 12px;
+  cursor: pointer;
+}
+
+.whitebox-type-tab-button.is-active {
+  background: #e7d6c2;
+  color: #4b3626;
+  border-color: #b4926f;
+}
+
+.whitebox-filter-grid {
+  margin-top: 0;
+}
+
+.whitebox-filter-field {
+  margin-bottom: 0;
+}
+
 .orb-search-field {
   margin-bottom: 0;
 }
@@ -2247,6 +2282,83 @@ button {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 10px;
+}
+
+.whitebox-card-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.whitebox-card {
+  padding: 0;
+  overflow: hidden;
+  border-color: #d6c5ad;
+  background: #fffaf5;
+}
+
+.whitebox-card-toggle {
+  width: 100%;
+  text-align: left;
+  border: 0;
+  background: transparent;
+  padding: 12px;
+  cursor: pointer;
+  color: #3f2f22;
+}
+
+.whitebox-card-name {
+  margin: 0 0 6px;
+  font-size: 0.98rem;
+  color: #3c2d20;
+}
+
+.whitebox-card-meta {
+  margin: 0;
+  color: #5a4635;
+  font-size: 0.82rem;
+  line-height: 1.45;
+}
+
+.whitebox-card-monsters {
+  border-top: 1px solid #dcc7ad;
+  background: rgba(255, 255, 255, 0.62);
+  padding: 10px 12px 12px;
+}
+
+.whitebox-monster-title {
+  margin: 0 0 6px;
+  font-weight: 700;
+  color: #5f4734;
+  font-size: 0.84rem;
+}
+
+.whitebox-monster-list {
+  margin: 0;
+  padding-left: 0;
+  list-style: none;
+  display: grid;
+  gap: 4px;
+  color: #4f3e2f;
+  font-size: 0.82rem;
+}
+
+.whitebox-monster-list li {
+  border: 1px solid rgba(93, 70, 52, 0.16);
+  border-radius: 7px;
+  background: rgba(255, 253, 249, 0.82);
+  padding: 4px 6px;
+  line-height: 1.35;
+}
+
+.whitebox-monster-empty {
+  margin: 0;
+  color: #7f6852;
+  font-size: 0.8rem;
+}
+
+.whitebox-empty {
+  grid-column: 1 / -1;
 }
 
 .orb-card {
@@ -2354,6 +2466,10 @@ button {
 
 @media (min-width: 900px) {
   .orb-card-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .whitebox-card-grid {
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 }

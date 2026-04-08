@@ -13,13 +13,14 @@ const FIELD_FARMING_CSV_PATH = "./data/field_farming_monsters.csv";
 const ORB_DATA_CSV_PATH = "./data/orb_data.csv";
 const MONSTER_DATA_CSV_PATH = "./data/monster_data.csv";
 const ORB_MONSTERS_CSV_PATH = "./data/orb_monsters.csv";
+const WHITE_BOX_CSV_PATH = "./data/white_box.csv";
 const LAST_UPDATED_JSON_PATH = "./data/last-updated.json";
 const OFFICIAL_BAZAAR_TOP_URL = "https://dqx-souba.game-blog.app/";
 const OFFICIAL_PRESENT_CODE_URL = "https://hiroba.dqx.jp/sc/campaignCode/itemcode/";
 const BAZAAR_FAVORITES_STORAGE_KEY = "dq10_toolweb_bazaar_favorites_v1";
 const RECIPE_FAVORITES_STORAGE_KEY = "dq10_toolweb_recipe_favorites_v1";
 const RECIPE_FAVORITE_CATEGORY_VALUE = "__favorites__";
-const TAB_IDS = new Set(["profit", "present-codes", "bazaar", "favorites", "data", "field-farming", "orbs"]);
+const TAB_IDS = new Set(["profit", "present-codes", "bazaar", "favorites", "data", "field-farming", "orbs", "white-boxes"]);
 const FAVORITES_TAB_IDS = new Set(["recipes", "materials"]);
 const RECIPE_SUMMARY_MATERIAL_LIMIT = 4;
 const CRAFT_IDEAL_TARGET_JOBS = new Set(["裁縫職人", "木工職人"]);
@@ -35,6 +36,7 @@ const BAZAAR_CHART_RANGE_DAYS = {
   threeMonths: 90,
 };
 const DEFAULT_BAZAAR_CHART_RANGE_DAYS = BAZAAR_CHART_RANGE_DAYS.month;
+const WHITE_BOX_ARMOR_SLOTS = new Set(["頭", "からだ上", "からだ下", "腕", "足"]);
 
 function resolveProjectScopedAssetUrl(path) {
   if (!path) return "";
@@ -516,9 +518,15 @@ let orbEntries = [];
 let selectedOrbCategory = "";
 let orbSearchKeyword = "";
 let expandedOrbId = "";
+let whiteBoxEntries = [];
+let selectedWhiteBoxType = "weapon";
+let selectedWhiteBoxSlot = "";
+let selectedWhiteBoxSort = "level_asc";
+let expandedWhiteBoxItemId = "";
 let hasLoadedPresentCodes = false;
 let hasLoadedFieldFarmingMonsters = false;
 let hasLoadedOrbData = false;
+let hasLoadedWhiteBoxData = false;
 let hasLoadedBazaarPrices = false;
 let hasLoadedBazaarPriceHistory = false;
 let hasLoadedCraftIdealValues = false;
@@ -526,12 +534,14 @@ let hasSyncedMaterialPricesWithBazaar = false;
 let isPresentCodesLoading = false;
 let isFieldFarmingLoading = false;
 let isOrbDataLoading = false;
+let isWhiteBoxDataLoading = false;
 let isBazaarLoading = false;
 let isBazaarHistoryLoading = false;
 let isCraftIdealValuesLoading = false;
 let presentCodesLoadingPromise = null;
 let fieldFarmingLoadingPromise = null;
 let orbDataLoadingPromise = null;
+let whiteBoxDataLoadingPromise = null;
 let bazaarLoadingPromise = null;
 let bazaarHistoryLoadingPromise = null;
 let craftIdealValuesLoadingPromise = null;
@@ -600,6 +610,10 @@ const fieldFarmingListWrap = getRequiredElementById("fieldFarmingListWrap");
 const orbListWrap = getRequiredElementById("orbListWrap");
 const orbSearchInput = getRequiredElementById("orbSearchInput");
 const orbCategoryFilterWrap = getRequiredElementById("orbCategoryFilterWrap");
+const whiteBoxListWrap = getRequiredElementById("whiteBoxListWrap");
+const whiteBoxSortSelect = getRequiredElementById("whiteBoxSortSelect");
+const whiteBoxSlotFilterSelect = getRequiredElementById("whiteBoxSlotFilterSelect");
+const whiteBoxTypeTabButtons = document.querySelectorAll("[data-whitebox-type]");
 const fieldFarmingSortSelect = getRequiredElementById("fieldFarmingSortSelect");
 const fieldFarmingMapModalOverlay = getRequiredElementById("fieldFarmingMapModalOverlay");
 const fieldFarmingMapModalDialog = getRequiredElementById("fieldFarmingMapModalDialog");
@@ -976,6 +990,95 @@ function compareOrbEntries(a, b) {
   return String(a?.orbName || "").localeCompare(String(b?.orbName || ""), "ja");
 }
 
+function parseWhiteBoxCsvFromLines(lines) {
+  if (lines.length <= 1) return [];
+  const headers = parseCsvLine(lines[0]).map((header) => String(header || "").replace(/^\uFEFF/, "").trim());
+  const monsterIdIndex = headers.indexOf("monster_id");
+  const monsterNameIndex = headers.indexOf("monster_name");
+  const itemNameIndex = headers.indexOf("item_name");
+  const itemSlotIndex = headers.indexOf("item_slot");
+  const equipmentLevelIndex = headers.indexOf("equipment_level");
+  const dropStatusIndex = headers.indexOf("drop_status");
+
+  if (monsterIdIndex < 0 || monsterNameIndex < 0 || itemNameIndex < 0 || itemSlotIndex < 0 || equipmentLevelIndex < 0 || dropStatusIndex < 0) {
+    throw new Error("white_box.csv ヘッダーが想定と一致しません");
+  }
+
+  const groupedByItemName = new Map();
+  lines.slice(1).forEach((line, rowIndex) => {
+    const row = parseCsvLine(line);
+    const itemName = String(row[itemNameIndex] || "").trim();
+    if (itemName === "") return;
+
+    const itemSlot = String(row[itemSlotIndex] || "").trim();
+    const equipmentLevel = parseEquipmentLevel(row[equipmentLevelIndex]);
+    const monsterId = String(row[monsterIdIndex] || "").trim();
+    const monsterName = String(row[monsterNameIndex] || "").trim();
+    const dropStatus = String(row[dropStatusIndex] || "").trim().toLowerCase();
+    const isHasDrop = dropStatus === "has_drop";
+
+    if (!groupedByItemName.has(itemName)) {
+      groupedByItemName.set(itemName, {
+        id: `white-box-item-${rowIndex + 1}`,
+        itemName,
+        itemSlot,
+        equipmentLevel,
+        monsters: [],
+        hasDropMonster: false,
+      });
+    }
+
+    const current = groupedByItemName.get(itemName);
+    if (!current.itemSlot && itemSlot) current.itemSlot = itemSlot;
+    if (!Number.isFinite(current.equipmentLevel) && Number.isFinite(equipmentLevel)) {
+      current.equipmentLevel = equipmentLevel;
+    }
+
+    if (isHasDrop && monsterName) {
+      current.hasDropMonster = true;
+      const duplicate = current.monsters.some(
+        (monster) => monster.monsterId === monsterId && monster.monsterName === monsterName
+      );
+      if (!duplicate) {
+        current.monsters.push({
+          monsterId,
+          monsterName,
+        });
+      }
+    }
+  });
+
+  return Array.from(groupedByItemName.values()).sort((a, b) => String(a.itemName || "").localeCompare(String(b.itemName || ""), "ja"));
+}
+
+async function loadWhiteBoxCsv() {
+  const lines = await fetchCsvLines(WHITE_BOX_CSV_PATH);
+  return parseWhiteBoxCsvFromLines(lines);
+}
+
+function isArmorSlot(itemSlot) {
+  return WHITE_BOX_ARMOR_SLOTS.has(String(itemSlot || "").trim());
+}
+
+function getWhiteBoxTypeBySlot(itemSlot) {
+  return isArmorSlot(itemSlot) ? "armor" : "weapon";
+}
+
+function compareWhiteBoxEntries(a, b) {
+  const levelA = Number.isFinite(a?.equipmentLevel) ? a.equipmentLevel : Number.MAX_SAFE_INTEGER;
+  const levelB = Number.isFinite(b?.equipmentLevel) ? b.equipmentLevel : Number.MAX_SAFE_INTEGER;
+  const levelDiff = selectedWhiteBoxSort === "level_desc" ? levelB - levelA : levelA - levelB;
+  if (levelDiff !== 0) return levelDiff;
+  return String(a?.itemName || "").localeCompare(String(b?.itemName || ""), "ja");
+}
+
+function getWhiteBoxFilteredEntries() {
+  return (whiteBoxEntries || [])
+    .filter((entry) => getWhiteBoxTypeBySlot(entry.itemSlot) === selectedWhiteBoxType)
+    .filter((entry) => selectedWhiteBoxSlot === "" || String(entry.itemSlot || "") === selectedWhiteBoxSlot)
+    .sort(compareWhiteBoxEntries);
+}
+
 async function loadOrbDataCsv() {
   const [orbLines, monsterLines] = await Promise.all([fetchCsvLines(ORB_DATA_CSV_PATH), fetchCsvLines(MONSTER_DATA_CSV_PATH)]);
   const orbHeaders = parseCsvLine(orbLines[0]).map((header) => String(header || "").replace(/^\uFEFF/, "").trim());
@@ -1278,6 +1381,24 @@ async function ensureOrbDataLoaded() {
   return orbDataLoadingPromise;
 }
 
+async function ensureWhiteBoxDataLoaded() {
+  if (hasLoadedWhiteBoxData || isWhiteBoxDataLoading) return whiteBoxDataLoadingPromise;
+  isWhiteBoxDataLoading = true;
+  whiteBoxDataLoadingPromise = (async () => {
+    try {
+      whiteBoxEntries = await loadWhiteBoxCsv();
+      hasLoadedWhiteBoxData = true;
+    } catch (error) {
+      console.error(`white_box.csv の読み込みに失敗しました: path=${WHITE_BOX_CSV_PATH}`, error);
+      whiteBoxEntries = [];
+    } finally {
+      isWhiteBoxDataLoading = false;
+      if (activeTabId === "white-boxes") renderWhiteBoxCards();
+    }
+  })();
+  return whiteBoxDataLoadingPromise;
+}
+
 function prefetchDataForTab(tabId) {
   if (tabId === "present-codes") {
     void ensurePresentCodesLoaded();
@@ -1300,7 +1421,95 @@ function prefetchDataForTab(tabId) {
   }
   if (tabId === "orbs") {
     void ensureOrbDataLoaded();
+    return;
   }
+  if (tabId === "white-boxes") {
+    void ensureWhiteBoxDataLoaded();
+  }
+}
+
+function renderWhiteBoxCards() {
+  if (!whiteBoxListWrap || !whiteBoxSlotFilterSelect || !whiteBoxSortSelect) return;
+
+  whiteBoxTypeTabButtons.forEach((button) => {
+    const buttonType = String(button.dataset.whiteboxType || "weapon");
+    const isActive = buttonType === selectedWhiteBoxType;
+    button.classList.toggle("is-active", isActive);
+    button.setAttribute("aria-selected", isActive ? "true" : "false");
+    button.tabIndex = isActive ? 0 : -1;
+  });
+  whiteBoxSortSelect.value = selectedWhiteBoxSort;
+
+  if (isWhiteBoxDataLoading && !hasLoadedWhiteBoxData) {
+    whiteBoxListWrap.innerHTML = `<p class="card">白宝箱データを読み込み中です...</p>`;
+    return;
+  }
+  if (!Array.isArray(whiteBoxEntries) || whiteBoxEntries.length === 0) {
+    whiteBoxListWrap.innerHTML = `<p class="card">表示できる白宝箱データがありません。CSV内容を確認してください。</p>`;
+    whiteBoxSlotFilterSelect.innerHTML = `<option value="">すべて</option>`;
+    return;
+  }
+
+  const slots = Array.from(
+    new Set(
+      whiteBoxEntries
+        .filter((entry) => getWhiteBoxTypeBySlot(entry.itemSlot) === selectedWhiteBoxType)
+        .map((entry) => String(entry.itemSlot || "").trim())
+        .filter((slot) => slot !== "")
+    )
+  ).sort((a, b) => a.localeCompare(b, "ja"));
+
+  if (selectedWhiteBoxSlot !== "" && !slots.includes(selectedWhiteBoxSlot)) {
+    selectedWhiteBoxSlot = "";
+  }
+
+  whiteBoxSlotFilterSelect.innerHTML = `
+    <option value="">すべて</option>
+    ${slots.map((slot) => `<option value="${slot}" ${selectedWhiteBoxSlot === slot ? "selected" : ""}>${slot}</option>`).join("")}
+  `;
+
+  const filteredEntries = getWhiteBoxFilteredEntries();
+  whiteBoxListWrap.innerHTML = `
+    <div class="whitebox-card-grid">
+      ${
+        filteredEntries.length === 0
+          ? `<p class="card whitebox-empty">条件に一致する装備がありません。</p>`
+          : filteredEntries
+              .map((entry) => {
+                const isExpanded = expandedWhiteBoxItemId === entry.id;
+                const levelText = Number.isFinite(entry.equipmentLevel) ? `Lv ${entry.equipmentLevel}` : "Lv -";
+                const monsterListHtml =
+                  entry.hasDropMonster && entry.monsters.length > 0
+                    ? `<ul class="whitebox-monster-list">${entry.monsters
+                        .map((monster) => `<li>${monster.monsterName}</li>`)
+                        .join("")}</ul>`
+                    : `<p class="whitebox-monster-empty">白宝箱ドロップなし</p>`;
+                return `
+                  <article class="card whitebox-card ${isExpanded ? "is-expanded" : ""}">
+                    <button type="button" class="whitebox-card-toggle" data-whitebox-item-id="${entry.id}" aria-expanded="${isExpanded ? "true" : "false"}">
+                      <h3 class="whitebox-card-name">${entry.itemName}</h3>
+                      <p class="whitebox-card-meta">${levelText}</p>
+                      <p class="whitebox-card-meta">部位: ${entry.itemSlot || "-"}</p>
+                    </button>
+                    <div class="whitebox-card-monsters ${isExpanded ? "is-open" : ""}" ${isExpanded ? "" : "hidden"}>
+                      <p class="whitebox-monster-title">ドロップモンスター</p>
+                      ${monsterListHtml}
+                    </div>
+                  </article>
+                `;
+              })
+              .join("")
+      }
+    </div>
+  `;
+
+  whiteBoxListWrap.querySelectorAll("[data-whitebox-item-id]").forEach((button) => {
+    button.addEventListener("click", () => {
+      const clickedItemId = String(button.dataset.whiteboxItemId || "");
+      expandedWhiteBoxItemId = expandedWhiteBoxItemId === clickedItemId ? "" : clickedItemId;
+      renderWhiteBoxCards();
+    });
+  });
 }
 
 function parseBazaarHistoryDate(value) {
@@ -2709,6 +2918,8 @@ function switchTab(target) {
     renderFavoritesPage();
   } else if (normalizedTarget === "orbs") {
     renderOrbCards();
+  } else if (normalizedTarget === "white-boxes") {
+    renderWhiteBoxCards();
   } else if (normalizedTarget === "profit") {
     renderCraftIdealValue();
   }
@@ -3550,6 +3761,7 @@ function rerenderAll() {
   if (activeTabId === "bazaar") renderBazaarPrices();
   if (activeTabId === "favorites") renderFavoritesPage();
   if (activeTabId === "orbs") renderOrbCards();
+  if (activeTabId === "white-boxes") renderWhiteBoxCards();
 }
 
 // --- イベント定義 ---
@@ -3823,6 +4035,37 @@ if (orbSearchInput) {
     renderOrbCards();
   });
 }
+
+if (whiteBoxSortSelect) {
+  whiteBoxSortSelect.addEventListener("change", (event) => {
+    const nextSort = String(event.target.value || "level_asc");
+    selectedWhiteBoxSort = nextSort === "level_desc" ? "level_desc" : "level_asc";
+    renderWhiteBoxCards();
+  });
+}
+
+if (whiteBoxSlotFilterSelect) {
+  whiteBoxSlotFilterSelect.addEventListener("change", (event) => {
+    selectedWhiteBoxSlot = String(event.target.value || "");
+    renderWhiteBoxCards();
+  });
+}
+
+whiteBoxTypeTabButtons.forEach((button) => {
+  button.addEventListener("click", () => {
+    const nextType = String(button.dataset.whiteboxType || "");
+    selectedWhiteBoxType = nextType === "armor" ? "armor" : "weapon";
+    selectedWhiteBoxSlot = "";
+    expandedWhiteBoxItemId = "";
+    whiteBoxTypeTabButtons.forEach((tabButton) => {
+      const isActive = tabButton === button;
+      tabButton.classList.toggle("is-active", isActive);
+      tabButton.setAttribute("aria-selected", isActive ? "true" : "false");
+      tabButton.tabIndex = isActive ? 0 : -1;
+    });
+    renderWhiteBoxCards();
+  });
+});
 
 window.buildBazaarHistorySnapshotRows = buildBazaarHistorySnapshotRows;
 window.mergeBazaarHistoryLines = mergeBazaarHistoryLines;
