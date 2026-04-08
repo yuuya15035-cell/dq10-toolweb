@@ -62,6 +62,9 @@
               <button type="button" class="side-menu-item side-menu-sub-item" data-menu-target="orbs">
                 宝珠
               </button>
+              <button type="button" class="side-menu-item side-menu-sub-item" data-menu-target="white-boxes">
+                白宝箱
+              </button>
             </div>
           </section>
         </nav>
@@ -306,6 +309,49 @@
           <div id="orbCategoryFilterWrap" class="orb-category-filter" aria-label="宝珠カテゴリ絞り込み"></div>
         </div>
         <div id="orbListWrap"></div>
+      </section>
+
+      <section id="white-boxes" class="tab-content" aria-label="白宝箱データベース画面">
+        <h2>データベース &gt; 白宝箱</h2>
+        <div class="whitebox-controls card">
+          <div class="whitebox-type-tabs" role="tablist" aria-label="装備種別切り替え">
+            <button
+              type="button"
+              class="whitebox-type-tab-button is-active"
+              id="whiteBoxTypeTabWeapon"
+              role="tab"
+              aria-selected="true"
+              data-whitebox-type="weapon"
+            >
+              武器
+            </button>
+            <button
+              type="button"
+              class="whitebox-type-tab-button"
+              id="whiteBoxTypeTabArmor"
+              role="tab"
+              aria-selected="false"
+              data-whitebox-type="armor"
+              tabindex="-1"
+            >
+              防具
+            </button>
+          </div>
+          <div class="search-filter-grid whitebox-filter-grid">
+            <label class="field whitebox-filter-field" for="whiteBoxSortSelect">
+              <span>並び替え</span>
+              <select id="whiteBoxSortSelect">
+                <option value="level_asc">装備レベルが低い順</option>
+                <option value="level_desc">装備レベルが高い順</option>
+              </select>
+            </label>
+            <label class="field whitebox-filter-field" for="whiteBoxSlotFilterSelect">
+              <span>装備ジャンル</span>
+              <select id="whiteBoxSlotFilterSelect"></select>
+            </label>
+          </div>
+        </div>
+        <div id="whiteBoxListWrap"></div>
       </section>
 
       <section id="favorites" class="tab-content" aria-label="お気に入り一覧画面">
