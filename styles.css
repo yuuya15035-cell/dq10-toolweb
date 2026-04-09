@@ -2527,6 +2527,12 @@ button {
   font-size: 0.78rem;
 }
 
+.equipment-db-detail-section {
+  margin-top: 10px;
+  padding-top: 8px;
+  border-top: 1px solid rgba(135, 105, 78, 0.22);
+}
+
 .equipment-db-empty {
   grid-column: 1 / -1;
 }

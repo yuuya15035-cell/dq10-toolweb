@@ -360,16 +360,7 @@
       <section id="equipment-db" class="tab-content" aria-label="装備データベース画面">
         <h2>データベース &gt; 装備</h2>
         <div class="equipment-db-controls card">
-          <button
-            id="equipmentDbFilterToggleButton"
-            class="search-toggle-button"
-            type="button"
-            aria-expanded="false"
-            aria-controls="equipmentDbFilterPanel"
-          >
-            ＋ 絞り込みを表示
-          </button>
-          <div id="equipmentDbFilterPanel" class="search-filter-grid equipment-db-filter-grid" hidden>
+          <div class="search-filter-grid equipment-db-filter-grid">
             <label class="field equipment-db-filter-field" for="equipmentDbSortSelect">
               <span>装備レベルソート</span>
               <select id="equipmentDbSortSelect">
@@ -382,11 +373,33 @@
               <span>装備ジャンル</span>
               <select id="equipmentDbTypeFilterSelect"></select>
             </label>
-            <label class="field equipment-db-filter-field" for="equipmentDbNameSearchInput">
-              <span>名前検索</span>
-              <input id="equipmentDbNameSearchInput" type="search" placeholder="例: 守護竜 / ソード" autocomplete="off" />
-            </label>
           </div>
+          <button
+            id="equipmentDbNameSearchToggleButton"
+            class="search-toggle-button"
+            type="button"
+            aria-expanded="false"
+            aria-controls="equipmentDbNameSearchField"
+          >
+            ＋ 装備名で検索したい方
+          </button>
+          <label id="equipmentDbNameSearchField" class="field equipment-db-filter-field search-field-collapsible" for="equipmentDbNameSearchInput" hidden>
+            <span>名前検索</span>
+            <input id="equipmentDbNameSearchInput" type="search" placeholder="例: 守護竜 / ソード" autocomplete="off" />
+          </label>
+          <button
+            id="equipmentDbMonsterSearchToggleButton"
+            class="search-toggle-button"
+            type="button"
+            aria-expanded="false"
+            aria-controls="equipmentDbMonsterSearchField"
+          >
+            ＋ 白宝箱ドロップモンスター検索
+          </button>
+          <label id="equipmentDbMonsterSearchField" class="field equipment-db-filter-field search-field-collapsible" for="equipmentDbMonsterSearchInput" hidden>
+            <span>モンスター名検索（部分一致）</span>
+            <input id="equipmentDbMonsterSearchInput" type="search" placeholder="例: キラーマシン" autocomplete="off" />
+          </label>
         </div>
         <div id="equipmentDbListWrap"></div>
       </section>
