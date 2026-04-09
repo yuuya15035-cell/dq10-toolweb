@@ -576,8 +576,10 @@ let equipmentDbEntries = [];
 let selectedEquipmentDbSort = "id_asc";
 let selectedEquipmentDbType = "";
 let equipmentDbNameKeyword = "";
+let equipmentDbMonsterKeyword = "";
 let expandedEquipmentDbId = "";
-let isEquipmentDbFilterOpen = false;
+let isEquipmentDbNameSearchOpen = false;
+let isEquipmentDbMonsterSearchOpen = false;
 let hasLoadedPresentCodes = false;
 let hasLoadedFieldFarmingMonsters = false;
 let hasLoadedOrbData = false;
@@ -673,11 +675,14 @@ const whiteBoxSortSelect = getRequiredElementById("whiteBoxSortSelect");
 const whiteBoxSlotFilterSelect = getRequiredElementById("whiteBoxSlotFilterSelect");
 const whiteBoxTypeTabButtons = document.querySelectorAll("[data-whitebox-type]");
 const equipmentDbListWrap = getRequiredElementById("equipmentDbListWrap");
-const equipmentDbFilterToggleButton = getRequiredElementById("equipmentDbFilterToggleButton");
-const equipmentDbFilterPanel = getRequiredElementById("equipmentDbFilterPanel");
 const equipmentDbSortSelect = getRequiredElementById("equipmentDbSortSelect");
 const equipmentDbTypeFilterSelect = getRequiredElementById("equipmentDbTypeFilterSelect");
+const equipmentDbNameSearchToggleButton = getRequiredElementById("equipmentDbNameSearchToggleButton");
+const equipmentDbNameSearchField = getRequiredElementById("equipmentDbNameSearchField");
 const equipmentDbNameSearchInput = getRequiredElementById("equipmentDbNameSearchInput");
+const equipmentDbMonsterSearchToggleButton = getRequiredElementById("equipmentDbMonsterSearchToggleButton");
+const equipmentDbMonsterSearchField = getRequiredElementById("equipmentDbMonsterSearchField");
+const equipmentDbMonsterSearchInput = getRequiredElementById("equipmentDbMonsterSearchInput");
 const fieldFarmingSortSelect = getRequiredElementById("fieldFarmingSortSelect");
 const fieldFarmingMapModalOverlay = getRequiredElementById("fieldFarmingMapModalOverlay");
 const fieldFarmingMapModalDialog = getRequiredElementById("fieldFarmingMapModalDialog");
@@ -1220,6 +1225,37 @@ async function loadEquipmentDbCsv() {
   return parseEquipmentDbCsvFromLines(lines);
 }
 
+function buildWhiteBoxSummaryByItemName(entries) {
+  const summaryByName = new Map();
+  (Array.isArray(entries) ? entries : []).forEach((entry) => {
+    const itemName = String(entry?.itemName || "").trim();
+    if (itemName === "") return;
+    const monsters = Array.isArray(entry?.monsters)
+      ? entry.monsters
+          .map((monster) => String(monster?.monsterName || "").trim())
+          .filter((monsterName) => monsterName !== "")
+      : [];
+    const uniqueMonsterNames = Array.from(new Set(monsters));
+    summaryByName.set(itemName, {
+      hasDropMonster: uniqueMonsterNames.length > 0,
+      monsterNames: uniqueMonsterNames,
+    });
+  });
+  return summaryByName;
+}
+
+function attachWhiteBoxDropsToEquipmentEntries(entries, whiteBoxSummaryByName) {
+  return (Array.isArray(entries) ? entries : []).map((entry) => {
+    const equipmentName = String(entry?.equipmentName || "").trim();
+    const whiteBoxSummary = whiteBoxSummaryByName.get(equipmentName);
+    return {
+      ...entry,
+      whiteBoxHasDrop: Boolean(whiteBoxSummary?.hasDropMonster),
+      whiteBoxMonsterNames: Array.isArray(whiteBoxSummary?.monsterNames) ? whiteBoxSummary.monsterNames : [],
+    };
+  });
+}
+
 function isArmorSlot(itemSlot) {
   return WHITE_BOX_ARMOR_SLOTS.has(String(itemSlot || "").trim());
 }
@@ -1580,7 +1616,18 @@ async function ensureEquipmentDbDataLoaded() {
   isEquipmentDbDataLoading = true;
   equipmentDbDataLoadingPromise = (async () => {
     try {
-      equipmentDbEntries = await loadEquipmentDbCsv();
+      const loadedEquipmentDbEntries = await loadEquipmentDbCsv();
+      if (!hasLoadedWhiteBoxData) {
+        try {
+          whiteBoxEntries = await loadWhiteBoxCsv();
+          hasLoadedWhiteBoxData = true;
+        } catch (whiteBoxError) {
+          console.error(`white_box.csv の読み込みに失敗しました: path=${WHITE_BOX_CSV_PATH}`, whiteBoxError);
+          whiteBoxEntries = [];
+        }
+      }
+      const whiteBoxSummaryByName = buildWhiteBoxSummaryByItemName(whiteBoxEntries);
+      equipmentDbEntries = attachWhiteBoxDropsToEquipmentEntries(loadedEquipmentDbEntries, whiteBoxSummaryByName);
       hasLoadedEquipmentDbData = true;
     } catch (error) {
       console.error(`equipment_data.csv の読み込みに失敗しました: path=${EQUIPMENT_DB_CSV_PATH}`, error);
@@ -1733,11 +1780,18 @@ function compareEquipmentDbEntries(a, b) {
 
 function getFilteredEquipmentDbEntries() {
   const normalizedKeyword = String(equipmentDbNameKeyword || "").trim().toLowerCase();
+  const normalizedMonsterKeyword = String(equipmentDbMonsterKeyword || "").trim().toLowerCase();
   return (equipmentDbEntries || [])
     .filter((entry) => (selectedEquipmentDbType === "" ? true : String(entry.equipmentType || "") === selectedEquipmentDbType))
     .filter((entry) => {
       if (normalizedKeyword === "") return true;
       return String(entry.equipmentName || "").toLowerCase().includes(normalizedKeyword);
+    })
+    .filter((entry) => {
+      if (normalizedMonsterKeyword === "") return true;
+      return (Array.isArray(entry.whiteBoxMonsterNames) ? entry.whiteBoxMonsterNames : []).some((monsterName) =>
+        String(monsterName || "").toLowerCase().includes(normalizedMonsterKeyword)
+      );
     })
     .sort(compareEquipmentDbEntries);
 }
@@ -1748,13 +1802,25 @@ function renderEquipmentDbCards() {
   if (equipmentDbNameSearchInput && equipmentDbNameSearchInput.value !== equipmentDbNameKeyword) {
     equipmentDbNameSearchInput.value = equipmentDbNameKeyword;
   }
-
-  if (equipmentDbFilterPanel) {
-    equipmentDbFilterPanel.hidden = !isEquipmentDbFilterOpen;
+  if (equipmentDbMonsterSearchInput && equipmentDbMonsterSearchInput.value !== equipmentDbMonsterKeyword) {
+    equipmentDbMonsterSearchInput.value = equipmentDbMonsterKeyword;
   }
-  if (equipmentDbFilterToggleButton) {
-    equipmentDbFilterToggleButton.setAttribute("aria-expanded", isEquipmentDbFilterOpen ? "true" : "false");
-    equipmentDbFilterToggleButton.textContent = isEquipmentDbFilterOpen ? "－ 絞り込みを閉じる" : "＋ 絞り込みを表示";
+
+  if (equipmentDbNameSearchField) {
+    equipmentDbNameSearchField.hidden = !isEquipmentDbNameSearchOpen;
+  }
+  if (equipmentDbNameSearchToggleButton) {
+    equipmentDbNameSearchToggleButton.setAttribute("aria-expanded", isEquipmentDbNameSearchOpen ? "true" : "false");
+    equipmentDbNameSearchToggleButton.textContent = isEquipmentDbNameSearchOpen ? "－ 装備名で検索したい方" : "＋ 装備名で検索したい方";
+  }
+  if (equipmentDbMonsterSearchField) {
+    equipmentDbMonsterSearchField.hidden = !isEquipmentDbMonsterSearchOpen;
+  }
+  if (equipmentDbMonsterSearchToggleButton) {
+    equipmentDbMonsterSearchToggleButton.setAttribute("aria-expanded", isEquipmentDbMonsterSearchOpen ? "true" : "false");
+    equipmentDbMonsterSearchToggleButton.textContent = isEquipmentDbMonsterSearchOpen
+      ? "－ 白宝箱ドロップモンスター検索"
+      : "＋ 白宝箱ドロップモンスター検索";
   }
 
   equipmentDbSortSelect.value = selectedEquipmentDbSort;
@@ -1811,6 +1877,10 @@ function renderEquipmentDbCards() {
                   entry.traits.length > 0
                     ? `<ul class="equipment-db-traits-list">${entry.traits.map((trait) => `<li>${trait}</li>`).join("")}</ul>`
                     : `<p class="equipment-db-trait-empty">特性情報なし</p>`;
+                const whiteBoxDropHtml =
+                  entry.whiteBoxHasDrop && entry.whiteBoxMonsterNames.length > 0
+                    ? `<ul class="equipment-db-traits-list">${entry.whiteBoxMonsterNames.map((monsterName) => `<li>${monsterName}</li>`).join("")}</ul>`
+                    : `<p class="equipment-db-trait-empty">白宝箱ドロップなし</p>`;
                 return `
                   <article class="card equipment-db-card ${isExpanded ? "is-expanded" : ""}">
                     <button type="button" class="equipment-db-card-toggle" data-equipment-db-id="${entry.id}" aria-expanded="${isExpanded ? "true" : "false"}">
@@ -1822,6 +1892,10 @@ function renderEquipmentDbCards() {
                     <div class="equipment-db-card-traits ${isExpanded ? "is-open" : ""}" ${isExpanded ? "" : "hidden"}>
                       <p class="equipment-db-traits-title">特性</p>
                       ${traitsHtml}
+                      <div class="equipment-db-detail-section">
+                        <p class="equipment-db-traits-title">白宝箱ドロップモンスター</p>
+                        ${whiteBoxDropHtml}
+                      </div>
                     </div>
                   </article>
                 `;
@@ -4398,9 +4472,16 @@ whiteBoxTypeTabButtons.forEach((button) => {
   });
 });
 
-if (equipmentDbFilterToggleButton) {
-  equipmentDbFilterToggleButton.addEventListener("click", () => {
-    isEquipmentDbFilterOpen = !isEquipmentDbFilterOpen;
+if (equipmentDbNameSearchToggleButton) {
+  equipmentDbNameSearchToggleButton.addEventListener("click", () => {
+    isEquipmentDbNameSearchOpen = !isEquipmentDbNameSearchOpen;
+    renderEquipmentDbCards();
+  });
+}
+
+if (equipmentDbMonsterSearchToggleButton) {
+  equipmentDbMonsterSearchToggleButton.addEventListener("click", () => {
+    isEquipmentDbMonsterSearchOpen = !isEquipmentDbMonsterSearchOpen;
     renderEquipmentDbCards();
   });
 }
@@ -4423,6 +4504,13 @@ if (equipmentDbTypeFilterSelect) {
 if (equipmentDbNameSearchInput) {
   equipmentDbNameSearchInput.addEventListener("input", (event) => {
     equipmentDbNameKeyword = String(event.target.value || "");
+    renderEquipmentDbCards();
+  });
+}
+
+if (equipmentDbMonsterSearchInput) {
+  equipmentDbMonsterSearchInput.addEventListener("input", (event) => {
+    equipmentDbMonsterKeyword = String(event.target.value || "").trim();
     renderEquipmentDbCards();
   });
 }
