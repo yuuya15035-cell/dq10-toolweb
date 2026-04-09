@@ -65,6 +65,9 @@
               <button type="button" class="side-menu-item side-menu-sub-item" data-menu-target="white-boxes">
                 白宝箱
               </button>
+              <button type="button" class="side-menu-item side-menu-sub-item" data-menu-target="equipment-db">
+                装備
+              </button>
             </div>
           </section>
         </nav>
@@ -352,6 +355,40 @@
           </div>
         </div>
         <div id="whiteBoxListWrap"></div>
+      </section>
+
+      <section id="equipment-db" class="tab-content" aria-label="装備データベース画面">
+        <h2>データベース &gt; 装備</h2>
+        <div class="equipment-db-controls card">
+          <button
+            id="equipmentDbFilterToggleButton"
+            class="search-toggle-button"
+            type="button"
+            aria-expanded="false"
+            aria-controls="equipmentDbFilterPanel"
+          >
+            ＋ 絞り込みを表示
+          </button>
+          <div id="equipmentDbFilterPanel" class="search-filter-grid equipment-db-filter-grid" hidden>
+            <label class="field equipment-db-filter-field" for="equipmentDbSortSelect">
+              <span>装備レベルソート</span>
+              <select id="equipmentDbSortSelect">
+                <option value="id_asc" selected>ID順（昇順）</option>
+                <option value="level_desc">装備レベルが高い順</option>
+                <option value="level_asc">装備レベルが低い順</option>
+              </select>
+            </label>
+            <label class="field equipment-db-filter-field" for="equipmentDbTypeFilterSelect">
+              <span>装備ジャンル</span>
+              <select id="equipmentDbTypeFilterSelect"></select>
+            </label>
+            <label class="field equipment-db-filter-field" for="equipmentDbNameSearchInput">
+              <span>名前検索</span>
+              <input id="equipmentDbNameSearchInput" type="search" placeholder="例: 守護竜 / ソード" autocomplete="off" />
+            </label>
+          </div>
+        </div>
+        <div id="equipmentDbListWrap"></div>
       </section>
 
       <section id="favorites" class="tab-content" aria-label="お気に入り一覧画面">

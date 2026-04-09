@@ -14,13 +14,14 @@ const ORB_DATA_CSV_PATH = "./data/orb_data.csv";
 const MONSTER_DATA_CSV_PATH = "./data/monster_data.csv";
 const ORB_MONSTERS_CSV_PATH = "./data/orb_monsters.csv";
 const WHITE_BOX_CSV_PATH = "./data/white_box.csv";
+const EQUIPMENT_DB_CSV_PATH = "./data/equipment_data.csv";
 const LAST_UPDATED_JSON_PATH = "./data/last-updated.json";
 const OFFICIAL_BAZAAR_TOP_URL = "https://dqx-souba.game-blog.app/";
 const OFFICIAL_PRESENT_CODE_URL = "https://hiroba.dqx.jp/sc/campaignCode/itemcode/";
 const BAZAAR_FAVORITES_STORAGE_KEY = "dq10_toolweb_bazaar_favorites_v1";
 const RECIPE_FAVORITES_STORAGE_KEY = "dq10_toolweb_recipe_favorites_v1";
 const RECIPE_FAVORITE_CATEGORY_VALUE = "__favorites__";
-const TAB_IDS = new Set(["profit", "present-codes", "bazaar", "favorites", "data", "field-farming", "orbs", "white-boxes"]);
+const TAB_IDS = new Set(["profit", "present-codes", "bazaar", "favorites", "data", "field-farming", "orbs", "white-boxes", "equipment-db"]);
 const FAVORITES_TAB_IDS = new Set(["recipes", "materials"]);
 const RECIPE_SUMMARY_MATERIAL_LIMIT = 4;
 const CRAFT_IDEAL_TARGET_JOBS = new Set(["裁縫職人", "木工職人"]);
@@ -571,10 +572,17 @@ let selectedWhiteBoxType = "weapon";
 let selectedWhiteBoxSlot = "";
 let selectedWhiteBoxSort = "level_desc";
 let expandedWhiteBoxItemId = "";
+let equipmentDbEntries = [];
+let selectedEquipmentDbSort = "id_asc";
+let selectedEquipmentDbType = "";
+let equipmentDbNameKeyword = "";
+let expandedEquipmentDbId = "";
+let isEquipmentDbFilterOpen = false;
 let hasLoadedPresentCodes = false;
 let hasLoadedFieldFarmingMonsters = false;
 let hasLoadedOrbData = false;
 let hasLoadedWhiteBoxData = false;
+let hasLoadedEquipmentDbData = false;
 let hasLoadedBazaarPrices = false;
 let hasLoadedBazaarPriceHistory = false;
 let hasLoadedCraftIdealValues = false;
@@ -583,6 +591,7 @@ let isPresentCodesLoading = false;
 let isFieldFarmingLoading = false;
 let isOrbDataLoading = false;
 let isWhiteBoxDataLoading = false;
+let isEquipmentDbDataLoading = false;
 let isBazaarLoading = false;
 let isBazaarHistoryLoading = false;
 let isCraftIdealValuesLoading = false;
@@ -590,6 +599,7 @@ let presentCodesLoadingPromise = null;
 let fieldFarmingLoadingPromise = null;
 let orbDataLoadingPromise = null;
 let whiteBoxDataLoadingPromise = null;
+let equipmentDbDataLoadingPromise = null;
 let bazaarLoadingPromise = null;
 let bazaarHistoryLoadingPromise = null;
 let craftIdealValuesLoadingPromise = null;
@@ -662,6 +672,12 @@ const whiteBoxListWrap = getRequiredElementById("whiteBoxListWrap");
 const whiteBoxSortSelect = getRequiredElementById("whiteBoxSortSelect");
 const whiteBoxSlotFilterSelect = getRequiredElementById("whiteBoxSlotFilterSelect");
 const whiteBoxTypeTabButtons = document.querySelectorAll("[data-whitebox-type]");
+const equipmentDbListWrap = getRequiredElementById("equipmentDbListWrap");
+const equipmentDbFilterToggleButton = getRequiredElementById("equipmentDbFilterToggleButton");
+const equipmentDbFilterPanel = getRequiredElementById("equipmentDbFilterPanel");
+const equipmentDbSortSelect = getRequiredElementById("equipmentDbSortSelect");
+const equipmentDbTypeFilterSelect = getRequiredElementById("equipmentDbTypeFilterSelect");
+const equipmentDbNameSearchInput = getRequiredElementById("equipmentDbNameSearchInput");
 const fieldFarmingSortSelect = getRequiredElementById("fieldFarmingSortSelect");
 const fieldFarmingMapModalOverlay = getRequiredElementById("fieldFarmingMapModalOverlay");
 const fieldFarmingMapModalDialog = getRequiredElementById("fieldFarmingMapModalDialog");
@@ -1104,6 +1120,106 @@ async function loadWhiteBoxCsv() {
   return parseWhiteBoxCsvFromLines(lines);
 }
 
+function parseEquipmentDbId(rawId) {
+  const normalized = String(rawId || "").trim();
+  const matched = normalized.match(/\d+/);
+  if (!matched) return Number.MAX_SAFE_INTEGER;
+  const parsed = Number(matched[0]);
+  return Number.isFinite(parsed) ? parsed : Number.MAX_SAFE_INTEGER;
+}
+
+function parseEquipmentDbShieldGuardRate(value) {
+  const normalized = String(value ?? "").trim();
+  if (normalized === "") return null;
+  const parsed = Number(normalized.replace(/,/g, "").replace(/%/g, ""));
+  return Number.isFinite(parsed) ? parsed : null;
+}
+
+function parseEquipmentDbCsvFromLines(lines) {
+  if (lines.length <= 1) return [];
+  const headers = parseCsvLine(lines[0]).map((header) => String(header || "").replace(/^\uFEFF/, "").trim());
+  const equipmentIdIndex = headers.indexOf("equipment_id");
+  const equipmentLevelIndex = headers.indexOf("equipment_level");
+  const equipmentTypeIndex = headers.indexOf("equipment_type");
+  const equipmentNameIndex = headers.indexOf("equipment_name");
+  const attackIndex = headers.indexOf("attack");
+  const attackMagicIndex = headers.indexOf("attack_magic");
+  const healMagicIndex = headers.indexOf("heal_magic");
+  const defenseIndex = headers.indexOf("defense");
+  const shieldGuardRateIndex = headers.indexOf("shield_guard_rate");
+  const traitsIndex = headers.indexOf("traits");
+
+  if (
+    equipmentIdIndex < 0 ||
+    equipmentLevelIndex < 0 ||
+    equipmentTypeIndex < 0 ||
+    equipmentNameIndex < 0 ||
+    attackIndex < 0 ||
+    attackMagicIndex < 0 ||
+    healMagicIndex < 0 ||
+    defenseIndex < 0 ||
+    shieldGuardRateIndex < 0 ||
+    traitsIndex < 0
+  ) {
+    throw new Error("equipment_data.csv ヘッダーが想定と一致しません");
+  }
+
+  const groupedById = new Map();
+  lines.slice(1).forEach((line, rowIndex) => {
+    const row = parseCsvLine(line);
+    const equipmentId = String(row[equipmentIdIndex] || "").trim();
+    const equipmentName = String(row[equipmentNameIndex] || "").trim();
+    if (equipmentId === "" || equipmentName === "") return;
+
+    const equipmentType = String(row[equipmentTypeIndex] || "").trim();
+    const equipmentLevel = parseEquipmentLevel(row[equipmentLevelIndex]);
+    const attack = parseNullableNumber(row[attackIndex]);
+    const attackMagic = parseNullableNumber(row[attackMagicIndex]);
+    const healMagic = parseNullableNumber(row[healMagicIndex]);
+    const defense = parseNullableNumber(row[defenseIndex]);
+    const shieldGuardRate = parseEquipmentDbShieldGuardRate(row[shieldGuardRateIndex]);
+    const trait = String(row[traitsIndex] || "").trim();
+
+    if (!groupedById.has(equipmentId)) {
+      groupedById.set(equipmentId, {
+        id: `equipment-db-item-${rowIndex + 1}`,
+        equipmentId,
+        equipmentIdNumber: parseEquipmentDbId(equipmentId),
+        equipmentLevel,
+        equipmentType,
+        equipmentName,
+        attack,
+        attackMagic,
+        healMagic,
+        defense,
+        shieldGuardRate,
+        traits: [],
+      });
+    }
+
+    const current = groupedById.get(equipmentId);
+    if (!current.equipmentType && equipmentType) current.equipmentType = equipmentType;
+    if (!Number.isFinite(current.equipmentLevel) && Number.isFinite(equipmentLevel)) current.equipmentLevel = equipmentLevel;
+    if (!Number.isFinite(current.attack) && Number.isFinite(attack)) current.attack = attack;
+    if (!Number.isFinite(current.attackMagic) && Number.isFinite(attackMagic)) current.attackMagic = attackMagic;
+    if (!Number.isFinite(current.healMagic) && Number.isFinite(healMagic)) current.healMagic = healMagic;
+    if (!Number.isFinite(current.defense) && Number.isFinite(defense)) current.defense = defense;
+    if (!Number.isFinite(current.shieldGuardRate) && Number.isFinite(shieldGuardRate)) current.shieldGuardRate = shieldGuardRate;
+    if (trait !== "" && !current.traits.includes(trait)) current.traits.push(trait);
+  });
+
+  return Array.from(groupedById.values()).sort((a, b) => {
+    const idDiff = a.equipmentIdNumber - b.equipmentIdNumber;
+    if (idDiff !== 0) return idDiff;
+    return String(a.equipmentId || "").localeCompare(String(b.equipmentId || ""), "ja");
+  });
+}
+
+async function loadEquipmentDbCsv() {
+  const lines = await fetchCsvLines(EQUIPMENT_DB_CSV_PATH);
+  return parseEquipmentDbCsvFromLines(lines);
+}
+
 function isArmorSlot(itemSlot) {
   return WHITE_BOX_ARMOR_SLOTS.has(String(itemSlot || "").trim());
 }
@@ -1459,6 +1575,24 @@ async function ensureWhiteBoxDataLoaded() {
   return whiteBoxDataLoadingPromise;
 }
 
+async function ensureEquipmentDbDataLoaded() {
+  if (hasLoadedEquipmentDbData || isEquipmentDbDataLoading) return equipmentDbDataLoadingPromise;
+  isEquipmentDbDataLoading = true;
+  equipmentDbDataLoadingPromise = (async () => {
+    try {
+      equipmentDbEntries = await loadEquipmentDbCsv();
+      hasLoadedEquipmentDbData = true;
+    } catch (error) {
+      console.error(`equipment_data.csv の読み込みに失敗しました: path=${EQUIPMENT_DB_CSV_PATH}`, error);
+      equipmentDbEntries = [];
+    } finally {
+      isEquipmentDbDataLoading = false;
+      if (activeTabId === "equipment-db") renderEquipmentDbCards();
+    }
+  })();
+  return equipmentDbDataLoadingPromise;
+}
+
 function prefetchDataForTab(tabId) {
   if (tabId === "present-codes") {
     void ensurePresentCodesLoaded();
@@ -1485,6 +1619,10 @@ function prefetchDataForTab(tabId) {
   }
   if (tabId === "white-boxes") {
     void ensureWhiteBoxDataLoaded();
+    return;
+  }
+  if (tabId === "equipment-db") {
+    void ensureEquipmentDbDataLoaded();
   }
 }
 
@@ -1572,6 +1710,132 @@ function renderWhiteBoxCards() {
       const clickedItemId = String(button.dataset.whiteboxItemId || "");
       expandedWhiteBoxItemId = expandedWhiteBoxItemId === clickedItemId ? "" : clickedItemId;
       renderWhiteBoxCards();
+    });
+  });
+}
+
+function formatEquipmentDbGuardRate(value) {
+  if (!Number.isFinite(value)) return "";
+  return `${value.toFixed(2)}%`;
+}
+
+function compareEquipmentDbEntries(a, b) {
+  if (selectedEquipmentDbSort === "level_desc" || selectedEquipmentDbSort === "level_asc") {
+    const levelA = Number.isFinite(a?.equipmentLevel) ? a.equipmentLevel : Number.NEGATIVE_INFINITY;
+    const levelB = Number.isFinite(b?.equipmentLevel) ? b.equipmentLevel : Number.NEGATIVE_INFINITY;
+    const levelDiff = selectedEquipmentDbSort === "level_desc" ? levelB - levelA : levelA - levelB;
+    if (levelDiff !== 0) return levelDiff;
+  }
+  const idDiff = (a?.equipmentIdNumber || Number.MAX_SAFE_INTEGER) - (b?.equipmentIdNumber || Number.MAX_SAFE_INTEGER);
+  if (idDiff !== 0) return idDiff;
+  return String(a?.equipmentName || "").localeCompare(String(b?.equipmentName || ""), "ja");
+}
+
+function getFilteredEquipmentDbEntries() {
+  const normalizedKeyword = String(equipmentDbNameKeyword || "").trim().toLowerCase();
+  return (equipmentDbEntries || [])
+    .filter((entry) => (selectedEquipmentDbType === "" ? true : String(entry.equipmentType || "") === selectedEquipmentDbType))
+    .filter((entry) => {
+      if (normalizedKeyword === "") return true;
+      return String(entry.equipmentName || "").toLowerCase().includes(normalizedKeyword);
+    })
+    .sort(compareEquipmentDbEntries);
+}
+
+function renderEquipmentDbCards() {
+  if (!equipmentDbListWrap || !equipmentDbTypeFilterSelect || !equipmentDbSortSelect) return;
+
+  if (equipmentDbNameSearchInput && equipmentDbNameSearchInput.value !== equipmentDbNameKeyword) {
+    equipmentDbNameSearchInput.value = equipmentDbNameKeyword;
+  }
+
+  if (equipmentDbFilterPanel) {
+    equipmentDbFilterPanel.hidden = !isEquipmentDbFilterOpen;
+  }
+  if (equipmentDbFilterToggleButton) {
+    equipmentDbFilterToggleButton.setAttribute("aria-expanded", isEquipmentDbFilterOpen ? "true" : "false");
+    equipmentDbFilterToggleButton.textContent = isEquipmentDbFilterOpen ? "－ 絞り込みを閉じる" : "＋ 絞り込みを表示";
+  }
+
+  equipmentDbSortSelect.value = selectedEquipmentDbSort;
+
+  if (isEquipmentDbDataLoading && !hasLoadedEquipmentDbData) {
+    equipmentDbListWrap.innerHTML = `<p class="card">装備データを読み込み中です...</p>`;
+    return;
+  }
+  if (!Array.isArray(equipmentDbEntries) || equipmentDbEntries.length === 0) {
+    equipmentDbListWrap.innerHTML = `<p class="card">表示できる装備データがありません。CSV内容を確認してください。</p>`;
+    equipmentDbTypeFilterSelect.innerHTML = `<option value="">すべて</option>`;
+    return;
+  }
+
+  const types = Array.from(
+    new Set(
+      equipmentDbEntries
+        .map((entry) => String(entry.equipmentType || "").trim())
+        .filter((type) => type !== "")
+    )
+  ).sort((a, b) => a.localeCompare(b, "ja"));
+
+  if (selectedEquipmentDbType !== "" && !types.includes(selectedEquipmentDbType)) {
+    selectedEquipmentDbType = "";
+  }
+
+  equipmentDbTypeFilterSelect.innerHTML = `
+    <option value="">すべて</option>
+    ${types
+      .map((type) => `<option value="${type}" ${selectedEquipmentDbType === type ? "selected" : ""}>${type}</option>`)
+      .join("")}
+  `;
+
+  const filteredEntries = getFilteredEquipmentDbEntries();
+  equipmentDbListWrap.innerHTML = `
+    <div class="equipment-db-card-grid">
+      ${
+        filteredEntries.length === 0
+          ? `<p class="card equipment-db-empty">条件に一致する装備がありません。</p>`
+          : filteredEntries
+              .map((entry) => {
+                const isExpanded = expandedEquipmentDbId === entry.id;
+                const levelText = Number.isFinite(entry.equipmentLevel) ? `Lv${entry.equipmentLevel}` : "Lv-";
+                const stats = [];
+                if (Number.isFinite(entry.attack)) stats.push(`<li><span>攻撃力</span><strong>${entry.attack}</strong></li>`);
+                if (Number.isFinite(entry.attackMagic)) stats.push(`<li><span>攻撃魔力</span><strong>${entry.attackMagic}</strong></li>`);
+                if (Number.isFinite(entry.healMagic)) stats.push(`<li><span>回復魔力</span><strong>${entry.healMagic}</strong></li>`);
+                if (Number.isFinite(entry.defense)) stats.push(`<li><span>守備力</span><strong>${entry.defense}</strong></li>`);
+                if (Number.isFinite(entry.shieldGuardRate)) {
+                  stats.push(`<li><span>盾ガード率</span><strong>${formatEquipmentDbGuardRate(entry.shieldGuardRate)}</strong></li>`);
+                }
+
+                const traitsHtml =
+                  entry.traits.length > 0
+                    ? `<ul class="equipment-db-traits-list">${entry.traits.map((trait) => `<li>${trait}</li>`).join("")}</ul>`
+                    : `<p class="equipment-db-trait-empty">特性情報なし</p>`;
+                return `
+                  <article class="card equipment-db-card ${isExpanded ? "is-expanded" : ""}">
+                    <button type="button" class="equipment-db-card-toggle" data-equipment-db-id="${entry.id}" aria-expanded="${isExpanded ? "true" : "false"}">
+                      <h3 class="equipment-db-card-name">${entry.equipmentName}</h3>
+                      <p class="equipment-db-card-meta">${entry.equipmentType || "-"}</p>
+                      <p class="equipment-db-card-meta">${levelText}</p>
+                      ${stats.length > 0 ? `<ul class="equipment-db-stats-list">${stats.join("")}</ul>` : ""}
+                    </button>
+                    <div class="equipment-db-card-traits ${isExpanded ? "is-open" : ""}" ${isExpanded ? "" : "hidden"}>
+                      <p class="equipment-db-traits-title">特性</p>
+                      ${traitsHtml}
+                    </div>
+                  </article>
+                `;
+              })
+              .join("")
+      }
+    </div>
+  `;
+
+  equipmentDbListWrap.querySelectorAll("[data-equipment-db-id]").forEach((button) => {
+    button.addEventListener("click", () => {
+      const clickedId = String(button.dataset.equipmentDbId || "");
+      expandedEquipmentDbId = expandedEquipmentDbId === clickedId ? "" : clickedId;
+      renderEquipmentDbCards();
     });
   });
 }
@@ -2984,6 +3248,8 @@ function switchTab(target) {
     renderOrbCards();
   } else if (normalizedTarget === "white-boxes") {
     renderWhiteBoxCards();
+  } else if (normalizedTarget === "equipment-db") {
+    renderEquipmentDbCards();
   } else if (normalizedTarget === "profit") {
     renderCraftIdealValue();
   }
@@ -3826,6 +4092,7 @@ function rerenderAll() {
   if (activeTabId === "favorites") renderFavoritesPage();
   if (activeTabId === "orbs") renderOrbCards();
   if (activeTabId === "white-boxes") renderWhiteBoxCards();
+  if (activeTabId === "equipment-db") renderEquipmentDbCards();
 }
 
 // --- イベント定義 ---
@@ -4130,6 +4397,35 @@ whiteBoxTypeTabButtons.forEach((button) => {
     renderWhiteBoxCards();
   });
 });
+
+if (equipmentDbFilterToggleButton) {
+  equipmentDbFilterToggleButton.addEventListener("click", () => {
+    isEquipmentDbFilterOpen = !isEquipmentDbFilterOpen;
+    renderEquipmentDbCards();
+  });
+}
+
+if (equipmentDbSortSelect) {
+  equipmentDbSortSelect.addEventListener("change", (event) => {
+    const nextSort = String(event.target.value || "id_asc");
+    selectedEquipmentDbSort = ["id_asc", "level_desc", "level_asc"].includes(nextSort) ? nextSort : "id_asc";
+    renderEquipmentDbCards();
+  });
+}
+
+if (equipmentDbTypeFilterSelect) {
+  equipmentDbTypeFilterSelect.addEventListener("change", (event) => {
+    selectedEquipmentDbType = String(event.target.value || "");
+    renderEquipmentDbCards();
+  });
+}
+
+if (equipmentDbNameSearchInput) {
+  equipmentDbNameSearchInput.addEventListener("input", (event) => {
+    equipmentDbNameKeyword = String(event.target.value || "");
+    renderEquipmentDbCards();
+  });
+}
 
 window.buildBazaarHistorySnapshotRows = buildBazaarHistorySnapshotRows;
 window.mergeBazaarHistoryLines = mergeBazaarHistoryLines;

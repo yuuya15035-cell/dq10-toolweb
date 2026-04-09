@@ -2223,6 +2223,12 @@ button {
   margin-bottom: 12px;
 }
 
+.equipment-db-controls {
+  display: grid;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
 .whitebox-type-tabs {
   display: flex;
   gap: 8px;
@@ -2249,6 +2255,14 @@ button {
 }
 
 .whitebox-filter-field {
+  margin-bottom: 0;
+}
+
+.equipment-db-filter-grid {
+  margin-top: 0;
+}
+
+.equipment-db-filter-field {
   margin-bottom: 0;
 }
 
@@ -2285,6 +2299,12 @@ button {
 }
 
 .whitebox-card-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.equipment-db-card-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 10px;
@@ -2410,6 +2430,107 @@ button {
   grid-column: 1 / -1;
 }
 
+.equipment-db-card {
+  padding: 0;
+  overflow: hidden;
+  border-color: #d6c5ad;
+  background: #fffaf5;
+}
+
+.equipment-db-card-toggle {
+  width: 100%;
+  text-align: left;
+  border: 0;
+  background: transparent;
+  padding: 11px 10px 10px;
+  cursor: pointer;
+  color: #3f2f22;
+}
+
+.equipment-db-card-name {
+  margin: 0 0 5px;
+  font-size: 0.94rem;
+  color: #3c2d20;
+  line-height: 1.35;
+}
+
+.equipment-db-card-meta {
+  margin: 0;
+  color: #5a4635;
+  font-size: 0.78rem;
+  line-height: 1.4;
+}
+
+.equipment-db-stats-list {
+  margin: 8px 0 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 4px;
+}
+
+.equipment-db-stats-list li {
+  display: flex;
+  justify-content: space-between;
+  gap: 6px;
+  font-size: 0.78rem;
+  color: #4d3a2b;
+  border: 1px solid rgba(93, 70, 52, 0.14);
+  border-radius: 7px;
+  background: rgba(255, 253, 249, 0.86);
+  padding: 4px 6px;
+}
+
+.equipment-db-stats-list li span {
+  color: #6a5240;
+}
+
+.equipment-db-stats-list li strong {
+  font-size: 0.81rem;
+  color: #3f2f22;
+}
+
+.equipment-db-card-traits {
+  border-top: 1px solid #dcc7ad;
+  background: rgba(255, 255, 255, 0.62);
+  padding: 9px 10px 10px;
+}
+
+.equipment-db-traits-title {
+  margin: 0 0 6px;
+  font-weight: 700;
+  color: #5f4734;
+  font-size: 0.8rem;
+}
+
+.equipment-db-traits-list {
+  margin: 0;
+  padding-left: 0;
+  list-style: none;
+  display: grid;
+  gap: 4px;
+  color: #4f3e2f;
+  font-size: 0.78rem;
+}
+
+.equipment-db-traits-list li {
+  border: 1px solid rgba(93, 70, 52, 0.16);
+  border-radius: 7px;
+  background: rgba(255, 253, 249, 0.82);
+  padding: 4px 6px;
+  line-height: 1.35;
+}
+
+.equipment-db-trait-empty {
+  margin: 0;
+  color: #7f6852;
+  font-size: 0.78rem;
+}
+
+.equipment-db-empty {
+  grid-column: 1 / -1;
+}
+
 .orb-card {
   padding: 0;
   overflow: hidden;
@@ -2520,6 +2641,16 @@ button {
 
   .whitebox-card-grid {
     grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .equipment-db-card-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 1200px) {
+  .equipment-db-card-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
   }
 }
 
