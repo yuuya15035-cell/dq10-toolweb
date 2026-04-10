@@ -2076,8 +2076,7 @@ function renderEquipmentDbCards() {
                     </button>
                     <div class="equipment-db-card-traits ${isExpanded ? "is-open" : ""}" ${isExpanded ? "" : "hidden"}>
                       ${armorStatsHtml}
-                      <p class="equipment-db-traits-title">${isArmor ? "セット効果" : "特性"}</p>
-                      ${traitsHtml}
+                      ${isArmor ? "" : `<p class="equipment-db-traits-title">特性</p>${traitsHtml}`}
                       <div class="equipment-db-detail-section">
                         <p class="equipment-db-traits-title">白宝箱ドロップモンスター</p>
                         ${isArmor ? armorWhiteBoxDropHtml : weaponWhiteBoxDropHtml}
