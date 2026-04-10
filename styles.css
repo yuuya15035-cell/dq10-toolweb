@@ -2229,6 +2229,27 @@ button {
   margin-bottom: 12px;
 }
 
+.equipment-db-type-tabs {
+  display: flex;
+  gap: 8px;
+}
+
+.equipment-db-type-tab-button {
+  border: 1px solid #c8b399;
+  border-radius: 999px;
+  background: #fffaf3;
+  color: #5f4734;
+  font-weight: 700;
+  padding: 6px 12px;
+  cursor: pointer;
+}
+
+.equipment-db-type-tab-button.is-active {
+  background: #e7d6c2;
+  color: #4b3626;
+  border-color: #b4926f;
+}
+
 .whitebox-type-tabs {
   display: flex;
   gap: 8px;
@@ -2531,6 +2552,27 @@ button {
   margin-top: 10px;
   padding-top: 8px;
   border-top: 1px solid rgba(135, 105, 78, 0.22);
+}
+
+.equipment-db-armor-drop-list {
+  display: grid;
+  gap: 8px;
+}
+
+.equipment-db-armor-drop-slot {
+  display: grid;
+  gap: 4px;
+}
+
+.equipment-db-armor-drop-slot-title {
+  margin: 0;
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: #5a4635;
+}
+
+.equipment-db-armor-item-name {
+  font-weight: 700;
 }
 
 .equipment-db-empty {

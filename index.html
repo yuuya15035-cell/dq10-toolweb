@@ -360,6 +360,28 @@
       <section id="equipment-db" class="tab-content" aria-label="装備データベース画面">
         <h2>データベース &gt; 装備</h2>
         <div class="equipment-db-controls card">
+          <div class="equipment-db-type-tabs" role="tablist" aria-label="装備種別切り替え">
+            <button
+              type="button"
+              class="equipment-db-type-tab-button is-active"
+              data-equipment-db-group="weapon"
+              role="tab"
+              aria-selected="true"
+              tabindex="0"
+            >
+              武器
+            </button>
+            <button
+              type="button"
+              class="equipment-db-type-tab-button"
+              data-equipment-db-group="armor"
+              role="tab"
+              aria-selected="false"
+              tabindex="-1"
+            >
+              防具
+            </button>
+          </div>
           <div class="search-filter-grid equipment-db-filter-grid">
             <label class="field equipment-db-filter-field" for="equipmentDbSortSelect">
               <span>装備レベルソート</span>
