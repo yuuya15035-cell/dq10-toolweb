@@ -1142,6 +1142,13 @@ function parseEquipmentDbShieldGuardRate(value) {
   return Number.isFinite(parsed) ? parsed : null;
 }
 
+function splitEquipmentDbTraitEntries(rawTrait) {
+  return String(rawTrait || "")
+    .split(/\r?\n|\/|／/g)
+    .map((trait) => trait.trim())
+    .filter((trait) => trait !== "");
+}
+
 function parseEquipmentDbCsvFromLines(lines) {
   if (lines.length <= 1) return [];
   const headers = parseCsvLine(lines[0]).map((header) => String(header || "").replace(/^\uFEFF/, "").trim());
@@ -1154,7 +1161,13 @@ function parseEquipmentDbCsvFromLines(lines) {
   const attackMagicIndex = headers.indexOf("attack_magic");
   const healMagicIndex = headers.indexOf("heal_magic");
   const defenseIndex = headers.indexOf("defense");
-  const shieldGuardRateIndex = headers.indexOf("shield_guard_rate");
+  const shieldGuardRateIndex = headers.indexOf("shield_guard_rate") >= 0 ? headers.indexOf("shield_guard_rate") : headers.indexOf("shield_guard");
+  const hpIndex = headers.indexOf("hp");
+  const mpIndex = headers.indexOf("mp");
+  const speedIndex = headers.indexOf("speed");
+  const dexIndex = headers.indexOf("dex");
+  const fashionableIndex = headers.indexOf("fashionable");
+  const weightIndex = headers.indexOf("weight");
   const traitsIndex = headers.indexOf("traits");
 
   if (
@@ -1168,6 +1181,12 @@ function parseEquipmentDbCsvFromLines(lines) {
     healMagicIndex < 0 ||
     defenseIndex < 0 ||
     shieldGuardRateIndex < 0 ||
+    hpIndex < 0 ||
+    mpIndex < 0 ||
+    speedIndex < 0 ||
+    dexIndex < 0 ||
+    fashionableIndex < 0 ||
+    weightIndex < 0 ||
     traitsIndex < 0
   ) {
     throw new Error("equipment_data.csv ヘッダーが想定と一致しません");
@@ -1188,7 +1207,13 @@ function parseEquipmentDbCsvFromLines(lines) {
     const healMagic = parseNullableNumber(row[healMagicIndex]);
     const defense = parseNullableNumber(row[defenseIndex]);
     const shieldGuardRate = parseEquipmentDbShieldGuardRate(row[shieldGuardRateIndex]);
-    const trait = String(row[traitsIndex] || "").trim();
+    const hp = parseNullableNumber(row[hpIndex]);
+    const mp = parseNullableNumber(row[mpIndex]);
+    const speed = parseNullableNumber(row[speedIndex]);
+    const dex = parseNullableNumber(row[dexIndex]);
+    const fashionable = parseNullableNumber(row[fashionableIndex]);
+    const weight = parseNullableNumber(row[weightIndex]);
+    const traits = splitEquipmentDbTraitEntries(row[traitsIndex]);
 
     if (!groupedById.has(equipmentId)) {
       groupedById.set(equipmentId, {
@@ -1204,6 +1229,12 @@ function parseEquipmentDbCsvFromLines(lines) {
         healMagic,
         defense,
         shieldGuardRate,
+        hp,
+        mp,
+        speed,
+        dex,
+        fashionable,
+        weight,
         traits: [],
       });
     }
@@ -1217,7 +1248,15 @@ function parseEquipmentDbCsvFromLines(lines) {
     if (!Number.isFinite(current.healMagic) && Number.isFinite(healMagic)) current.healMagic = healMagic;
     if (!Number.isFinite(current.defense) && Number.isFinite(defense)) current.defense = defense;
     if (!Number.isFinite(current.shieldGuardRate) && Number.isFinite(shieldGuardRate)) current.shieldGuardRate = shieldGuardRate;
-    if (trait !== "" && !current.traits.includes(trait)) current.traits.push(trait);
+    if (!Number.isFinite(current.hp) && Number.isFinite(hp)) current.hp = hp;
+    if (!Number.isFinite(current.mp) && Number.isFinite(mp)) current.mp = mp;
+    if (!Number.isFinite(current.speed) && Number.isFinite(speed)) current.speed = speed;
+    if (!Number.isFinite(current.dex) && Number.isFinite(dex)) current.dex = dex;
+    if (!Number.isFinite(current.fashionable) && Number.isFinite(fashionable)) current.fashionable = fashionable;
+    if (!Number.isFinite(current.weight) && Number.isFinite(weight)) current.weight = weight;
+    traits.forEach((trait) => {
+      if (!current.traits.includes(trait)) current.traits.push(trait);
+    });
   });
 
   return Array.from(groupedById.values()).sort((a, b) => {
@@ -1857,6 +1896,30 @@ function getFilteredEquipmentDbEntries() {
     .sort(compareEquipmentDbEntries);
 }
 
+function buildEquipmentDbStatsHtml(entry) {
+  const stats = [];
+  const statDefinitions = [
+    { key: "attack", label: "攻撃力", isRate: false },
+    { key: "attackMagic", label: "攻撃魔力", isRate: false },
+    { key: "healMagic", label: "回復魔力", isRate: false },
+    { key: "defense", label: "守備力", isRate: false },
+    { key: "shieldGuardRate", label: "盾ガード率", isRate: true },
+    { key: "hp", label: "HP", isRate: false },
+    { key: "mp", label: "MP", isRate: false },
+    { key: "speed", label: "すばやさ", isRate: false },
+    { key: "dex", label: "きようさ", isRate: false },
+    { key: "fashionable", label: "おしゃれさ", isRate: false },
+    { key: "weight", label: "おもさ", isRate: false },
+  ];
+  statDefinitions.forEach((definition) => {
+    const value = entry?.[definition.key];
+    if (!Number.isFinite(value) || Number(value) === 0) return;
+    const displayValue = definition.isRate ? formatEquipmentDbGuardRate(value) : value;
+    stats.push(`<li><span>${definition.label}</span><strong>${displayValue}</strong></li>`);
+  });
+  return stats;
+}
+
 function renderEquipmentDbCards() {
   if (!equipmentDbListWrap || !equipmentDbTypeFilterSelect || !equipmentDbSortSelect) return;
 
@@ -1935,21 +1998,32 @@ function renderEquipmentDbCards() {
                 const isExpanded = expandedEquipmentDbId === entry.id;
                 const levelText = Number.isFinite(entry.equipmentLevel) ? `Lv${entry.equipmentLevel}` : "Lv-";
                 const isArmor = String(entry.equipmentGroup || "") === "armor";
-                const stats = [];
-                if (!isArmor) {
-                  if (Number.isFinite(entry.attack)) stats.push(`<li><span>攻撃力</span><strong>${entry.attack}</strong></li>`);
-                  if (Number.isFinite(entry.attackMagic)) stats.push(`<li><span>攻撃魔力</span><strong>${entry.attackMagic}</strong></li>`);
-                  if (Number.isFinite(entry.healMagic)) stats.push(`<li><span>回復魔力</span><strong>${entry.healMagic}</strong></li>`);
-                  if (Number.isFinite(entry.defense)) stats.push(`<li><span>守備力</span><strong>${entry.defense}</strong></li>`);
-                  if (Number.isFinite(entry.shieldGuardRate)) {
-                    stats.push(`<li><span>盾ガード率</span><strong>${formatEquipmentDbGuardRate(entry.shieldGuardRate)}</strong></li>`);
-                  }
-                }
+                const stats = buildEquipmentDbStatsHtml(entry);
+                const collapsedTraitsHtml =
+                  isArmor && entry.traits.length > 0
+                    ? `<ul class="equipment-db-traits-list equipment-db-traits-list-collapsed">${entry.traits
+                        .map((trait) => `<li>${trait}</li>`)
+                        .join("")}</ul>`
+                    : isArmor
+                      ? `<p class="equipment-db-trait-empty equipment-db-trait-empty-collapsed">特性情報なし</p>`
+                      : "";
 
                 const traitsHtml =
                   entry.traits.length > 0
                     ? `<ul class="equipment-db-traits-list">${entry.traits.map((trait) => `<li>${trait}</li>`).join("")}</ul>`
                     : `<p class="equipment-db-trait-empty">特性情報なし</p>`;
+                const armorStatsHtml =
+                  isArmor && stats.length > 0
+                    ? `<div class="equipment-db-detail-section equipment-db-detail-section-first">
+                        <p class="equipment-db-traits-title">上昇能力値</p>
+                        <ul class="equipment-db-stats-list">${stats.join("")}</ul>
+                      </div>`
+                    : isArmor
+                      ? `<div class="equipment-db-detail-section equipment-db-detail-section-first">
+                          <p class="equipment-db-traits-title">上昇能力値</p>
+                          <p class="equipment-db-trait-empty">上昇能力値なし</p>
+                        </div>`
+                      : "";
                 const armorWhiteBoxDropHtml =
                   entry.whiteBoxHasDrop && Array.isArray(entry.whiteBoxArmorDropsBySlot) && entry.whiteBoxArmorDropsBySlot.length > 0
                     ? `<div class="equipment-db-armor-drop-list">${entry.whiteBoxArmorDropsBySlot
@@ -1979,9 +2053,11 @@ function renderEquipmentDbCards() {
                       <h3 class="equipment-db-card-name">${entry.equipmentName}</h3>
                       ${isArmor ? "" : `<p class="equipment-db-card-meta">${entry.equipmentType || "-"}</p>`}
                       <p class="equipment-db-card-meta">${levelText}</p>
-                      ${stats.length > 0 ? `<ul class="equipment-db-stats-list">${stats.join("")}</ul>` : ""}
+                      ${!isArmor && stats.length > 0 ? `<ul class="equipment-db-stats-list">${stats.join("")}</ul>` : ""}
+                      ${collapsedTraitsHtml}
                     </button>
                     <div class="equipment-db-card-traits ${isExpanded ? "is-open" : ""}" ${isExpanded ? "" : "hidden"}>
+                      ${armorStatsHtml}
                       <p class="equipment-db-traits-title">${isArmor ? "セット効果" : "特性"}</p>
                       ${traitsHtml}
                       <div class="equipment-db-detail-section">
