@@ -574,7 +574,7 @@ let selectedWhiteBoxSort = "level_desc";
 let expandedWhiteBoxItemId = "";
 let equipmentDbEntries = [];
 let selectedEquipmentDbGroup = "weapon";
-let selectedEquipmentDbSort = "id_asc";
+let selectedEquipmentDbSort = "level_desc";
 let selectedEquipmentDbType = "";
 let equipmentDbNameKeyword = "";
 let equipmentDbMonsterKeyword = "";
@@ -679,6 +679,7 @@ const equipmentDbListWrap = getRequiredElementById("equipmentDbListWrap");
 const equipmentDbGroupTabButtons = Array.from(document.querySelectorAll("[data-equipment-db-group]"));
 const equipmentDbSortSelect = getRequiredElementById("equipmentDbSortSelect");
 const equipmentDbTypeFilterSelect = getRequiredElementById("equipmentDbTypeFilterSelect");
+const equipmentDbTypeFilterField = equipmentDbTypeFilterSelect?.closest("label");
 const equipmentDbNameSearchToggleButton = getRequiredElementById("equipmentDbNameSearchToggleButton");
 const equipmentDbNameSearchField = getRequiredElementById("equipmentDbNameSearchField");
 const equipmentDbNameSearchInput = getRequiredElementById("equipmentDbNameSearchInput");
@@ -1215,8 +1216,10 @@ function parseEquipmentDbCsvFromLines(lines) {
     const weight = parseNullableNumber(row[weightIndex]);
     const traits = splitEquipmentDbTraitEntries(row[traitsIndex]);
 
-    if (!groupedById.has(equipmentId)) {
-      groupedById.set(equipmentId, {
+    const groupingKey = equipmentGroup === "armor" ? `armor:${equipmentName}` : `weapon:${equipmentId}`;
+
+    if (!groupedById.has(groupingKey)) {
+      groupedById.set(groupingKey, {
         id: `equipment-db-item-${rowIndex + 1}`,
         equipmentId,
         equipmentIdNumber: parseEquipmentDbId(equipmentId),
@@ -1239,9 +1242,12 @@ function parseEquipmentDbCsvFromLines(lines) {
       });
     }
 
-    const current = groupedById.get(equipmentId);
+    const current = groupedById.get(groupingKey);
     if (!current.equipmentGroup && equipmentGroup) current.equipmentGroup = equipmentGroup;
     if (!current.equipmentType && equipmentType) current.equipmentType = equipmentType;
+    if ((current.equipmentIdNumber || Number.MAX_SAFE_INTEGER) > parseEquipmentDbId(equipmentId)) {
+      current.equipmentIdNumber = parseEquipmentDbId(equipmentId);
+    }
     if (!Number.isFinite(current.equipmentLevel) && Number.isFinite(equipmentLevel)) current.equipmentLevel = equipmentLevel;
     if (!Number.isFinite(current.attack) && Number.isFinite(attack)) current.attack = attack;
     if (!Number.isFinite(current.attackMagic) && Number.isFinite(attackMagic)) current.attackMagic = attackMagic;
@@ -1962,30 +1968,42 @@ function renderEquipmentDbCards() {
     return;
   }
   if (!Array.isArray(equipmentDbEntries) || equipmentDbEntries.length === 0) {
+    if (equipmentDbTypeFilterField) {
+      equipmentDbTypeFilterField.hidden = selectedEquipmentDbGroup === "armor";
+    }
+    equipmentDbTypeFilterSelect.disabled = selectedEquipmentDbGroup === "armor";
     equipmentDbListWrap.innerHTML = `<p class="card">表示できる装備データがありません。CSV内容を確認してください。</p>`;
     equipmentDbTypeFilterSelect.innerHTML = `<option value="">すべて</option>`;
     return;
   }
 
-  const types = Array.from(
-    new Set(
-      equipmentDbEntries
-        .filter((entry) => String(entry.equipmentGroup || "weapon") === selectedEquipmentDbGroup)
-        .map((entry) => String(entry.equipmentType || "").trim())
-        .filter((type) => type !== "")
-    )
-  ).sort((a, b) => a.localeCompare(b, "ja"));
+  const isArmorGroup = selectedEquipmentDbGroup === "armor";
+  const types = isArmorGroup
+    ? []
+    : Array.from(
+        new Set(
+          equipmentDbEntries
+            .filter((entry) => String(entry.equipmentGroup || "weapon") === selectedEquipmentDbGroup)
+            .map((entry) => String(entry.equipmentType || "").trim())
+            .filter((type) => type !== "")
+        )
+      ).sort((a, b) => a.localeCompare(b, "ja"));
 
-  if (selectedEquipmentDbType !== "" && !types.includes(selectedEquipmentDbType)) {
+  if (isArmorGroup || (selectedEquipmentDbType !== "" && !types.includes(selectedEquipmentDbType))) {
     selectedEquipmentDbType = "";
   }
-
-  equipmentDbTypeFilterSelect.innerHTML = `
-    <option value="">すべて</option>
-    ${types
-      .map((type) => `<option value="${type}" ${selectedEquipmentDbType === type ? "selected" : ""}>${type}</option>`)
-      .join("")}
-  `;
+  if (equipmentDbTypeFilterField) {
+    equipmentDbTypeFilterField.hidden = isArmorGroup;
+  }
+  equipmentDbTypeFilterSelect.disabled = isArmorGroup;
+  if (!isArmorGroup) {
+    equipmentDbTypeFilterSelect.innerHTML = `
+      <option value="">すべて</option>
+      ${types
+        .map((type) => `<option value="${type}" ${selectedEquipmentDbType === type ? "selected" : ""}>${type}</option>`)
+        .join("")}
+    `;
+  }
 
   const filteredEntries = getFilteredEquipmentDbEntries();
   equipmentDbListWrap.innerHTML = `
@@ -2048,7 +2066,7 @@ function renderEquipmentDbCards() {
                     ? `<ul class="equipment-db-traits-list">${entry.whiteBoxMonsterNames.map((monsterName) => `<li>${monsterName}</li>`).join("")}</ul>`
                     : `<p class="equipment-db-trait-empty">白宝箱ドロップなし</p>`;
                 return `
-                  <article class="card equipment-db-card ${isExpanded ? "is-expanded" : ""}">
+                  <article class="card equipment-db-card equipment-db-card-${isArmor ? "armor" : "weapon"} ${isExpanded ? "is-expanded" : ""}">
                     <button type="button" class="equipment-db-card-toggle" data-equipment-db-id="${entry.id}" aria-expanded="${isExpanded ? "true" : "false"}">
                       <h3 class="equipment-db-card-name">${entry.equipmentName}</h3>
                       ${isArmor ? "" : `<p class="equipment-db-card-meta">${entry.equipmentType || "-"}</p>`}
@@ -4656,8 +4674,8 @@ if (equipmentDbMonsterSearchToggleButton) {
 
 if (equipmentDbSortSelect) {
   equipmentDbSortSelect.addEventListener("change", (event) => {
-    const nextSort = String(event.target.value || "id_asc");
-    selectedEquipmentDbSort = ["id_asc", "level_desc", "level_asc"].includes(nextSort) ? nextSort : "id_asc";
+    const nextSort = String(event.target.value || "level_desc");
+    selectedEquipmentDbSort = ["level_desc", "level_asc"].includes(nextSort) ? nextSort : "level_desc";
     renderEquipmentDbCards();
   });
 }
