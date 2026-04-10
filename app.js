@@ -573,6 +573,7 @@ let selectedWhiteBoxSlot = "";
 let selectedWhiteBoxSort = "level_desc";
 let expandedWhiteBoxItemId = "";
 let equipmentDbEntries = [];
+let selectedEquipmentDbGroup = "weapon";
 let selectedEquipmentDbSort = "id_asc";
 let selectedEquipmentDbType = "";
 let equipmentDbNameKeyword = "";
@@ -675,6 +676,7 @@ const whiteBoxSortSelect = getRequiredElementById("whiteBoxSortSelect");
 const whiteBoxSlotFilterSelect = getRequiredElementById("whiteBoxSlotFilterSelect");
 const whiteBoxTypeTabButtons = document.querySelectorAll("[data-whitebox-type]");
 const equipmentDbListWrap = getRequiredElementById("equipmentDbListWrap");
+const equipmentDbGroupTabButtons = Array.from(document.querySelectorAll("[data-equipment-db-group]"));
 const equipmentDbSortSelect = getRequiredElementById("equipmentDbSortSelect");
 const equipmentDbTypeFilterSelect = getRequiredElementById("equipmentDbTypeFilterSelect");
 const equipmentDbNameSearchToggleButton = getRequiredElementById("equipmentDbNameSearchToggleButton");
@@ -1144,6 +1146,7 @@ function parseEquipmentDbCsvFromLines(lines) {
   if (lines.length <= 1) return [];
   const headers = parseCsvLine(lines[0]).map((header) => String(header || "").replace(/^\uFEFF/, "").trim());
   const equipmentIdIndex = headers.indexOf("equipment_id");
+  const equipmentGroupIndex = headers.indexOf("equipment_group");
   const equipmentLevelIndex = headers.indexOf("equipment_level");
   const equipmentTypeIndex = headers.indexOf("equipment_type");
   const equipmentNameIndex = headers.indexOf("equipment_name");
@@ -1156,6 +1159,7 @@ function parseEquipmentDbCsvFromLines(lines) {
 
   if (
     equipmentIdIndex < 0 ||
+    equipmentGroupIndex < 0 ||
     equipmentLevelIndex < 0 ||
     equipmentTypeIndex < 0 ||
     equipmentNameIndex < 0 ||
@@ -1176,6 +1180,7 @@ function parseEquipmentDbCsvFromLines(lines) {
     const equipmentName = String(row[equipmentNameIndex] || "").trim();
     if (equipmentId === "" || equipmentName === "") return;
 
+    const equipmentGroup = String(row[equipmentGroupIndex] || "").trim();
     const equipmentType = String(row[equipmentTypeIndex] || "").trim();
     const equipmentLevel = parseEquipmentLevel(row[equipmentLevelIndex]);
     const attack = parseNullableNumber(row[attackIndex]);
@@ -1190,6 +1195,7 @@ function parseEquipmentDbCsvFromLines(lines) {
         id: `equipment-db-item-${rowIndex + 1}`,
         equipmentId,
         equipmentIdNumber: parseEquipmentDbId(equipmentId),
+        equipmentGroup,
         equipmentLevel,
         equipmentType,
         equipmentName,
@@ -1203,6 +1209,7 @@ function parseEquipmentDbCsvFromLines(lines) {
     }
 
     const current = groupedById.get(equipmentId);
+    if (!current.equipmentGroup && equipmentGroup) current.equipmentGroup = equipmentGroup;
     if (!current.equipmentType && equipmentType) current.equipmentType = equipmentType;
     if (!Number.isFinite(current.equipmentLevel) && Number.isFinite(equipmentLevel)) current.equipmentLevel = equipmentLevel;
     if (!Number.isFinite(current.attack) && Number.isFinite(attack)) current.attack = attack;
@@ -1247,13 +1254,66 @@ function buildWhiteBoxSummaryByItemName(entries) {
 function attachWhiteBoxDropsToEquipmentEntries(entries, whiteBoxSummaryByName) {
   return (Array.isArray(entries) ? entries : []).map((entry) => {
     const equipmentName = String(entry?.equipmentName || "").trim();
-    const whiteBoxSummary = whiteBoxSummaryByName.get(equipmentName);
+    const equipmentGroup = String(entry?.equipmentGroup || "").trim();
+    const isArmor = equipmentGroup === "armor";
+    const whiteBoxSummary = !isArmor ? whiteBoxSummaryByName.get(equipmentName) : null;
+    const armorWhiteBoxDropsBySlot = isArmor ? buildArmorWhiteBoxDropsBySlot(equipmentName, whiteBoxEntries) : [];
+    const armorWhiteBoxMonsterNames = armorWhiteBoxDropsBySlot.flatMap((slotEntry) =>
+      slotEntry.items.flatMap((item) => item.monsterNames)
+    );
+    const armorUniqueMonsterNames = Array.from(new Set(armorWhiteBoxMonsterNames));
     return {
       ...entry,
-      whiteBoxHasDrop: Boolean(whiteBoxSummary?.hasDropMonster),
-      whiteBoxMonsterNames: Array.isArray(whiteBoxSummary?.monsterNames) ? whiteBoxSummary.monsterNames : [],
+      whiteBoxHasDrop: isArmor ? armorUniqueMonsterNames.length > 0 : Boolean(whiteBoxSummary?.hasDropMonster),
+      whiteBoxMonsterNames: isArmor ? armorUniqueMonsterNames : Array.isArray(whiteBoxSummary?.monsterNames) ? whiteBoxSummary.monsterNames : [],
+      whiteBoxArmorDropsBySlot: armorWhiteBoxDropsBySlot,
     };
   });
+}
+
+function stripArmorSetSuffix(name) {
+  const normalizedName = String(name || "").trim();
+  return normalizedName.endsWith("セット") ? normalizedName.slice(0, -3) : normalizedName;
+}
+
+function buildArmorWhiteBoxDropsBySlot(equipmentName, whiteBoxDataEntries) {
+  const setKey = stripArmorSetSuffix(equipmentName);
+  if (setKey === "") return [];
+
+  const groupedBySlot = new Map();
+  (Array.isArray(whiteBoxDataEntries) ? whiteBoxDataEntries : []).forEach((entry) => {
+    const itemName = String(entry?.itemName || "").trim();
+    if (!itemName.startsWith(setKey)) return;
+    if (!entry?.hasDropMonster) return;
+    const slot = String(entry?.itemSlot || "").trim() || "不明";
+    const monsterNames = Array.isArray(entry?.monsters)
+      ? Array.from(
+          new Set(
+            entry.monsters
+              .map((monster) => String(monster?.monsterName || "").trim())
+              .filter((monsterName) => monsterName !== "")
+          )
+        )
+      : [];
+    if (monsterNames.length === 0) return;
+
+    if (!groupedBySlot.has(slot)) groupedBySlot.set(slot, []);
+    groupedBySlot.get(slot).push({
+      itemName,
+      monsterNames,
+    });
+  });
+
+  return Array.from(groupedBySlot.entries())
+    .sort((a, b) => {
+      const slotDiff = getWhiteBoxSlotSortOrder(a[0], "armor") - getWhiteBoxSlotSortOrder(b[0], "armor");
+      if (slotDiff !== 0) return slotDiff;
+      return String(a[0]).localeCompare(String(b[0]), "ja");
+    })
+    .map(([slot, items]) => ({
+      slot,
+      items: items.sort((a, b) => String(a.itemName || "").localeCompare(String(b.itemName || ""), "ja")),
+    }));
 }
 
 function isArmorSlot(itemSlot) {
@@ -1782,6 +1842,7 @@ function getFilteredEquipmentDbEntries() {
   const normalizedKeyword = String(equipmentDbNameKeyword || "").trim().toLowerCase();
   const normalizedMonsterKeyword = String(equipmentDbMonsterKeyword || "").trim().toLowerCase();
   return (equipmentDbEntries || [])
+    .filter((entry) => String(entry.equipmentGroup || "weapon") === selectedEquipmentDbGroup)
     .filter((entry) => (selectedEquipmentDbType === "" ? true : String(entry.equipmentType || "") === selectedEquipmentDbType))
     .filter((entry) => {
       if (normalizedKeyword === "") return true;
@@ -1798,6 +1859,14 @@ function getFilteredEquipmentDbEntries() {
 
 function renderEquipmentDbCards() {
   if (!equipmentDbListWrap || !equipmentDbTypeFilterSelect || !equipmentDbSortSelect) return;
+
+  equipmentDbGroupTabButtons.forEach((button) => {
+    const buttonGroup = String(button.dataset.equipmentDbGroup || "weapon");
+    const isActive = buttonGroup === selectedEquipmentDbGroup;
+    button.classList.toggle("is-active", isActive);
+    button.setAttribute("aria-selected", isActive ? "true" : "false");
+    button.tabIndex = isActive ? 0 : -1;
+  });
 
   if (equipmentDbNameSearchInput && equipmentDbNameSearchInput.value !== equipmentDbNameKeyword) {
     equipmentDbNameSearchInput.value = equipmentDbNameKeyword;
@@ -1838,6 +1907,7 @@ function renderEquipmentDbCards() {
   const types = Array.from(
     new Set(
       equipmentDbEntries
+        .filter((entry) => String(entry.equipmentGroup || "weapon") === selectedEquipmentDbGroup)
         .map((entry) => String(entry.equipmentType || "").trim())
         .filter((type) => type !== "")
     )
@@ -1864,20 +1934,42 @@ function renderEquipmentDbCards() {
               .map((entry) => {
                 const isExpanded = expandedEquipmentDbId === entry.id;
                 const levelText = Number.isFinite(entry.equipmentLevel) ? `Lv${entry.equipmentLevel}` : "Lv-";
+                const isArmor = String(entry.equipmentGroup || "") === "armor";
                 const stats = [];
-                if (Number.isFinite(entry.attack)) stats.push(`<li><span>攻撃力</span><strong>${entry.attack}</strong></li>`);
-                if (Number.isFinite(entry.attackMagic)) stats.push(`<li><span>攻撃魔力</span><strong>${entry.attackMagic}</strong></li>`);
-                if (Number.isFinite(entry.healMagic)) stats.push(`<li><span>回復魔力</span><strong>${entry.healMagic}</strong></li>`);
-                if (Number.isFinite(entry.defense)) stats.push(`<li><span>守備力</span><strong>${entry.defense}</strong></li>`);
-                if (Number.isFinite(entry.shieldGuardRate)) {
-                  stats.push(`<li><span>盾ガード率</span><strong>${formatEquipmentDbGuardRate(entry.shieldGuardRate)}</strong></li>`);
+                if (!isArmor) {
+                  if (Number.isFinite(entry.attack)) stats.push(`<li><span>攻撃力</span><strong>${entry.attack}</strong></li>`);
+                  if (Number.isFinite(entry.attackMagic)) stats.push(`<li><span>攻撃魔力</span><strong>${entry.attackMagic}</strong></li>`);
+                  if (Number.isFinite(entry.healMagic)) stats.push(`<li><span>回復魔力</span><strong>${entry.healMagic}</strong></li>`);
+                  if (Number.isFinite(entry.defense)) stats.push(`<li><span>守備力</span><strong>${entry.defense}</strong></li>`);
+                  if (Number.isFinite(entry.shieldGuardRate)) {
+                    stats.push(`<li><span>盾ガード率</span><strong>${formatEquipmentDbGuardRate(entry.shieldGuardRate)}</strong></li>`);
+                  }
                 }
 
                 const traitsHtml =
                   entry.traits.length > 0
                     ? `<ul class="equipment-db-traits-list">${entry.traits.map((trait) => `<li>${trait}</li>`).join("")}</ul>`
                     : `<p class="equipment-db-trait-empty">特性情報なし</p>`;
-                const whiteBoxDropHtml =
+                const armorWhiteBoxDropHtml =
+                  entry.whiteBoxHasDrop && Array.isArray(entry.whiteBoxArmorDropsBySlot) && entry.whiteBoxArmorDropsBySlot.length > 0
+                    ? `<div class="equipment-db-armor-drop-list">${entry.whiteBoxArmorDropsBySlot
+                        .map(
+                          (slotEntry) => `
+                          <section class="equipment-db-armor-drop-slot">
+                            <p class="equipment-db-armor-drop-slot-title">${slotEntry.slot}</p>
+                            <ul class="equipment-db-traits-list">
+                              ${slotEntry.items
+                                .map(
+                                  (item) =>
+                                    `<li><span class="equipment-db-armor-item-name">${item.itemName}</span><br>${item.monsterNames.join(" / ")}</li>`
+                                )
+                                .join("")}
+                            </ul>
+                          </section>`
+                        )
+                        .join("")}</div>`
+                    : `<p class="equipment-db-trait-empty">白宝箱ドロップなし</p>`;
+                const weaponWhiteBoxDropHtml =
                   entry.whiteBoxHasDrop && entry.whiteBoxMonsterNames.length > 0
                     ? `<ul class="equipment-db-traits-list">${entry.whiteBoxMonsterNames.map((monsterName) => `<li>${monsterName}</li>`).join("")}</ul>`
                     : `<p class="equipment-db-trait-empty">白宝箱ドロップなし</p>`;
@@ -1885,16 +1977,16 @@ function renderEquipmentDbCards() {
                   <article class="card equipment-db-card ${isExpanded ? "is-expanded" : ""}">
                     <button type="button" class="equipment-db-card-toggle" data-equipment-db-id="${entry.id}" aria-expanded="${isExpanded ? "true" : "false"}">
                       <h3 class="equipment-db-card-name">${entry.equipmentName}</h3>
-                      <p class="equipment-db-card-meta">${entry.equipmentType || "-"}</p>
+                      ${isArmor ? "" : `<p class="equipment-db-card-meta">${entry.equipmentType || "-"}</p>`}
                       <p class="equipment-db-card-meta">${levelText}</p>
                       ${stats.length > 0 ? `<ul class="equipment-db-stats-list">${stats.join("")}</ul>` : ""}
                     </button>
                     <div class="equipment-db-card-traits ${isExpanded ? "is-open" : ""}" ${isExpanded ? "" : "hidden"}>
-                      <p class="equipment-db-traits-title">特性</p>
+                      <p class="equipment-db-traits-title">${isArmor ? "セット効果" : "特性"}</p>
                       ${traitsHtml}
                       <div class="equipment-db-detail-section">
                         <p class="equipment-db-traits-title">白宝箱ドロップモンスター</p>
-                        ${whiteBoxDropHtml}
+                        ${isArmor ? armorWhiteBoxDropHtml : weaponWhiteBoxDropHtml}
                       </div>
                     </div>
                   </article>
@@ -4514,6 +4606,16 @@ if (equipmentDbMonsterSearchInput) {
     renderEquipmentDbCards();
   });
 }
+
+equipmentDbGroupTabButtons.forEach((button) => {
+  button.addEventListener("click", () => {
+    const nextGroup = String(button.dataset.equipmentDbGroup || "weapon");
+    selectedEquipmentDbGroup = nextGroup === "armor" ? "armor" : "weapon";
+    selectedEquipmentDbType = "";
+    expandedEquipmentDbId = "";
+    renderEquipmentDbCards();
+  });
+});
 
 window.buildBazaarHistorySnapshotRows = buildBazaarHistorySnapshotRows;
 window.mergeBazaarHistoryLines = mergeBazaarHistoryLines;
