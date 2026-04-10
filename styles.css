@@ -2458,6 +2458,16 @@ button {
   background: #fffaf5;
 }
 
+.equipment-db-card-weapon {
+  border-color: #d98767;
+  background: #fff7f3;
+}
+
+.equipment-db-card-armor {
+  border-color: #8cb9de;
+  background: #f4fbff;
+}
+
 .equipment-db-card-toggle {
   width: 100%;
   text-align: left;
@@ -2515,6 +2525,16 @@ button {
   border-top: 1px solid #dcc7ad;
   background: rgba(255, 255, 255, 0.62);
   padding: 9px 10px 10px;
+}
+
+.equipment-db-card-weapon .equipment-db-card-traits {
+  border-top-color: #e0b29e;
+  background: rgba(255, 248, 244, 0.84);
+}
+
+.equipment-db-card-armor .equipment-db-card-traits {
+  border-top-color: #bad5ea;
+  background: rgba(247, 252, 255, 0.92);
 }
 
 .equipment-db-traits-title {
