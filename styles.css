@@ -68,10 +68,13 @@ body.is-modal-open {
   left: 0;
   width: min(80vw, 320px);
   height: 100%;
+  max-height: 100dvh;
   background: linear-gradient(180deg, #6b4a31 0%, var(--menu-surface) 100%);
   border-right: 1px solid #3e2819;
   box-shadow: 2px 0 18px rgba(30, 17, 8, 0.3);
   padding: 16px 14px;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
   transform: translateX(-100%);
   transition: transform 0.2s ease;
   z-index: 1001;
@@ -187,6 +190,12 @@ body.is-modal-open {
   font-size: 0.78rem;
   line-height: 1.4;
   color: #5a3c27;
+}
+
+.top-quick-access-note-sub {
+  margin-top: -8px;
+  margin-bottom: 10px;
+  font-size: 0.74rem;
 }
 
 .top-tool-card {
