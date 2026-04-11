@@ -2660,6 +2660,7 @@ function renderBazaarPrices() {
           const sparklineSvgDesktop = hasHistory ? buildBazaarSparklineSvg(history, { includeYAxisLabels: false }) : "";
           const sparklineSvgMobile = hasHistory ? buildBazaarSparklineSvg(history) : "";
           const externalYAxisLabels = hasHistory ? buildBazaarChartExternalYAxisLabels(history) : "";
+          const commentHtml = row.comment !== "" ? `<p class="bazaar-price-comment">${row.comment}</p>` : "";
           const changeArrowHtml = changePresentation.isComputable
             ? `<span class="bazaar-change-arrow ${changePresentation.toneClass}" aria-hidden="true">${changePresentation.arrow}</span>`
             : "";
@@ -2694,6 +2695,7 @@ function renderBazaarPrices() {
               <div class="bazaar-main">
                 <div class="bazaar-primary">
                   <p class="bazaar-today-price">${todayPriceHtml}</p>
+                  ${commentHtml}
                   <p class="bazaar-change-rate">前日比: <span class="bazaar-change-value ${changePresentation.toneClass}">${changePresentation.text}</span>${changeArrowHtml}</p>
                 </div>
                 <div class="bazaar-mini-chart-wrap" aria-label="${row.materialName}の価格推移（直近${selectedBazaarChartRangeDays}日）">

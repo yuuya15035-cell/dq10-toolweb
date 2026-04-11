@@ -1299,6 +1299,14 @@ button {
   font-weight: 700;
 }
 
+.bazaar-price-comment {
+  margin: 2px 0 0;
+  color: #6d5643;
+  font-size: 0.74rem;
+  line-height: 1.2;
+  font-weight: 600;
+}
+
 .bazaar-change-rate {
   margin: 1px 0 0;
   font-size: 0.92rem;
