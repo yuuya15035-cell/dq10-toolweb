@@ -116,6 +116,13 @@ const EQUIPMENT_TYPE_ICON_PATH_MAP = new Map([
   ["腕", "/assets/icons/equipment/gloves.png"],
   ["足", "/assets/icons/equipment/boots.png"],
 ]);
+const ITEM_CATEGORY_ICON_PATH_MAP = new Map([
+  ["石系", "/assets/icons/item/stone.png"],
+  ["植物系", "/assets/icons/item/plant.png"],
+  ["消費アイテム", "/assets/icons/item/herb.png"],
+  ["モンスター系", "/assets/icons/item/bone.png"],
+  ["その他", "/assets/icons/item/miscellaneous_goods.png"],
+]);
 
 function resolveProjectScopedAssetUrl(path) {
   if (!path) return "";
@@ -139,6 +146,39 @@ function getEquipmentTypeIconPath(typeName) {
   const normalizedType = String(typeName || "").trim();
   if (normalizedType === "") return "";
   return EQUIPMENT_TYPE_ICON_PATH_MAP.get(normalizedType) || "";
+}
+
+function getItemCategoryIconPath(categoryName) {
+  const normalizedCategory = String(categoryName || "").trim();
+  if (normalizedCategory === "") return "";
+  return ITEM_CATEGORY_ICON_PATH_MAP.get(normalizedCategory) || "";
+}
+
+function buildItemCategoryLabelHtml(categoryName) {
+  const normalizedCategory = String(categoryName || "").trim();
+  if (normalizedCategory === "") {
+    return `<span class="bazaar-category-label"><span class="bazaar-category-text">-</span></span>`;
+  }
+
+  const iconPath = getItemCategoryIconPath(normalizedCategory);
+  if (!iconPath) {
+    return `<span class="bazaar-category-label"><span class="bazaar-category-text">${normalizedCategory}</span></span>`;
+  }
+
+  return `
+    <span class="bazaar-category-label">
+      <img
+        src="${resolveProjectScopedAssetUrl(iconPath)}"
+        alt="${normalizedCategory}アイコン"
+        class="bazaar-category-icon"
+        loading="lazy"
+        decoding="async"
+        onerror="this.style.display='none'; if (this.nextElementSibling) this.nextElementSibling.hidden = false;"
+      >
+      <span class="bazaar-category-fallback" hidden aria-hidden="true">●</span>
+      <span class="bazaar-category-text">${normalizedCategory}</span>
+    </span>
+  `;
 }
 
 function isArmorSetEntry(entry) {
@@ -2750,7 +2790,7 @@ function renderBazaarPrices() {
                 </button>
               </header>
               <div class="bazaar-sub-row" aria-label="ジャンルと更新日">
-                <p class="bazaar-category">${row.itemCategory || "-"}</p>
+                <p class="bazaar-category">${buildItemCategoryLabelHtml(row.itemCategory)}</p>
                 <p class="bazaar-updated-at">更新: ${bazaarCsvUpdatedAt}</p>
               </div>
               <div class="bazaar-main">

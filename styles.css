@@ -1087,6 +1087,29 @@ button {
   line-height: 1.2;
 }
 
+.bazaar-category-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.bazaar-category-icon {
+  width: 18px;
+  height: 18px;
+  object-fit: contain;
+  flex-shrink: 0;
+}
+
+.bazaar-category-fallback {
+  font-size: 0.7rem;
+  line-height: 1;
+  color: #7d624a;
+}
+
+.bazaar-category-text {
+  display: inline-block;
+}
+
 .bazaar-favorite-button {
   width: 36px;
   height: 36px;
@@ -1946,6 +1969,15 @@ button {
 
   .bazaar-category {
     font-size: 0.72rem;
+  }
+
+  .bazaar-category-label {
+    gap: 5px;
+  }
+
+  .bazaar-category-icon {
+    width: 16px;
+    height: 16px;
   }
 
   .bazaar-updated-at {
