@@ -109,6 +109,7 @@ const EQUIPMENT_TYPE_ICON_PATH_MAP = new Map([
   ["大盾", "/assets/icons/equipment/large_shield.png"],
   ["兜", "/assets/icons/equipment/helmet.png"],
   ["頭", "/assets/icons/equipment/helmet.png"],
+  ["防具セット", "/assets/icons/equipment/set_equipment.png"],
   ["からだ上", "/assets/icons/equipment/armor_upper.png"],
   ["からだ下", "/assets/icons/equipment/armor_lower.png"],
   ["腕", "/assets/icons/equipment/gloves.png"],
@@ -137,6 +138,12 @@ function getEquipmentTypeIconPath(typeName) {
   const normalizedType = String(typeName || "").trim();
   if (normalizedType === "") return "";
   return EQUIPMENT_TYPE_ICON_PATH_MAP.get(normalizedType) || "";
+}
+
+function isArmorSetEntry(entry) {
+  const equipmentGroup = String(entry?.equipmentGroup || "").trim();
+  const equipmentType = String(entry?.equipmentType || "").trim();
+  return equipmentGroup === "armor" || equipmentType === "防具セット";
 }
 
 // 初期データ（CSVが読み込めない場合のフォールバック）
@@ -2055,8 +2062,9 @@ function renderEquipmentDbCards() {
                 const isExpanded = expandedEquipmentDbId === entry.id;
                 const levelText = Number.isFinite(entry.equipmentLevel) ? `Lv${entry.equipmentLevel}` : "Lv-";
                 const isArmor = String(entry.equipmentGroup || "") === "armor";
-                const typeIconPath = getEquipmentTypeIconPath(entry.equipmentType);
-                const typeLabel = entry.equipmentType || "-";
+                const isArmorSet = isArmorSetEntry(entry);
+                const typeLabel = isArmorSet ? "防具セット" : entry.equipmentType || "-";
+                const typeIconPath = getEquipmentTypeIconPath(typeLabel);
                 const typeMetaText = typeIconPath
                   ? `<span class="equipment-type-meta"><img src="${resolveProjectScopedAssetUrl(typeIconPath)}" alt="" class="equipment-type-icon" loading="lazy" decoding="async"><span>${typeLabel}</span></span>`
                   : typeLabel;
@@ -2076,16 +2084,22 @@ function renderEquipmentDbCards() {
                     : `<p class="equipment-db-trait-empty">特性情報なし</p>`;
                 const armorStatsHtml =
                   isArmor && stats.length > 0
-                    ? `<div class="equipment-db-detail-section equipment-db-detail-section-first">
+                    ? `<div class="equipment-db-detail-section ${isArmorSet ? "" : "equipment-db-detail-section-first"}">
                         <p class="equipment-db-traits-title">上昇能力値</p>
                         <ul class="equipment-db-stats-list">${stats.join("")}</ul>
                       </div>`
                     : isArmor
-                      ? `<div class="equipment-db-detail-section equipment-db-detail-section-first">
+                      ? `<div class="equipment-db-detail-section ${isArmorSet ? "" : "equipment-db-detail-section-first"}">
                           <p class="equipment-db-traits-title">上昇能力値</p>
                           <p class="equipment-db-trait-empty">上昇能力値なし</p>
                         </div>`
                       : "";
+                const armorSetTypeMetaHtml = isArmorSet
+                  ? `<div class="equipment-db-detail-section equipment-db-detail-section-first">
+                      <p class="equipment-db-traits-title">装備種別</p>
+                      <p class="equipment-db-card-meta">${typeMetaText}</p>
+                    </div>`
+                  : "";
                 const armorWhiteBoxDropHtml =
                   entry.whiteBoxHasDrop && Array.isArray(entry.whiteBoxArmorDropsBySlot) && entry.whiteBoxArmorDropsBySlot.length > 0
                     ? `<div class="equipment-db-armor-drop-list">${entry.whiteBoxArmorDropsBySlot
@@ -2113,12 +2127,13 @@ function renderEquipmentDbCards() {
                   <article class="card equipment-db-card equipment-db-card-${isArmor ? "armor" : "weapon"} ${isExpanded ? "is-expanded" : ""}">
                     <button type="button" class="equipment-db-card-toggle" data-equipment-db-id="${entry.id}" aria-expanded="${isExpanded ? "true" : "false"}">
                       <h3 class="equipment-db-card-name">${entry.equipmentName}</h3>
-                      ${isArmor ? "" : `<p class="equipment-db-card-meta">${typeMetaText}</p>`}
+                      ${isArmor && isArmorSet ? `<p class="equipment-db-card-meta">${typeMetaText}</p>` : isArmor ? "" : `<p class="equipment-db-card-meta">${typeMetaText}</p>`}
                       <p class="equipment-db-card-meta">${levelText}</p>
                       ${!isArmor && stats.length > 0 ? `<ul class="equipment-db-stats-list">${stats.join("")}</ul>` : ""}
                       ${collapsedTraitsHtml}
                     </button>
                     <div class="equipment-db-card-traits ${isExpanded ? "is-open" : ""}" ${isExpanded ? "" : "hidden"}>
+                      ${armorSetTypeMetaHtml}
                       ${armorStatsHtml}
                       ${isArmor ? "" : `<p class="equipment-db-traits-title">特性</p>${traitsHtml}`}
                       <div class="equipment-db-detail-section">
