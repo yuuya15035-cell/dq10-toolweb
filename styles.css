@@ -1095,8 +1095,8 @@ button {
 }
 
 .bazaar-category-icon {
-  width: 18px;
-  height: 18px;
+  width: 20px;
+  height: 20px;
   flex-shrink: 0;
   object-fit: contain;
   opacity: 0.9;
@@ -1979,8 +1979,8 @@ button {
 
   .bazaar-category-icon,
   .bazaar-category-icon-fallback {
-    width: 16px;
-    height: 16px;
+    width: 18px;
+    height: 18px;
   }
 
   .bazaar-updated-at {
