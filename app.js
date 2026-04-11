@@ -103,6 +103,7 @@ const EQUIPMENT_TYPE_ICON_PATH_MAP = new Map([
   ["爪", "/assets/icons/equipment/claw.png"],
   ["ツメ", "/assets/icons/equipment/claw.png"],
   ["ムチ", "/assets/icons/equipment/whip.png"],
+  ["扇", "/assets/icons/equipment/fan.png"],
   ["弓", "/assets/icons/equipment/bow.png"],
   ["小盾", "/assets/icons/equipment/small_shield.png"],
   ["大盾", "/assets/icons/equipment/large_shield.png"],

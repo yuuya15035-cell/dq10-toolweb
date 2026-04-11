@@ -2858,6 +2858,11 @@ button {
 }
 
 @media (min-width: 900px) {
+  .equipment-type-icon {
+    width: 18px;
+    height: 18px;
+  }
+
   .orb-card-grid {
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
