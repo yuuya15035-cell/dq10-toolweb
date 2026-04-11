@@ -86,6 +86,33 @@ const WHITE_BOX_SLOT_NORMALIZE_MAP = new Map([
   ["腕", "腕"],
   ["足", "足"],
 ]);
+const EQUIPMENT_TYPE_ICON_PATH_MAP = new Map([
+  ["片手剣", "/assets/icons/equipment/one_hand_sword.png"],
+  ["両手剣", "/assets/icons/equipment/two_hand_sword.png"],
+  ["短剣", "/assets/icons/equipment/dagger.png"],
+  ["斧", "/assets/icons/equipment/axe.png"],
+  ["槍", "/assets/icons/equipment/spear.png"],
+  ["やり", "/assets/icons/equipment/spear.png"],
+  ["スティック", "/assets/icons/equipment/stick.png"],
+  ["両手杖", "/assets/icons/equipment/staff.png"],
+  ["杖", "/assets/icons/equipment/staff.png"],
+  ["ブーメラン", "/assets/icons/equipment/boomerang.png"],
+  ["棍", "/assets/icons/equipment/rod.png"],
+  ["鎌", "/assets/icons/equipment/scythe.png"],
+  ["ハンマー", "/assets/icons/equipment/hammer.png"],
+  ["爪", "/assets/icons/equipment/claw.png"],
+  ["ツメ", "/assets/icons/equipment/claw.png"],
+  ["ムチ", "/assets/icons/equipment/whip.png"],
+  ["弓", "/assets/icons/equipment/bow.png"],
+  ["小盾", "/assets/icons/equipment/small_shield.png"],
+  ["大盾", "/assets/icons/equipment/large_shield.png"],
+  ["兜", "/assets/icons/equipment/helmet.png"],
+  ["頭", "/assets/icons/equipment/helmet.png"],
+  ["からだ上", "/assets/icons/equipment/armor_upper.png"],
+  ["からだ下", "/assets/icons/equipment/armor_lower.png"],
+  ["腕", "/assets/icons/equipment/gloves.png"],
+  ["足", "/assets/icons/equipment/boots.png"],
+]);
 
 function resolveProjectScopedAssetUrl(path) {
   if (!path) return "";
@@ -103,6 +130,12 @@ function resolveProjectScopedAssetUrl(path) {
     return path;
   }
   return `${projectBasePath}${path}`;
+}
+
+function getEquipmentTypeIconPath(typeName) {
+  const normalizedType = String(typeName || "").trim();
+  if (normalizedType === "") return "";
+  return EQUIPMENT_TYPE_ICON_PATH_MAP.get(normalizedType) || "";
 }
 
 // 初期データ（CSVが読み込めない場合のフォールバック）
@@ -1832,6 +1865,11 @@ function renderWhiteBoxCards() {
               .map((entry) => {
                 const isExpanded = expandedWhiteBoxItemId === entry.id;
                 const levelText = Number.isFinite(entry.equipmentLevel) ? `Lv ${entry.equipmentLevel}` : "Lv -";
+                const slotIconPath = getEquipmentTypeIconPath(entry.itemSlot);
+                const slotMetaLabel = entry.itemSlot || "-";
+                const slotMetaText = slotIconPath
+                  ? `<span class="equipment-type-meta"><img src="${resolveProjectScopedAssetUrl(slotIconPath)}" alt="" class="equipment-type-icon" loading="lazy" decoding="async"><span>部位: ${slotMetaLabel}</span></span>`
+                  : `部位: ${slotMetaLabel}`;
                 const monsterListHtml =
                   entry.hasDropMonster && entry.monsters.length > 0
                     ? `<ul class="whitebox-monster-list">${entry.monsters
@@ -1843,7 +1881,7 @@ function renderWhiteBoxCards() {
                     <button type="button" class="whitebox-card-toggle" data-whitebox-item-id="${entry.id}" aria-expanded="${isExpanded ? "true" : "false"}">
                       <h3 class="whitebox-card-name">${entry.itemName}</h3>
                       <p class="whitebox-card-meta">${levelText}</p>
-                      <p class="whitebox-card-meta">部位: ${entry.itemSlot || "-"}</p>
+                      <p class="whitebox-card-meta">${slotMetaText}</p>
                     </button>
                     <div class="whitebox-card-monsters ${isExpanded ? "is-open" : ""}" ${isExpanded ? "" : "hidden"}>
                       <p class="whitebox-monster-title">ドロップモンスター</p>
@@ -2016,6 +2054,11 @@ function renderEquipmentDbCards() {
                 const isExpanded = expandedEquipmentDbId === entry.id;
                 const levelText = Number.isFinite(entry.equipmentLevel) ? `Lv${entry.equipmentLevel}` : "Lv-";
                 const isArmor = String(entry.equipmentGroup || "") === "armor";
+                const typeIconPath = getEquipmentTypeIconPath(entry.equipmentType);
+                const typeLabel = entry.equipmentType || "-";
+                const typeMetaText = typeIconPath
+                  ? `<span class="equipment-type-meta"><img src="${resolveProjectScopedAssetUrl(typeIconPath)}" alt="" class="equipment-type-icon" loading="lazy" decoding="async"><span>${typeLabel}</span></span>`
+                  : typeLabel;
                 const stats = buildEquipmentDbStatsHtml(entry);
                 const collapsedTraitsHtml =
                   isArmor && entry.traits.length > 0
@@ -2069,7 +2112,7 @@ function renderEquipmentDbCards() {
                   <article class="card equipment-db-card equipment-db-card-${isArmor ? "armor" : "weapon"} ${isExpanded ? "is-expanded" : ""}">
                     <button type="button" class="equipment-db-card-toggle" data-equipment-db-id="${entry.id}" aria-expanded="${isExpanded ? "true" : "false"}">
                       <h3 class="equipment-db-card-name">${entry.equipmentName}</h3>
-                      ${isArmor ? "" : `<p class="equipment-db-card-meta">${entry.equipmentType || "-"}</p>`}
+                      ${isArmor ? "" : `<p class="equipment-db-card-meta">${typeMetaText}</p>`}
                       <p class="equipment-db-card-meta">${levelText}</p>
                       ${!isArmor && stats.length > 0 ? `<ul class="equipment-db-stats-list">${stats.join("")}</ul>` : ""}
                       ${collapsedTraitsHtml}
