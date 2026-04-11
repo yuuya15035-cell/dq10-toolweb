@@ -672,6 +672,7 @@ const menuOverlay = getRequiredElementById("menuOverlay");
 const sideMenuItems = document.querySelectorAll(".side-menu-item");
 
 const equipmentSelect = getRequiredElementById("equipmentSelect");
+const selectedEquipmentTypeMeta = getRequiredElementById("selectedEquipmentTypeMeta");
 const recipeFavoriteActionWrap = getRequiredElementById("recipeFavoriteActionWrap");
 const craftIdealValueWrap = getRequiredElementById("craftIdealValueWrap");
 const equipmentSearchToggleButton = getRequiredElementById("equipmentSearchToggleButton");
@@ -3761,7 +3762,30 @@ function renderEquipmentSelectors() {
   if (filteredEquipments.length > 0 && !state.equipments.some((e) => e.id === selectedEquipmentId)) selectedEquipmentId = "";
   equipmentSelect.value = selectedEquipmentId;
   recipeEquipmentSelect.value = selectedEquipmentId || state.equipments[0]?.id || "";
+  renderSelectedEquipmentTypeMeta();
   renderRecipeFavoriteAction();
+}
+
+function renderSelectedEquipmentTypeMeta() {
+  if (!selectedEquipmentTypeMeta) return;
+
+  const equipment = getSelectedEquipment();
+  const typeLabel = String(equipment?.category || "").trim();
+  const typeIconPath = getEquipmentTypeIconPath(typeLabel);
+
+  if (!equipment || !typeLabel || !typeIconPath) {
+    selectedEquipmentTypeMeta.innerHTML = "";
+    selectedEquipmentTypeMeta.hidden = true;
+    return;
+  }
+
+  selectedEquipmentTypeMeta.innerHTML = `
+    <span class="equipment-type-meta selected-equipment-type-chip">
+      <img src="${resolveProjectScopedAssetUrl(typeIconPath)}" alt="" class="equipment-type-icon" loading="lazy" decoding="async">
+      <span>種別: ${typeLabel}</span>
+    </span>
+  `;
+  selectedEquipmentTypeMeta.hidden = false;
 }
 
 function renderFilterSelectors() {

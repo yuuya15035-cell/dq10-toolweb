@@ -2511,6 +2511,16 @@ button {
   opacity: 0.88;
 }
 
+.selected-equipment-type-meta {
+  margin: -6px 0 6px;
+  min-height: 20px;
+}
+
+.selected-equipment-type-chip {
+  font-size: 0.82rem;
+  color: #7b634d;
+}
+
 .whitebox-card.whitebox-card-type-armor .whitebox-card-meta {
   color: #dde3ee;
 }
