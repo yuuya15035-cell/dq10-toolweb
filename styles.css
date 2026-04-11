@@ -1087,6 +1087,35 @@ button {
   line-height: 1.2;
 }
 
+.bazaar-category-with-icon {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+}
+
+.bazaar-category-icon {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+  object-fit: contain;
+  opacity: 0.9;
+}
+
+.bazaar-category-icon-fallback {
+  width: 18px;
+  height: 18px;
+  border-radius: 4px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(116, 89, 66, 0.16);
+  color: #745942;
+  font-size: 0.7rem;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
 .bazaar-favorite-button {
   width: 36px;
   height: 36px;
@@ -1946,6 +1975,12 @@ button {
 
   .bazaar-category {
     font-size: 0.72rem;
+  }
+
+  .bazaar-category-icon,
+  .bazaar-category-icon-fallback {
+    width: 16px;
+    height: 16px;
   }
 
   .bazaar-updated-at {
