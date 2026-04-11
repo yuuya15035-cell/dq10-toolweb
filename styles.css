@@ -182,6 +182,13 @@ body.is-modal-open {
   gap: 10px;
 }
 
+.top-quick-access-note {
+  margin: -4px 0 10px;
+  font-size: 0.78rem;
+  line-height: 1.4;
+  color: #5a3c27;
+}
+
 .top-tool-card {
   display: grid;
   gap: 4px;
