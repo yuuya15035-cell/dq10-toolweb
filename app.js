@@ -110,6 +110,7 @@ const EQUIPMENT_TYPE_ICON_PATH_MAP = new Map([
   ["兜", "/assets/icons/equipment/helmet.png"],
   ["頭", "/assets/icons/equipment/helmet.png"],
   ["防具セット", "/assets/icons/equipment/set_equipment.png"],
+  ["set_equipment", "/assets/icons/equipment/set_equipment.png"],
   ["からだ上", "/assets/icons/equipment/armor_upper.png"],
   ["からだ下", "/assets/icons/equipment/armor_lower.png"],
   ["腕", "/assets/icons/equipment/gloves.png"],
