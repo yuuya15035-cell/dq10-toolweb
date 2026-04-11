@@ -123,6 +123,13 @@ const ITEM_CATEGORY_ICON_PATH_MAP = new Map([
   ["モンスター系", "/assets/icons/item/bone.png"],
   ["その他", "/assets/icons/item/miscellaneous goods.png"],
 ]);
+const ORB_CATEGORY_ICON_PATH_MAP = new Map([
+  ["炎", "/assets/icons/orb/fire_orb.png"],
+  ["水", "/assets/icons/orb/water_orb.png"],
+  ["風", "/assets/icons/orb/wind_orb.png"],
+  ["光", "/assets/icons/orb/light_orb.png"],
+  ["闇", "/assets/icons/orb/dark_orb.png"],
+]);
 
 function resolveProjectScopedAssetUrl(path) {
   if (!path) return "";
@@ -157,6 +164,41 @@ function getItemCategoryIconPath(categoryName) {
     return ITEM_CATEGORY_ICON_PATH_MAP.get("その他") || "";
   }
   return ITEM_CATEGORY_ICON_PATH_MAP.get(compactCategory) || "";
+}
+
+function normalizeOrbCategoryName(categoryName) {
+  const normalizedCategory = String(categoryName || "").trim().replace(/\s+/g, "");
+  if (normalizedCategory === "") return "";
+  const matchedBaseCategory = normalizedCategory.match(/(炎|水|風|光|闇)/);
+  return matchedBaseCategory ? matchedBaseCategory[1] : normalizedCategory;
+}
+
+function getOrbCategoryIconPath(categoryName) {
+  const normalizedCategory = normalizeOrbCategoryName(categoryName);
+  if (normalizedCategory === "") return "";
+  return ORB_CATEGORY_ICON_PATH_MAP.get(normalizedCategory) || "";
+}
+
+function buildOrbCategoryLabelHtml(categoryName) {
+  const rawLabel = String(categoryName || "").trim();
+  const normalizedCategory = normalizeOrbCategoryName(rawLabel);
+  const label = rawLabel || "-";
+  const iconPath = getOrbCategoryIconPath(rawLabel);
+  if (!iconPath) return `<span class="orb-card-category-label">${label}</span>`;
+
+  return `
+    <span class="orb-card-category-with-icon">
+      <img
+        src="${resolveProjectScopedAssetUrl(iconPath)}"
+        alt="${normalizedCategory || label}の宝珠アイコン"
+        class="orb-card-category-icon"
+        loading="lazy"
+        decoding="async"
+        onerror="this.hidden=true;"
+      >
+      <span class="orb-card-category-label">${label}</span>
+    </span>
+  `;
 }
 
 function buildBazaarCategoryLabelHtml(categoryName) {
@@ -1106,7 +1148,7 @@ function mergeUniqueMonsterNames(currentNames, newNames) {
 }
 
 function getOrbCategoryClassName(category) {
-  const normalizedCategory = String(category || "").trim();
+  const normalizedCategory = normalizeOrbCategoryName(category);
   const categoryClassMap = {
     炎: "fire",
     水: "water",
@@ -1119,7 +1161,7 @@ function getOrbCategoryClassName(category) {
 
 function getOrbCategorySortOrder(category) {
   const order = ["炎", "水", "風", "光", "闇"];
-  const index = order.indexOf(String(category || "").trim());
+  const index = order.indexOf(normalizeOrbCategoryName(category));
   return index >= 0 ? index : Number.MAX_SAFE_INTEGER;
 }
 
@@ -2978,7 +3020,7 @@ function formatPresentCodeReward(rewardText) {
 function getOrbFilteredRows() {
   const normalizedKeyword = String(orbSearchKeyword || "").trim().toLowerCase();
   return (orbEntries || []).filter((row) => {
-    if (selectedOrbCategory !== "" && row.orbCategory !== selectedOrbCategory) return false;
+    if (selectedOrbCategory !== "" && normalizeOrbCategoryName(row.orbCategory) !== selectedOrbCategory) return false;
     if (normalizedKeyword === "") return true;
     return [row.orbName, row.effect, row.monsterNames.join(" ")]
       .join(" ")
@@ -3002,7 +3044,9 @@ function renderOrbCards() {
     return;
   }
 
-  const categories = ["炎", "水", "風", "光", "闇"].filter((category) => orbEntries.some((row) => row.orbCategory === category));
+  const categories = ["炎", "水", "風", "光", "闇"].filter((category) =>
+    orbEntries.some((row) => normalizeOrbCategoryName(row.orbCategory) === category)
+  );
   orbCategoryFilterWrap.innerHTML = `
     <button type="button" class="orb-category-button ${selectedOrbCategory === "" ? "is-active" : ""}" data-orb-category="">すべて</button>
     ${categories
@@ -3031,7 +3075,7 @@ function renderOrbCards() {
                 return `
                   <article class="card orb-card orb-card-category-${orbCategoryClass} ${isExpanded ? "is-expanded" : ""}">
                     <button type="button" class="orb-card-toggle" data-orb-id="${row.id}" aria-expanded="${isExpanded ? "true" : "false"}">
-                      <p class="orb-card-category">${row.orbCategory || "-"}</p>
+                      <p class="orb-card-category">${buildOrbCategoryLabelHtml(row.orbCategory)}</p>
                       <h3 class="orb-card-name">${row.orbName}</h3>
                       <p class="orb-card-effect">${row.effect || "-"}</p>
                     </button>

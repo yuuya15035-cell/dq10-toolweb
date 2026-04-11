@@ -2823,6 +2823,24 @@ button {
   font-weight: 700;
 }
 
+.orb-card-category-with-icon {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+}
+
+.orb-card-category-icon {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+  object-fit: contain;
+}
+
+.orb-card-category-label {
+  display: inline-block;
+}
+
 .orb-card-name {
   margin: 4px 0 6px;
   font-size: 1.02rem;
