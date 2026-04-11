@@ -162,6 +162,98 @@ body.is-modal-open {
   box-shadow: 0 4px 14px var(--panel-shadow);
 }
 
+.top-quick-access {
+  margin-bottom: 14px;
+  padding: 12px;
+  border: 1px solid #bfa384;
+  border-radius: 12px;
+  background: rgba(247, 238, 224, 0.9);
+}
+
+.top-quick-access h2,
+.top-update-list h2 {
+  margin: 0 0 10px;
+  font-size: 1rem;
+  color: #4f3522;
+}
+
+.top-tool-grid {
+  display: grid;
+  gap: 10px;
+}
+
+.top-tool-card {
+  display: grid;
+  gap: 4px;
+  border-radius: 12px;
+  text-align: left;
+}
+
+.top-tool-card strong {
+  font-size: 0.98rem;
+}
+
+.top-tool-card span {
+  font-size: 0.82rem;
+  line-height: 1.45;
+  font-weight: 500;
+}
+
+.top-tool-card-group {
+  border: 1px solid #bfa384;
+  border-radius: 12px;
+  padding: 10px 12px;
+  background: linear-gradient(180deg, #f4e7d5 0%, #e5d1b7 100%);
+}
+
+.top-tool-card-title {
+  margin: 0;
+  font-size: 0.98rem;
+  font-weight: 800;
+  color: #422b1b;
+}
+
+.top-tool-card-description {
+  margin: 4px 0 0;
+  font-size: 0.82rem;
+  line-height: 1.45;
+  color: #4a3120;
+}
+
+.top-tool-link-row {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.top-tool-link-button {
+  text-align: center;
+  padding: 10px 8px;
+}
+
+.top-update-list {
+  margin-top: 0;
+  margin-bottom: 14px;
+}
+
+.top-update-list ul {
+  margin: 0;
+  padding-left: 18px;
+  display: grid;
+  gap: 5px;
+}
+
+.top-update-list li {
+  font-size: 0.83rem;
+  line-height: 1.5;
+}
+
+.top-update-list time {
+  font-weight: 700;
+  margin-right: 6px;
+}
+
 .tab-content > h2 {
   margin: 0 0 10px;
   border: 1px solid #795338;

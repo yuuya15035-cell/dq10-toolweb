@@ -76,10 +76,46 @@
       <header class="app-header">
         <h1>ドラゴンクエスト10支援サイト</h1>
         <p class="app-header-price-note">
-          ※ 価格・原価はゲーム内確認ベースのため、更新タイミングや相場変動により実際の価格と差が出る場合があります。ご了承ください。
+          ※価格・情報は手動確認ベースのため、更新タイミングにより実際のゲーム内状況と差が出る場合があります。
         </p>
-        <p>バザー・職人・キラキラ拾いなどの支援サイトです</p>
+        <p>ドラゴンクエスト10の日常プレイを少し便利にする支援サイトです。</p>
+        <p>バザー確認、職人準備、装備検索などをスマホでも見やすくまとめています。</p>
       </header>
+
+      <section class="top-quick-access" aria-label="トップページ導線">
+        <h2>便利ツール</h2>
+        <div class="top-tool-grid">
+          <button type="button" class="top-tool-card side-menu-item" data-menu-target="profit">
+            <strong>職人アシスト</strong>
+            <span>装備ごとの必要素材・原価・販売利益をまとめて確認できます。</span>
+          </button>
+          <button type="button" class="top-tool-card side-menu-item" data-menu-target="bazaar">
+            <strong>バザー価格一覧</strong>
+            <span>主要素材の価格と前回比を見ながら、相場の変化をすぐ把握できます。</span>
+          </button>
+          <div class="top-tool-card-group">
+            <p class="top-tool-card-title">装備・白宝箱</p>
+            <p class="top-tool-card-description">装備データの確認と、白宝箱ドロップ情報の検索に使えます。</p>
+            <div class="top-tool-link-row">
+              <button type="button" class="top-tool-link-button side-menu-item" data-menu-target="equipment-db">装備</button>
+              <button type="button" class="top-tool-link-button side-menu-item" data-menu-target="white-boxes">白宝箱</button>
+            </div>
+          </div>
+          <button type="button" class="top-tool-card side-menu-item" data-menu-target="favorites">
+            <strong>お気に入り</strong>
+            <span>よく見る装備や素材を保存し、次回以降の確認を短時間で行えます。</span>
+          </button>
+        </div>
+      </section>
+
+      <section class="top-update-list card" aria-label="更新情報">
+        <h2>更新情報</h2>
+        <ul>
+          <li><time datetime="2026-04-11">2026/04/11</time> トップページの導線を見直して主要機能へ移動しやすくしました。</li>
+          <li><time datetime="2026-04-08">2026/04/08</time> 装備・白宝箱の検索画面を使いやすく調整しました。</li>
+          <li><time datetime="2026-04-05">2026/04/05</time> バザー価格一覧の表示内容を更新しました。</li>
+        </ul>
+      </section>
 
       <section id="profit" class="tab-content active" aria-label="職人アシスト画面">
         <h2 class="assist-section-title">
