@@ -121,7 +121,7 @@ const ITEM_CATEGORY_ICON_PATH_MAP = new Map([
   ["植物系", "/assets/icons/item/plant.png"],
   ["消費アイテム", "/assets/icons/item/herb.png"],
   ["モンスター系", "/assets/icons/item/bone.png"],
-  ["その他", "/assets/icons/item/miscellaneous_goods.png"],
+  ["その他", "/assets/icons/item/miscellaneous goods.png"],
 ]);
 
 function resolveProjectScopedAssetUrl(path) {
@@ -151,7 +151,12 @@ function getEquipmentTypeIconPath(typeName) {
 function getItemCategoryIconPath(categoryName) {
   const normalizedCategory = String(categoryName || "").trim();
   if (normalizedCategory === "") return "";
-  return ITEM_CATEGORY_ICON_PATH_MAP.get(normalizedCategory) || "";
+
+  const compactCategory = normalizedCategory.replace(/\s+/g, "");
+  if (compactCategory === "そのほか") {
+    return ITEM_CATEGORY_ICON_PATH_MAP.get("その他") || "";
+  }
+  return ITEM_CATEGORY_ICON_PATH_MAP.get(compactCategory) || "";
 }
 
 function buildBazaarCategoryLabelHtml(categoryName) {
@@ -168,9 +173,8 @@ function buildBazaarCategoryLabelHtml(categoryName) {
         class="bazaar-category-icon"
         loading="lazy"
         decoding="async"
-        onerror="this.hidden=true; if (this.nextElementSibling) this.nextElementSibling.hidden=false;"
+        onerror="this.hidden=true;"
       >
-      <span class="bazaar-category-icon-fallback" hidden aria-hidden="true">・</span>
       <span class="bazaar-category-label">${label}</span>
     </span>
   `;
