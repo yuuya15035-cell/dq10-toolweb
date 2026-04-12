@@ -4941,9 +4941,11 @@ function renderRecipeTable() {
       const material = state.materials.find((m) => m.id === row.materialId);
       const marketUrl = getOfficialBazaarUrlByMaterialName(material?.name);
       const price = getEffectiveMaterialPrice(row.materialId);
+      const safePrice = Number.isFinite(price) ? price : 0;
       const totalRequired = row.quantity * productionCount;
-      const subtotal = price * totalRequired;
+      const subtotal = safePrice * totalRequired;
       return {
+        subtotalRaw: subtotal,
         table: `
           <tr>
             <td>${material?.name ?? "(削除済み素材)"}</td>
@@ -4956,7 +4958,7 @@ function renderRecipeTable() {
                 type="number"
                 min="0"
                 step="1"
-                value="${price}"
+                value="${safePrice}"
                 data-temp-material-price-id="${row.materialId}"
               >
             </td>
@@ -4991,7 +4993,7 @@ function renderRecipeTable() {
                   type="number"
                   min="0"
                   step="1"
-                  value="${price}"
+                  value="${safePrice}"
                   aria-label="単価"
                   data-temp-material-price-id="${row.materialId}"
                 >
@@ -5016,7 +5018,13 @@ function renderRecipeTable() {
       };
     });
 
+  const totalMaterialCost = htmlRows.reduce((sum, row) => sum + row.subtotalRaw, 0);
+
   recipeTableWrap.innerHTML = `
+    <div class="recipe-total-cost" aria-live="polite">
+      <span>材料原価合計</span>
+      <strong>${formatGold(totalMaterialCost)}</strong>
+    </div>
     <div class="recipe-table-desktop">
       <table class="table">
         <thead>
