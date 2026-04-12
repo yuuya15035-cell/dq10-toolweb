@@ -15,7 +15,6 @@ const MONSTER_DATA_CSV_PATH = "./data/monster_data.csv";
 const ORB_MONSTERS_CSV_PATH = "./data/orb_monsters.csv";
 const WHITE_BOX_CSV_PATH = "./data/white_box.csv";
 const EQUIPMENT_DB_CSV_PATH = "./data/equipment_data.csv";
-const LAST_UPDATED_JSON_PATH = "./data/last-updated.json";
 const OFFICIAL_BAZAAR_TOP_URL = "https://dqx-souba.game-blog.app/";
 const OFFICIAL_PRESENT_CODE_URL = "https://hiroba.dqx.jp/sc/campaignCode/itemcode/";
 const BAZAAR_FAVORITES_STORAGE_KEY = "dq10_toolweb_bazaar_favorites_v1";
@@ -673,7 +672,6 @@ let bazaarSearchText = "";
 let selectedBazaarMaterialName = "";
 let isBazaarSearchComposing = false;
 let shouldRefocusBazaarSearchInput = false;
-let bazaarCsvUpdatedAt = "-";
 let showBazaarFavoritesOnly = false;
 let activeFavoritesTabId = "recipes";
 let bazaarFavoriteMaterialKeys = new Set();
@@ -932,24 +930,6 @@ function formatBazaarUpdatedAt(rawValue) {
     hour: "2-digit",
     minute: "2-digit",
   }).format(parsed);
-}
-
-async function loadBazaarLastUpdatedAt() {
-  try {
-    console.info(`[last-updated.json] fetch start: ${LAST_UPDATED_JSON_PATH}`);
-    const response = await fetch(LAST_UPDATED_JSON_PATH);
-    if (!response.ok) {
-      throw new Error(`status=${response.status}`);
-    }
-
-    const payload = await response.json();
-    const formatted = formatBazaarUpdatedAt(payload?.bazaarCsvUpdatedAt);
-    console.info(`[last-updated.json] fetch success: bazaarCsvUpdatedAt=${formatted}`);
-    return formatted;
-  } catch (error) {
-    console.warn("[last-updated.json] 読み込みに失敗したため、更新時刻は '-' を表示します", error);
-    return "-";
-  }
 }
 
 function parseNullableNumber(value) {
@@ -2803,6 +2783,7 @@ function renderBazaarPrices() {
           const sparklineSvgMobile = hasHistory ? buildBazaarSparklineSvg(history) : "";
           const externalYAxisLabels = hasHistory ? buildBazaarChartExternalYAxisLabels(history) : "";
           const commentHtml = row.comment !== "" ? `<p class="bazaar-price-comment">${row.comment}</p>` : "";
+          const updatedAtText = formatBazaarUpdatedAt(row.updatedAt);
           const changeArrowHtml = changePresentation.isComputable
             ? `<span class="bazaar-change-arrow ${changePresentation.toneClass}" aria-hidden="true">${changePresentation.arrow}</span>`
             : "";
@@ -2832,7 +2813,7 @@ function renderBazaarPrices() {
               </header>
               <div class="bazaar-sub-row" aria-label="ジャンルと更新日">
                 <p class="bazaar-category">${buildBazaarCategoryLabelHtml(row.itemCategory)}</p>
-                <p class="bazaar-updated-at">更新: ${bazaarCsvUpdatedAt}</p>
+                <p class="bazaar-updated-at">更新: ${updatedAtText}</p>
               </div>
               <div class="bazaar-main">
                 <div class="bazaar-primary">
@@ -4898,8 +4879,6 @@ async function initialize() {
     console.warn("recipe.csv の読み込みに失敗したため、フォールバックデータを使用します", error);
     state = mergeWithStoredData(structuredClone(defaultData), storedData);
   }
-
-  bazaarCsvUpdatedAt = await loadBazaarLastUpdatedAt();
 
   // CSV側が空でも初期表示で一覧が空にならないようフォールバックを維持
   if ((state.equipments || []).length === 0 || (state.recipes || []).length === 0) {
