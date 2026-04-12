@@ -2525,6 +2525,59 @@ button {
   resize: vertical;
 }
 
+[data-content-key].is-content-edit-target {
+  outline: 1px dashed #c68f59;
+  outline-offset: 2px;
+  cursor: text;
+  position: relative;
+}
+
+[data-content-key].is-content-edit-target::after {
+  content: "✎";
+  position: absolute;
+  top: -10px;
+  right: -4px;
+  font-size: 0.72rem;
+  color: #8a5b2c;
+  background: #fff;
+  border: 1px solid #e0c29f;
+  border-radius: 999px;
+  width: 16px;
+  height: 16px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.updates-editor-list {
+  display: grid;
+  gap: 8px;
+}
+
+.updates-editor-item {
+  border: 1px solid #e0d0b9;
+  border-radius: 8px;
+  padding: 8px;
+  background: #fffdfa;
+}
+
+.updates-editor-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.updates-editor-text-field {
+  grid-column: 1 / -1;
+}
+
+.updates-editor-actions {
+  margin-top: 6px;
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
 .admin-fab-wrap {
   position: fixed;
   right: 10px;
