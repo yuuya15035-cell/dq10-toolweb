@@ -35,20 +35,57 @@ const TAB_IDS = new Set([
   "equipment-db",
   "ui-settings",
   "content-editor",
+  "updates-editor",
 ]);
 const ADMIN_MODE_STORAGE_KEY = "dq10_toolweb_admin_mode_v1";
 const ADMIN_PIN = "1010";
 const CONTENT_DEFINITIONS = [
-  { key: "site_intro", label: "サイト説明文", elementId: "contentSiteIntro" },
-  { key: "site_notice", label: "注意書き（価格・情報）", elementId: "contentSiteNotice" },
-  { key: "tools_intro", label: "便利ツール説明", elementId: "contentToolsIntro" },
-  { key: "favorites_intro", label: "お気に入り説明", elementId: "contentFavoritesIntro" },
+  { key: "site_title", label: "サイトタイトル", selector: "#contentSiteTitle" },
+  { key: "site_intro", label: "サイト説明文", selector: "#contentSiteIntro" },
+  { key: "site_summary", label: "サイト概要文", selector: "#contentSiteSummary" },
+  { key: "site_notice", label: "注意書き（価格・情報）", selector: "#contentSiteNotice" },
+  { key: "updates_heading", label: "更新情報見出し", selector: "#contentUpdatesHeading" },
+  { key: "tools_heading", label: "便利ツール見出し", selector: "#contentToolsHeading" },
+  { key: "tools_intro", label: "便利ツール説明", selector: "#contentToolsIntro" },
+  { key: "menu_hint", label: "メニュー補足", selector: "#contentMenuHint" },
+  { key: "tool_card_craft_title", label: "職人カード見出し", selector: "#contentToolCardCraftTitle" },
+  { key: "tool_card_craft_desc", label: "職人カード説明", selector: "#contentToolCardCraftDesc" },
+  { key: "tool_card_bazaar_title", label: "バザーカード見出し", selector: "#contentToolCardBazaarTitle" },
+  { key: "tool_card_bazaar_desc", label: "バザーカード説明", selector: "#contentToolCardBazaarDesc" },
+  { key: "tool_card_equipment_title", label: "装備カード見出し", selector: "#contentToolCardEqTitle" },
+  { key: "tool_card_equipment_desc", label: "装備カード説明", selector: "#contentToolCardEqDesc" },
+  { key: "favorites_intro", label: "お気に入り説明", selector: "#contentFavoritesIntro" },
+  { key: "ui_settings_heading", label: "UI設定見出し", selector: "#ui-settings > h2" },
+  { key: "ui_settings_note", label: "UI設定説明", selector: "#ui-settings .ui-settings-note" },
+  { key: "content_editor_heading", label: "本文編集見出し", selector: "#content-editor > h2" },
+  { key: "content_editor_note", label: "本文編集説明", selector: "#content-editor .ui-settings-note" },
+  { key: "updates_editor_heading", label: "更新情報編集見出し", selector: "#updates-editor > h2" },
+  { key: "updates_editor_note", label: "更新情報編集説明", selector: "#updates-editor .ui-settings-note" },
+  { key: "menu_title", label: "サイドメニュー見出し", selector: ".side-menu-header h2" },
 ];
 const DEFAULT_CONTENT = Object.freeze({
+  site_title: "ドラゴンクエスト10支援サイト",
   site_intro: "ドラゴンクエスト10の日常プレイを少し便利にする支援サイトです。",
+  site_summary: "バザー確認、職人準備、装備検索などをスマホでも見やすくまとめています。",
   site_notice: "※価格・情報は手動確認ベースのため、更新タイミングにより実際のゲーム内状況と差が出る場合があります。",
+  updates_heading: "更新情報",
+  tools_heading: "サイト内便利ツール",
   tools_intro: "各カードをクリックすると対象ページへ移動できます。",
+  menu_hint: "※左上のメニューバーからも操作できます",
+  tool_card_craft_title: "職人アシスト",
+  tool_card_craft_desc: "装備ごとの必要素材・原価・販売利益をまとめて確認できます。",
+  tool_card_bazaar_title: "バザー価格一覧",
+  tool_card_bazaar_desc: "主要素材の価格と前回比を見ながら、相場の変化をすぐ把握できます。",
+  tool_card_equipment_title: "装備・白宝箱",
+  tool_card_equipment_desc: "装備データの確認と、白宝箱ドロップ情報の検索に使えます。",
   favorites_intro: "よく見る装備や素材を保存し、次回以降の確認を短時間で行えます。",
+  ui_settings_heading: "UI設定",
+  ui_settings_note: "スライダーや入力で見た目を調整できます。変更はすぐ反映されます。",
+  content_editor_heading: "本文編集",
+  content_editor_note: "主要な説明文・注意書きを編集できます。変更はすぐ反映されます。",
+  updates_editor_heading: "更新情報編集",
+  updates_editor_note: "更新情報の追加・編集・削除・並び替えができます。変更は上部の更新情報に即時反映されます。",
+  menu_title: "メニュー",
 });
 const FAVORITES_TAB_IDS = new Set(["recipes", "materials"]);
 const RECIPE_SUMMARY_MATERIAL_LIMIT = 4;
@@ -601,11 +638,21 @@ async function loadTopUpdates() {
   const parsed = await response.json();
   if (!Array.isArray(parsed)) return [];
 
-  return parsed
-    .map((entry) => ({
-      date: String(entry?.date || "").trim(),
-      text: String(entry?.text || "").trim(),
-    }))
+  return normalizeUpdates(parsed);
+}
+
+function normalizeUpdateEntry(rawEntry) {
+  const date = String(rawEntry?.date || "").trim();
+  const text = String(rawEntry?.text || "").trim();
+  const url = parseOfficialUrl(rawEntry?.url);
+  const linkLabel = String(rawEntry?.link_label || "").trim();
+  return { date, text, url, link_label: linkLabel };
+}
+
+function normalizeUpdates(rawUpdates) {
+  if (!Array.isArray(rawUpdates)) return [];
+  return rawUpdates
+    .map((entry) => normalizeUpdateEntry(entry))
     .filter((entry) => entry.date !== "" && entry.text !== "")
     .sort((a, b) => b.date.localeCompare(a.date, "ja"));
 }
@@ -627,7 +674,14 @@ function renderTopUpdates() {
 
   topUpdateSection.hidden = false;
   topUpdateList.innerHTML = topUpdates
-    .map((entry) => `<li><time datetime="${entry.date}">${formatTopUpdateDate(entry.date)}</time> ${entry.text}</li>`)
+    .map((entry) => {
+      const safeText = escapeHtml(entry.text);
+      if (entry.url) {
+        const label = escapeHtml(entry.link_label || "詳細");
+        return `<li><time datetime="${entry.date}">${formatTopUpdateDate(entry.date)}</time> ${safeText} <a href="${entry.url}" target="_blank" rel="noopener noreferrer">${label}</a></li>`;
+      }
+      return `<li><time datetime="${entry.date}">${formatTopUpdateDate(entry.date)}</time> ${safeText}</li>`;
+    })
     .join("");
 }
 
@@ -796,6 +850,8 @@ let equipmentDbNameKeyword = "";
 let equipmentDbMonsterKeyword = "";
 let expandedEquipmentDbId = "";
 let topUpdates = [];
+let initialTopUpdates = [];
+let isContentEditModeEnabled = false;
 let isEquipmentDbNameSearchOpen = false;
 let isEquipmentDbMonsterSearchOpen = false;
 let hasLoadedPresentCodes = false;
@@ -924,19 +980,29 @@ const uiSettingsResetButton = getRequiredElementById("uiSettingsResetButton");
 const uiSettingsExportButton = getRequiredElementById("uiSettingsExportButton");
 const uiSettingsMessage = getRequiredElementById("uiSettingsMessage");
 const contentEditorControlList = getRequiredElementById("contentEditorControlList");
+const contentEditorModeToggleButton = getRequiredElementById("contentEditorModeToggleButton");
 const contentEditorResetButton = getRequiredElementById("contentEditorResetButton");
 const contentEditorExportButton = getRequiredElementById("contentEditorExportButton");
 const contentEditorMessage = getRequiredElementById("contentEditorMessage");
+const updatesEditorAddButton = getRequiredElementById("updatesEditorAddButton");
+const updatesEditorResetButton = getRequiredElementById("updatesEditorResetButton");
+const updatesEditorExportButton = getRequiredElementById("updatesEditorExportButton");
+const updatesEditorList = getRequiredElementById("updatesEditorList");
+const updatesEditorMessage = getRequiredElementById("updatesEditorMessage");
 const adminFabToggleButton = getRequiredElementById("adminFabToggleButton");
 const adminFabPanel = getRequiredElementById("adminFabPanel");
 const adminPinGate = getRequiredElementById("adminPinGate");
 const adminPinInput = getRequiredElementById("adminPinInput");
 const adminPinUnlockButton = getRequiredElementById("adminPinUnlockButton");
 const adminActionList = getRequiredElementById("adminActionList");
+const adminOpenManageModeButton = getRequiredElementById("adminOpenManageModeButton");
 const adminOpenUiSettingsButton = getRequiredElementById("adminOpenUiSettingsButton");
 const adminOpenContentEditorButton = getRequiredElementById("adminOpenContentEditorButton");
+const adminToggleContentEditModeButton = getRequiredElementById("adminToggleContentEditModeButton");
+const adminOpenUpdatesEditorButton = getRequiredElementById("adminOpenUpdatesEditorButton");
 const adminExportUiSettingsButton = getRequiredElementById("adminExportUiSettingsButton");
 const adminExportContentButton = getRequiredElementById("adminExportContentButton");
+const adminExportUpdatesButton = getRequiredElementById("adminExportUpdatesButton");
 const adminLockButton = getRequiredElementById("adminLockButton");
 const adminFabMessage = getRequiredElementById("adminFabMessage");
 
@@ -968,6 +1034,15 @@ const recipeMaterialSelect = getRequiredElementById("recipeMaterialSelect");
 
 function formatGold(value) {
   return `${Math.round(value).toLocaleString("ja-JP")} G`;
+}
+
+function escapeHtml(text) {
+  return String(text || "")
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#39;");
 }
 
 function formatBazaarPrice(value) {
@@ -3852,6 +3927,12 @@ function setAdminFabMessage(message, isError = false) {
   adminFabMessage.style.color = isError ? "#8a2c2c" : "";
 }
 
+function setUpdatesEditorMessage(message, isError = false) {
+  if (!updatesEditorMessage) return;
+  updatesEditorMessage.textContent = message;
+  updatesEditorMessage.style.color = isError ? "#8a2c2c" : "";
+}
+
 function normalizeContent(rawContent) {
   const normalized = {};
   CONTENT_DEFINITIONS.forEach((definition) => {
@@ -3878,8 +3959,9 @@ async function loadContentData() {
 
 function applyContentToView() {
   CONTENT_DEFINITIONS.forEach((definition) => {
-    const target = document.getElementById(definition.elementId);
+    const target = document.querySelector(definition.selector);
     if (!target) return;
+    target.dataset.contentKey = definition.key;
     target.textContent = contentData[definition.key] || "";
   });
 }
@@ -3915,6 +3997,78 @@ function downloadContentJson() {
   URL.revokeObjectURL(link.href);
 }
 
+function renderContentEditModeState() {
+  const editableNodes = document.querySelectorAll("[data-content-key]");
+  editableNodes.forEach((node) => {
+    node.classList.toggle("is-content-edit-target", isContentEditModeEnabled);
+    node.contentEditable = isContentEditModeEnabled ? "true" : "false";
+    node.spellcheck = isContentEditModeEnabled;
+  });
+  if (contentEditorModeToggleButton) {
+    contentEditorModeToggleButton.textContent = `本文編集モード: ${isContentEditModeEnabled ? "ON" : "OFF"}`;
+  }
+  if (adminToggleContentEditModeButton) {
+    adminToggleContentEditModeButton.textContent = `本文編集モード: ${isContentEditModeEnabled ? "ON" : "OFF"}`;
+  }
+}
+
+function setContentEditModeEnabled(enabled) {
+  isContentEditModeEnabled = Boolean(enabled);
+  renderContentEditModeState();
+}
+
+function downloadUpdatesJson() {
+  const payload = normalizeUpdates(topUpdates);
+  const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
+  const link = document.createElement("a");
+  link.href = URL.createObjectURL(blob);
+  const datePart = new Date().toISOString().slice(0, 10);
+  link.download = `dq10-updates-${datePart}.json`;
+  document.body.append(link);
+  link.click();
+  link.remove();
+  URL.revokeObjectURL(link.href);
+}
+
+function buildUpdatesEditorItem(entry, index) {
+  const wrapper = document.createElement("div");
+  wrapper.className = "updates-editor-item";
+  wrapper.innerHTML = `
+    <div class="updates-editor-grid">
+      <label class="field">
+        <span>日付</span>
+        <input type="date" value="${escapeHtml(entry.date)}" data-update-index="${index}" data-update-field="date" />
+      </label>
+      <label class="field">
+        <span>リンクURL（任意）</span>
+        <input type="url" value="${escapeHtml(entry.url || "")}" placeholder="https://example.com" data-update-index="${index}" data-update-field="url" />
+      </label>
+      <label class="field">
+        <span>リンク文言（任意）</span>
+        <input type="text" value="${escapeHtml(entry.link_label || "")}" placeholder="詳細を見る" data-update-index="${index}" data-update-field="link_label" />
+      </label>
+      <label class="field updates-editor-text-field">
+        <span>本文</span>
+        <textarea class="content-editor-textarea" data-update-index="${index}" data-update-field="text">${escapeHtml(entry.text)}</textarea>
+      </label>
+    </div>
+    <div class="updates-editor-actions">
+      <button type="button" data-update-action="move-up" data-update-index="${index}">↑ 上へ</button>
+      <button type="button" data-update-action="move-down" data-update-index="${index}">↓ 下へ</button>
+      <button type="button" data-update-action="delete" data-update-index="${index}">削除</button>
+    </div>
+  `;
+  return wrapper;
+}
+
+function renderUpdatesEditorPanel() {
+  if (!updatesEditorList) return;
+  updatesEditorList.innerHTML = "";
+  topUpdates.forEach((entry, index) => {
+    updatesEditorList.append(buildUpdatesEditorItem(entry, index));
+  });
+}
+
 function setAdminModeEnabled(enabled) {
   isAdminModeEnabled = enabled;
   localStorage.setItem(ADMIN_MODE_STORAGE_KEY, enabled ? "1" : "0");
@@ -3932,7 +4086,10 @@ function toggleAdminFabPanel() {
 function switchTab(target) {
   const requestedTarget = TAB_IDS.has(target) ? target : "profit";
   const normalizedTarget =
-    (requestedTarget === "ui-settings" || requestedTarget === "content-editor") && !isAdminModeEnabled ? "profit" : requestedTarget;
+    (requestedTarget === "ui-settings" || requestedTarget === "content-editor" || requestedTarget === "updates-editor") &&
+    !isAdminModeEnabled
+      ? "profit"
+      : requestedTarget;
   activeTabId = normalizedTarget;
   tabButtons.forEach((btn) => btn.classList.toggle("active", btn.dataset.tab === normalizedTarget));
   tabContents.forEach((tab) => tab.classList.toggle("active", tab.id === normalizedTarget));
@@ -4116,11 +4273,32 @@ if (contentEditorControlList) {
   });
 }
 
+document.addEventListener("input", (event) => {
+  const target = event.target;
+  if (!(target instanceof HTMLElement)) return;
+  if (target instanceof HTMLInputElement || target instanceof HTMLTextAreaElement) return;
+  const contentKey = String(target.dataset.contentKey || "");
+  if (!contentKey || !isContentEditModeEnabled || target.contentEditable !== "true") return;
+  const definition = CONTENT_DEFINITIONS.find((item) => item.key === contentKey);
+  if (!definition) return;
+  contentData[definition.key] = target.textContent || "";
+  renderContentEditorPanel();
+  setContentEditorMessage("本文をその場編集で反映しました。");
+});
+
+if (contentEditorModeToggleButton) {
+  contentEditorModeToggleButton.addEventListener("click", () => {
+    setContentEditModeEnabled(!isContentEditModeEnabled);
+    setContentEditorMessage(`本文編集モードを${isContentEditModeEnabled ? "ON" : "OFF"}にしました。`);
+  });
+}
+
 if (contentEditorResetButton) {
   contentEditorResetButton.addEventListener("click", () => {
     contentData = structuredClone(initialContentData);
     applyContentToView();
     renderContentEditorPanel();
+    setContentEditModeEnabled(false);
     setContentEditorMessage("読込時の本文に戻しました。");
   });
 }
@@ -4129,6 +4307,70 @@ if (contentEditorExportButton) {
   contentEditorExportButton.addEventListener("click", () => {
     downloadContentJson();
     setContentEditorMessage("本文JSONをダウンロードしました。");
+  });
+}
+
+if (updatesEditorList) {
+  updatesEditorList.addEventListener("input", (event) => {
+    const input = event.target;
+    if (!(input instanceof HTMLInputElement || input instanceof HTMLTextAreaElement)) return;
+    const index = Number(input.dataset.updateIndex);
+    const field = String(input.dataset.updateField || "");
+    if (!Number.isInteger(index) || !topUpdates[index]) return;
+    if (!["date", "text", "url", "link_label"].includes(field)) return;
+    if (field === "url") {
+      topUpdates[index][field] = parseOfficialUrl(input.value);
+    } else {
+      topUpdates[index][field] = input.value.trim();
+    }
+    topUpdates = normalizeUpdates(topUpdates);
+    renderTopUpdates();
+    renderUpdatesEditorPanel();
+    setUpdatesEditorMessage("更新情報を反映しました。");
+  });
+
+  updatesEditorList.addEventListener("click", (event) => {
+    const button = event.target;
+    if (!(button instanceof HTMLButtonElement)) return;
+    const action = String(button.dataset.updateAction || "");
+    const index = Number(button.dataset.updateIndex);
+    if (!Number.isInteger(index) || !topUpdates[index]) return;
+    if (action === "delete") {
+      topUpdates.splice(index, 1);
+    } else if (action === "move-up" && index > 0) {
+      [topUpdates[index - 1], topUpdates[index]] = [topUpdates[index], topUpdates[index - 1]];
+    } else if (action === "move-down" && index < topUpdates.length - 1) {
+      [topUpdates[index + 1], topUpdates[index]] = [topUpdates[index], topUpdates[index + 1]];
+    }
+    renderTopUpdates();
+    renderUpdatesEditorPanel();
+    setUpdatesEditorMessage("更新情報を更新しました。");
+  });
+}
+
+if (updatesEditorAddButton) {
+  updatesEditorAddButton.addEventListener("click", () => {
+    const today = new Date().toISOString().slice(0, 10);
+    topUpdates.unshift({ date: today, text: "新しい更新情報", url: "", link_label: "" });
+    renderTopUpdates();
+    renderUpdatesEditorPanel();
+    setUpdatesEditorMessage("更新情報を追加しました。");
+  });
+}
+
+if (updatesEditorResetButton) {
+  updatesEditorResetButton.addEventListener("click", () => {
+    topUpdates = structuredClone(initialTopUpdates);
+    renderTopUpdates();
+    renderUpdatesEditorPanel();
+    setUpdatesEditorMessage("読込時の更新情報に戻しました。");
+  });
+}
+
+if (updatesEditorExportButton) {
+  updatesEditorExportButton.addEventListener("click", () => {
+    downloadUpdatesJson();
+    setUpdatesEditorMessage("更新情報JSONをダウンロードしました。");
   });
 }
 
@@ -4151,6 +4393,13 @@ if (adminPinUnlockButton) {
   });
 }
 
+if (adminOpenManageModeButton) {
+  adminOpenManageModeButton.addEventListener("click", () => {
+    scrollToBlock("profit");
+    setAdminFabMessage("管理モードを開きました。");
+  });
+}
+
 if (adminOpenUiSettingsButton) {
   adminOpenUiSettingsButton.addEventListener("click", () => {
     scrollToBlock("ui-settings");
@@ -4162,6 +4411,20 @@ if (adminOpenContentEditorButton) {
   adminOpenContentEditorButton.addEventListener("click", () => {
     scrollToBlock("content-editor");
     setAdminFabMessage("本文編集モードを開きました。");
+  });
+}
+
+if (adminToggleContentEditModeButton) {
+  adminToggleContentEditModeButton.addEventListener("click", () => {
+    setContentEditModeEnabled(!isContentEditModeEnabled);
+    setAdminFabMessage(`本文編集モードを${isContentEditModeEnabled ? "ON" : "OFF"}にしました。`);
+  });
+}
+
+if (adminOpenUpdatesEditorButton) {
+  adminOpenUpdatesEditorButton.addEventListener("click", () => {
+    scrollToBlock("updates-editor");
+    setAdminFabMessage("更新情報編集を開きました。");
   });
 }
 
@@ -4179,10 +4442,18 @@ if (adminExportContentButton) {
   });
 }
 
+if (adminExportUpdatesButton) {
+  adminExportUpdatesButton.addEventListener("click", () => {
+    downloadUpdatesJson();
+    setAdminFabMessage("更新情報JSONをダウンロードしました。");
+  });
+}
+
 if (adminLockButton) {
   adminLockButton.addEventListener("click", () => {
     setAdminModeEnabled(false);
-    if (activeTabId === "ui-settings" || activeTabId === "content-editor") {
+    setContentEditModeEnabled(false);
+    if (activeTabId === "ui-settings" || activeTabId === "content-editor" || activeTabId === "updates-editor") {
       scrollToBlock("profit");
     }
     setAdminFabMessage("管理モードを閉じました。");
@@ -5306,15 +5577,19 @@ async function initialize() {
   applyContentToView();
   renderUiSettingsPanel();
   renderContentEditorPanel();
+  setContentEditModeEnabled(false);
   setAdminModeEnabled(isAdminModeEnabled);
 
   try {
     topUpdates = await loadTopUpdates();
+    initialTopUpdates = structuredClone(topUpdates);
   } catch (error) {
     topUpdates = [];
+    initialTopUpdates = [];
     console.warn("updates.json の読み込みに失敗したため更新情報は非表示にします", error);
   }
   renderTopUpdates();
+  renderUpdatesEditorPanel();
 
   const storedData = loadStoredData();
   const favoriteState = loadBazaarFavoriteState();

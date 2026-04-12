@@ -23,7 +23,7 @@
 
       <aside id="sideMenu" class="side-menu" aria-hidden="true" aria-label="主要メニュー">
         <div class="side-menu-header">
-          <h2>メニュー</h2>
+          <h2 data-content-key="menu_title">メニュー</h2>
         </div>
         <nav class="side-menu-nav" aria-label="主要ブロックへの移動">
           <section class="side-menu-group" aria-label="ツール">
@@ -74,35 +74,35 @@
       </aside>
 
       <header class="app-header">
-        <h1>ドラゴンクエスト10支援サイト</h1>
+        <h1 id="contentSiteTitle" data-content-key="site_title">ドラゴンクエスト10支援サイト</h1>
         <p id="contentSiteNotice" class="app-header-price-note">
           ※価格・情報は手動確認ベースのため、更新タイミングにより実際のゲーム内状況と差が出る場合があります。
         </p>
         <p id="contentSiteIntro">ドラゴンクエスト10の日常プレイを少し便利にする支援サイトです。</p>
-        <p>バザー確認、職人準備、装備検索などをスマホでも見やすくまとめています。</p>
+        <p id="contentSiteSummary" data-content-key="site_summary">バザー確認、職人準備、装備検索などをスマホでも見やすくまとめています。</p>
       </header>
 
       <section class="top-update-list card" aria-label="更新情報" id="topUpdateSection">
-        <h2>更新情報</h2>
+        <h2 id="contentUpdatesHeading" data-content-key="updates_heading">更新情報</h2>
         <ul id="topUpdateList"></ul>
       </section>
 
       <section class="top-quick-access" aria-label="トップページ導線">
-        <h2>サイト内便利ツール</h2>
+        <h2 id="contentToolsHeading" data-content-key="tools_heading">サイト内便利ツール</h2>
         <p id="contentToolsIntro" class="top-quick-access-note">各カードをクリックすると対象ページへ移動できます。</p>
-        <p class="top-quick-access-note top-quick-access-note-sub">※左上のメニューバーからも操作できます</p>
+        <p id="contentMenuHint" class="top-quick-access-note top-quick-access-note-sub" data-content-key="menu_hint">※左上のメニューバーからも操作できます</p>
         <div class="top-tool-grid">
           <button type="button" class="top-tool-card side-menu-item" data-menu-target="profit">
-            <strong>職人アシスト</strong>
-            <span>装備ごとの必要素材・原価・販売利益をまとめて確認できます。</span>
+            <strong id="contentToolCardCraftTitle" data-content-key="tool_card_craft_title">職人アシスト</strong>
+            <span id="contentToolCardCraftDesc" data-content-key="tool_card_craft_desc">装備ごとの必要素材・原価・販売利益をまとめて確認できます。</span>
           </button>
           <button type="button" class="top-tool-card side-menu-item" data-menu-target="bazaar">
-            <strong>バザー価格一覧</strong>
-            <span>主要素材の価格と前回比を見ながら、相場の変化をすぐ把握できます。</span>
+            <strong id="contentToolCardBazaarTitle" data-content-key="tool_card_bazaar_title">バザー価格一覧</strong>
+            <span id="contentToolCardBazaarDesc" data-content-key="tool_card_bazaar_desc">主要素材の価格と前回比を見ながら、相場の変化をすぐ把握できます。</span>
           </button>
           <div class="top-tool-card-group">
-            <p class="top-tool-card-title">装備・白宝箱</p>
-            <p class="top-tool-card-description">装備データの確認と、白宝箱ドロップ情報の検索に使えます。</p>
+            <p id="contentToolCardEqTitle" class="top-tool-card-title" data-content-key="tool_card_equipment_title">装備・白宝箱</p>
+            <p id="contentToolCardEqDesc" class="top-tool-card-description" data-content-key="tool_card_equipment_desc">装備データの確認と、白宝箱ドロップ情報の検索に使えます。</p>
             <div class="top-tool-link-row">
               <button type="button" class="top-tool-link-button side-menu-item" data-menu-target="equipment-db">装備</button>
               <button type="button" class="top-tool-link-button side-menu-item" data-menu-target="white-boxes">白宝箱</button>
@@ -461,9 +461,9 @@
       </section>
 
       <section id="ui-settings" class="tab-content" aria-label="UI設定画面">
-        <h2>UI設定</h2>
+        <h2 data-content-key="ui_settings_heading">UI設定</h2>
         <div class="card ui-settings-panel">
-          <p class="ui-settings-note">スライダーや入力で見た目を調整できます。変更はすぐ反映されます。</p>
+          <p class="ui-settings-note" data-content-key="ui_settings_note">スライダーや入力で見た目を調整できます。変更はすぐ反映されます。</p>
           <div id="uiSettingsControlList" class="ui-settings-control-list"></div>
           <div class="ui-settings-actions">
             <button id="uiSettingsResetButton" type="button">初期値に戻す</button>
@@ -475,16 +475,34 @@
       </section>
 
       <section id="content-editor" class="tab-content" aria-label="本文編集画面">
-        <h2>本文編集</h2>
+        <h2 data-content-key="content_editor_heading">本文編集</h2>
         <div class="card ui-settings-panel">
-          <p class="ui-settings-note">主要な説明文・注意書きを編集できます。変更はすぐ反映されます。</p>
+          <p class="ui-settings-note" data-content-key="content_editor_note">主要な説明文・注意書きを編集できます。変更はすぐ反映されます。</p>
           <div id="contentEditorControlList" class="ui-settings-control-list"></div>
           <div class="ui-settings-actions">
+            <button id="contentEditorModeToggleButton" type="button">本文編集モード: OFF</button>
             <button id="contentEditorResetButton" type="button">読込時の本文に戻す</button>
             <button id="contentEditorExportButton" type="button">本文JSONをダウンロード</button>
           </div>
           <p id="contentEditorMessage" class="helper-text" aria-live="polite"></p>
           <p class="helper-text">※ 本文ファイルの保存先: <code>data/content.json</code></p>
+        </div>
+      </section>
+
+      <section id="updates-editor" class="tab-content" aria-label="更新情報編集画面">
+        <h2 data-content-key="updates_editor_heading">更新情報編集</h2>
+        <div class="card ui-settings-panel">
+          <p class="ui-settings-note" data-content-key="updates_editor_note">
+            更新情報の追加・編集・削除・並び替えができます。変更は上部の更新情報に即時反映されます。
+          </p>
+          <div class="ui-settings-actions">
+            <button id="updatesEditorAddButton" type="button">更新情報を追加</button>
+            <button id="updatesEditorResetButton" type="button">読込時の更新情報に戻す</button>
+            <button id="updatesEditorExportButton" type="button">更新情報JSONをダウンロード</button>
+          </div>
+          <div id="updatesEditorList" class="updates-editor-list"></div>
+          <p id="updatesEditorMessage" class="helper-text" aria-live="polite"></p>
+          <p class="helper-text">※ 更新情報ファイルの保存先: <code>data/updates.json</code></p>
         </div>
       </section>
 
@@ -665,10 +683,14 @@
           <button id="adminPinUnlockButton" type="button">管理モードを開く</button>
         </div>
         <div id="adminActionList" class="admin-action-list" hidden>
+          <button id="adminOpenManageModeButton" type="button">管理モードを開く</button>
           <button id="adminOpenUiSettingsButton" type="button">UI設定を開く</button>
           <button id="adminOpenContentEditorButton" type="button">本文編集モードを開く</button>
+          <button id="adminToggleContentEditModeButton" type="button">本文編集モード: OFF</button>
+          <button id="adminOpenUpdatesEditorButton" type="button">更新情報編集を開く</button>
           <button id="adminExportUiSettingsButton" type="button">設定JSONをダウンロード</button>
           <button id="adminExportContentButton" type="button">本文JSONをダウンロード</button>
+          <button id="adminExportUpdatesButton" type="button">更新情報JSONをダウンロード</button>
           <button id="adminLockButton" type="button">管理モードを閉じる</button>
         </div>
         <p id="adminFabMessage" class="helper-text" aria-live="polite"></p>
