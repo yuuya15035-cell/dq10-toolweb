@@ -54,9 +54,6 @@
               <button type="button" class="side-menu-item side-menu-sub-item" data-menu-target="present-codes">
                 プレゼントのじゅもん
               </button>
-              <button type="button" class="side-menu-item side-menu-sub-item" data-menu-target="ui-settings">
-                UI設定
-              </button>
             </div>
           </section>
           <section class="side-menu-group" aria-label="データベース">
@@ -78,10 +75,10 @@
 
       <header class="app-header">
         <h1>ドラゴンクエスト10支援サイト</h1>
-        <p class="app-header-price-note">
+        <p id="contentSiteNotice" class="app-header-price-note">
           ※価格・情報は手動確認ベースのため、更新タイミングにより実際のゲーム内状況と差が出る場合があります。
         </p>
-        <p>ドラゴンクエスト10の日常プレイを少し便利にする支援サイトです。</p>
+        <p id="contentSiteIntro">ドラゴンクエスト10の日常プレイを少し便利にする支援サイトです。</p>
         <p>バザー確認、職人準備、装備検索などをスマホでも見やすくまとめています。</p>
       </header>
 
@@ -92,7 +89,7 @@
 
       <section class="top-quick-access" aria-label="トップページ導線">
         <h2>サイト内便利ツール</h2>
-        <p class="top-quick-access-note">各カードをクリックすると対象ページへ移動できます。</p>
+        <p id="contentToolsIntro" class="top-quick-access-note">各カードをクリックすると対象ページへ移動できます。</p>
         <p class="top-quick-access-note top-quick-access-note-sub">※左上のメニューバーからも操作できます</p>
         <div class="top-tool-grid">
           <button type="button" class="top-tool-card side-menu-item" data-menu-target="profit">
@@ -113,7 +110,7 @@
           </div>
           <button type="button" class="top-tool-card side-menu-item" data-menu-target="favorites">
             <strong>お気に入り</strong>
-            <span>よく見る装備や素材を保存し、次回以降の確認を短時間で行えます。</span>
+            <span id="contentFavoritesIntro">よく見る装備や素材を保存し、次回以降の確認を短時間で行えます。</span>
           </button>
         </div>
       </section>
@@ -477,6 +474,20 @@
         </div>
       </section>
 
+      <section id="content-editor" class="tab-content" aria-label="本文編集画面">
+        <h2>本文編集</h2>
+        <div class="card ui-settings-panel">
+          <p class="ui-settings-note">主要な説明文・注意書きを編集できます。変更はすぐ反映されます。</p>
+          <div id="contentEditorControlList" class="ui-settings-control-list"></div>
+          <div class="ui-settings-actions">
+            <button id="contentEditorResetButton" type="button">読込時の本文に戻す</button>
+            <button id="contentEditorExportButton" type="button">本文JSONをダウンロード</button>
+          </div>
+          <p id="contentEditorMessage" class="helper-text" aria-live="polite"></p>
+          <p class="helper-text">※ 本文ファイルの保存先: <code>data/content.json</code></p>
+        </div>
+      </section>
+
       <section id="favorites" class="tab-content" aria-label="お気に入り一覧画面">
         <h2>お気に入り</h2>
         <div class="favorites-tabs" role="tablist" aria-label="お気に入り表示切替">
@@ -639,6 +650,30 @@
         </p>
       </div>
     </footer>
+
+    <div id="adminFab" class="admin-fab-wrap">
+      <button id="adminFabToggleButton" class="admin-fab-button" type="button" aria-expanded="false" aria-controls="adminFabPanel">
+        管理者メニュー
+      </button>
+      <section id="adminFabPanel" class="admin-fab-panel" hidden aria-label="管理者メニュー">
+        <p class="admin-fab-note">※簡易PIN保護（本番用の強固な認証ではありません）</p>
+        <div id="adminPinGate" class="admin-pin-gate">
+          <label class="field">
+            <span>管理PIN</span>
+            <input id="adminPinInput" type="password" inputmode="numeric" placeholder="PINを入力" />
+          </label>
+          <button id="adminPinUnlockButton" type="button">管理モードを開く</button>
+        </div>
+        <div id="adminActionList" class="admin-action-list" hidden>
+          <button id="adminOpenUiSettingsButton" type="button">UI設定を開く</button>
+          <button id="adminOpenContentEditorButton" type="button">本文編集モードを開く</button>
+          <button id="adminExportUiSettingsButton" type="button">設定JSONをダウンロード</button>
+          <button id="adminExportContentButton" type="button">本文JSONをダウンロード</button>
+          <button id="adminLockButton" type="button">管理モードを閉じる</button>
+        </div>
+        <p id="adminFabMessage" class="helper-text" aria-live="polite"></p>
+      </section>
+    </div>
 
     <div id="favoriteMaterialModalOverlay" class="favorite-material-modal-overlay" hidden>
       <section

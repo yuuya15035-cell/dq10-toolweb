@@ -17,12 +17,39 @@ const WHITE_BOX_CSV_PATH = "./data/white_box.csv";
 const EQUIPMENT_DB_CSV_PATH = "./data/equipment_data.csv";
 const UPDATES_JSON_PATH = "./data/updates.json";
 const UI_SETTINGS_JSON_PATH = "./data/ui-settings.json";
+const CONTENT_JSON_PATH = "./data/content.json";
 const OFFICIAL_BAZAAR_TOP_URL = "https://dqx-souba.game-blog.app/";
 const OFFICIAL_PRESENT_CODE_URL = "https://hiroba.dqx.jp/sc/campaignCode/itemcode/";
 const BAZAAR_FAVORITES_STORAGE_KEY = "dq10_toolweb_bazaar_favorites_v1";
 const RECIPE_FAVORITES_STORAGE_KEY = "dq10_toolweb_recipe_favorites_v1";
 const RECIPE_FAVORITE_CATEGORY_VALUE = "__favorites__";
-const TAB_IDS = new Set(["profit", "present-codes", "bazaar", "favorites", "data", "field-farming", "orbs", "white-boxes", "equipment-db", "ui-settings"]);
+const TAB_IDS = new Set([
+  "profit",
+  "present-codes",
+  "bazaar",
+  "favorites",
+  "data",
+  "field-farming",
+  "orbs",
+  "white-boxes",
+  "equipment-db",
+  "ui-settings",
+  "content-editor",
+]);
+const ADMIN_MODE_STORAGE_KEY = "dq10_toolweb_admin_mode_v1";
+const ADMIN_PIN = "1010";
+const CONTENT_DEFINITIONS = [
+  { key: "site_intro", label: "サイト説明文", elementId: "contentSiteIntro" },
+  { key: "site_notice", label: "注意書き（価格・情報）", elementId: "contentSiteNotice" },
+  { key: "tools_intro", label: "便利ツール説明", elementId: "contentToolsIntro" },
+  { key: "favorites_intro", label: "お気に入り説明", elementId: "contentFavoritesIntro" },
+];
+const DEFAULT_CONTENT = Object.freeze({
+  site_intro: "ドラゴンクエスト10の日常プレイを少し便利にする支援サイトです。",
+  site_notice: "※価格・情報は手動確認ベースのため、更新タイミングにより実際のゲーム内状況と差が出る場合があります。",
+  tools_intro: "各カードをクリックすると対象ページへ移動できます。",
+  favorites_intro: "よく見る装備や素材を保存し、次回以降の確認を短時間で行えます。",
+});
 const FAVORITES_TAB_IDS = new Set(["recipes", "materials"]);
 const RECIPE_SUMMARY_MATERIAL_LIMIT = 4;
 const CRAFT_IDEAL_TARGET_JOBS = new Set(["裁縫職人", "木工職人"]);
@@ -719,6 +746,9 @@ function mergeWithStoredData(csvData, storedData) {
 
 let state = structuredClone(defaultData);
 let uiSettings = structuredClone(DEFAULT_UI_SETTINGS);
+let contentData = structuredClone(DEFAULT_CONTENT);
+let initialContentData = structuredClone(DEFAULT_CONTENT);
+let isAdminModeEnabled = localStorage.getItem(ADMIN_MODE_STORAGE_KEY) === "1";
 let selectedEquipmentId = "";
 // 装備検索キーワード（利益計算画面の装備プルダウン用）
 let equipmentSearchKeyword = "";
@@ -893,6 +923,22 @@ const uiSettingsControlList = getRequiredElementById("uiSettingsControlList");
 const uiSettingsResetButton = getRequiredElementById("uiSettingsResetButton");
 const uiSettingsExportButton = getRequiredElementById("uiSettingsExportButton");
 const uiSettingsMessage = getRequiredElementById("uiSettingsMessage");
+const contentEditorControlList = getRequiredElementById("contentEditorControlList");
+const contentEditorResetButton = getRequiredElementById("contentEditorResetButton");
+const contentEditorExportButton = getRequiredElementById("contentEditorExportButton");
+const contentEditorMessage = getRequiredElementById("contentEditorMessage");
+const adminFabToggleButton = getRequiredElementById("adminFabToggleButton");
+const adminFabPanel = getRequiredElementById("adminFabPanel");
+const adminPinGate = getRequiredElementById("adminPinGate");
+const adminPinInput = getRequiredElementById("adminPinInput");
+const adminPinUnlockButton = getRequiredElementById("adminPinUnlockButton");
+const adminActionList = getRequiredElementById("adminActionList");
+const adminOpenUiSettingsButton = getRequiredElementById("adminOpenUiSettingsButton");
+const adminOpenContentEditorButton = getRequiredElementById("adminOpenContentEditorButton");
+const adminExportUiSettingsButton = getRequiredElementById("adminExportUiSettingsButton");
+const adminExportContentButton = getRequiredElementById("adminExportContentButton");
+const adminLockButton = getRequiredElementById("adminLockButton");
+const adminFabMessage = getRequiredElementById("adminFabMessage");
 
 const perCraftToolCostEl = getRequiredElementById("perCraftToolCost");
 const totalMaterialCostEl = getRequiredElementById("totalMaterialCost");
@@ -3794,8 +3840,99 @@ function downloadUiSettingsJson() {
   URL.revokeObjectURL(link.href);
 }
 
+function setContentEditorMessage(message, isError = false) {
+  if (!contentEditorMessage) return;
+  contentEditorMessage.textContent = message;
+  contentEditorMessage.style.color = isError ? "#8a2c2c" : "";
+}
+
+function setAdminFabMessage(message, isError = false) {
+  if (!adminFabMessage) return;
+  adminFabMessage.textContent = message;
+  adminFabMessage.style.color = isError ? "#8a2c2c" : "";
+}
+
+function normalizeContent(rawContent) {
+  const normalized = {};
+  CONTENT_DEFINITIONS.forEach((definition) => {
+    const value = rawContent?.[definition.key];
+    normalized[definition.key] = typeof value === "string" && value.trim() !== "" ? value : DEFAULT_CONTENT[definition.key];
+  });
+  return normalized;
+}
+
+async function loadContentData() {
+  try {
+    const response = await fetch(CONTENT_JSON_PATH, { cache: "no-store" });
+    if (!response.ok) throw new Error(`status=${response.status}`);
+    const json = await response.json();
+    const normalized = normalizeContent(json);
+    contentData = structuredClone(normalized);
+    initialContentData = structuredClone(normalized);
+  } catch (error) {
+    console.warn(`content.json の読み込みに失敗しました: path=${CONTENT_JSON_PATH}`, error);
+    contentData = structuredClone(DEFAULT_CONTENT);
+    initialContentData = structuredClone(DEFAULT_CONTENT);
+  }
+}
+
+function applyContentToView() {
+  CONTENT_DEFINITIONS.forEach((definition) => {
+    const target = document.getElementById(definition.elementId);
+    if (!target) return;
+    target.textContent = contentData[definition.key] || "";
+  });
+}
+
+function buildContentEditorControl(definition) {
+  const wrapper = document.createElement("label");
+  wrapper.className = "field";
+  wrapper.innerHTML = `
+    <span>${definition.label}</span>
+    <textarea class="content-editor-textarea" data-content-key="${definition.key}">${contentData[definition.key] || ""}</textarea>
+  `;
+  return wrapper;
+}
+
+function renderContentEditorPanel() {
+  if (!contentEditorControlList) return;
+  contentEditorControlList.innerHTML = "";
+  CONTENT_DEFINITIONS.forEach((definition) => {
+    contentEditorControlList.append(buildContentEditorControl(definition));
+  });
+}
+
+function downloadContentJson() {
+  const payload = normalizeContent(contentData);
+  const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
+  const link = document.createElement("a");
+  link.href = URL.createObjectURL(blob);
+  const datePart = new Date().toISOString().slice(0, 10);
+  link.download = `dq10-content-${datePart}.json`;
+  document.body.append(link);
+  link.click();
+  link.remove();
+  URL.revokeObjectURL(link.href);
+}
+
+function setAdminModeEnabled(enabled) {
+  isAdminModeEnabled = enabled;
+  localStorage.setItem(ADMIN_MODE_STORAGE_KEY, enabled ? "1" : "0");
+  if (adminActionList) adminActionList.hidden = !enabled;
+  if (adminPinGate) adminPinGate.hidden = enabled;
+}
+
+function toggleAdminFabPanel() {
+  if (!adminFabPanel || !adminFabToggleButton) return;
+  const nextOpen = adminFabPanel.hidden;
+  adminFabPanel.hidden = !nextOpen;
+  adminFabToggleButton.setAttribute("aria-expanded", nextOpen ? "true" : "false");
+}
+
 function switchTab(target) {
-  const normalizedTarget = TAB_IDS.has(target) ? target : "profit";
+  const requestedTarget = TAB_IDS.has(target) ? target : "profit";
+  const normalizedTarget =
+    (requestedTarget === "ui-settings" || requestedTarget === "content-editor") && !isAdminModeEnabled ? "profit" : requestedTarget;
   activeTabId = normalizedTarget;
   tabButtons.forEach((btn) => btn.classList.toggle("active", btn.dataset.tab === normalizedTarget));
   tabContents.forEach((tab) => tab.classList.toggle("active", tab.id === normalizedTarget));
@@ -3966,6 +4103,92 @@ if (uiSettingsExportButton) {
   });
 }
 
+if (contentEditorControlList) {
+  contentEditorControlList.addEventListener("input", (event) => {
+    const input = event.target;
+    if (!(input instanceof HTMLTextAreaElement)) return;
+    const contentKey = String(input.dataset.contentKey || "");
+    const definition = CONTENT_DEFINITIONS.find((item) => item.key === contentKey);
+    if (!definition) return;
+    contentData[definition.key] = input.value;
+    applyContentToView();
+    setContentEditorMessage("本文をプレビューに反映しました。");
+  });
+}
+
+if (contentEditorResetButton) {
+  contentEditorResetButton.addEventListener("click", () => {
+    contentData = structuredClone(initialContentData);
+    applyContentToView();
+    renderContentEditorPanel();
+    setContentEditorMessage("読込時の本文に戻しました。");
+  });
+}
+
+if (contentEditorExportButton) {
+  contentEditorExportButton.addEventListener("click", () => {
+    downloadContentJson();
+    setContentEditorMessage("本文JSONをダウンロードしました。");
+  });
+}
+
+if (adminFabToggleButton) {
+  adminFabToggleButton.addEventListener("click", () => {
+    toggleAdminFabPanel();
+  });
+}
+
+if (adminPinUnlockButton) {
+  adminPinUnlockButton.addEventListener("click", () => {
+    const inputPin = String(adminPinInput?.value || "").trim();
+    if (inputPin !== ADMIN_PIN) {
+      setAdminFabMessage("PINが正しくありません。", true);
+      return;
+    }
+    if (adminPinInput) adminPinInput.value = "";
+    setAdminModeEnabled(true);
+    setAdminFabMessage("管理モードを有効化しました。");
+  });
+}
+
+if (adminOpenUiSettingsButton) {
+  adminOpenUiSettingsButton.addEventListener("click", () => {
+    scrollToBlock("ui-settings");
+    setAdminFabMessage("UI設定を開きました。");
+  });
+}
+
+if (adminOpenContentEditorButton) {
+  adminOpenContentEditorButton.addEventListener("click", () => {
+    scrollToBlock("content-editor");
+    setAdminFabMessage("本文編集モードを開きました。");
+  });
+}
+
+if (adminExportUiSettingsButton) {
+  adminExportUiSettingsButton.addEventListener("click", () => {
+    downloadUiSettingsJson();
+    setAdminFabMessage("設定JSONをダウンロードしました。");
+  });
+}
+
+if (adminExportContentButton) {
+  adminExportContentButton.addEventListener("click", () => {
+    downloadContentJson();
+    setAdminFabMessage("本文JSONをダウンロードしました。");
+  });
+}
+
+if (adminLockButton) {
+  adminLockButton.addEventListener("click", () => {
+    setAdminModeEnabled(false);
+    if (activeTabId === "ui-settings" || activeTabId === "content-editor") {
+      scrollToBlock("profit");
+    }
+    setAdminFabMessage("管理モードを閉じました。");
+  });
+}
+
 document.addEventListener("keydown", (event) => {
   if (event.key === "Escape") {
     if (activeFieldFarmingMapModalRowId) {
@@ -3974,6 +4197,10 @@ document.addEventListener("keydown", (event) => {
     }
     if (activeFavoriteMaterialModalKey) {
       closeFavoriteMaterialModal();
+      return;
+    }
+    if (adminFabPanel && !adminFabPanel.hidden) {
+      toggleAdminFabPanel();
       return;
     }
     setMenuOpen(false);
@@ -5074,8 +5301,12 @@ window.mergeBazaarHistoryLines = mergeBazaarHistoryLines;
 // 3) 画面描画
 async function initialize() {
   await loadUiSettings();
+  await loadContentData();
   applyUiSettingsToRoot();
+  applyContentToView();
   renderUiSettingsPanel();
+  renderContentEditorPanel();
+  setAdminModeEnabled(isAdminModeEnabled);
 
   try {
     topUpdates = await loadTopUpdates();
