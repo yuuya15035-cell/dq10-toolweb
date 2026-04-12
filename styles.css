@@ -758,6 +758,25 @@ button {
   flex-wrap: wrap;
 }
 
+
+.recipe-total-cost {
+  display: flex;
+  align-items: baseline;
+  justify-content: flex-end;
+  gap: 8px;
+  margin: 0 0 8px;
+  color: #5b3f2a;
+}
+
+.recipe-total-cost span {
+  font-size: 0.82rem;
+  color: rgba(34, 34, 34, 0.72);
+}
+
+.recipe-total-cost strong {
+  font-size: 1rem;
+}
+
 .material-data-transfer-actions {
   display: flex;
   gap: 8px;
@@ -3086,6 +3105,13 @@ button {
 
   .recipe-cards-mobile {
     display: none;
+  }
+}
+
+
+@media (max-width: 640px) {
+  .recipe-total-cost {
+    justify-content: flex-start;
   }
 }
 
