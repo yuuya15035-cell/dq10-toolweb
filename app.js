@@ -123,6 +123,7 @@ const WHITE_BOX_WEAPON_SLOT_ORDER = [
   "大盾",
 ];
 const WHITE_BOX_ARMOR_SLOT_ORDER = ["頭", "からだ上", "からだ下", "腕", "足"];
+const imeComposingTargets = new WeakSet();
 const WHITE_BOX_SLOT_NORMALIZE_MAP = new Map([
   ["片手剣", "片手剣"],
   ["両手剣", "両手剣"],
@@ -3933,6 +3934,19 @@ function setUpdatesEditorMessage(message, isError = false) {
   updatesEditorMessage.style.color = isError ? "#8a2c2c" : "";
 }
 
+function markImeComposing(target, composing) {
+  if (!(target instanceof HTMLElement)) return;
+  if (composing) {
+    imeComposingTargets.add(target);
+    return;
+  }
+  imeComposingTargets.delete(target);
+}
+
+function isImeComposing(target) {
+  return target instanceof HTMLElement && imeComposingTargets.has(target);
+}
+
 function normalizeContent(rawContent) {
   const normalized = {};
   CONTENT_DEFINITIONS.forEach((definition) => {
@@ -3981,6 +3995,18 @@ function renderContentEditorPanel() {
   contentEditorControlList.innerHTML = "";
   CONTENT_DEFINITIONS.forEach((definition) => {
     contentEditorControlList.append(buildContentEditorControl(definition));
+  });
+}
+
+function syncContentEditorTextareaValue(contentKey, value) {
+  if (!contentEditorControlList) return;
+  const controls = contentEditorControlList.querySelectorAll("textarea[data-content-key]");
+  controls.forEach((textarea) => {
+    if (!(textarea instanceof HTMLTextAreaElement)) return;
+    if (textarea.dataset.contentKey !== contentKey) return;
+    if (textarea.value !== value) {
+      textarea.value = value;
+    }
   });
 }
 
@@ -4261,9 +4287,24 @@ if (uiSettingsExportButton) {
 }
 
 if (contentEditorControlList) {
+  contentEditorControlList.addEventListener("compositionstart", (event) => {
+    markImeComposing(event.target, true);
+  });
+  contentEditorControlList.addEventListener("compositionend", (event) => {
+    const input = event.target;
+    markImeComposing(input, false);
+    if (!(input instanceof HTMLTextAreaElement)) return;
+    const contentKey = String(input.dataset.contentKey || "");
+    const definition = CONTENT_DEFINITIONS.find((item) => item.key === contentKey);
+    if (!definition) return;
+    contentData[definition.key] = input.value;
+    applyContentToView();
+    setContentEditorMessage("本文をプレビューに反映しました。");
+  });
   contentEditorControlList.addEventListener("input", (event) => {
     const input = event.target;
     if (!(input instanceof HTMLTextAreaElement)) return;
+    if (event.isComposing || isImeComposing(input)) return;
     const contentKey = String(input.dataset.contentKey || "");
     const definition = CONTENT_DEFINITIONS.find((item) => item.key === contentKey);
     if (!definition) return;
@@ -4277,12 +4318,35 @@ document.addEventListener("input", (event) => {
   const target = event.target;
   if (!(target instanceof HTMLElement)) return;
   if (target instanceof HTMLInputElement || target instanceof HTMLTextAreaElement) return;
+  if (event.isComposing || isImeComposing(target)) return;
   const contentKey = String(target.dataset.contentKey || "");
   if (!contentKey || !isContentEditModeEnabled || target.contentEditable !== "true") return;
   const definition = CONTENT_DEFINITIONS.find((item) => item.key === contentKey);
   if (!definition) return;
   contentData[definition.key] = target.textContent || "";
-  renderContentEditorPanel();
+  syncContentEditorTextareaValue(definition.key, contentData[definition.key]);
+  setContentEditorMessage("本文をその場編集で反映しました。");
+});
+
+document.addEventListener("compositionstart", (event) => {
+  const target = event.target;
+  if (!(target instanceof HTMLElement)) return;
+  if (!isContentEditModeEnabled || target.contentEditable !== "true") return;
+  if (!target.dataset.contentKey) return;
+  markImeComposing(target, true);
+});
+
+document.addEventListener("compositionend", (event) => {
+  const target = event.target;
+  if (!(target instanceof HTMLElement)) return;
+  if (!target.dataset.contentKey) return;
+  markImeComposing(target, false);
+  if (!isContentEditModeEnabled || target.contentEditable !== "true") return;
+  const contentKey = String(target.dataset.contentKey || "");
+  const definition = CONTENT_DEFINITIONS.find((item) => item.key === contentKey);
+  if (!definition) return;
+  contentData[definition.key] = target.textContent || "";
+  syncContentEditorTextareaValue(definition.key, contentData[definition.key]);
   setContentEditorMessage("本文をその場編集で反映しました。");
 });
 
@@ -4311,8 +4375,12 @@ if (contentEditorExportButton) {
 }
 
 if (updatesEditorList) {
-  updatesEditorList.addEventListener("input", (event) => {
+  updatesEditorList.addEventListener("compositionstart", (event) => {
+    markImeComposing(event.target, true);
+  });
+  updatesEditorList.addEventListener("compositionend", (event) => {
     const input = event.target;
+    markImeComposing(input, false);
     if (!(input instanceof HTMLInputElement || input instanceof HTMLTextAreaElement)) return;
     const index = Number(input.dataset.updateIndex);
     const field = String(input.dataset.updateField || "");
@@ -4321,12 +4389,35 @@ if (updatesEditorList) {
     if (field === "url") {
       topUpdates[index][field] = parseOfficialUrl(input.value);
     } else {
-      topUpdates[index][field] = input.value.trim();
+      topUpdates[index][field] = input.value;
     }
+    renderTopUpdates();
+    setUpdatesEditorMessage("更新情報を反映しました。");
+  });
+  updatesEditorList.addEventListener("input", (event) => {
+    const input = event.target;
+    if (!(input instanceof HTMLInputElement || input instanceof HTMLTextAreaElement)) return;
+    if (event.isComposing || isImeComposing(input)) return;
+    const index = Number(input.dataset.updateIndex);
+    const field = String(input.dataset.updateField || "");
+    if (!Number.isInteger(index) || !topUpdates[index]) return;
+    if (!["date", "text", "url", "link_label"].includes(field)) return;
+    if (field === "url") {
+      topUpdates[index][field] = parseOfficialUrl(input.value);
+    } else {
+      topUpdates[index][field] = input.value;
+    }
+    renderTopUpdates();
+    setUpdatesEditorMessage("更新情報を反映しました。");
+  });
+
+  updatesEditorList.addEventListener("focusout", (event) => {
+    const input = event.target;
+    if (!(input instanceof HTMLInputElement || input instanceof HTMLTextAreaElement)) return;
+    if (!["date", "text", "url", "link_label"].includes(String(input.dataset.updateField || ""))) return;
     topUpdates = normalizeUpdates(topUpdates);
     renderTopUpdates();
     renderUpdatesEditorPanel();
-    setUpdatesEditorMessage("更新情報を反映しました。");
   });
 
   updatesEditorList.addEventListener("click", (event) => {
