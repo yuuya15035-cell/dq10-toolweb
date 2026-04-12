@@ -2520,6 +2520,49 @@ button {
   margin-top: 0;
 }
 
+.content-editor-textarea {
+  min-height: 72px;
+  resize: vertical;
+}
+
+.admin-fab-wrap {
+  position: fixed;
+  right: 10px;
+  bottom: 10px;
+  z-index: 80;
+  display: grid;
+  gap: 6px;
+  justify-items: end;
+}
+
+.admin-fab-button {
+  min-height: 34px;
+  padding: 6px 10px;
+  border-radius: 999px;
+  font-size: 0.78rem;
+}
+
+.admin-fab-panel {
+  width: min(300px, calc(100vw - 20px));
+  background: #fffaf3;
+  border: 1px solid #d6c1a9;
+  border-radius: 10px;
+  box-shadow: 0 8px 20px rgba(50, 33, 20, 0.2);
+  padding: 10px;
+}
+
+.admin-fab-note {
+  margin: 0 0 8px;
+  font-size: 0.78rem;
+  color: #6b5440;
+}
+
+.admin-pin-gate,
+.admin-action-list {
+  display: grid;
+  gap: 8px;
+}
+
 .whitebox-card {
   padding: 0;
   overflow: hidden;
