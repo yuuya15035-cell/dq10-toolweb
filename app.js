@@ -15,6 +15,7 @@ const MONSTER_DATA_CSV_PATH = "./data/monster_data.csv";
 const ORB_MONSTERS_CSV_PATH = "./data/orb_monsters.csv";
 const WHITE_BOX_CSV_PATH = "./data/white_box.csv";
 const EQUIPMENT_DB_CSV_PATH = "./data/equipment_data.csv";
+const UPDATES_JSON_PATH = "./data/updates.json";
 const OFFICIAL_BAZAAR_TOP_URL = "https://dqx-souba.game-blog.app/";
 const OFFICIAL_PRESENT_CODE_URL = "https://hiroba.dqx.jp/sc/campaignCode/itemcode/";
 const BAZAAR_FAVORITES_STORAGE_KEY = "dq10_toolweb_bazaar_favorites_v1";
@@ -540,6 +541,44 @@ async function loadCraftIdealValuesCsv() {
   return parseCraftIdealValuesFromLines(lines);
 }
 
+async function loadTopUpdates() {
+  const response = await fetch(UPDATES_JSON_PATH, { cache: "no-store" });
+  if (!response.ok) {
+    throw new Error(`updates.json の読み込みに失敗しました: ${response.status}`);
+  }
+  const parsed = await response.json();
+  if (!Array.isArray(parsed)) return [];
+
+  return parsed
+    .map((entry) => ({
+      date: String(entry?.date || "").trim(),
+      text: String(entry?.text || "").trim(),
+    }))
+    .filter((entry) => entry.date !== "" && entry.text !== "")
+    .sort((a, b) => b.date.localeCompare(a.date, "ja"));
+}
+
+function formatTopUpdateDate(dateText) {
+  const normalized = String(dateText || "").trim();
+  const matched = normalized.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (!matched) return normalized;
+  return `${matched[1]}/${matched[2]}/${matched[3]}`;
+}
+
+function renderTopUpdates() {
+  if (!topUpdateSection || !topUpdateList) return;
+  if (!Array.isArray(topUpdates) || topUpdates.length === 0) {
+    topUpdateList.innerHTML = "";
+    topUpdateSection.hidden = true;
+    return;
+  }
+
+  topUpdateSection.hidden = false;
+  topUpdateList.innerHTML = topUpdates
+    .map((entry) => `<li><time datetime="${entry.date}">${formatTopUpdateDate(entry.date)}</time> ${entry.text}</li>`)
+    .join("");
+}
+
 function loadStoredData() {
   const raw = localStorage.getItem(STORAGE_KEY);
   if (!raw) return null;
@@ -700,6 +739,7 @@ let selectedEquipmentDbType = "";
 let equipmentDbNameKeyword = "";
 let equipmentDbMonsterKeyword = "";
 let expandedEquipmentDbId = "";
+let topUpdates = [];
 let isEquipmentDbNameSearchOpen = false;
 let isEquipmentDbMonsterSearchOpen = false;
 let hasLoadedPresentCodes = false;
@@ -749,6 +789,8 @@ const menuToggleButton = getRequiredElementById("menuToggleButton");
 const sideMenu = getRequiredElementById("sideMenu");
 const menuOverlay = getRequiredElementById("menuOverlay");
 const sideMenuItems = document.querySelectorAll(".side-menu-item");
+const topUpdateSection = document.getElementById("topUpdateSection");
+const topUpdateList = document.getElementById("topUpdateList");
 
 const equipmentSelect = getRequiredElementById("equipmentSelect");
 const selectedEquipmentTypeMeta = getRequiredElementById("selectedEquipmentTypeMeta");
@@ -4868,6 +4910,14 @@ window.mergeBazaarHistoryLines = mergeBazaarHistoryLines;
 // 2) ローカル保存の価格情報をマージ
 // 3) 画面描画
 async function initialize() {
+  try {
+    topUpdates = await loadTopUpdates();
+  } catch (error) {
+    topUpdates = [];
+    console.warn("updates.json の読み込みに失敗したため更新情報は非表示にします", error);
+  }
+  renderTopUpdates();
+
   const storedData = loadStoredData();
   const favoriteState = loadBazaarFavoriteState();
   const loadedRecipeFavoriteKeys = loadRecipeFavoriteState();
