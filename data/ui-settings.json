@@ -1,0 +1,12 @@
+{
+  "sectionVerticalSpace": 14,
+  "cardPadding": 10,
+  "cardRadius": 12,
+  "titleFontSize": 1.5,
+  "bodyFontSize": 16,
+  "buttonHeight": 38,
+  "buttonRadius": 8,
+  "iconSize": 16,
+  "mobileCardColumns": 2,
+  "desktopMaxWidth": 920
+}
