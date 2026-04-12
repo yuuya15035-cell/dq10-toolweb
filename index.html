@@ -54,6 +54,9 @@
               <button type="button" class="side-menu-item side-menu-sub-item" data-menu-target="present-codes">
                 プレゼントのじゅもん
               </button>
+              <button type="button" class="side-menu-item side-menu-sub-item" data-menu-target="ui-settings">
+                UI設定
+              </button>
             </div>
           </section>
           <section class="side-menu-group" aria-label="データベース">
@@ -458,6 +461,20 @@
           </label>
         </div>
         <div id="equipmentDbListWrap"></div>
+      </section>
+
+      <section id="ui-settings" class="tab-content" aria-label="UI設定画面">
+        <h2>UI設定</h2>
+        <div class="card ui-settings-panel">
+          <p class="ui-settings-note">スライダーや入力で見た目を調整できます。変更はすぐ反映されます。</p>
+          <div id="uiSettingsControlList" class="ui-settings-control-list"></div>
+          <div class="ui-settings-actions">
+            <button id="uiSettingsResetButton" type="button">初期値に戻す</button>
+            <button id="uiSettingsExportButton" type="button">設定JSONをダウンロード</button>
+          </div>
+          <p id="uiSettingsMessage" class="helper-text" aria-live="polite"></p>
+          <p class="helper-text">※ 設定ファイルの保存先: <code>data/ui-settings.json</code></p>
+        </div>
       </section>
 
       <section id="favorites" class="tab-content" aria-label="お気に入り一覧画面">

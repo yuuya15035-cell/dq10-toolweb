@@ -16,12 +16,13 @@ const ORB_MONSTERS_CSV_PATH = "./data/orb_monsters.csv";
 const WHITE_BOX_CSV_PATH = "./data/white_box.csv";
 const EQUIPMENT_DB_CSV_PATH = "./data/equipment_data.csv";
 const UPDATES_JSON_PATH = "./data/updates.json";
+const UI_SETTINGS_JSON_PATH = "./data/ui-settings.json";
 const OFFICIAL_BAZAAR_TOP_URL = "https://dqx-souba.game-blog.app/";
 const OFFICIAL_PRESENT_CODE_URL = "https://hiroba.dqx.jp/sc/campaignCode/itemcode/";
 const BAZAAR_FAVORITES_STORAGE_KEY = "dq10_toolweb_bazaar_favorites_v1";
 const RECIPE_FAVORITES_STORAGE_KEY = "dq10_toolweb_recipe_favorites_v1";
 const RECIPE_FAVORITE_CATEGORY_VALUE = "__favorites__";
-const TAB_IDS = new Set(["profit", "present-codes", "bazaar", "favorites", "data", "field-farming", "orbs", "white-boxes", "equipment-db"]);
+const TAB_IDS = new Set(["profit", "present-codes", "bazaar", "favorites", "data", "field-farming", "orbs", "white-boxes", "equipment-db", "ui-settings"]);
 const FAVORITES_TAB_IDS = new Set(["recipes", "materials"]);
 const RECIPE_SUMMARY_MATERIAL_LIMIT = 4;
 const CRAFT_IDEAL_TARGET_JOBS = new Set(["裁縫職人", "木工職人"]);
@@ -130,6 +131,30 @@ const ORB_CATEGORY_ICON_PATH_MAP = new Map([
   ["光", "/assets/icons/orb/light_orb.png"],
   ["闇", "/assets/icons/orb/dark_orb.png"],
 ]);
+const DEFAULT_UI_SETTINGS = Object.freeze({
+  sectionVerticalSpace: 14,
+  cardPadding: 10,
+  cardRadius: 12,
+  titleFontSize: 1.5,
+  bodyFontSize: 16,
+  buttonHeight: 38,
+  buttonRadius: 8,
+  iconSize: 16,
+  mobileCardColumns: 2,
+  desktopMaxWidth: 920,
+});
+const UI_SETTING_DEFINITIONS = [
+  { key: "sectionVerticalSpace", label: "セクション上下余白", min: 6, max: 28, step: 1, unit: "px" },
+  { key: "cardPadding", label: "カード内余白", min: 6, max: 24, step: 1, unit: "px" },
+  { key: "cardRadius", label: "カード角丸", min: 4, max: 24, step: 1, unit: "px" },
+  { key: "titleFontSize", label: "タイトル文字サイズ", min: 1.2, max: 2.2, step: 0.05, unit: "rem" },
+  { key: "bodyFontSize", label: "本文文字サイズ", min: 13, max: 20, step: 1, unit: "px" },
+  { key: "buttonHeight", label: "ボタン高さ", min: 32, max: 56, step: 1, unit: "px" },
+  { key: "buttonRadius", label: "ボタン角丸", min: 4, max: 20, step: 1, unit: "px" },
+  { key: "iconSize", label: "アイコンサイズ", min: 12, max: 28, step: 1, unit: "px" },
+  { key: "mobileCardColumns", label: "スマホ時のカード列数", min: 1, max: 2, step: 1, unit: "列" },
+  { key: "desktopMaxWidth", label: "PC時の最大幅", min: 760, max: 1280, step: 10, unit: "px" },
+];
 
 function resolveProjectScopedAssetUrl(path) {
   if (!path) return "";
@@ -693,6 +718,7 @@ function mergeWithStoredData(csvData, storedData) {
 }
 
 let state = structuredClone(defaultData);
+let uiSettings = structuredClone(DEFAULT_UI_SETTINGS);
 let selectedEquipmentId = "";
 // 装備検索キーワード（利益計算画面の装備プルダウン用）
 let equipmentSearchKeyword = "";
@@ -863,6 +889,10 @@ const favoriteMaterialModalCloseButton = getRequiredElementById("favoriteMateria
 const favoriteMaterialModalBody = getRequiredElementById("favoriteMaterialModalBody");
 const favoritesTabButtons = document.querySelectorAll("[data-favorites-tab]");
 const favoritesPanels = document.querySelectorAll(".favorites-panel");
+const uiSettingsControlList = getRequiredElementById("uiSettingsControlList");
+const uiSettingsResetButton = getRequiredElementById("uiSettingsResetButton");
+const uiSettingsExportButton = getRequiredElementById("uiSettingsExportButton");
+const uiSettingsMessage = getRequiredElementById("uiSettingsMessage");
 
 const perCraftToolCostEl = getRequiredElementById("perCraftToolCost");
 const totalMaterialCostEl = getRequiredElementById("totalMaterialCost");
@@ -3659,6 +3689,111 @@ function applyImportedMaterialPrices(rows) {
   setMaterialDataTransferMessage(`単価を読込しました（一致素材 ${appliedCount}件を反映）`);
 }
 
+function setUiSettingsMessage(message, isError = false) {
+  if (!uiSettingsMessage) return;
+  uiSettingsMessage.textContent = message;
+  uiSettingsMessage.style.color = isError ? "#8a2c2c" : "";
+}
+
+function normalizeUiSettingValue(definition, rawValue) {
+  const numeric = Number(rawValue);
+  if (!Number.isFinite(numeric)) return DEFAULT_UI_SETTINGS[definition.key];
+  const stepped = Math.round(numeric / definition.step) * definition.step;
+  const fixed = Number(stepped.toFixed(3));
+  return Math.min(definition.max, Math.max(definition.min, fixed));
+}
+
+function normalizeUiSettings(rawSettings) {
+  const normalized = {};
+  UI_SETTING_DEFINITIONS.forEach((definition) => {
+    const rawValue = rawSettings?.[definition.key];
+    normalized[definition.key] = normalizeUiSettingValue(definition, rawValue ?? DEFAULT_UI_SETTINGS[definition.key]);
+  });
+  return normalized;
+}
+
+async function loadUiSettings() {
+  try {
+    const response = await fetch(UI_SETTINGS_JSON_PATH, { cache: "no-store" });
+    if (!response.ok) throw new Error(`status=${response.status}`);
+    const json = await response.json();
+    uiSettings = normalizeUiSettings(json);
+  } catch (error) {
+    console.warn(`ui-settings.json の読み込みに失敗しました: path=${UI_SETTINGS_JSON_PATH}`, error);
+    uiSettings = structuredClone(DEFAULT_UI_SETTINGS);
+  }
+}
+
+function applyUiSettingsToRoot() {
+  const root = document.documentElement;
+  root.style.setProperty("--ui-section-vertical-space", `${uiSettings.sectionVerticalSpace}px`);
+  root.style.setProperty("--ui-card-padding", `${uiSettings.cardPadding}px`);
+  root.style.setProperty("--ui-card-radius", `${uiSettings.cardRadius}px`);
+  root.style.setProperty("--ui-title-font-size", `${uiSettings.titleFontSize}rem`);
+  root.style.setProperty("--ui-body-font-size", `${uiSettings.bodyFontSize}px`);
+  root.style.setProperty("--ui-button-height", `${uiSettings.buttonHeight}px`);
+  root.style.setProperty("--ui-button-radius", `${uiSettings.buttonRadius}px`);
+  root.style.setProperty("--ui-icon-size", `${uiSettings.iconSize}px`);
+  root.style.setProperty("--ui-mobile-card-columns", String(uiSettings.mobileCardColumns));
+  root.style.setProperty("--ui-desktop-max-width", `${uiSettings.desktopMaxWidth}px`);
+}
+
+function buildUiSettingsControl(definition) {
+  const wrapper = document.createElement("div");
+  wrapper.className = "ui-setting-control";
+  const value = uiSettings[definition.key];
+  const valueLabel = `${value}${definition.unit}`;
+  wrapper.innerHTML = `
+    <label class="field">
+      <span>${definition.label} <small>(${valueLabel})</small></span>
+      <input type="range" min="${definition.min}" max="${definition.max}" step="${definition.step}" value="${value}" data-ui-setting-key="${definition.key}" data-input-type="range" />
+    </label>
+    <label class="field ui-setting-number-field">
+      <span>値</span>
+      <input type="number" min="${definition.min}" max="${definition.max}" step="${definition.step}" value="${value}" data-ui-setting-key="${definition.key}" data-input-type="number" />
+    </label>
+  `;
+  return wrapper;
+}
+
+function renderUiSettingsPanel() {
+  if (!uiSettingsControlList) return;
+  uiSettingsControlList.innerHTML = "";
+  UI_SETTING_DEFINITIONS.forEach((definition) => {
+    uiSettingsControlList.append(buildUiSettingsControl(definition));
+  });
+}
+
+function syncUiSettingRow(definition, value) {
+  if (!uiSettingsControlList) return;
+  const inputs = uiSettingsControlList.querySelectorAll(`[data-ui-setting-key="${definition.key}"]`);
+  inputs.forEach((input) => {
+    input.value = String(value);
+  });
+  const label = inputs[0]?.closest(".field")?.querySelector("small");
+  if (label) label.textContent = `(${value}${definition.unit})`;
+}
+
+function updateUiSetting(definition, nextRawValue) {
+  const normalized = normalizeUiSettingValue(definition, nextRawValue);
+  uiSettings[definition.key] = normalized;
+  applyUiSettingsToRoot();
+  syncUiSettingRow(definition, normalized);
+}
+
+function downloadUiSettingsJson() {
+  const payload = normalizeUiSettings(uiSettings);
+  const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
+  const link = document.createElement("a");
+  link.href = URL.createObjectURL(blob);
+  const datePart = new Date().toISOString().slice(0, 10);
+  link.download = `dq10-ui-settings-${datePart}.json`;
+  document.body.append(link);
+  link.click();
+  link.remove();
+  URL.revokeObjectURL(link.href);
+}
+
 function switchTab(target) {
   const normalizedTarget = TAB_IDS.has(target) ? target : "profit";
   activeTabId = normalizedTarget;
@@ -3802,6 +3937,34 @@ sideMenuItems.forEach((item) => {
     setMenuOpen(false);
   });
 });
+
+if (uiSettingsControlList) {
+  uiSettingsControlList.addEventListener("input", (event) => {
+    const input = event.target;
+    if (!(input instanceof HTMLInputElement)) return;
+    const settingKey = String(input.dataset.uiSettingKey || "");
+    const definition = UI_SETTING_DEFINITIONS.find((item) => item.key === settingKey);
+    if (!definition) return;
+    updateUiSetting(definition, input.value);
+    setUiSettingsMessage("表示に反映しました。必要に応じてJSONをダウンロードして data/ui-settings.json を更新してください。");
+  });
+}
+
+if (uiSettingsResetButton) {
+  uiSettingsResetButton.addEventListener("click", () => {
+    uiSettings = structuredClone(DEFAULT_UI_SETTINGS);
+    applyUiSettingsToRoot();
+    renderUiSettingsPanel();
+    setUiSettingsMessage("初期値に戻しました。");
+  });
+}
+
+if (uiSettingsExportButton) {
+  uiSettingsExportButton.addEventListener("click", () => {
+    downloadUiSettingsJson();
+    setUiSettingsMessage("設定JSONをダウンロードしました。");
+  });
+}
 
 document.addEventListener("keydown", (event) => {
   if (event.key === "Escape") {
@@ -4910,6 +5073,10 @@ window.mergeBazaarHistoryLines = mergeBazaarHistoryLines;
 // 2) ローカル保存の価格情報をマージ
 // 3) 画面描画
 async function initialize() {
+  await loadUiSettings();
+  applyUiSettingsToRoot();
+  renderUiSettingsPanel();
+
   try {
     topUpdates = await loadTopUpdates();
   } catch (error) {

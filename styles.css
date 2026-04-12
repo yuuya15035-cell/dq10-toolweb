@@ -12,6 +12,16 @@
   --accent-gold: #d7bb84;
   --surface-soft: #f6eddf;
   --menu-surface: #4f3522;
+  --ui-section-vertical-space: 14px;
+  --ui-card-padding: 10px;
+  --ui-card-radius: 12px;
+  --ui-title-font-size: 1.5rem;
+  --ui-body-font-size: 16px;
+  --ui-button-height: 38px;
+  --ui-button-radius: 8px;
+  --ui-icon-size: 16px;
+  --ui-mobile-card-columns: 2;
+  --ui-desktop-max-width: 920px;
 }
 
 * {
@@ -21,6 +31,7 @@
 body {
   margin: 0;
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Hiragino Kaku Gothic ProN", "Noto Sans JP", sans-serif;
+  font-size: var(--ui-body-font-size);
   background: linear-gradient(180deg, #f1ece3 0%, var(--bg) 56%, #ddd2c3 100%);
   color: var(--text);
 }
@@ -30,7 +41,7 @@ body.is-modal-open {
 }
 
 .app {
-  max-width: 920px;
+  max-width: var(--ui-desktop-max-width);
   margin: 0 auto;
   padding: 14px;
   padding-top: 72px;
@@ -135,7 +146,7 @@ body.is-modal-open {
 
 .app-header h1 {
   margin: 0 0 8px;
-  font-size: 1.5rem;
+  font-size: var(--ui-title-font-size);
   color: #4f3522;
   letter-spacing: 0.01em;
 }
@@ -157,7 +168,7 @@ body.is-modal-open {
 }
 
 .app-header {
-  margin-bottom: 14px;
+  margin-bottom: var(--ui-section-vertical-space);
   padding: 12px 14px;
   border: 1px solid var(--panel-border);
   border-radius: 12px;
@@ -166,7 +177,7 @@ body.is-modal-open {
 }
 
 .top-quick-access {
-  margin-bottom: 14px;
+  margin-bottom: var(--ui-section-vertical-space);
   padding: 12px;
   border: 1px solid #bfa384;
   border-radius: 12px;
@@ -250,7 +261,7 @@ body.is-modal-open {
 
 .top-update-list {
   margin-top: 0;
-  margin-bottom: 14px;
+  margin-bottom: var(--ui-section-vertical-space);
 }
 
 .top-update-list ul {
@@ -271,7 +282,7 @@ body.is-modal-open {
 }
 
 .tab-content > h2 {
-  margin: 0 0 10px;
+  margin: 0 0 var(--ui-section-vertical-space);
   border: 1px solid #795338;
   border-radius: 10px;
   padding: 10px 12px;
@@ -576,9 +587,9 @@ body.is-modal-open {
 .card {
   background: var(--card);
   border: 1px solid var(--panel-border);
-  border-radius: 12px;
-  padding: 10px;
-  margin: 10px 0;
+  border-radius: var(--ui-card-radius);
+  padding: var(--ui-card-padding);
+  margin: var(--ui-section-vertical-space) 0;
   box-shadow: 0 4px 12px var(--panel-shadow);
 }
 
@@ -611,18 +622,19 @@ select {
   border-radius: 8px;
   padding: 8px 10px;
   width: 100%;
-  min-height: 38px;
+  min-height: var(--ui-button-height);
   background: #ffffff;
   color: var(--text);
 }
 
 button {
   border: none;
-  border-radius: 8px;
+  border-radius: var(--ui-button-radius);
   background: var(--primary);
   color: #fff;
   padding: 10px 14px;
   font-weight: 700;
+  min-height: var(--ui-button-height);
 }
 
 /* aタグのリンクでも既存ボタンと近い見た目にして、デザイン差分を最小化 */
@@ -1095,8 +1107,8 @@ button {
 }
 
 .bazaar-category-icon {
-  width: 20px;
-  height: 20px;
+  width: var(--ui-icon-size);
+  height: var(--ui-icon-size);
   flex-shrink: 0;
   object-fit: contain;
   opacity: 0.9;
@@ -2035,7 +2047,7 @@ button {
 
 @media (max-width: 699px) {
   .orb-card-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-columns: repeat(var(--ui-mobile-card-columns), minmax(0, 1fr));
     gap: 8px;
   }
 
@@ -2466,20 +2478,46 @@ button {
 
 .orb-card-grid {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: repeat(var(--ui-mobile-card-columns), minmax(0, 1fr));
   gap: 10px;
 }
 
 .whitebox-card-grid {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: repeat(var(--ui-mobile-card-columns), minmax(0, 1fr));
   gap: 10px;
 }
 
 .equipment-db-card-grid {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: repeat(var(--ui-mobile-card-columns), minmax(0, 1fr));
   gap: 10px;
+}
+
+.ui-settings-control-list {
+  display: grid;
+  gap: 8px;
+}
+
+.ui-setting-control {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 110px;
+  gap: 8px;
+  align-items: end;
+}
+
+.ui-setting-number-field {
+  margin-bottom: 0;
+}
+
+.ui-settings-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.ui-settings-note {
+  margin-top: 0;
 }
 
 .whitebox-card {
@@ -2538,8 +2576,8 @@ button {
 }
 
 .equipment-type-icon {
-  width: 16px;
-  height: 16px;
+  width: var(--ui-icon-size);
+  height: var(--ui-icon-size);
   flex-shrink: 0;
   object-fit: contain;
   vertical-align: middle;
@@ -2831,8 +2869,8 @@ button {
 }
 
 .orb-card-category-icon {
-  width: 18px;
-  height: 18px;
+  width: var(--ui-icon-size);
+  height: var(--ui-icon-size);
   flex-shrink: 0;
   object-fit: contain;
 }
