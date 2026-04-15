@@ -1375,12 +1375,53 @@ button {
   font-weight: 700;
 }
 
+.bazaar-today-price.is-fixed {
+  color: #574b3f;
+}
+
+.bazaar-today-price.is-shop-fixed {
+  color: #5b544c;
+}
+
+.bazaar-price-status-badge {
+  margin: 3px 0 0;
+  display: inline-flex;
+  align-items: center;
+  padding: 1px 7px;
+  border-radius: 999px;
+  border: 1px solid #b8a186;
+  background: rgba(248, 241, 232, 0.82);
+  color: #655649;
+  font-size: 0.68rem;
+  font-weight: 700;
+  line-height: 1.35;
+}
+
+.bazaar-price-status-badge.is-fixed {
+  color: #6b6157;
+  border-color: #bba995;
+}
+
+.bazaar-price-status-badge.is-shop-fixed {
+  color: #736a60;
+  border-color: #c2b2a0;
+  background: rgba(238, 233, 225, 0.9);
+}
+
 .bazaar-price-comment {
   margin: 2px 0 0;
   color: #6d5643;
   font-size: 0.74rem;
   line-height: 1.2;
   font-weight: 600;
+}
+
+.bazaar-price-comment.is-fixed {
+  color: #71645a;
+}
+
+.bazaar-price-comment.is-shop-fixed {
+  color: #786e64;
 }
 
 .bazaar-change-rate {
