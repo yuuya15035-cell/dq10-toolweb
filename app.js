@@ -2776,6 +2776,19 @@ function calculatePriceChangeRate(todayPrice, yesterdayPrice) {
   return ((todayPrice - yesterdayPrice) / yesterdayPrice) * 100;
 }
 
+function getBazaarPriceVisualTone(row) {
+  const statusText = `${String(row?.comment || "")} ${String(row?.updateInfo || "")}`;
+  if (statusText.includes("店売り価格固定")) return "shop-fixed";
+  if (statusText.includes("現在固定") || statusText.includes("価格固定")) return "fixed";
+  return "normal";
+}
+
+function getBazaarPriceStatusBadgeLabel(priceVisualTone) {
+  if (priceVisualTone === "shop-fixed") return "店売り価格固定";
+  if (priceVisualTone === "fixed") return "価格固定";
+  return "";
+}
+
 function getBazaarRowChangeRate(row) {
   if (Number.isFinite(row?.priceChangeRate)) return row.priceChangeRate;
   return calculatePriceChangeRate(row?.todayPrice, row?.previousDayPrice);
@@ -2967,6 +2980,9 @@ function renderBazaarPrices() {
           const todayPriceHtml = formatBazaarPriceWithUnit(row.displayPrice);
           const changeRate = getBazaarRowChangeRate(row);
           const changePresentation = getBazaarChangePresentation(changeRate);
+          const priceVisualTone = getBazaarPriceVisualTone(row);
+          const priceVisualToneClass = `is-${priceVisualTone}`;
+          const priceStatusBadgeLabel = getBazaarPriceStatusBadgeLabel(priceVisualTone);
           const isFavorite = isBazaarFavoriteRow(row);
           const hasOfficialUrl = row.officialUrl !== "";
           const history = getBazaarHistoryForRange(row.materialKey, selectedBazaarChartRangeDays);
@@ -2976,7 +2992,12 @@ function renderBazaarPrices() {
           const sparklineSvgDesktop = hasHistory ? buildBazaarSparklineSvg(history, { includeYAxisLabels: false }) : "";
           const sparklineSvgMobile = hasHistory ? buildBazaarSparklineSvg(history) : "";
           const externalYAxisLabels = hasHistory ? buildBazaarChartExternalYAxisLabels(history) : "";
-          const commentHtml = row.comment !== "" ? `<p class="bazaar-price-comment">${row.comment}</p>` : "";
+          const shouldShowComment = row.comment !== "" && row.comment !== priceStatusBadgeLabel;
+          const priceStatusBadgeHtml =
+            priceStatusBadgeLabel !== ""
+              ? `<p class="bazaar-price-status-badge ${priceVisualToneClass}">${priceStatusBadgeLabel}</p>`
+              : "";
+          const commentHtml = shouldShowComment ? `<p class="bazaar-price-comment ${priceVisualToneClass}">${row.comment}</p>` : "";
           const updatedAtText = formatBazaarUpdatedAt(row.updatedAt);
           const changeArrowHtml = changePresentation.isComputable
             ? `<span class="bazaar-change-arrow ${changePresentation.toneClass}" aria-hidden="true">${changePresentation.arrow}</span>`
@@ -3011,7 +3032,8 @@ function renderBazaarPrices() {
               </div>
               <div class="bazaar-main">
                 <div class="bazaar-primary">
-                  <p class="bazaar-today-price">${todayPriceHtml}</p>
+                  <p class="bazaar-today-price ${priceVisualToneClass}">${todayPriceHtml}</p>
+                  ${priceStatusBadgeHtml}
                   ${commentHtml}
                   <p class="bazaar-change-rate">前日比: <span class="bazaar-change-value ${changePresentation.toneClass}">${changePresentation.text}</span>${changeArrowHtml}</p>
                 </div>
