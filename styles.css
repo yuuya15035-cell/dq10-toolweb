@@ -3114,6 +3114,70 @@ button {
   background: #f6efe8;
 }
 
+.bazaar-admin-panel {
+  display: grid;
+  gap: 10px;
+}
+
+.bazaar-admin-toolbar {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  align-items: end;
+}
+
+.bazaar-admin-category-field {
+  min-width: 180px;
+}
+
+.bazaar-admin-list-wrap {
+  display: grid;
+  gap: 8px;
+}
+
+.bazaar-admin-row {
+  border: 1px solid #d6c2ab;
+  border-radius: 10px;
+  padding: 10px;
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  background: #fffaf4;
+}
+
+.bazaar-admin-row.is-success {
+  border-color: #7bbf79;
+}
+
+.bazaar-admin-row.is-fallback {
+  border-color: #d4ab46;
+}
+
+.bazaar-admin-row.is-fail {
+  border-color: #d17070;
+}
+
+.bazaar-admin-row-main {
+  min-width: 0;
+}
+
+.bazaar-admin-material {
+  margin: 0;
+  font-weight: 700;
+}
+
+.bazaar-admin-meta,
+.bazaar-admin-status {
+  margin: 4px 0 0;
+  font-size: 0.82rem;
+}
+
+.bazaar-admin-row-actions {
+  display: flex;
+  gap: 6px;
+  align-items: flex-start;
+}
+
 @media (min-width: 900px) {
   .equipment-type-icon {
     width: 18px;

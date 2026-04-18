@@ -36,6 +36,7 @@ const TAB_IDS = new Set([
   "ui-settings",
   "content-editor",
   "updates-editor",
+  "bazaar-admin",
 ]);
 const ADMIN_MODE_STORAGE_KEY = "dq10_toolweb_admin_mode_v1";
 const ADMIN_PIN = "1010";
@@ -879,6 +880,9 @@ let whiteBoxDataLoadingPromise = null;
 let equipmentDbDataLoadingPromise = null;
 let bazaarLoadingPromise = null;
 let bazaarHistoryLoadingPromise = null;
+let bazaarAdminCsvModel = null;
+let bazaarAdminLastResults = new Map();
+let isBazaarAdminUpdating = false;
 let craftIdealValuesLoadingPromise = null;
 let selectedFieldFarmingSort = "normal_desc";
 let activeFieldFarmingMapModalRowId = "";
@@ -1001,11 +1005,19 @@ const adminOpenUiSettingsButton = getRequiredElementById("adminOpenUiSettingsBut
 const adminOpenContentEditorButton = getRequiredElementById("adminOpenContentEditorButton");
 const adminToggleContentEditModeButton = getRequiredElementById("adminToggleContentEditModeButton");
 const adminOpenUpdatesEditorButton = getRequiredElementById("adminOpenUpdatesEditorButton");
+const adminOpenBazaarAdminButton = getRequiredElementById("adminOpenBazaarAdminButton");
 const adminExportUiSettingsButton = getRequiredElementById("adminExportUiSettingsButton");
 const adminExportContentButton = getRequiredElementById("adminExportContentButton");
 const adminExportUpdatesButton = getRequiredElementById("adminExportUpdatesButton");
 const adminLockButton = getRequiredElementById("adminLockButton");
 const adminFabMessage = getRequiredElementById("adminFabMessage");
+const bazaarAdminCategorySelect = getRequiredElementById("bazaarAdminCategorySelect");
+const bazaarAdminRefreshButton = getRequiredElementById("bazaarAdminRefreshButton");
+const bazaarAdminUpdateCategoryButton = getRequiredElementById("bazaarAdminUpdateCategoryButton");
+const bazaarAdminUpdateAllButton = getRequiredElementById("bazaarAdminUpdateAllButton");
+const bazaarAdminDownloadButton = getRequiredElementById("bazaarAdminDownloadButton");
+const bazaarAdminMessage = getRequiredElementById("bazaarAdminMessage");
+const bazaarAdminListWrap = getRequiredElementById("bazaarAdminListWrap");
 
 const perCraftToolCostEl = getRequiredElementById("perCraftToolCost");
 const totalMaterialCostEl = getRequiredElementById("totalMaterialCost");
@@ -1251,6 +1263,252 @@ function parsePresentCodesFromLines(lines) {
     rows.push({ code, reward, expiresAt, linkType, url, note });
   }
   return rows;
+}
+
+function formatBazaarAdminTimestamp(date = new Date()) {
+  const year = date.getFullYear();
+  const month = date.getMonth() + 1;
+  const day = date.getDate();
+  const hours = String(date.getHours()).padStart(2, "0");
+  const minutes = String(date.getMinutes()).padStart(2, "0");
+  return `${year}/${month}/${day}/${hours}:${minutes}`;
+}
+
+function normalizeBazaarAdminNumberText(value) {
+  const digits = String(value || "").replace(/[^\d]/g, "");
+  return digits === "" ? "" : String(Number(digits));
+}
+
+function isBazaarAdminExcludedComment(comment) {
+  const text = String(comment || "");
+  return text.includes("固定価格") || text.includes("現在固定");
+}
+
+function buildBazaarAdminCsvModel(lines) {
+  if (!Array.isArray(lines) || lines.length === 0) {
+    throw new Error("bazaar_prices.csv が空です");
+  }
+  const headers = parseCsvLine(lines[0]).map((header) => String(header || "").replace(/^\uFEFF/, "").trim());
+  const indexes = {
+    materialName: headers.indexOf("materialName"),
+    itemCategory: headers.indexOf("item_category"),
+    sortOrder: headers.indexOf("sort_order"),
+    todayPrice: headers.indexOf("today_price"),
+    previousDayPrice: headers.indexOf("previous_day_price"),
+    updatedAt: headers.indexOf("updated_at"),
+    comment: headers.indexOf("comment"),
+    shopPrice: headers.indexOf("shop_price"),
+    officialUrl: headers.indexOf("official_url"),
+  };
+  if (Object.values(indexes).some((value) => value < 0)) {
+    throw new Error("bazaar_prices.csv ヘッダーが想定と一致しません");
+  }
+
+  const rows = lines
+    .slice(1)
+    .map((line, index) => ({ cells: parseCsvLine(line), lineNumber: index + 2 }))
+    .filter((entry) => entry.cells.some((cell) => String(cell || "").trim() !== ""))
+    .map((entry, index) => {
+      const cells = [...entry.cells];
+      while (cells.length < headers.length) cells.push("");
+      const materialName = String(cells[indexes.materialName] || "").trim();
+      const itemCategory = String(cells[indexes.itemCategory] || "").trim();
+      const sortOrderRaw = Number(cells[indexes.sortOrder]);
+      const comment = String(cells[indexes.comment] || "").trim();
+      return {
+        id: `bazaar-admin-row-${index}`,
+        cells,
+        lineNumber: entry.lineNumber,
+        materialName,
+        itemCategory,
+        sortOrder: Number.isFinite(sortOrderRaw) ? sortOrderRaw : Number.MAX_SAFE_INTEGER,
+        todayPriceText: String(cells[indexes.todayPrice] || "").trim(),
+        previousDayPriceText: String(cells[indexes.previousDayPrice] || "").trim(),
+        updatedAtText: String(cells[indexes.updatedAt] || "").trim(),
+        comment,
+        shopPriceText: String(cells[indexes.shopPrice] || "").trim(),
+        officialUrl: parseOfficialUrl(cells[indexes.officialUrl]),
+        excluded: isBazaarAdminExcludedComment(comment),
+      };
+    })
+    .filter((row) => row.materialName !== "")
+    .sort((a, b) => a.sortOrder - b.sortOrder);
+
+  return { headers, indexes, rows };
+}
+
+function serializeBazaarAdminCsvModel(model) {
+  if (!model?.headers || !Array.isArray(model.rows)) return "";
+  const lines = [];
+  lines.push(model.headers.map((header) => escapeCsvValue(header)).join(","));
+  model.rows.forEach((row) => {
+    lines.push(row.cells.map((value) => escapeCsvValue(value)).join(","));
+  });
+  return `\uFEFF${lines.join("\n")}\n`;
+}
+
+function setBazaarAdminMessage(message, isError = false) {
+  if (!bazaarAdminMessage) return;
+  bazaarAdminMessage.textContent = message;
+  bazaarAdminMessage.style.color = isError ? "#d93025" : "#4f5d75";
+}
+
+function updateBazaarAdminActionButtons() {
+  const disabled = isBazaarAdminUpdating || !bazaarAdminCsvModel;
+  if (bazaarAdminRefreshButton) bazaarAdminRefreshButton.disabled = isBazaarAdminUpdating;
+  if (bazaarAdminUpdateCategoryButton) bazaarAdminUpdateCategoryButton.disabled = disabled;
+  if (bazaarAdminUpdateAllButton) bazaarAdminUpdateAllButton.disabled = disabled;
+  if (bazaarAdminDownloadButton) bazaarAdminDownloadButton.disabled = !bazaarAdminCsvModel || isBazaarAdminUpdating;
+}
+
+function extractBazaarPriceFromText(text) {
+  const normalizedText = String(text || "");
+  const perUnitMatch = normalizedText.match(/ひとつあたり\s*([0-9,]+)\s*G/i);
+  if (perUnitMatch) {
+    return { priceText: normalizeBazaarAdminNumberText(perUnitMatch[1]), source: "per_unit" };
+  }
+  const totalPriceMatch = normalizedText.match(/価格\s*[:：]\s*([0-9,]+)\s*G/i);
+  if (totalPriceMatch) {
+    return { priceText: normalizeBazaarAdminNumberText(totalPriceMatch[1]), source: "total_price" };
+  }
+  return { priceText: "", source: "none" };
+}
+
+async function fetchOfficialBazaarPageText(url) {
+  const normalizedUrl = parseOfficialUrl(url);
+  if (!normalizedUrl) return "";
+
+  const tryFetch = async (targetUrl, isHtml = false) => {
+    const response = await fetch(targetUrl, { method: "GET" });
+    if (!response.ok) return "";
+    const bodyText = await response.text();
+    if (!isHtml) return bodyText;
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(bodyText, "text/html");
+    return doc.body?.innerText || bodyText;
+  };
+
+  try {
+    const direct = await tryFetch(normalizedUrl, true);
+    if (direct.trim() !== "") return direct;
+  } catch (error) {
+    console.warn("公式ページの直接取得に失敗しました", error);
+  }
+
+  try {
+    const proxyText = await tryFetch(`https://r.jina.ai/http://${normalizedUrl.replace(/^https?:\/\//, "")}`);
+    return proxyText;
+  } catch (error) {
+    console.warn("公式ページのプロキシ取得に失敗しました", error);
+    return "";
+  }
+}
+
+async function reloadBazaarAdminCsvModel() {
+  const lines = await fetchCsvLines(BAZAAR_CSV_PATH);
+  bazaarAdminCsvModel = buildBazaarAdminCsvModel(lines);
+  bazaarAdminLastResults = new Map();
+}
+
+function renderBazaarAdminPanel() {
+  if (!bazaarAdminListWrap || !bazaarAdminCategorySelect) return;
+  if (!bazaarAdminCsvModel) {
+    bazaarAdminListWrap.innerHTML = "<p>管理CSVを読み込めていません。</p>";
+    updateBazaarAdminActionButtons();
+    return;
+  }
+
+  const categoryValues = Array.from(new Set(bazaarAdminCsvModel.rows.map((row) => row.itemCategory).filter(Boolean)));
+  bazaarAdminCategorySelect.innerHTML = [
+    `<option value="">すべてのカテゴリ</option>`,
+    ...categoryValues.map((category) => `<option value="${escapeHtml(category)}">${escapeHtml(category)}</option>`),
+  ].join("");
+
+  const rowsHtml = bazaarAdminCsvModel.rows
+    .map((row) => {
+      const result = bazaarAdminLastResults.get(row.id);
+      const statusClass = result?.status ? `is-${result.status}` : "";
+      const statusText = result?.message || (row.excluded ? "除外（固定価格）" : "未更新");
+      return `
+        <article class="bazaar-admin-row ${statusClass}">
+          <div class="bazaar-admin-row-main">
+            <p class="bazaar-admin-material">${escapeHtml(row.materialName)}</p>
+            <p class="bazaar-admin-meta">${escapeHtml(row.itemCategory)} / today:${escapeHtml(row.todayPriceText || "-")} / prev:${escapeHtml(
+              row.previousDayPriceText || "-"
+            )}</p>
+            <p class="bazaar-admin-meta">updated_at: ${escapeHtml(row.updatedAtText || "-")} / comment: ${escapeHtml(row.comment || "-")}</p>
+            <p class="bazaar-admin-status">${escapeHtml(statusText)}</p>
+          </div>
+          <div class="bazaar-admin-row-actions">
+            <button type="button" data-bazaar-admin-open-url="${escapeHtml(row.id)}" ${row.officialUrl ? "" : "disabled"}>URLを開く</button>
+            <button type="button" data-bazaar-admin-update-row="${escapeHtml(row.id)}" ${row.excluded ? "disabled" : ""}>この行を更新</button>
+          </div>
+        </article>
+      `;
+    })
+    .join("");
+  bazaarAdminListWrap.innerHTML = rowsHtml || "<p>対象行がありません。</p>";
+  updateBazaarAdminActionButtons();
+}
+
+async function updateBazaarAdminSingleRow(row) {
+  if (!row || row.excluded) {
+    return { status: "skip", message: "固定価格のため除外" };
+  }
+  if (!row.officialUrl) {
+    return { status: "fail", message: "official_url が未設定です" };
+  }
+  const pageText = await fetchOfficialBazaarPageText(row.officialUrl);
+  if (!pageText) {
+    return { status: "fail", message: "公式ページの取得に失敗しました" };
+  }
+  const extracted = extractBazaarPriceFromText(pageText);
+  if (!extracted.priceText) {
+    return { status: "fail", message: "価格の抽出に失敗（today/prevは変更なし）" };
+  }
+
+  const currentToday = String(row.cells[bazaarAdminCsvModel.indexes.todayPrice] || "").trim();
+  row.cells[bazaarAdminCsvModel.indexes.previousDayPrice] = currentToday;
+  row.cells[bazaarAdminCsvModel.indexes.todayPrice] = extracted.priceText;
+  row.cells[bazaarAdminCsvModel.indexes.updatedAt] = formatBazaarAdminTimestamp(new Date());
+  row.todayPriceText = extracted.priceText;
+  row.previousDayPriceText = currentToday;
+  row.updatedAtText = String(row.cells[bazaarAdminCsvModel.indexes.updatedAt] || "");
+  return {
+    status: extracted.source === "per_unit" ? "success" : "fallback",
+    message: extracted.source === "per_unit" ? `更新成功: ひとつあたり ${extracted.priceText}G` : `代替更新: 価格 ${extracted.priceText}G`,
+  };
+}
+
+async function runBazaarAdminBatchUpdate(options = {}) {
+  if (!bazaarAdminCsvModel || isBazaarAdminUpdating) return;
+  const category = String(options.category || "").trim();
+  const targetRows = bazaarAdminCsvModel.rows.filter((row) => !row.excluded && (category === "" || row.itemCategory === category));
+  if (targetRows.length === 0) {
+    setBazaarAdminMessage("更新対象がありません。");
+    return;
+  }
+
+  isBazaarAdminUpdating = true;
+  updateBazaarAdminActionButtons();
+  setBazaarAdminMessage(`更新中... 対象 ${targetRows.length} 件`);
+  let successCount = 0;
+  let failCount = 0;
+  let fallbackCount = 0;
+  try {
+    for (const row of targetRows) {
+      const result = await updateBazaarAdminSingleRow(row);
+      bazaarAdminLastResults.set(row.id, result);
+      if (result.status === "success") successCount += 1;
+      else if (result.status === "fallback") fallbackCount += 1;
+      else failCount += 1;
+    }
+  } finally {
+    isBazaarAdminUpdating = false;
+    updateBazaarAdminActionButtons();
+    renderBazaarAdminPanel();
+  }
+  setBazaarAdminMessage(`更新完了: 成功 ${successCount}件 / 代替 ${fallbackCount}件 / 失敗 ${failCount}件`);
 }
 
 async function loadPresentCodesCsv() {
@@ -2073,6 +2331,19 @@ function prefetchDataForTab(tabId) {
   }
   if (tabId === "equipment-db") {
     void ensureEquipmentDbDataLoaded();
+    return;
+  }
+  if (tabId === "bazaar-admin") {
+    if (!bazaarAdminCsvModel) {
+      void reloadBazaarAdminCsvModel()
+        .then(() => {
+          if (activeTabId === "bazaar-admin") renderBazaarAdminPanel();
+        })
+        .catch((error) => {
+          console.error("bazaar_prices.csv(管理) の読み込みに失敗しました", error);
+          setBazaarAdminMessage(`管理CSVの読み込みに失敗しました: ${error instanceof Error ? error.message : String(error)}`, true);
+        });
+    }
   }
 }
 
@@ -4134,7 +4405,10 @@ function toggleAdminFabPanel() {
 function switchTab(target) {
   const requestedTarget = TAB_IDS.has(target) ? target : "profit";
   const normalizedTarget =
-    (requestedTarget === "ui-settings" || requestedTarget === "content-editor" || requestedTarget === "updates-editor") &&
+    (requestedTarget === "ui-settings" ||
+      requestedTarget === "content-editor" ||
+      requestedTarget === "updates-editor" ||
+      requestedTarget === "bazaar-admin") &&
     !isAdminModeEnabled
       ? "profit"
       : requestedTarget;
@@ -4155,6 +4429,8 @@ function switchTab(target) {
     renderWhiteBoxCards();
   } else if (normalizedTarget === "equipment-db") {
     renderEquipmentDbCards();
+  } else if (normalizedTarget === "bazaar-admin") {
+    renderBazaarAdminPanel();
   } else if (normalizedTarget === "profit") {
     renderCraftIdealValue();
   }
@@ -4541,6 +4817,22 @@ if (adminOpenUpdatesEditorButton) {
   });
 }
 
+if (adminOpenBazaarAdminButton) {
+  adminOpenBazaarAdminButton.addEventListener("click", async () => {
+    try {
+      if (!bazaarAdminCsvModel) {
+        await reloadBazaarAdminCsvModel();
+      }
+      renderBazaarAdminPanel();
+      scrollToBlock("bazaar-admin");
+      setAdminFabMessage("バザー価格更新を開きました。");
+    } catch (error) {
+      console.error("バザー価格更新ページの初期化に失敗しました", error);
+      setAdminFabMessage("バザー価格更新の読込に失敗しました。", true);
+    }
+  });
+}
+
 if (adminExportUiSettingsButton) {
   adminExportUiSettingsButton.addEventListener("click", () => {
     downloadUiSettingsJson();
@@ -4566,10 +4858,93 @@ if (adminLockButton) {
   adminLockButton.addEventListener("click", () => {
     setAdminModeEnabled(false);
     setContentEditModeEnabled(false);
-    if (activeTabId === "ui-settings" || activeTabId === "content-editor" || activeTabId === "updates-editor") {
+    if (activeTabId === "ui-settings" || activeTabId === "content-editor" || activeTabId === "updates-editor" || activeTabId === "bazaar-admin") {
       scrollToBlock("profit");
     }
     setAdminFabMessage("管理モードを閉じました。");
+  });
+}
+
+if (bazaarAdminRefreshButton) {
+  bazaarAdminRefreshButton.addEventListener("click", async () => {
+    try {
+      setBazaarAdminMessage("CSV再読込中...");
+      await reloadBazaarAdminCsvModel();
+      renderBazaarAdminPanel();
+      setBazaarAdminMessage("bazaar_prices.csv を再読込しました。");
+    } catch (error) {
+      console.error("管理CSVの再読込に失敗しました", error);
+      setBazaarAdminMessage(`CSV再読込に失敗しました: ${error instanceof Error ? error.message : String(error)}`, true);
+    }
+  });
+}
+
+if (bazaarAdminUpdateAllButton) {
+  bazaarAdminUpdateAllButton.addEventListener("click", async () => {
+    await runBazaarAdminBatchUpdate({ category: "" });
+  });
+}
+
+if (bazaarAdminUpdateCategoryButton) {
+  bazaarAdminUpdateCategoryButton.addEventListener("click", async () => {
+    const category = String(bazaarAdminCategorySelect?.value || "").trim();
+    await runBazaarAdminBatchUpdate({ category });
+  });
+}
+
+if (bazaarAdminDownloadButton) {
+  bazaarAdminDownloadButton.addEventListener("click", () => {
+    if (!bazaarAdminCsvModel) {
+      setBazaarAdminMessage("ダウンロード対象CSVがありません。", true);
+      return;
+    }
+    const csvText = serializeBazaarAdminCsvModel(bazaarAdminCsvModel);
+    const blob = new Blob([csvText], { type: "text/csv;charset=utf-8" });
+    const link = document.createElement("a");
+    link.href = URL.createObjectURL(blob);
+    link.download = "bazaar_prices.csv";
+    document.body.append(link);
+    link.click();
+    link.remove();
+    URL.revokeObjectURL(link.href);
+    setBazaarAdminMessage("更新後CSVをダウンロードしました。");
+  });
+}
+
+if (bazaarAdminListWrap) {
+  bazaarAdminListWrap.addEventListener("click", async (event) => {
+    const target = event.target;
+    if (!(target instanceof HTMLButtonElement)) return;
+    const openRowId = String(target.dataset.bazaarAdminOpenUrl || "");
+    const updateRowId = String(target.dataset.bazaarAdminUpdateRow || "");
+    if (!bazaarAdminCsvModel) return;
+
+    if (openRowId) {
+      const row = bazaarAdminCsvModel.rows.find((entry) => entry.id === openRowId);
+      if (!row?.officialUrl) return;
+      window.open(row.officialUrl, "_blank", "noopener");
+      return;
+    }
+
+    if (updateRowId && !isBazaarAdminUpdating) {
+      const row = bazaarAdminCsvModel.rows.find((entry) => entry.id === updateRowId);
+      if (!row) return;
+      isBazaarAdminUpdating = true;
+      updateBazaarAdminActionButtons();
+      try {
+        const result = await updateBazaarAdminSingleRow(row);
+        bazaarAdminLastResults.set(row.id, result);
+        setBazaarAdminMessage(`${row.materialName}: ${result.message}`);
+      } catch (error) {
+        console.error("行単位更新に失敗しました", error);
+        bazaarAdminLastResults.set(row.id, { status: "fail", message: "更新失敗" });
+        setBazaarAdminMessage(`${row.materialName}: 更新失敗`, true);
+      } finally {
+        isBazaarAdminUpdating = false;
+        updateBazaarAdminActionButtons();
+        renderBazaarAdminPanel();
+      }
+    }
   });
 }
 
