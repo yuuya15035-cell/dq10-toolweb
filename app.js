@@ -1320,7 +1320,7 @@ function buildBazaarAdminCsvModel(lines) {
 
   const rows = lines
     .slice(1)
-    .map((line, index) => ({ cells: parseCsvLine(line), lineNumber: index + 2 }))
+    .map((line, originalIndex) => ({ cells: parseCsvLine(line), lineNumber: originalIndex + 2, originalIndex }))
     .filter((entry) => entry.cells.some((cell) => String(cell || "").trim() !== ""))
     .map((entry, index) => {
       const cells = [...entry.cells];
@@ -1333,6 +1333,7 @@ function buildBazaarAdminCsvModel(lines) {
         id: `bazaar-admin-row-${index}`,
         cells,
         lineNumber: entry.lineNumber,
+        originalIndex: entry.originalIndex,
         materialName,
         itemCategory,
         sortOrder: Number.isFinite(sortOrderRaw) ? sortOrderRaw : Number.MAX_SAFE_INTEGER,
@@ -1345,8 +1346,7 @@ function buildBazaarAdminCsvModel(lines) {
         excluded: isExcludedByComment(comment),
       };
     })
-    .filter((row) => row.materialName !== "")
-    .sort((a, b) => a.sortOrder - b.sortOrder);
+    .filter((row) => row.materialName !== "");
 
   return { headers, indexes, rows };
 }
@@ -1355,7 +1355,10 @@ function serializeBazaarAdminCsvModel(model) {
   if (!model?.headers || !Array.isArray(model.rows)) return "";
   const lines = [];
   lines.push(model.headers.map((header) => escapeCsvValue(header)).join(","));
-  model.rows.forEach((row) => {
+  const rowsInOriginalOrder = [...model.rows].sort(
+    (a, b) => Number(a?.originalIndex ?? Number.MAX_SAFE_INTEGER) - Number(b?.originalIndex ?? Number.MAX_SAFE_INTEGER)
+  );
+  rowsInOriginalOrder.forEach((row) => {
     lines.push(row.cells.map((value) => escapeCsvValue(value)).join(","));
   });
   return `\uFEFF${lines.join("\n")}\n`;
