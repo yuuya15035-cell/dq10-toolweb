@@ -262,6 +262,9 @@ body.is-modal-open {
 .top-update-list {
   margin-top: 0;
   margin-bottom: var(--ui-section-vertical-space);
+  max-height: 17.2rem;
+  overflow-y: auto;
+  overscroll-behavior: contain;
 }
 
 .top-update-list ul {
@@ -274,6 +277,12 @@ body.is-modal-open {
 .top-update-list li {
   font-size: 0.83rem;
   line-height: 1.5;
+}
+
+@media (min-width: 768px) {
+  .top-update-list {
+    max-height: 18.8rem;
+  }
 }
 
 .top-update-list time {

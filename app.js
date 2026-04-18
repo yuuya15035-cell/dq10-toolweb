@@ -4439,15 +4439,7 @@ function updateUiSetting(definition, nextRawValue) {
 
 function downloadUiSettingsJson() {
   const payload = normalizeUiSettings(uiSettings);
-  const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
-  const link = document.createElement("a");
-  link.href = URL.createObjectURL(blob);
-  const datePart = new Date().toISOString().slice(0, 10);
-  link.download = `dq10-ui-settings-${datePart}.json`;
-  document.body.append(link);
-  link.click();
-  link.remove();
-  URL.revokeObjectURL(link.href);
+  downloadJsonWithFixedFileName(payload, "ui-settings.json");
 }
 
 function setContentEditorMessage(message, isError = false) {
@@ -4546,15 +4538,7 @@ function syncContentEditorTextareaValue(contentKey, value) {
 
 function downloadContentJson() {
   const payload = normalizeContent(contentData);
-  const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
-  const link = document.createElement("a");
-  link.href = URL.createObjectURL(blob);
-  const datePart = new Date().toISOString().slice(0, 10);
-  link.download = `dq10-content-${datePart}.json`;
-  document.body.append(link);
-  link.click();
-  link.remove();
-  URL.revokeObjectURL(link.href);
+  downloadJsonWithFixedFileName(payload, "content.json");
 }
 
 function renderContentEditModeState() {
@@ -4579,11 +4563,14 @@ function setContentEditModeEnabled(enabled) {
 
 function downloadUpdatesJson() {
   const payload = normalizeUpdates(topUpdates);
+  downloadJsonWithFixedFileName(payload, "updates.json");
+}
+
+function downloadJsonWithFixedFileName(payload, fileName) {
   const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
   const link = document.createElement("a");
   link.href = URL.createObjectURL(blob);
-  const datePart = new Date().toISOString().slice(0, 10);
-  link.download = `dq10-updates-${datePart}.json`;
+  link.download = fileName;
   document.body.append(link);
   link.click();
   link.remove();
