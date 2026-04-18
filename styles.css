@@ -194,6 +194,10 @@ body.is-modal-open {
   background: rgba(247, 238, 224, 0.9);
 }
 
+.top-quick-access.is-collapsed {
+  display: none;
+}
+
 .top-quick-access h2,
 .top-update-list h2 {
   margin: 0 0 10px;
@@ -2743,7 +2747,7 @@ button {
 .admin-fab-wrap {
   position: fixed;
   right: 10px;
-  bottom: 10px;
+  top: 10px;
   z-index: 80;
   display: grid;
   gap: 6px;
@@ -2776,6 +2780,22 @@ button {
 .admin-action-list {
   display: grid;
   gap: 8px;
+}
+
+.home-mode-fab {
+  position: fixed;
+  right: 10px;
+  bottom: 10px;
+  z-index: 70;
+  min-height: 44px;
+  min-width: 78px;
+  padding: 10px 14px;
+  border-radius: 999px;
+  border: 1px solid #8f6a49;
+  background: linear-gradient(180deg, #f8eddd 0%, #e9d7bf 100%);
+  color: #3f2a1a;
+  font-weight: 700;
+  box-shadow: 0 6px 16px rgba(61, 39, 24, 0.2);
 }
 
 .whitebox-card {

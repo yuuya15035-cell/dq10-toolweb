@@ -26,6 +26,14 @@
           <h2 data-content-key="menu_title">メニュー</h2>
         </div>
         <nav class="side-menu-nav" aria-label="主要ブロックへの移動">
+          <section class="side-menu-group" aria-label="ホーム">
+            <h3 class="side-menu-group-title">ホーム</h3>
+            <div class="side-menu-sub-list">
+              <button type="button" class="side-menu-item side-menu-sub-item" data-menu-action="home">
+                ホームに戻る
+              </button>
+            </div>
+          </section>
           <section class="side-menu-group" aria-label="ツール">
             <h3 class="side-menu-group-title">ツール</h3>
             <div class="side-menu-sub-list">
@@ -96,7 +104,7 @@
         <div class="home-quick-grid" id="homeQuickFeatureGrid"></div>
       </section>
 
-      <section id="profit" class="tab-content active" aria-label="職人アシスト画面">
+      <section id="profit" class="tab-content" aria-label="職人アシスト画面">
         <h2 class="assist-section-title">
           <span class="assist-section-title-main">職人アシスト</span>
           <span class="assist-section-title-note">※ 装備選択・素材確認・原価計算・利益確認ができます</span>
@@ -705,6 +713,8 @@
         <p id="adminFabMessage" class="helper-text" aria-live="polite"></p>
       </section>
     </div>
+
+    <button id="homeModeButton" class="home-mode-fab" type="button" aria-label="ホームに戻る">ホーム</button>
 
     <div id="favoriteMaterialModalOverlay" class="favorite-material-modal-overlay" hidden>
       <section

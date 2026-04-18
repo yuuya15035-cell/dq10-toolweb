@@ -938,6 +938,7 @@ let recipeFavoriteKeys = new Set();
 let homeFeatureIds = [...DEFAULT_HOME_FEATURE_IDS];
 let homeFeatureIdSet = new Set(homeFeatureIds);
 let activeTabId = "profit";
+let appMode = "home";
 let pendingBazaarFocusMaterialKey = "";
 let bazaarPriceHistoryByMaterialKey = new Map();
 let selectedBazaarChartRangeDays = DEFAULT_BAZAAR_CHART_RANGE_DAYS;
@@ -1030,7 +1031,9 @@ const appHeader = document.querySelector(".app-header");
 const topUpdateSection = document.getElementById("topUpdateSection");
 const topUpdateList = document.getElementById("topUpdateList");
 const topUpdateViewAllLink = document.getElementById("topUpdateViewAllLink");
+const topQuickAccessSection = document.querySelector(".top-quick-access");
 const homeQuickFeatureGrid = getRequiredElementById("homeQuickFeatureGrid");
+const homeModeButton = getRequiredElementById("homeModeButton");
 
 const equipmentSelect = getRequiredElementById("equipmentSelect");
 const selectedEquipmentTypeMeta = getRequiredElementById("selectedEquipmentTypeMeta");
@@ -4743,6 +4746,26 @@ function toggleAdminFabPanel() {
   adminFabToggleButton.setAttribute("aria-expanded", nextOpen ? "true" : "false");
 }
 
+function scrollToHomeTop() {
+  window.scrollTo({ top: 0, behavior: "smooth" });
+}
+
+function applyAppMode() {
+  const isHomeMode = appMode === "home";
+  appHeader?.classList.toggle("is-collapsed", !isHomeMode);
+  topUpdateSection?.classList.toggle("is-collapsed", !isHomeMode);
+  topQuickAccessSection?.classList.toggle("is-collapsed", !isHomeMode);
+}
+
+function switchToHomeMode(options = {}) {
+  const { scroll = true } = options;
+  appMode = "home";
+  tabContents.forEach((tab) => tab.classList.remove("active"));
+  applyAppMode();
+  navigateByAppParams({ tab: "", equipmentId: "", materialKey: "" }, { replace: true });
+  if (scroll) scrollToHomeTop();
+}
+
 function switchTab(target) {
   const requestedTarget = TAB_IDS.has(target) ? target : "profit";
   const normalizedTarget =
@@ -4754,6 +4777,8 @@ function switchTab(target) {
       ? "profit"
       : requestedTarget;
   activeTabId = normalizedTarget;
+  appMode = "tool";
+  applyAppMode();
   tabButtons.forEach((btn) => btn.classList.toggle("active", btn.dataset.tab === normalizedTarget));
   tabContents.forEach((tab) => tab.classList.toggle("active", tab.id === normalizedTarget));
   if (normalizedTarget === "present-codes") {
@@ -4780,9 +4805,18 @@ function switchTab(target) {
 
 function buildAppQueryParams(nextValues = {}) {
   const currentParams = new URLSearchParams(window.location.search);
-  const tab = TAB_IDS.has(nextValues.tab) ? nextValues.tab : TAB_IDS.has(currentParams.get("tab")) ? currentParams.get("tab") : activeTabId;
+  const hasTabValue = Object.prototype.hasOwnProperty.call(nextValues, "tab");
+  const currentTab = currentParams.get("tab");
+  let tab = "";
+  if (hasTabValue) {
+    tab = TAB_IDS.has(nextValues.tab) ? nextValues.tab : "";
+  } else if (TAB_IDS.has(currentTab)) {
+    tab = currentTab;
+  } else if (appMode === "tool" && TAB_IDS.has(activeTabId)) {
+    tab = activeTabId;
+  }
   const params = new URLSearchParams();
-  if (tab && tab !== "profit") params.set("tab", tab);
+  if (tab) params.set("tab", tab);
   if (nextValues.equipmentId) params.set("equipmentId", nextValues.equipmentId);
   if (nextValues.materialKey) params.set("materialKey", nextValues.materialKey);
   return params;
@@ -4806,7 +4840,7 @@ function applyAppRouteFromUrl() {
   if (TAB_IDS.has(tab)) {
     switchTab(tab);
   } else {
-    switchTab("profit");
+    switchToHomeMode({ scroll: false });
   }
 
   const equipmentId = String(params.get("equipmentId") || "").trim();
@@ -4836,11 +4870,6 @@ function scrollToBlock(blockId) {
   const target = document.getElementById(blockId);
   if (!target) return;
   target.scrollIntoView({ block: "start", behavior: "smooth" });
-}
-
-function collapseTopGuideBlocks() {
-  appHeader?.classList.add("is-collapsed");
-  topUpdateSection?.classList.add("is-collapsed");
 }
 
 tabButtons.forEach((btn) => {
@@ -4896,6 +4925,12 @@ if (fieldFarmingMapModalCloseButton) {
 
 sideMenuItems.forEach((item) => {
   item.addEventListener("click", () => {
+    const action = String(item.dataset.menuAction || "");
+    if (action === "home") {
+      switchToHomeMode();
+      setMenuOpen(false);
+      return;
+    }
     const targetId = item.dataset.menuTarget || "";
     scrollToBlock(targetId);
     setMenuOpen(false);
@@ -4907,8 +4942,13 @@ if (homeQuickFeatureGrid) {
     const trigger = event.target.closest(".side-menu-item[data-menu-target]");
     if (!(trigger instanceof HTMLElement)) return;
     const targetId = String(trigger.dataset.menuTarget || "");
-    collapseTopGuideBlocks();
     scrollToBlock(targetId);
+  });
+}
+
+if (homeModeButton) {
+  homeModeButton.addEventListener("click", () => {
+    switchToHomeMode();
   });
 }
 
@@ -6489,7 +6529,7 @@ async function initialize() {
   applyAppRouteFromUrl();
   navigateByAppParams(
     {
-      tab: activeTabId,
+      tab: appMode === "tool" ? activeTabId : "",
       equipmentId: activeTabId === "profit" ? selectedEquipmentId : "",
       materialKey: activeTabId === "bazaar" ? pendingBazaarFocusMaterialKey : "",
     },
