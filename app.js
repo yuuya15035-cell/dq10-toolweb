@@ -51,6 +51,14 @@ const TAB_IDS = new Set([
   "updates-editor",
   "bazaar-admin",
 ]);
+const TOOL_SCROLL_OFFSETS = Object.freeze({
+  min: 72,
+  max: 168,
+  preferredViewportRatio: 0.16,
+  quickAccessVisibleMin: 36,
+  quickAccessVisibleMax: 88,
+  targetTopGap: 14,
+});
 const ADMIN_MODE_STORAGE_KEY = "dq10_toolweb_admin_mode_v1";
 const ADMIN_PIN = "1010";
 const CONTENT_DEFINITIONS = [
@@ -4754,7 +4762,32 @@ function applyAppMode() {
   const isHomeMode = appMode === "home";
   appHeader?.classList.toggle("is-collapsed", !isHomeMode);
   topUpdateSection?.classList.toggle("is-collapsed", !isHomeMode);
-  topQuickAccessSection?.classList.toggle("is-collapsed", !isHomeMode);
+}
+
+function clampNumber(value, min, max) {
+  return Math.min(Math.max(value, min), max);
+}
+
+function scrollToToolSection(target) {
+  if (!target) return;
+  const currentScrollY = window.scrollY || window.pageYOffset || 0;
+  const targetRect = target.getBoundingClientRect();
+  const targetTop = currentScrollY + targetRect.top;
+  const viewportBasedOffset = window.innerHeight * TOOL_SCROLL_OFFSETS.preferredViewportRatio;
+  let topOffset = clampNumber(viewportBasedOffset, TOOL_SCROLL_OFFSETS.min, TOOL_SCROLL_OFFSETS.max);
+
+  if (topQuickAccessSection) {
+    const quickAccessRect = topQuickAccessSection.getBoundingClientRect();
+    const quickAccessOffset = clampNumber(
+      quickAccessRect.height * 0.2,
+      TOOL_SCROLL_OFFSETS.quickAccessVisibleMin,
+      TOOL_SCROLL_OFFSETS.quickAccessVisibleMax
+    );
+    topOffset = Math.max(topOffset, quickAccessOffset + TOOL_SCROLL_OFFSETS.targetTopGap);
+  }
+
+  const destinationTop = Math.max(0, targetTop - topOffset);
+  window.scrollTo({ top: destinationTop, behavior: "smooth" });
 }
 
 function switchToHomeMode(options = {}) {
@@ -4869,7 +4902,9 @@ function scrollToBlock(blockId) {
   });
   const target = document.getElementById(blockId);
   if (!target) return;
-  target.scrollIntoView({ block: "start", behavior: "smooth" });
+  window.requestAnimationFrame(() => {
+    scrollToToolSection(target);
+  });
 }
 
 tabButtons.forEach((btn) => {
