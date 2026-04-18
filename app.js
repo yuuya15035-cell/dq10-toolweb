@@ -884,6 +884,10 @@ let bazaarAdminCsvModel = null;
 let bazaarAdminLastResults = new Map();
 let bazaarAdminPastedTextByRowId = new Map();
 let isBazaarAdminUpdating = false;
+let selectedBazaarAdminCategory = "";
+let showBazaarAdminUpdatableOnly = false;
+let showBazaarAdminMonitoringOnly = false;
+let prioritizeBazaarAdminUnupdated = true;
 let craftIdealValuesLoadingPromise = null;
 let selectedFieldFarmingSort = "normal_desc";
 let activeFieldFarmingMapModalRowId = "";
@@ -1285,6 +1289,10 @@ function isExcludedByComment(comment) {
   return text.includes("固定価格") || text.includes("現在固定") || text.includes("店売り価格固定");
 }
 
+function isMonitoringByComment(comment) {
+  return String(comment || "").includes("現在監視中");
+}
+
 function buildBazaarAdminCsvModel(lines) {
   if (!Array.isArray(lines) || lines.length === 0) {
     throw new Error("bazaar_prices.csv が空です");
@@ -1399,6 +1407,27 @@ async function reloadBazaarAdminCsvModel() {
   bazaarAdminPastedTextByRowId = new Map();
 }
 
+function isBazaarAdminRowUpdated(row) {
+  return bazaarAdminLastResults.get(row?.id)?.status === "success";
+}
+
+function sortBazaarAdminRows(rows, options = {}) {
+  const prioritizeUnupdated = options.prioritizeUnupdated !== false;
+  return [...rows].sort((a, b) => {
+    if (prioritizeUnupdated) {
+      const aUpdated = isBazaarAdminRowUpdated(a) ? 1 : 0;
+      const bUpdated = isBazaarAdminRowUpdated(b) ? 1 : 0;
+      if (aUpdated !== bUpdated) return aUpdated - bUpdated;
+    }
+    const categoryCompare = String(a.itemCategory || "").localeCompare(String(b.itemCategory || ""), "ja");
+    if (categoryCompare !== 0) return categoryCompare;
+    if (a.sortOrder !== b.sortOrder) return a.sortOrder - b.sortOrder;
+    const materialCompare = String(a.materialName || "").localeCompare(String(b.materialName || ""), "ja");
+    if (materialCompare !== 0) return materialCompare;
+    return a.lineNumber - b.lineNumber;
+  });
+}
+
 function renderBazaarAdminPanel() {
   if (!bazaarAdminListWrap || !bazaarAdminCategorySelect) return;
   if (!bazaarAdminCsvModel) {
@@ -1412,38 +1441,110 @@ function renderBazaarAdminPanel() {
     `<option value="">すべてのカテゴリ</option>`,
     ...categoryValues.map((category) => `<option value="${escapeHtml(category)}">${escapeHtml(category)}</option>`),
   ].join("");
+  if (selectedBazaarAdminCategory && !categoryValues.includes(selectedBazaarAdminCategory)) {
+    selectedBazaarAdminCategory = "";
+  }
+  bazaarAdminCategorySelect.value = selectedBazaarAdminCategory;
 
-  const rowsHtml = bazaarAdminCsvModel.rows
-    .map((row) => {
-      const result = bazaarAdminLastResults.get(row.id);
-      const statusClass = result?.status ? `is-${result.status}` : row.excluded ? "is-excluded" : "";
-      const statusText = result?.message || (row.excluded ? "除外（固定価格）" : "未更新");
-      const pastedText = bazaarAdminPastedTextByRowId.get(row.id) || "";
-      return `
-        <article class="bazaar-admin-row ${statusClass}">
-          <div class="bazaar-admin-row-main">
-            <p class="bazaar-admin-material">${escapeHtml(row.materialName)}</p>
-            <p class="bazaar-admin-meta">${escapeHtml(row.itemCategory)} / today:${escapeHtml(row.todayPriceText || "-")} / prev:${escapeHtml(
-              row.previousDayPriceText || "-"
-            )}</p>
-            <p class="bazaar-admin-meta">updated_at: ${escapeHtml(row.updatedAtText || "-")} / comment: ${escapeHtml(row.comment || "-")}</p>
-            <p class="bazaar-admin-status">${escapeHtml(statusText)}</p>
-          </div>
-          <div class="bazaar-admin-row-actions">
-            <button type="button" data-bazaar-admin-open-url="${escapeHtml(row.id)}" ${row.officialUrl ? "" : "disabled"}>URLを開く</button>
-            <button type="button" data-bazaar-admin-update-row="${escapeHtml(row.id)}" ${row.excluded ? "disabled" : ""}>この行を更新</button>
-            <label class="bazaar-admin-paste-field">
-              <span>出品情報貼り付け欄</span>
-              <textarea data-bazaar-admin-paste-input="${escapeHtml(row.id)}" rows="2" placeholder="公式ページの出品情報テキストを貼り付け">${escapeHtml(
-                pastedText
-              )}</textarea>
-            </label>
-          </div>
-        </article>
-      `;
-    })
-    .join("");
-  bazaarAdminListWrap.innerHTML = rowsHtml || "<p>対象行がありません。</p>";
+  const rowsByCategory = bazaarAdminCsvModel.rows.filter(
+    (row) => selectedBazaarAdminCategory === "" || row.itemCategory === selectedBazaarAdminCategory
+  );
+  const updatableRowsByCategory = rowsByCategory.filter((row) => !row.excluded);
+  const excludedRowsByCategory = rowsByCategory.filter((row) => row.excluded);
+  const unupdatedCount = updatableRowsByCategory.filter((row) => !isBazaarAdminRowUpdated(row)).length;
+  const filteredUpdatableRows = updatableRowsByCategory.filter(
+    (row) => !showBazaarAdminMonitoringOnly || isMonitoringByComment(row.comment)
+  );
+  const sortedUpdatableRows = sortBazaarAdminRows(filteredUpdatableRows, { prioritizeUnupdated: prioritizeBazaarAdminUnupdated });
+  const sortedExcludedRows = sortBazaarAdminRows(excludedRowsByCategory, { prioritizeUnupdated: false });
+
+  const buildRowHtml = (row) => {
+    const result = bazaarAdminLastResults.get(row.id);
+    const statusClass = result?.status ? `is-${result.status}` : row.excluded ? "is-excluded" : "";
+    const statusText = result?.message || (row.excluded ? "除外（固定価格）" : "未更新");
+    const pastedText = bazaarAdminPastedTextByRowId.get(row.id) || "";
+    return `
+      <article class="bazaar-admin-row ${statusClass}">
+        <div class="bazaar-admin-row-main">
+          <p class="bazaar-admin-material">${escapeHtml(row.materialName)}</p>
+          <p class="bazaar-admin-meta">${escapeHtml(row.itemCategory)} / today:${escapeHtml(row.todayPriceText || "-")} / prev:${escapeHtml(
+            row.previousDayPriceText || "-"
+          )}</p>
+          <p class="bazaar-admin-meta">updated_at: ${escapeHtml(row.updatedAtText || "-")} / comment: ${escapeHtml(row.comment || "-")}</p>
+          <p class="bazaar-admin-status">${escapeHtml(statusText)}</p>
+        </div>
+        <div class="bazaar-admin-row-actions">
+          <button type="button" data-bazaar-admin-open-url="${escapeHtml(row.id)}" ${row.officialUrl ? "" : "disabled"}>URLを開く</button>
+          <button type="button" data-bazaar-admin-update-row="${escapeHtml(row.id)}" ${row.excluded ? "disabled" : ""}>この行を更新</button>
+          <label class="bazaar-admin-paste-field">
+            <span>出品情報貼り付け欄</span>
+            <textarea data-bazaar-admin-paste-input="${escapeHtml(row.id)}" rows="2" placeholder="公式ページの出品情報テキストを貼り付け">${escapeHtml(
+              pastedText
+            )}</textarea>
+          </label>
+        </div>
+      </article>
+    `;
+  };
+
+  const updatableRowsHtml = sortedUpdatableRows.map((row) => buildRowHtml(row)).join("");
+  const excludedRowsHtml = sortedExcludedRows.map((row) => buildRowHtml(row)).join("");
+
+  bazaarAdminListWrap.innerHTML = `
+    <div class="bazaar-admin-summary">
+      <span>更新対象 ${updatableRowsByCategory.length}件</span>
+      <span>未更新 ${unupdatedCount}件</span>
+      <span>除外 ${excludedRowsByCategory.length}件</span>
+    </div>
+    <div class="bazaar-admin-display-filters">
+      <label class="field inline-field">
+        <input id="bazaarAdminPrioritizeUnupdatedToggle" type="checkbox" ${prioritizeBazaarAdminUnupdated ? "checked" : ""} />
+        <span>未更新優先表示</span>
+      </label>
+      <label class="field inline-field">
+        <input id="bazaarAdminUpdatableOnlyToggle" type="checkbox" ${showBazaarAdminUpdatableOnly ? "checked" : ""} />
+        <span>更新対象のみ表示</span>
+      </label>
+      <label class="field inline-field">
+        <input id="bazaarAdminMonitoringOnlyToggle" type="checkbox" ${showBazaarAdminMonitoringOnly ? "checked" : ""} />
+        <span>監視中のみ表示</span>
+      </label>
+    </div>
+    <section class="bazaar-admin-section">
+      <h3>更新対象一覧</h3>
+      ${updatableRowsHtml || "<p>対象行がありません。</p>"}
+    </section>
+    ${
+      showBazaarAdminUpdatableOnly
+        ? ""
+        : `<section class="bazaar-admin-section bazaar-admin-section-excluded">
+            <h3>除外一覧（固定価格）</h3>
+            ${excludedRowsHtml || "<p>対象行がありません。</p>"}
+          </section>`
+    }
+  `;
+
+  const prioritizeToggle = bazaarAdminListWrap.querySelector("#bazaarAdminPrioritizeUnupdatedToggle");
+  if (prioritizeToggle) {
+    prioritizeToggle.addEventListener("change", (event) => {
+      prioritizeBazaarAdminUnupdated = Boolean(event.target?.checked);
+      renderBazaarAdminPanel();
+    });
+  }
+  const updatableOnlyToggle = bazaarAdminListWrap.querySelector("#bazaarAdminUpdatableOnlyToggle");
+  if (updatableOnlyToggle) {
+    updatableOnlyToggle.addEventListener("change", (event) => {
+      showBazaarAdminUpdatableOnly = Boolean(event.target?.checked);
+      renderBazaarAdminPanel();
+    });
+  }
+  const monitoringOnlyToggle = bazaarAdminListWrap.querySelector("#bazaarAdminMonitoringOnlyToggle");
+  if (monitoringOnlyToggle) {
+    monitoringOnlyToggle.addEventListener("change", (event) => {
+      showBazaarAdminMonitoringOnly = Boolean(event.target?.checked);
+      renderBazaarAdminPanel();
+    });
+  }
   updateBazaarAdminActionButtons();
 }
 
@@ -4872,6 +4973,13 @@ if (bazaarAdminRefreshButton) {
 if (bazaarAdminUpdateAllButton) {
   bazaarAdminUpdateAllButton.addEventListener("click", async () => {
     await runBazaarAdminBatchUpdate({ category: "" });
+  });
+}
+
+if (bazaarAdminCategorySelect) {
+  bazaarAdminCategorySelect.addEventListener("change", (event) => {
+    selectedBazaarAdminCategory = String(event.target?.value || "").trim();
+    renderBazaarAdminPanel();
   });
 }
 

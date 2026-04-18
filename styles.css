@@ -3135,6 +3135,37 @@ button {
   gap: 8px;
 }
 
+.bazaar-admin-summary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.bazaar-admin-display-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+}
+
+.bazaar-admin-section {
+  display: grid;
+  gap: 8px;
+}
+
+.bazaar-admin-section h3 {
+  margin: 4px 0 0;
+  font-size: 1rem;
+}
+
+.bazaar-admin-section-excluded {
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px dashed #d6c2ab;
+}
+
 .bazaar-admin-button-help {
   margin: 0;
   padding-left: 18px;
