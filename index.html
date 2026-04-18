@@ -75,6 +75,7 @@
 
       <header class="app-header">
         <h1 id="contentSiteTitle" data-content-key="site_title">ドラゴンクエスト10支援サイト</h1>
+        <h2 class="app-header-subtitle">サイト概要</h2>
         <p id="contentSiteNotice" class="app-header-price-note">
           ※価格・情報は手動確認ベースのため、更新タイミングにより実際のゲーム内状況と差が出る場合があります。
         </p>
@@ -88,32 +89,11 @@
         <a id="topUpdateViewAllLink" class="top-update-view-all-button" href="./updates.html">一覧を見る</a>
       </section>
 
-      <section class="top-quick-access" aria-label="トップページ導線">
-        <h2 id="contentToolsHeading" data-content-key="tools_heading">サイト内便利ツール</h2>
-        <p id="contentToolsIntro" class="top-quick-access-note">各カードをクリックすると対象ページへ移動できます。</p>
+      <section class="top-quick-access" aria-label="よく使う機能">
+        <h2 id="contentToolsHeading" data-content-key="tools_heading">よく使う機能</h2>
+        <p id="contentToolsIntro" class="top-quick-access-note">各機能ページやメニューの「ホーム追加」から表示の追加/削除ができます。</p>
         <p id="contentMenuHint" class="top-quick-access-note top-quick-access-note-sub" data-content-key="menu_hint">※左上のメニューバーからも操作できます</p>
-        <div class="top-tool-grid">
-          <button type="button" class="top-tool-card side-menu-item" data-menu-target="profit">
-            <strong id="contentToolCardCraftTitle" data-content-key="tool_card_craft_title">職人アシスト</strong>
-            <span id="contentToolCardCraftDesc" data-content-key="tool_card_craft_desc">装備ごとの必要素材・原価・販売利益をまとめて確認できます。</span>
-          </button>
-          <button type="button" class="top-tool-card side-menu-item" data-menu-target="bazaar">
-            <strong id="contentToolCardBazaarTitle" data-content-key="tool_card_bazaar_title">バザー価格一覧</strong>
-            <span id="contentToolCardBazaarDesc" data-content-key="tool_card_bazaar_desc">主要素材の価格と前回比を見ながら、相場の変化をすぐ把握できます。</span>
-          </button>
-          <div class="top-tool-card-group">
-            <p id="contentToolCardEqTitle" class="top-tool-card-title" data-content-key="tool_card_equipment_title">装備・白宝箱</p>
-            <p id="contentToolCardEqDesc" class="top-tool-card-description" data-content-key="tool_card_equipment_desc">装備データの確認と、白宝箱ドロップ情報の検索に使えます。</p>
-            <div class="top-tool-link-row">
-              <button type="button" class="top-tool-link-button side-menu-item" data-menu-target="equipment-db">装備</button>
-              <button type="button" class="top-tool-link-button side-menu-item" data-menu-target="white-boxes">白宝箱</button>
-            </div>
-          </div>
-          <button type="button" class="top-tool-card side-menu-item" data-menu-target="favorites">
-            <strong>お気に入り</strong>
-            <span id="contentFavoritesIntro">よく見る装備や素材を保存し、次回以降の確認を短時間で行えます。</span>
-          </button>
-        </div>
+        <div class="home-quick-grid" id="homeQuickFeatureGrid"></div>
       </section>
 
       <section id="profit" class="tab-content active" aria-label="職人アシスト画面">

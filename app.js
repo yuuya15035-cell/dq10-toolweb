@@ -22,7 +22,20 @@ const OFFICIAL_BAZAAR_TOP_URL = "https://dqx-souba.game-blog.app/";
 const OFFICIAL_PRESENT_CODE_URL = "https://hiroba.dqx.jp/sc/campaignCode/itemcode/";
 const BAZAAR_FAVORITES_STORAGE_KEY = "dq10_toolweb_bazaar_favorites_v1";
 const RECIPE_FAVORITES_STORAGE_KEY = "dq10_toolweb_recipe_favorites_v1";
+const HOME_FEATURES_STORAGE_KEY = "dq10_toolweb_home_features_v1";
 const RECIPE_FAVORITE_CATEGORY_VALUE = "__favorites__";
+const HOME_FEATURE_DEFINITIONS = [
+  { id: "bazaar", tabId: "bazaar", title: "バザー情報", icon: "💰" },
+  { id: "profit", tabId: "profit", title: "職人アシスト", icon: "🛠️" },
+  { id: "favorites", tabId: "favorites", title: "お気に入り", icon: "📌" },
+  { id: "present-codes", tabId: "present-codes", title: "プレゼント", icon: "🎁" },
+  { id: "orbs", tabId: "orbs", title: "宝珠", icon: "💎" },
+  { id: "white-boxes", tabId: "white-boxes", title: "白宝箱", icon: "📦" },
+  { id: "equipment-db", tabId: "equipment-db", title: "装備データ", icon: "🛡️" },
+  { id: "field-farming", tabId: "field-farming", title: "フィールド狩り", icon: "⚔️" },
+];
+const DEFAULT_HOME_FEATURE_IDS = Object.freeze(["bazaar", "profit", "favorites"]);
+const HOME_FEATURE_ID_SET = new Set(HOME_FEATURE_DEFINITIONS.map((feature) => feature.id));
 const TAB_IDS = new Set([
   "profit",
   "present-codes",
@@ -49,13 +62,6 @@ const CONTENT_DEFINITIONS = [
   { key: "tools_heading", label: "便利ツール見出し", selector: "#contentToolsHeading" },
   { key: "tools_intro", label: "便利ツール説明", selector: "#contentToolsIntro" },
   { key: "menu_hint", label: "メニュー補足", selector: "#contentMenuHint" },
-  { key: "tool_card_craft_title", label: "職人カード見出し", selector: "#contentToolCardCraftTitle" },
-  { key: "tool_card_craft_desc", label: "職人カード説明", selector: "#contentToolCardCraftDesc" },
-  { key: "tool_card_bazaar_title", label: "バザーカード見出し", selector: "#contentToolCardBazaarTitle" },
-  { key: "tool_card_bazaar_desc", label: "バザーカード説明", selector: "#contentToolCardBazaarDesc" },
-  { key: "tool_card_equipment_title", label: "装備カード見出し", selector: "#contentToolCardEqTitle" },
-  { key: "tool_card_equipment_desc", label: "装備カード説明", selector: "#contentToolCardEqDesc" },
-  { key: "favorites_intro", label: "お気に入り説明", selector: "#contentFavoritesIntro" },
   { key: "ui_settings_heading", label: "UI設定見出し", selector: "#ui-settings > h2" },
   { key: "ui_settings_note", label: "UI設定説明", selector: "#ui-settings .ui-settings-note" },
   { key: "content_editor_heading", label: "本文編集見出し", selector: "#content-editor > h2" },
@@ -70,16 +76,9 @@ const DEFAULT_CONTENT = Object.freeze({
   site_summary: "バザー確認、職人準備、装備検索などをスマホでも見やすくまとめています。",
   site_notice: "※価格・情報は手動確認ベースのため、更新タイミングにより実際のゲーム内状況と差が出る場合があります。",
   updates_heading: "更新情報",
-  tools_heading: "サイト内便利ツール",
-  tools_intro: "各カードをクリックすると対象ページへ移動できます。",
+  tools_heading: "よく使う機能",
+  tools_intro: "各機能ページやメニューの「ホーム追加」から表示の追加/削除ができます。",
   menu_hint: "※左上のメニューバーからも操作できます",
-  tool_card_craft_title: "職人アシスト",
-  tool_card_craft_desc: "装備ごとの必要素材・原価・販売利益をまとめて確認できます。",
-  tool_card_bazaar_title: "バザー価格一覧",
-  tool_card_bazaar_desc: "主要素材の価格と前回比を見ながら、相場の変化をすぐ把握できます。",
-  tool_card_equipment_title: "装備・白宝箱",
-  tool_card_equipment_desc: "装備データの確認と、白宝箱ドロップ情報の検索に使えます。",
-  favorites_intro: "よく見る装備や素材を保存し、次回以降の確認を短時間で行えます。",
   ui_settings_heading: "UI設定",
   ui_settings_note: "スライダーや入力で見た目を調整できます。変更はすぐ反映されます。",
   content_editor_heading: "本文編集",
@@ -758,6 +757,112 @@ function loadRecipeFavoriteState() {
   }
 }
 
+function loadHomeFeatureState() {
+  const raw = localStorage.getItem(HOME_FEATURES_STORAGE_KEY);
+  if (!raw) return [...DEFAULT_HOME_FEATURE_IDS];
+
+  try {
+    const parsed = JSON.parse(raw);
+    const storedIds = Array.isArray(parsed?.featureIds) ? parsed.featureIds : parsed;
+    if (!Array.isArray(storedIds)) return [...DEFAULT_HOME_FEATURE_IDS];
+    const normalized = storedIds
+      .map((id) => String(id || "").trim())
+      .filter((id, index, self) => id !== "" && HOME_FEATURE_ID_SET.has(id) && self.indexOf(id) === index);
+    return normalized.length > 0 ? normalized : [...DEFAULT_HOME_FEATURE_IDS];
+  } catch {
+    return [...DEFAULT_HOME_FEATURE_IDS];
+  }
+}
+
+function saveHomeFeatureState() {
+  localStorage.setItem(
+    HOME_FEATURES_STORAGE_KEY,
+    JSON.stringify({
+      version: 1,
+      featureIds: homeFeatureIds,
+    })
+  );
+}
+
+function isHomeFeatureEnabled(featureId) {
+  return homeFeatureIdSet.has(featureId);
+}
+
+function toggleHomeFeature(featureId) {
+  if (!HOME_FEATURE_ID_SET.has(featureId)) return;
+  if (homeFeatureIdSet.has(featureId)) {
+    homeFeatureIds = homeFeatureIds.filter((id) => id !== featureId);
+  } else {
+    homeFeatureIds = [...homeFeatureIds, featureId];
+  }
+  homeFeatureIdSet = new Set(homeFeatureIds);
+  saveHomeFeatureState();
+  renderHomeQuickFeatures();
+  renderHomeToggleButtons();
+}
+
+function renderHomeQuickFeatures() {
+  if (!homeQuickFeatureGrid) return;
+  const featuresForHome = homeFeatureIds
+    .map((id) => HOME_FEATURE_DEFINITIONS.find((feature) => feature.id === id))
+    .filter((feature) => feature && TAB_IDS.has(feature.tabId));
+
+  if (featuresForHome.length === 0) {
+    homeQuickFeatureGrid.innerHTML = `<p class="home-quick-empty">まだ機能がありません。メニューの「ホーム追加」で設定してください。</p>`;
+    return;
+  }
+
+  homeQuickFeatureGrid.innerHTML = featuresForHome
+    .map((feature) => {
+      const safeTitle = escapeHtml(feature.title);
+      const safeIcon = escapeHtml(feature.icon || "⭐");
+      return `
+        <button type="button" class="home-quick-card side-menu-item" data-menu-target="${feature.tabId}" aria-label="${safeTitle}を開く">
+          <span class="home-quick-card-icon" aria-hidden="true">${safeIcon}</span>
+          <span class="home-quick-card-title">${safeTitle}</span>
+        </button>
+      `;
+    })
+    .join("");
+}
+
+function renderHomeToggleButtons() {
+  document.querySelectorAll(".home-pin-toggle[data-home-feature-id]").forEach((button) => {
+    const featureId = String(button.dataset.homeFeatureId || "");
+    const enabled = isHomeFeatureEnabled(featureId);
+    button.setAttribute("aria-pressed", enabled ? "true" : "false");
+    button.innerHTML = enabled ? "🏠<br>ホーム中" : "＋<br>ホーム追加";
+  });
+}
+
+function decorateSideMenuWithHomeActions() {
+  if (!sideMenu) return;
+  const sideMenuButtons = sideMenu.querySelectorAll(".side-menu-item[data-menu-target]");
+  sideMenuButtons.forEach((menuButton) => {
+    const tabId = String(menuButton.dataset.menuTarget || "");
+    const featureDefinition = HOME_FEATURE_DEFINITIONS.find((feature) => feature.tabId === tabId);
+    if (!featureDefinition) return;
+    if (menuButton.closest(".side-menu-item-row")) return;
+
+    const wrapper = document.createElement("div");
+    wrapper.className = "side-menu-item-row";
+    menuButton.after(wrapper);
+    wrapper.append(menuButton);
+
+    const homeToggleButton = document.createElement("button");
+    homeToggleButton.type = "button";
+    homeToggleButton.className = "home-pin-toggle";
+    homeToggleButton.dataset.homeFeatureId = featureDefinition.id;
+    homeToggleButton.setAttribute("aria-label", `${featureDefinition.title}をホーム表示に追加または削除`);
+    homeToggleButton.addEventListener("click", (event) => {
+      event.stopPropagation();
+      toggleHomeFeature(featureDefinition.id);
+    });
+    wrapper.append(homeToggleButton);
+  });
+  renderHomeToggleButtons();
+}
+
 function saveRecipeFavoriteState() {
   localStorage.setItem(
     RECIPE_FAVORITES_STORAGE_KEY,
@@ -830,6 +935,8 @@ let showBazaarFavoritesOnly = false;
 let activeFavoritesTabId = "recipes";
 let bazaarFavoriteMaterialKeys = new Set();
 let recipeFavoriteKeys = new Set();
+let homeFeatureIds = [...DEFAULT_HOME_FEATURE_IDS];
+let homeFeatureIdSet = new Set(homeFeatureIds);
 let activeTabId = "profit";
 let pendingBazaarFocusMaterialKey = "";
 let bazaarPriceHistoryByMaterialKey = new Map();
@@ -922,6 +1029,7 @@ const sideMenuItems = document.querySelectorAll(".side-menu-item");
 const topUpdateSection = document.getElementById("topUpdateSection");
 const topUpdateList = document.getElementById("topUpdateList");
 const topUpdateViewAllLink = document.getElementById("topUpdateViewAllLink");
+const homeQuickFeatureGrid = getRequiredElementById("homeQuickFeatureGrid");
 
 const equipmentSelect = getRequiredElementById("equipmentSelect");
 const selectedEquipmentTypeMeta = getRequiredElementById("selectedEquipmentTypeMeta");
@@ -4788,6 +4896,15 @@ sideMenuItems.forEach((item) => {
   });
 });
 
+if (homeQuickFeatureGrid) {
+  homeQuickFeatureGrid.addEventListener("click", (event) => {
+    const trigger = event.target.closest(".side-menu-item[data-menu-target]");
+    if (!(trigger instanceof HTMLElement)) return;
+    const targetId = String(trigger.dataset.menuTarget || "");
+    scrollToBlock(targetId);
+  });
+}
+
 if (uiSettingsControlList) {
   uiSettingsControlList.addEventListener("input", (event) => {
     const input = event.target;
@@ -6338,6 +6455,7 @@ async function initialize() {
   const storedData = loadStoredData();
   const favoriteState = loadBazaarFavoriteState();
   const loadedRecipeFavoriteKeys = loadRecipeFavoriteState();
+  const loadedHomeFeatureIds = loadHomeFeatureState();
 
   try {
     const csvData = await loadDataFromCsv();
@@ -6357,6 +6475,10 @@ async function initialize() {
   showBazaarFavoritesOnly = favoriteState.showFavoritesOnly;
   bazaarFavoriteMaterialKeys = favoriteState.favoriteMaterialKeys;
   recipeFavoriteKeys = loadedRecipeFavoriteKeys;
+  homeFeatureIds = loadedHomeFeatureIds;
+  homeFeatureIdSet = new Set(homeFeatureIds);
+  decorateSideMenuWithHomeActions();
+  renderHomeQuickFeatures();
   applyAppRouteFromUrl();
   navigateByAppParams(
     {
