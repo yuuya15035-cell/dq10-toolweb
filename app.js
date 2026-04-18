@@ -889,6 +889,10 @@ let showBazaarAdminUpdatableOnly = false;
 let showBazaarAdminMonitoringOnly = false;
 let prioritizeBazaarAdminUnupdated = true;
 let bazaarAdminAutoUpdateOnPaste = false;
+let bazaarAdminAutoOpenNextUrlAfterUpdate = false;
+let bazaarAdminAutoScrollNextRowAfterUpdate = true;
+const bazaarAdminAutoAdvanceDelayMs = 400;
+let bazaarAdminAutoUpdateTimerByRowId = new Map();
 let craftIdealValuesLoadingPromise = null;
 let selectedFieldFarmingSort = "normal_desc";
 let activeFieldFarmingMapModalRowId = "";
@@ -1406,6 +1410,7 @@ async function reloadBazaarAdminCsvModel() {
   bazaarAdminCsvModel = buildBazaarAdminCsvModel(lines);
   bazaarAdminLastResults = new Map();
   bazaarAdminPastedTextByRowId = new Map();
+  bazaarAdminAutoUpdateTimerByRowId = new Map();
 }
 
 function isBazaarAdminRowUpdated(row) {
@@ -1441,20 +1446,40 @@ function getBazaarAdminFilteredUpdatableRows() {
   return sortBazaarAdminRows(filteredUpdatableRows, { prioritizeUnupdated: prioritizeBazaarAdminUnupdated });
 }
 
-function scrollToNextBazaarAdminUnupdatedRow(currentRowId = "") {
-  const sortedRows = getBazaarAdminFilteredUpdatableRows();
-  if (sortedRows.length === 0) return;
-  const baseIndex = sortedRows.findIndex((row) => row.id === currentRowId);
-  for (let offset = 1; offset <= sortedRows.length; offset += 1) {
-    const nextIndex = baseIndex >= 0 ? (baseIndex + offset) % sortedRows.length : offset - 1;
-    const nextRow = sortedRows[nextIndex];
-    if (!nextRow || isBazaarAdminRowUpdated(nextRow)) continue;
-    const rowElement = bazaarAdminListWrap?.querySelector(`[data-bazaar-admin-row-id="${nextRow.id}"]`);
-    if (rowElement instanceof HTMLElement) {
-      rowElement.scrollIntoView({ behavior: "smooth", block: "center" });
-    }
-    return;
+function openBazaarAdminUrlInSharedWindow(url) {
+  const safeUrl = String(url || "").trim();
+  if (!safeUrl) return false;
+  const bazaarWindow = window.open(safeUrl, "bazaarWindow");
+  if (bazaarWindow) {
+    bazaarWindow.focus();
+    return true;
   }
+  return false;
+}
+
+function getNextBazaarAdminUnupdatedRow(currentRowId = "") {
+  const sortedRows = getBazaarAdminFilteredUpdatableRows();
+  if (sortedRows.length === 0) return null;
+  const baseIndex = sortedRows.findIndex((row) => row.id === currentRowId);
+  for (let nextIndex = baseIndex >= 0 ? baseIndex + 1 : 0; nextIndex < sortedRows.length; nextIndex += 1) {
+    const nextRow = sortedRows[nextIndex];
+    if (!nextRow || isBazaarAdminRowUpdated(nextRow) || !nextRow.officialUrl) continue;
+    return nextRow;
+  }
+  return null;
+}
+
+function scrollToBazaarAdminRowById(rowId = "") {
+  if (!rowId) return;
+  const rowElement = bazaarAdminListWrap?.querySelector(`[data-bazaar-admin-row-id="${rowId}"]`);
+  if (rowElement instanceof HTMLElement) {
+    rowElement.scrollIntoView({ behavior: "smooth", block: "center" });
+  }
+}
+
+function getBazaarAdminNoNextRowMessage() {
+  if (selectedBazaarAdminCategory) return "このカテゴリの未更新はありません。";
+  return "全件更新完了です。";
 }
 
 function renderBazaarAdminPanel() {
@@ -1542,6 +1567,14 @@ function renderBazaarAdminPanel() {
         <input id="bazaarAdminAutoUpdateOnPasteToggle" type="checkbox" ${bazaarAdminAutoUpdateOnPaste ? "checked" : ""} />
         <span>貼り付けで自動更新</span>
       </label>
+      <label class="field inline-field">
+        <input id="bazaarAdminAutoOpenNextUrlToggle" type="checkbox" ${bazaarAdminAutoOpenNextUrlAfterUpdate ? "checked" : ""} />
+        <span>更新後に次URLを自動で開く</span>
+      </label>
+      <label class="field inline-field">
+        <input id="bazaarAdminAutoScrollNextRowToggle" type="checkbox" ${bazaarAdminAutoScrollNextRowAfterUpdate ? "checked" : ""} />
+        <span>更新後に次の行へスクロール</span>
+      </label>
     </div>
     <section class="bazaar-admin-section">
       <h3>更新対象一覧</h3>
@@ -1584,6 +1617,28 @@ function renderBazaarAdminPanel() {
       bazaarAdminAutoUpdateOnPaste = Boolean(event.target?.checked);
       setBazaarAdminMessage(
         bazaarAdminAutoUpdateOnPaste ? "貼り付けで自動更新をONにしました。" : "貼り付けで自動更新をOFFにしました。"
+      );
+    });
+  }
+  const autoOpenNextUrlToggle = bazaarAdminListWrap.querySelector("#bazaarAdminAutoOpenNextUrlToggle");
+  if (autoOpenNextUrlToggle) {
+    autoOpenNextUrlToggle.addEventListener("change", (event) => {
+      bazaarAdminAutoOpenNextUrlAfterUpdate = Boolean(event.target?.checked);
+      setBazaarAdminMessage(
+        bazaarAdminAutoOpenNextUrlAfterUpdate
+          ? "更新後に次URLを自動で開くをONにしました。"
+          : "更新後に次URLを自動で開くをOFFにしました。"
+      );
+    });
+  }
+  const autoScrollNextRowToggle = bazaarAdminListWrap.querySelector("#bazaarAdminAutoScrollNextRowToggle");
+  if (autoScrollNextRowToggle) {
+    autoScrollNextRowToggle.addEventListener("change", (event) => {
+      bazaarAdminAutoScrollNextRowAfterUpdate = Boolean(event.target?.checked);
+      setBazaarAdminMessage(
+        bazaarAdminAutoScrollNextRowAfterUpdate
+          ? "更新後に次の行へスクロールをONにしました。"
+          : "更新後に次の行へスクロールをOFFにしました。"
       );
     });
   }
@@ -1649,6 +1704,7 @@ async function runBazaarAdminSingleRowUpdateById(rowId, options = {}) {
   const row = bazaarAdminCsvModel.rows.find((entry) => entry.id === rowId);
   if (!row) return null;
   const shouldScrollToNext = options.scrollToNext === true;
+  const shouldAutoOpenNextUrl = options.autoOpenNextUrl === true;
   const silentMessage = options.silentMessage === true;
 
   isBazaarAdminUpdating = true;
@@ -1672,8 +1728,23 @@ async function runBazaarAdminSingleRowUpdateById(rowId, options = {}) {
     updateBazaarAdminActionButtons();
     renderBazaarAdminPanel();
   }
-  if (shouldScrollToNext && result?.status === "success") {
-    scrollToNextBazaarAdminUnupdatedRow(row.id);
+  if (result?.status === "success" && (shouldScrollToNext || shouldAutoOpenNextUrl)) {
+    const nextRow = getNextBazaarAdminUnupdatedRow(row.id);
+    if (!nextRow) {
+      setBazaarAdminMessage(getBazaarAdminNoNextRowMessage());
+      return result;
+    }
+    if (shouldScrollToNext) {
+      scrollToBazaarAdminRowById(nextRow.id);
+    }
+    if (shouldAutoOpenNextUrl) {
+      window.setTimeout(() => {
+        const opened = openBazaarAdminUrlInSharedWindow(nextRow.officialUrl);
+        if (!opened) {
+          setBazaarAdminMessage("次のURLを開けませんでした。", true);
+        }
+      }, bazaarAdminAutoAdvanceDelayMs);
+    }
   }
   return result;
 }
@@ -5092,17 +5163,20 @@ if (bazaarAdminListWrap) {
     const rowId = String(target.dataset.bazaarAdminPasteInput || "");
     if (!rowId) return;
     bazaarAdminPastedTextByRowId.set(rowId, target.value || "");
-  });
-
-  bazaarAdminListWrap.addEventListener("paste", (event) => {
-    const target = event.target;
-    if (!(target instanceof HTMLTextAreaElement)) return;
-    const rowId = String(target.dataset.bazaarAdminPasteInput || "");
-    if (!rowId || !bazaarAdminAutoUpdateOnPaste || isBazaarAdminUpdating) return;
-    window.setTimeout(() => {
-      bazaarAdminPastedTextByRowId.set(rowId, target.value || "");
-      runBazaarAdminSingleRowUpdateById(rowId, { scrollToNext: true });
-    }, 0);
+    if (!bazaarAdminAutoUpdateOnPaste || isBazaarAdminUpdating) return;
+    const prevTimer = bazaarAdminAutoUpdateTimerByRowId.get(rowId);
+    if (prevTimer) {
+      window.clearTimeout(prevTimer);
+    }
+    const timerId = window.setTimeout(() => {
+      bazaarAdminAutoUpdateTimerByRowId.delete(rowId);
+      if (isBazaarAdminUpdating) return;
+      runBazaarAdminSingleRowUpdateById(rowId, {
+        scrollToNext: bazaarAdminAutoScrollNextRowAfterUpdate,
+        autoOpenNextUrl: bazaarAdminAutoOpenNextUrlAfterUpdate,
+      });
+    }, 150);
+    bazaarAdminAutoUpdateTimerByRowId.set(rowId, timerId);
   });
 
   bazaarAdminListWrap.addEventListener("click", async (event) => {
@@ -5115,15 +5189,15 @@ if (bazaarAdminListWrap) {
     if (openRowId) {
       const row = bazaarAdminCsvModel.rows.find((entry) => entry.id === openRowId);
       if (!row?.officialUrl) return;
-      const bazaarWindow = window.open(row.officialUrl, "bazaarWindow");
-      if (bazaarWindow) {
-        bazaarWindow.focus();
-      }
+      openBazaarAdminUrlInSharedWindow(row.officialUrl);
       return;
     }
 
     if (updateRowId && !isBazaarAdminUpdating) {
-      await runBazaarAdminSingleRowUpdateById(updateRowId, { scrollToNext: true });
+      await runBazaarAdminSingleRowUpdateById(updateRowId, {
+        scrollToNext: bazaarAdminAutoScrollNextRowAfterUpdate,
+        autoOpenNextUrl: bazaarAdminAutoOpenNextUrlAfterUpdate,
+      });
     }
   });
 }
