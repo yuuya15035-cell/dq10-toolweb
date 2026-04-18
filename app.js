@@ -670,12 +670,15 @@ function renderTopUpdates() {
   if (!topUpdateSection || !topUpdateList) return;
   if (!Array.isArray(topUpdates) || topUpdates.length === 0) {
     topUpdateList.innerHTML = "";
+    if (topUpdateViewAllLink) topUpdateViewAllLink.hidden = true;
     topUpdateSection.hidden = true;
     return;
   }
 
+  const topUpdatesForHome = topUpdates.slice(0, 3);
   topUpdateSection.hidden = false;
-  topUpdateList.innerHTML = topUpdates
+  if (topUpdateViewAllLink) topUpdateViewAllLink.hidden = topUpdates.length <= 3;
+  topUpdateList.innerHTML = topUpdatesForHome
     .map((entry) => {
       const safeText = escapeHtml(entry.text);
       if (entry.url) {
@@ -918,6 +921,7 @@ const menuOverlay = getRequiredElementById("menuOverlay");
 const sideMenuItems = document.querySelectorAll(".side-menu-item");
 const topUpdateSection = document.getElementById("topUpdateSection");
 const topUpdateList = document.getElementById("topUpdateList");
+const topUpdateViewAllLink = document.getElementById("topUpdateViewAllLink");
 
 const equipmentSelect = getRequiredElementById("equipmentSelect");
 const selectedEquipmentTypeMeta = getRequiredElementById("selectedEquipmentTypeMeta");
