@@ -1026,6 +1026,7 @@ const menuToggleButton = getRequiredElementById("menuToggleButton");
 const sideMenu = getRequiredElementById("sideMenu");
 const menuOverlay = getRequiredElementById("menuOverlay");
 const sideMenuItems = document.querySelectorAll(".side-menu-item");
+const appHeader = document.querySelector(".app-header");
 const topUpdateSection = document.getElementById("topUpdateSection");
 const topUpdateList = document.getElementById("topUpdateList");
 const topUpdateViewAllLink = document.getElementById("topUpdateViewAllLink");
@@ -4837,6 +4838,11 @@ function scrollToBlock(blockId) {
   target.scrollIntoView({ block: "start", behavior: "smooth" });
 }
 
+function collapseTopGuideBlocks() {
+  appHeader?.classList.add("is-collapsed");
+  topUpdateSection?.classList.add("is-collapsed");
+}
+
 tabButtons.forEach((btn) => {
   btn.addEventListener("click", () => switchTab(btn.dataset.tab));
 });
@@ -4901,6 +4907,7 @@ if (homeQuickFeatureGrid) {
     const trigger = event.target.closest(".side-menu-item[data-menu-target]");
     if (!(trigger instanceof HTMLElement)) return;
     const targetId = String(trigger.dataset.menuTarget || "");
+    collapseTopGuideBlocks();
     scrollToBlock(targetId);
   });
 }

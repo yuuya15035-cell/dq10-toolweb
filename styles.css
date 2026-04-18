@@ -182,6 +182,10 @@ body.is-modal-open {
   box-shadow: 0 4px 14px var(--panel-shadow);
 }
 
+.app-header.is-collapsed {
+  display: none;
+}
+
 .top-quick-access {
   margin-bottom: var(--ui-section-vertical-space);
   padding: 12px;
@@ -332,6 +336,10 @@ body.is-modal-open {
   margin-bottom: var(--ui-section-vertical-space);
 }
 
+.top-update-list.is-collapsed {
+  display: none;
+}
+
 .top-update-list ul {
   margin: 0;
   padding-left: 18px;
@@ -418,6 +426,7 @@ body.is-modal-open {
 
 .tab-content {
   display: none;
+  scroll-margin-top: 10px;
 }
 
 .tab-content.active {
