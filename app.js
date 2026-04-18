@@ -888,6 +888,7 @@ let selectedBazaarAdminCategory = "";
 let showBazaarAdminUpdatableOnly = false;
 let showBazaarAdminMonitoringOnly = false;
 let prioritizeBazaarAdminUnupdated = true;
+let bazaarAdminAutoUpdateOnPaste = false;
 let craftIdealValuesLoadingPromise = null;
 let selectedFieldFarmingSort = "normal_desc";
 let activeFieldFarmingMapModalRowId = "";
@@ -1428,6 +1429,34 @@ function sortBazaarAdminRows(rows, options = {}) {
   });
 }
 
+function getBazaarAdminFilteredUpdatableRows() {
+  if (!bazaarAdminCsvModel) return [];
+  const rowsByCategory = bazaarAdminCsvModel.rows.filter(
+    (row) => selectedBazaarAdminCategory === "" || row.itemCategory === selectedBazaarAdminCategory
+  );
+  const updatableRowsByCategory = rowsByCategory.filter((row) => !row.excluded);
+  const filteredUpdatableRows = updatableRowsByCategory.filter(
+    (row) => !showBazaarAdminMonitoringOnly || isMonitoringByComment(row.comment)
+  );
+  return sortBazaarAdminRows(filteredUpdatableRows, { prioritizeUnupdated: prioritizeBazaarAdminUnupdated });
+}
+
+function scrollToNextBazaarAdminUnupdatedRow(currentRowId = "") {
+  const sortedRows = getBazaarAdminFilteredUpdatableRows();
+  if (sortedRows.length === 0) return;
+  const baseIndex = sortedRows.findIndex((row) => row.id === currentRowId);
+  for (let offset = 1; offset <= sortedRows.length; offset += 1) {
+    const nextIndex = baseIndex >= 0 ? (baseIndex + offset) % sortedRows.length : offset - 1;
+    const nextRow = sortedRows[nextIndex];
+    if (!nextRow || isBazaarAdminRowUpdated(nextRow)) continue;
+    const rowElement = bazaarAdminListWrap?.querySelector(`[data-bazaar-admin-row-id="${nextRow.id}"]`);
+    if (rowElement instanceof HTMLElement) {
+      rowElement.scrollIntoView({ behavior: "smooth", block: "center" });
+    }
+    return;
+  }
+}
+
 function renderBazaarAdminPanel() {
   if (!bazaarAdminListWrap || !bazaarAdminCategorySelect) return;
   if (!bazaarAdminCsvModel) {
@@ -1464,7 +1493,7 @@ function renderBazaarAdminPanel() {
     const statusText = result?.message || (row.excluded ? "除外（固定価格）" : "未更新");
     const pastedText = bazaarAdminPastedTextByRowId.get(row.id) || "";
     return `
-      <article class="bazaar-admin-row ${statusClass}">
+      <article class="bazaar-admin-row ${statusClass}" data-bazaar-admin-row-id="${escapeHtml(row.id)}">
         <div class="bazaar-admin-row-main">
           <p class="bazaar-admin-material">${escapeHtml(row.materialName)}</p>
           <p class="bazaar-admin-meta">${escapeHtml(row.itemCategory)} / today:${escapeHtml(row.todayPriceText || "-")} / prev:${escapeHtml(
@@ -1509,6 +1538,10 @@ function renderBazaarAdminPanel() {
         <input id="bazaarAdminMonitoringOnlyToggle" type="checkbox" ${showBazaarAdminMonitoringOnly ? "checked" : ""} />
         <span>監視中のみ表示</span>
       </label>
+      <label class="field inline-field">
+        <input id="bazaarAdminAutoUpdateOnPasteToggle" type="checkbox" ${bazaarAdminAutoUpdateOnPaste ? "checked" : ""} />
+        <span>貼り付けで自動更新</span>
+      </label>
     </div>
     <section class="bazaar-admin-section">
       <h3>更新対象一覧</h3>
@@ -1543,6 +1576,15 @@ function renderBazaarAdminPanel() {
     monitoringOnlyToggle.addEventListener("change", (event) => {
       showBazaarAdminMonitoringOnly = Boolean(event.target?.checked);
       renderBazaarAdminPanel();
+    });
+  }
+  const autoUpdateOnPasteToggle = bazaarAdminListWrap.querySelector("#bazaarAdminAutoUpdateOnPasteToggle");
+  if (autoUpdateOnPasteToggle) {
+    autoUpdateOnPasteToggle.addEventListener("change", (event) => {
+      bazaarAdminAutoUpdateOnPaste = Boolean(event.target?.checked);
+      setBazaarAdminMessage(
+        bazaarAdminAutoUpdateOnPaste ? "貼り付けで自動更新をONにしました。" : "貼り付けで自動更新をOFFにしました。"
+      );
     });
   }
   updateBazaarAdminActionButtons();
@@ -1600,6 +1642,40 @@ async function runBazaarAdminBatchUpdate(options = {}) {
     renderBazaarAdminPanel();
   }
   setBazaarAdminMessage(`更新完了: 更新成功 ${successCount}件 / 抽出失敗 ${extractFailCount}件 / 除外 ${excludedCount}件`);
+}
+
+async function runBazaarAdminSingleRowUpdateById(rowId, options = {}) {
+  if (!bazaarAdminCsvModel || !rowId || isBazaarAdminUpdating) return null;
+  const row = bazaarAdminCsvModel.rows.find((entry) => entry.id === rowId);
+  if (!row) return null;
+  const shouldScrollToNext = options.scrollToNext === true;
+  const silentMessage = options.silentMessage === true;
+
+  isBazaarAdminUpdating = true;
+  updateBazaarAdminActionButtons();
+  let result = null;
+  try {
+    result = await updateBazaarAdminSingleRow(row);
+    bazaarAdminLastResults.set(row.id, result);
+    if (!silentMessage) {
+      setBazaarAdminMessage(`${row.materialName}: ${result.message}`);
+    }
+  } catch (error) {
+    console.error("行単位更新に失敗しました", error);
+    result = { status: "extract-fail", message: "抽出失敗" };
+    bazaarAdminLastResults.set(row.id, result);
+    if (!silentMessage) {
+      setBazaarAdminMessage(`${row.materialName}: 抽出失敗`, true);
+    }
+  } finally {
+    isBazaarAdminUpdating = false;
+    updateBazaarAdminActionButtons();
+    renderBazaarAdminPanel();
+  }
+  if (shouldScrollToNext && result?.status === "success") {
+    scrollToNextBazaarAdminUnupdatedRow(row.id);
+  }
+  return result;
 }
 
 async function loadPresentCodesCsv() {
@@ -5018,6 +5094,17 @@ if (bazaarAdminListWrap) {
     bazaarAdminPastedTextByRowId.set(rowId, target.value || "");
   });
 
+  bazaarAdminListWrap.addEventListener("paste", (event) => {
+    const target = event.target;
+    if (!(target instanceof HTMLTextAreaElement)) return;
+    const rowId = String(target.dataset.bazaarAdminPasteInput || "");
+    if (!rowId || !bazaarAdminAutoUpdateOnPaste || isBazaarAdminUpdating) return;
+    window.setTimeout(() => {
+      bazaarAdminPastedTextByRowId.set(rowId, target.value || "");
+      runBazaarAdminSingleRowUpdateById(rowId, { scrollToNext: true });
+    }, 0);
+  });
+
   bazaarAdminListWrap.addEventListener("click", async (event) => {
     const target = event.target;
     if (!(target instanceof HTMLButtonElement)) return;
@@ -5028,28 +5115,15 @@ if (bazaarAdminListWrap) {
     if (openRowId) {
       const row = bazaarAdminCsvModel.rows.find((entry) => entry.id === openRowId);
       if (!row?.officialUrl) return;
-      window.open(row.officialUrl, "_blank", "noopener");
+      const bazaarWindow = window.open(row.officialUrl, "bazaarWindow");
+      if (bazaarWindow) {
+        bazaarWindow.focus();
+      }
       return;
     }
 
     if (updateRowId && !isBazaarAdminUpdating) {
-      const row = bazaarAdminCsvModel.rows.find((entry) => entry.id === updateRowId);
-      if (!row) return;
-      isBazaarAdminUpdating = true;
-      updateBazaarAdminActionButtons();
-      try {
-        const result = await updateBazaarAdminSingleRow(row);
-        bazaarAdminLastResults.set(row.id, result);
-        setBazaarAdminMessage(`${row.materialName}: ${result.message}`);
-      } catch (error) {
-        console.error("行単位更新に失敗しました", error);
-        bazaarAdminLastResults.set(row.id, { status: "extract-fail", message: "抽出失敗" });
-        setBazaarAdminMessage(`${row.materialName}: 抽出失敗`, true);
-      } finally {
-        isBazaarAdminUpdating = false;
-        updateBazaarAdminActionButtons();
-        renderBazaarAdminPanel();
-      }
+      await runBazaarAdminSingleRowUpdateById(updateRowId, { scrollToNext: true });
     }
   });
 }
