@@ -262,9 +262,6 @@ body.is-modal-open {
 .top-update-list {
   margin-top: 0;
   margin-bottom: var(--ui-section-vertical-space);
-  max-height: 17.2rem;
-  overflow-y: auto;
-  overscroll-behavior: contain;
 }
 
 .top-update-list ul {
@@ -279,10 +276,29 @@ body.is-modal-open {
   line-height: 1.5;
 }
 
-@media (min-width: 768px) {
-  .top-update-list {
-    max-height: 18.8rem;
-  }
+.top-update-view-all-button {
+  margin-top: 10px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 40px;
+  padding: 8px 14px;
+  border-radius: 10px;
+  border: 1px solid #89674a;
+  background: linear-gradient(180deg, #f4e7d5 0%, #e5d1b7 100%);
+  border-left: 3px solid var(--accent-gold);
+  color: #422b1b;
+  text-decoration: none;
+  font-weight: 700;
+  font-size: 0.9rem;
+}
+
+.updates-page-header {
+  margin: 0 0 12px;
+}
+
+.updates-page-actions {
+  margin-bottom: 12px;
 }
 
 .top-update-list time {
