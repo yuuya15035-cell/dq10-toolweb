@@ -506,6 +506,27 @@
         </div>
       </section>
 
+      <section id="bazaar-admin" class="tab-content" aria-label="バザー価格更新管理画面">
+        <h2>バザー価格更新（管理）</h2>
+        <div class="card bazaar-admin-panel">
+          <p class="helper-text">
+            ※ comment に「固定価格」または「現在固定」を含む素材は自動更新対象から除外します。監視対象に戻す場合は comment を「現在監視中」などに変更してください。
+          </p>
+          <div class="bazaar-admin-toolbar">
+            <label class="field bazaar-admin-category-field" for="bazaarAdminCategorySelect">
+              <span>カテゴリ指定更新</span>
+              <select id="bazaarAdminCategorySelect"></select>
+            </label>
+            <button id="bazaarAdminRefreshButton" type="button">CSV再読込</button>
+            <button id="bazaarAdminUpdateCategoryButton" type="button">カテゴリ更新</button>
+            <button id="bazaarAdminUpdateAllButton" type="button">全件更新</button>
+            <button id="bazaarAdminDownloadButton" type="button">更新CSVをダウンロード</button>
+          </div>
+          <p id="bazaarAdminMessage" class="helper-text" aria-live="polite"></p>
+          <div id="bazaarAdminListWrap" class="bazaar-admin-list-wrap"></div>
+        </div>
+      </section>
+
       <section id="favorites" class="tab-content" aria-label="お気に入り一覧画面">
         <h2>お気に入り</h2>
         <div class="favorites-tabs" role="tablist" aria-label="お気に入り表示切替">
@@ -688,6 +709,7 @@
           <button id="adminOpenContentEditorButton" type="button">本文編集モードを開く</button>
           <button id="adminToggleContentEditModeButton" type="button">本文編集モード: OFF</button>
           <button id="adminOpenUpdatesEditorButton" type="button">更新情報編集を開く</button>
+          <button id="adminOpenBazaarAdminButton" type="button">バザー価格更新を開く</button>
           <button id="adminExportUiSettingsButton" type="button">設定JSONをダウンロード</button>
           <button id="adminExportContentButton" type="button">本文JSONをダウンロード</button>
           <button id="adminExportUpdatesButton" type="button">更新情報JSONをダウンロード</button>
