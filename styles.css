@@ -3135,6 +3135,11 @@ button {
   gap: 8px;
 }
 
+.bazaar-admin-button-help {
+  margin: 0;
+  padding-left: 18px;
+}
+
 .bazaar-admin-row {
   border: 1px solid #d6c2ab;
   border-radius: 10px;
@@ -3149,12 +3154,13 @@ button {
   border-color: #7bbf79;
 }
 
-.bazaar-admin-row.is-fallback {
-  border-color: #d4ab46;
+.bazaar-admin-row.is-extract-fail {
+  border-color: #d17070;
 }
 
-.bazaar-admin-row.is-fail {
-  border-color: #d17070;
+.bazaar-admin-row.is-excluded {
+  border-color: #8a8a8a;
+  background: #f7f7f7;
 }
 
 .bazaar-admin-row-main {
@@ -3172,10 +3178,44 @@ button {
   font-size: 0.82rem;
 }
 
+.bazaar-admin-status {
+  display: inline-block;
+  padding: 3px 8px;
+  border-radius: 999px;
+  border: 1px solid #d6c2ab;
+  background: #f8ecde;
+  font-weight: 600;
+}
+
+.bazaar-admin-row.is-success .bazaar-admin-status {
+  background: #e7f4e6;
+  border-color: #7bbf79;
+}
+
+.bazaar-admin-row.is-extract-fail .bazaar-admin-status {
+  background: #fbe9e9;
+  border-color: #d17070;
+}
+
+.bazaar-admin-row.is-excluded .bazaar-admin-status {
+  background: #f0f0f0;
+  border-color: #8a8a8a;
+}
+
 .bazaar-admin-row-actions {
   display: flex;
+  flex-direction: column;
   gap: 6px;
   align-items: flex-start;
+}
+
+.bazaar-admin-paste-field {
+  width: min(360px, 100%);
+}
+
+.bazaar-admin-paste-field textarea {
+  width: 100%;
+  min-height: 52px;
 }
 
 @media (min-width: 900px) {

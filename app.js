@@ -882,6 +882,7 @@ let bazaarLoadingPromise = null;
 let bazaarHistoryLoadingPromise = null;
 let bazaarAdminCsvModel = null;
 let bazaarAdminLastResults = new Map();
+let bazaarAdminPastedTextByRowId = new Map();
 let isBazaarAdminUpdating = false;
 let craftIdealValuesLoadingPromise = null;
 let selectedFieldFarmingSort = "normal_desc";
@@ -1279,9 +1280,9 @@ function normalizeBazaarAdminNumberText(value) {
   return digits === "" ? "" : String(Number(digits));
 }
 
-function isBazaarAdminExcludedComment(comment) {
+function isExcludedByComment(comment) {
   const text = String(comment || "");
-  return text.includes("固定価格") || text.includes("現在固定");
+  return text.includes("固定価格") || text.includes("現在固定") || text.includes("店売り価格固定");
 }
 
 function buildBazaarAdminCsvModel(lines) {
@@ -1328,7 +1329,7 @@ function buildBazaarAdminCsvModel(lines) {
         comment,
         shopPriceText: String(cells[indexes.shopPrice] || "").trim(),
         officialUrl: parseOfficialUrl(cells[indexes.officialUrl]),
-        excluded: isBazaarAdminExcludedComment(comment),
+        excluded: isExcludedByComment(comment),
       };
     })
     .filter((row) => row.materialName !== "")
@@ -1362,52 +1363,40 @@ function updateBazaarAdminActionButtons() {
 }
 
 function extractBazaarPriceFromText(text) {
-  const normalizedText = String(text || "");
-  const perUnitMatch = normalizedText.match(/ひとつあたり\s*([0-9,]+)\s*G/i);
+  const normalizedText = String(text || "").replace(/[()（）]/g, " ");
+  const perUnitMatch = normalizedText.match(/ひとつあたり\s*([0-9,，,]+)\s*G/i);
   if (perUnitMatch) {
     return { priceText: normalizeBazaarAdminNumberText(perUnitMatch[1]), source: "per_unit" };
   }
-  const totalPriceMatch = normalizedText.match(/価格\s*[:：]\s*([0-9,]+)\s*G/i);
+  const totalPriceMatch = normalizedText.match(/価格\s*[:：]\s*([0-9,，,]+)\s*G/i);
   if (totalPriceMatch) {
     return { priceText: normalizeBazaarAdminNumberText(totalPriceMatch[1]), source: "total_price" };
   }
   return { priceText: "", source: "none" };
 }
 
-async function fetchOfficialBazaarPageText(url) {
-  const normalizedUrl = parseOfficialUrl(url);
-  if (!normalizedUrl) return "";
+function extractUnitPrice(text) {
+  return extractBazaarPriceFromText(text);
+}
 
-  const tryFetch = async (targetUrl, isHtml = false) => {
-    const response = await fetch(targetUrl, { method: "GET" });
-    if (!response.ok) return "";
-    const bodyText = await response.text();
-    if (!isHtml) return bodyText;
-    const parser = new DOMParser();
-    const doc = parser.parseFromString(bodyText, "text/html");
-    return doc.body?.innerText || bodyText;
-  };
-
-  try {
-    const direct = await tryFetch(normalizedUrl, true);
-    if (direct.trim() !== "") return direct;
-  } catch (error) {
-    console.warn("公式ページの直接取得に失敗しました", error);
-  }
-
-  try {
-    const proxyText = await tryFetch(`https://r.jina.ai/http://${normalizedUrl.replace(/^https?:\/\//, "")}`);
-    return proxyText;
-  } catch (error) {
-    console.warn("公式ページのプロキシ取得に失敗しました", error);
-    return "";
-  }
+function applyPriceUpdate(row, newPrice) {
+  const safePriceText = normalizeBazaarAdminNumberText(newPrice);
+  if (!row || !safePriceText) return false;
+  const currentToday = String(row.cells[bazaarAdminCsvModel.indexes.todayPrice] || "").trim();
+  row.cells[bazaarAdminCsvModel.indexes.previousDayPrice] = currentToday;
+  row.cells[bazaarAdminCsvModel.indexes.todayPrice] = safePriceText;
+  row.cells[bazaarAdminCsvModel.indexes.updatedAt] = formatBazaarAdminTimestamp(new Date());
+  row.todayPriceText = safePriceText;
+  row.previousDayPriceText = currentToday;
+  row.updatedAtText = String(row.cells[bazaarAdminCsvModel.indexes.updatedAt] || "");
+  return true;
 }
 
 async function reloadBazaarAdminCsvModel() {
   const lines = await fetchCsvLines(BAZAAR_CSV_PATH);
   bazaarAdminCsvModel = buildBazaarAdminCsvModel(lines);
   bazaarAdminLastResults = new Map();
+  bazaarAdminPastedTextByRowId = new Map();
 }
 
 function renderBazaarAdminPanel() {
@@ -1427,8 +1416,9 @@ function renderBazaarAdminPanel() {
   const rowsHtml = bazaarAdminCsvModel.rows
     .map((row) => {
       const result = bazaarAdminLastResults.get(row.id);
-      const statusClass = result?.status ? `is-${result.status}` : "";
+      const statusClass = result?.status ? `is-${result.status}` : row.excluded ? "is-excluded" : "";
       const statusText = result?.message || (row.excluded ? "除外（固定価格）" : "未更新");
+      const pastedText = bazaarAdminPastedTextByRowId.get(row.id) || "";
       return `
         <article class="bazaar-admin-row ${statusClass}">
           <div class="bazaar-admin-row-main">
@@ -1442,6 +1432,12 @@ function renderBazaarAdminPanel() {
           <div class="bazaar-admin-row-actions">
             <button type="button" data-bazaar-admin-open-url="${escapeHtml(row.id)}" ${row.officialUrl ? "" : "disabled"}>URLを開く</button>
             <button type="button" data-bazaar-admin-update-row="${escapeHtml(row.id)}" ${row.excluded ? "disabled" : ""}>この行を更新</button>
+            <label class="bazaar-admin-paste-field">
+              <span>出品情報貼り付け欄</span>
+              <textarea data-bazaar-admin-paste-input="${escapeHtml(row.id)}" rows="2" placeholder="公式ページの出品情報テキストを貼り付け">${escapeHtml(
+                pastedText
+              )}</textarea>
+            </label>
           </div>
         </article>
       `;
@@ -1453,30 +1449,24 @@ function renderBazaarAdminPanel() {
 
 async function updateBazaarAdminSingleRow(row) {
   if (!row || row.excluded) {
-    return { status: "skip", message: "固定価格のため除外" };
+    return { status: "excluded", message: "除外（固定価格）" };
   }
-  if (!row.officialUrl) {
-    return { status: "fail", message: "official_url が未設定です" };
+  const pastedText = String(bazaarAdminPastedTextByRowId.get(row.id) || "").trim();
+  if (!pastedText) {
+    return { status: "extract-fail", message: "抽出失敗（貼り付け未入力）" };
   }
-  const pageText = await fetchOfficialBazaarPageText(row.officialUrl);
-  if (!pageText) {
-    return { status: "fail", message: "公式ページの取得に失敗しました" };
-  }
-  const extracted = extractBazaarPriceFromText(pageText);
+  const extracted = extractUnitPrice(pastedText);
   if (!extracted.priceText) {
-    return { status: "fail", message: "価格の抽出に失敗（today/prevは変更なし）" };
+    return { status: "extract-fail", message: "抽出失敗（today/prevは変更なし）" };
   }
 
-  const currentToday = String(row.cells[bazaarAdminCsvModel.indexes.todayPrice] || "").trim();
-  row.cells[bazaarAdminCsvModel.indexes.previousDayPrice] = currentToday;
-  row.cells[bazaarAdminCsvModel.indexes.todayPrice] = extracted.priceText;
-  row.cells[bazaarAdminCsvModel.indexes.updatedAt] = formatBazaarAdminTimestamp(new Date());
-  row.todayPriceText = extracted.priceText;
-  row.previousDayPriceText = currentToday;
-  row.updatedAtText = String(row.cells[bazaarAdminCsvModel.indexes.updatedAt] || "");
+  const applied = applyPriceUpdate(row, extracted.priceText);
+  if (!applied) {
+    return { status: "extract-fail", message: "抽出失敗（today/prevは変更なし）" };
+  }
   return {
-    status: extracted.source === "per_unit" ? "success" : "fallback",
-    message: extracted.source === "per_unit" ? `更新成功: ひとつあたり ${extracted.priceText}G` : `代替更新: 価格 ${extracted.priceText}G`,
+    status: "success",
+    message: extracted.source === "per_unit" ? `更新成功（ひとつあたり ${extracted.priceText}G）` : `更新成功（代替: 価格 ${extracted.priceText}G）`,
   };
 }
 
@@ -1493,22 +1483,22 @@ async function runBazaarAdminBatchUpdate(options = {}) {
   updateBazaarAdminActionButtons();
   setBazaarAdminMessage(`更新中... 対象 ${targetRows.length} 件`);
   let successCount = 0;
-  let failCount = 0;
-  let fallbackCount = 0;
+  let extractFailCount = 0;
+  let excludedCount = 0;
   try {
     for (const row of targetRows) {
       const result = await updateBazaarAdminSingleRow(row);
       bazaarAdminLastResults.set(row.id, result);
       if (result.status === "success") successCount += 1;
-      else if (result.status === "fallback") fallbackCount += 1;
-      else failCount += 1;
+      else if (result.status === "excluded") excludedCount += 1;
+      else extractFailCount += 1;
     }
   } finally {
     isBazaarAdminUpdating = false;
     updateBazaarAdminActionButtons();
     renderBazaarAdminPanel();
   }
-  setBazaarAdminMessage(`更新完了: 成功 ${successCount}件 / 代替 ${fallbackCount}件 / 失敗 ${failCount}件`);
+  setBazaarAdminMessage(`更新完了: 更新成功 ${successCount}件 / 抽出失敗 ${extractFailCount}件 / 除外 ${excludedCount}件`);
 }
 
 async function loadPresentCodesCsv() {
@@ -4912,6 +4902,14 @@ if (bazaarAdminDownloadButton) {
 }
 
 if (bazaarAdminListWrap) {
+  bazaarAdminListWrap.addEventListener("input", (event) => {
+    const target = event.target;
+    if (!(target instanceof HTMLTextAreaElement)) return;
+    const rowId = String(target.dataset.bazaarAdminPasteInput || "");
+    if (!rowId) return;
+    bazaarAdminPastedTextByRowId.set(rowId, target.value || "");
+  });
+
   bazaarAdminListWrap.addEventListener("click", async (event) => {
     const target = event.target;
     if (!(target instanceof HTMLButtonElement)) return;
@@ -4937,8 +4935,8 @@ if (bazaarAdminListWrap) {
         setBazaarAdminMessage(`${row.materialName}: ${result.message}`);
       } catch (error) {
         console.error("行単位更新に失敗しました", error);
-        bazaarAdminLastResults.set(row.id, { status: "fail", message: "更新失敗" });
-        setBazaarAdminMessage(`${row.materialName}: 更新失敗`, true);
+        bazaarAdminLastResults.set(row.id, { status: "extract-fail", message: "抽出失敗" });
+        setBazaarAdminMessage(`${row.materialName}: 抽出失敗`, true);
       } finally {
         isBazaarAdminUpdating = false;
         updateBazaarAdminActionButtons();

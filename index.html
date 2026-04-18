@@ -510,7 +510,7 @@
         <h2>バザー価格更新（管理）</h2>
         <div class="card bazaar-admin-panel">
           <p class="helper-text">
-            ※ comment に「固定価格」または「現在固定」を含む素材は自動更新対象から除外します。監視対象に戻す場合は comment を「現在監視中」などに変更してください。
+            ※ comment に「固定価格」「現在固定」「店売り価格固定」を含む素材は自動更新対象から除外します。更新は手動補助型です。公式ページを開いて出品情報テキストを貼り付けてから「この行を更新」を押してください。
           </p>
           <div class="bazaar-admin-toolbar">
             <label class="field bazaar-admin-category-field" for="bazaarAdminCategorySelect">
@@ -522,6 +522,12 @@
             <button id="bazaarAdminUpdateAllButton" type="button">全件更新</button>
             <button id="bazaarAdminDownloadButton" type="button">更新CSVをダウンロード</button>
           </div>
+          <ul class="helper-text bazaar-admin-button-help">
+            <li>CSV再読込: 現在の bazaar_prices.csv を再読み込みします。CSVを差し替えたあとに使います。</li>
+            <li>カテゴリ更新: 選択中カテゴリの更新対象だけを更新します。固定価格コメント付きは除外します。</li>
+            <li>全件更新: 自動更新対象の全素材をまとめて更新します。固定価格コメント付きは除外します。</li>
+            <li>更新CSVをダウンロード: 現在の管理画面の内容を反映したCSVを保存します。</li>
+          </ul>
           <p id="bazaarAdminMessage" class="helper-text" aria-live="polite"></p>
           <div id="bazaarAdminListWrap" class="bazaar-admin-list-wrap"></div>
         </div>
