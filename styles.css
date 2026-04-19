@@ -1108,6 +1108,51 @@ button {
   align-items: end;
 }
 
+.profit-armor-set-assist[hidden] {
+  display: none;
+}
+
+.profit-armor-set-assist-card {
+  margin-bottom: 10px;
+  border: 1px solid #d4bc95;
+  background: #f9f1e4;
+}
+
+.profit-armor-set-assist-title {
+  margin: 0;
+  font-size: 1rem;
+}
+
+.profit-armor-set-assist-note {
+  margin: 6px 0 0;
+  color: #5f4a35;
+  font-size: 0.86rem;
+}
+
+.profit-armor-set-assist-error {
+  margin: 8px 0 0;
+  color: #b42318;
+  font-size: 0.84rem;
+  font-weight: 700;
+}
+
+.profit-armor-set-assist-parts {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 7px;
+  margin-top: 10px;
+}
+
+.profit-armor-set-part-button {
+  min-height: 42px;
+  border: 1px solid #c9ad8b;
+  border-radius: 10px;
+  background: #fff8ef;
+  color: #4d341f;
+  font-weight: 700;
+  font-size: 0.94rem;
+}
+
 .sale-input-list {
   display: grid;
   gap: 8px;
