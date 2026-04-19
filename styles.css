@@ -200,6 +200,10 @@ body.is-modal-open {
   position: relative;
 }
 
+.site-search.is-hidden {
+  display: none;
+}
+
 .site-search-field {
   margin: 0;
 }
@@ -269,6 +273,36 @@ body.is-modal-open {
   font-size: 0.8rem;
   color: #6d4c31;
   background: rgba(255, 249, 240, 0.9);
+}
+
+.tool-site-search-dock {
+  position: fixed;
+  top: 12px;
+  right: 12px;
+  z-index: 920;
+  display: none;
+  justify-items: end;
+  gap: 6px;
+}
+
+.tool-site-search-dock.is-visible {
+  display: grid;
+}
+
+.tool-site-search-toggle {
+  min-height: 40px;
+  border-radius: 999px;
+  padding: 6px 12px;
+  font-size: 0.84rem;
+}
+
+.tool-site-search-panel {
+  width: min(360px, calc(100vw - 24px));
+  border: 1px solid #d6c1a9;
+  border-radius: 10px;
+  background: #fffaf3;
+  box-shadow: 0 8px 20px rgba(50, 33, 20, 0.2);
+  padding: 8px;
 }
 
 .app-header.is-collapsed {
@@ -2597,11 +2631,11 @@ button {
 
 @media (min-width: 700px) {
   .bazaar-list {
-    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(360px, 1fr));
   }
 
   .bazaar-main {
-    grid-template-columns: minmax(160px, 0.9fr) minmax(0, 2.8fr);
+    grid-template-columns: minmax(184px, 1fr) minmax(0, 1.6fr);
     column-gap: 10px;
     align-items: stretch;
   }
@@ -2613,25 +2647,6 @@ button {
     width: 100%;
   }
 
-  .bazaar-mini-chart-y-axis {
-    width: 86px;
-    display: flex;
-    flex-direction: column;
-    justify-content: space-between;
-    padding: 7px 0 24px;
-    flex-shrink: 0;
-  }
-
-  .bazaar-mini-chart-y-label {
-    display: block;
-    color: rgba(101, 75, 53, 0.72);
-    font-size: 0.66rem;
-    font-weight: 500;
-    line-height: 1.1;
-    text-align: right;
-    white-space: nowrap;
-  }
-
   .bazaar-mini-chart-canvas .bazaar-mini-chart-svg {
     height: 104px;
   }
@@ -2641,7 +2656,7 @@ button {
   }
 
   .bazaar-mini-chart-canvas .bazaar-mini-chart-axis-label {
-    display: none;
+    font-size: 0.62rem;
   }
 
   .bazaar-mobile-chart-panel {
@@ -2664,10 +2679,6 @@ button {
 }
 
 @media (min-width: 920px) {
-  .bazaar-list {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-  }
-
   .bazaar-control-wrap {
     grid-template-columns: repeat(4, minmax(0, 1fr));
     align-items: start;
@@ -2695,6 +2706,20 @@ button {
   .app-header {
     margin-bottom: 20px;
     padding: 16px 18px;
+  }
+
+  .tool-site-search-dock {
+    top: 16px;
+    right: 16px;
+  }
+
+  .tool-site-search-panel {
+    width: min(420px, calc(100vw - 32px));
+  }
+
+  .admin-fab-wrap {
+    left: 12px;
+    bottom: 12px;
   }
 
   .grid-2 {
@@ -3060,12 +3085,14 @@ button {
 
 .admin-fab-wrap {
   position: fixed;
-  right: 10px;
-  top: 10px;
+  left: 10px;
+  right: auto;
+  top: auto;
+  bottom: calc(var(--mobile-bottom-nav-height) + 12px + env(safe-area-inset-bottom));
   z-index: 80;
   display: grid;
   gap: 6px;
-  justify-items: end;
+  justify-items: start;
 }
 
 .admin-fab-button {

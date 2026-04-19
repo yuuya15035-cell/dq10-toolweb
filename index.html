@@ -95,7 +95,7 @@
         </p>
         <p id="contentSiteIntro">ドラゴンクエスト10の普段使いをまとめた支援サイトです。</p>
         <p id="contentSiteSummary" data-content-key="site_summary">バザー確認・職人準備・装備検索をスマホで使いやすく整理しています。</p>
-        <section class="site-search" aria-label="サイト内検索">
+        <section id="homeSiteSearch" class="site-search" aria-label="サイト内検索">
           <label class="field site-search-field" for="siteSearchInput">
             <span>サイト内検索</span>
             <input id="siteSearchInput" type="search" placeholder="装備名・素材名・モンスター名などで検索" autocomplete="off" />
@@ -103,6 +103,30 @@
           <div id="siteSearchResultWrap" class="site-search-result-wrap" hidden></div>
         </section>
       </header>
+
+      <section id="toolSiteSearchDock" class="tool-site-search-dock" aria-label="サイト内検索（ツールページ）">
+        <button
+          id="toolSiteSearchToggleButton"
+          class="tool-site-search-toggle"
+          type="button"
+          aria-expanded="false"
+          aria-controls="toolSiteSearchPanel"
+        >
+          🔍 検索
+        </button>
+        <div id="toolSiteSearchPanel" class="tool-site-search-panel" hidden>
+          <label class="field site-search-field" for="toolSiteSearchInput">
+            <span>サイト内検索</span>
+            <input
+              id="toolSiteSearchInput"
+              type="search"
+              placeholder="装備名・素材名・モンスター名などで検索"
+              autocomplete="off"
+            />
+          </label>
+          <div id="toolSiteSearchResultWrap" class="site-search-result-wrap" hidden></div>
+        </div>
+      </section>
 
       <section class="top-quick-access" aria-label="よく使う機能">
         <h2 id="contentToolsHeading" data-content-key="tools_heading">よく使う機能</h2>
