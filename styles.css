@@ -1325,6 +1325,7 @@ button {
   background: linear-gradient(180deg, #f5e8d8 0%, #e8d6bf 100%);
   padding: 10px;
   box-shadow: 0 4px 12px rgba(68, 45, 24, 0.16);
+  overflow: hidden;
 }
 
 .bazaar-card.is-focused {
@@ -1434,6 +1435,10 @@ button {
   gap: 4px;
 }
 
+.bazaar-main > * {
+  min-width: 0;
+}
+
 .bazaar-card-summary-toggle {
   border-radius: 8px;
   outline: none;
@@ -1525,6 +1530,8 @@ button {
 
 .bazaar-mini-chart-wrap {
   display: none;
+  min-width: 0;
+  overflow: hidden;
 }
 
 .bazaar-mini-chart-canvas {
@@ -1625,6 +1632,7 @@ button {
   color: #6d5643;
   font-size: 0.72rem;
   line-height: 1.2;
+  overflow-wrap: anywhere;
 }
 
 .bazaar-mobile-chart-panel {
@@ -2631,7 +2639,7 @@ button {
 
 @media (min-width: 700px) {
   .bazaar-list {
-    grid-template-columns: repeat(auto-fit, minmax(360px, 1fr));
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   .bazaar-main {
@@ -3809,7 +3817,7 @@ button {
 
 @media (min-width: 1200px) {
   .bazaar-list {
-    grid-template-columns: repeat(4, minmax(0, 1fr));
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   .equipment-db-card-grid {
