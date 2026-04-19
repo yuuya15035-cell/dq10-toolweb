@@ -3221,6 +3221,11 @@ function renderEquipmentDbCards() {
                       ${!isArmor && stats.length > 0 ? `<ul class="equipment-db-stats-list">${stats.join("")}</ul>` : ""}
                       ${collapsedTraitsHtml}
                     </button>
+                    <div class="equipment-db-card-actions">
+                      <button type="button" class="equipment-db-open-profit-button" data-equipment-db-open-profit="${entry.id}">
+                        職人アシストで開く
+                      </button>
+                    </div>
                     <div class="equipment-db-card-traits ${isExpanded ? "is-open" : ""}" ${isExpanded ? "" : "hidden"}>
                       ${armorSetTypeMetaHtml}
                       ${armorStatsHtml}
@@ -3243,6 +3248,14 @@ function renderEquipmentDbCards() {
       const clickedId = String(button.dataset.equipmentDbId || "");
       expandedEquipmentDbId = expandedEquipmentDbId === clickedId ? "" : clickedId;
       renderEquipmentDbCards();
+    });
+  });
+  equipmentDbListWrap.querySelectorAll("[data-equipment-db-open-profit]").forEach((button) => {
+    button.addEventListener("click", () => {
+      const clickedId = String(button.dataset.equipmentDbOpenProfit || "");
+      const targetEntry = filteredEntries.find((entry) => entry.id === clickedId);
+      if (!targetEntry) return;
+      openProfitFromEquipmentDb(targetEntry);
     });
   });
 }
@@ -4366,11 +4379,85 @@ function getFavoriteRecipeMaterialSummary(equipmentId) {
   return summary.join(" / ");
 }
 
+function normalizeProfitCategoryLabel(value) {
+  const normalized = String(value || "").trim();
+  if (normalized === "") return "";
+  const aliasMap = new Map([
+    ["ムチ", "鞭"],
+    ["やり", "槍"],
+    ["ヤリ", "槍"],
+    ["ツメ", "爪"],
+    ["小盾", "盾"],
+    ["大盾", "盾"],
+  ]);
+  return aliasMap.get(normalized) || normalized;
+}
+
+function resolveProfitEquipmentIdFromParams(params = {}) {
+  const requestedEquipmentId = String(params.equipmentId || "").trim();
+  if (requestedEquipmentId && state.equipments.some((equipment) => equipment.id === requestedEquipmentId)) {
+    return requestedEquipmentId;
+  }
+
+  const requestedName = String(params.equipmentName || "").trim();
+  if (!requestedName) return "";
+
+  const nameMatchedEquipments = state.equipments.filter((equipment) => String(equipment?.name || "").trim() === requestedName);
+  if (nameMatchedEquipments.length === 0) return "";
+  if (nameMatchedEquipments.length === 1) return nameMatchedEquipments[0].id;
+
+  const normalizedRequestedType = normalizeProfitCategoryLabel(params.equipmentType);
+  if (normalizedRequestedType) {
+    const matchedByType = nameMatchedEquipments.find(
+      (equipment) => normalizeProfitCategoryLabel(equipment?.category) === normalizedRequestedType
+    );
+    if (matchedByType?.id) return matchedByType.id;
+  }
+
+  return nameMatchedEquipments[0].id;
+}
+
+function selectProfitEquipment(equipmentId) {
+  const targetEquipment = state.equipments.find((equipment) => equipment.id === equipmentId);
+  if (!targetEquipment) return false;
+  selectedEquipmentId = targetEquipment.id;
+  selectedCraftsman = String(targetEquipment.craftsman || "");
+  selectedCategory = String(targetEquipment.category || "");
+  return true;
+}
+
 function openRecipeFromFavorite(equipmentId) {
   if (!equipmentId) return;
-  selectedEquipmentId = equipmentId;
+  if (!selectProfitEquipment(equipmentId)) return;
   switchTab("profit");
   navigateByAppParams({ tab: "profit", equipmentId, materialKey: "" });
+  rerenderAll();
+  document.getElementById("profit")?.scrollIntoView({ block: "start", behavior: "smooth" });
+}
+
+function openProfitFromEquipmentDb(entry) {
+  const payload = {
+    equipmentId: resolveProfitEquipmentIdFromParams({
+      equipmentName: entry?.equipmentName,
+      equipmentType: entry?.equipmentType,
+    }),
+    equipmentName: String(entry?.equipmentName || "").trim(),
+    equipmentType: String(entry?.equipmentType || "").trim(),
+    equipmentGroup: String(entry?.equipmentGroup || "").trim(),
+  };
+
+  if (payload.equipmentId) {
+    selectProfitEquipment(payload.equipmentId);
+  }
+  switchTab("profit");
+  navigateByAppParams({
+    tab: "profit",
+    equipmentId: payload.equipmentId,
+    materialKey: "",
+    profitEquipmentName: payload.equipmentName,
+    profitEquipmentType: payload.equipmentType,
+    profitEquipmentGroup: payload.equipmentGroup,
+  });
   rerenderAll();
   document.getElementById("profit")?.scrollIntoView({ block: "start", behavior: "smooth" });
 }
@@ -5422,6 +5509,11 @@ function buildAppQueryParams(nextValues = {}) {
   if (nextValues.equipmentDbGroup === "armor" || nextValues.equipmentDbGroup === "weapon") {
     params.set("equipmentDbGroup", nextValues.equipmentDbGroup);
   }
+  if (nextValues.profitEquipmentName) params.set("profitEquipmentName", nextValues.profitEquipmentName);
+  if (nextValues.profitEquipmentType) params.set("profitEquipmentType", nextValues.profitEquipmentType);
+  if (nextValues.profitEquipmentGroup === "armor" || nextValues.profitEquipmentGroup === "weapon") {
+    params.set("profitEquipmentGroup", nextValues.profitEquipmentGroup);
+  }
   return params;
 }
 
@@ -5447,8 +5539,15 @@ function applyAppRouteFromUrl() {
   }
 
   const equipmentId = String(params.get("equipmentId") || "").trim();
-  if (equipmentId && state.equipments.some((equipment) => equipment.id === equipmentId)) {
-    selectedEquipmentId = equipmentId;
+  const profitEquipmentName = String(params.get("profitEquipmentName") || "").trim();
+  const profitEquipmentType = String(params.get("profitEquipmentType") || "").trim();
+  const resolvedEquipmentId = resolveProfitEquipmentIdFromParams({
+    equipmentId,
+    equipmentName: profitEquipmentName,
+    equipmentType: profitEquipmentType,
+  });
+  if (resolvedEquipmentId) {
+    selectProfitEquipment(resolvedEquipmentId);
   }
   const equipmentDbGroupParam = String(params.get("equipmentDbGroup") || "").trim();
   if (equipmentDbGroupParam === "armor" || equipmentDbGroupParam === "weapon") {
