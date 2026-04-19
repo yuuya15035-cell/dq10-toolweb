@@ -110,6 +110,10 @@ const BAZAAR_CHART_RANGE_DAYS = {
   threeMonths: 90,
 };
 const DEFAULT_BAZAAR_CHART_RANGE_DAYS = BAZAAR_CHART_RANGE_DAYS.month;
+const BAZAAR_DETAIL_MODAL_SWIPE_START_SLOP_PX = 8;
+const BAZAAR_DETAIL_MODAL_SWIPE_CLOSE_THRESHOLD_PX = 96;
+const BAZAAR_DETAIL_MODAL_SWIPE_MAX_TRANSLATE_PX = 220;
+const BAZAAR_DETAIL_MODAL_SWIPE_VERTICAL_DOMINANCE_RATIO = 1.15;
 const WHITE_BOX_ARMOR_SLOTS = new Set(["頭", "からだ上", "からだ下", "腕", "足"]);
 const WHITE_BOX_WEAPON_SLOT_ORDER = [
   "片手剣",
@@ -951,6 +955,7 @@ let pendingBazaarFocusMaterialKey = "";
 let bazaarPriceHistoryByMaterialKey = new Map();
 let selectedBazaarChartRangeDays = DEFAULT_BAZAAR_CHART_RANGE_DAYS;
 let activeBazaarDetailModalKey = "";
+let bazaarDetailModalSwipeState = null;
 let activeFavoriteMaterialModalKey = "";
 let presentCodes = [];
 let fieldFarmingMonsters = [];
@@ -1087,6 +1092,7 @@ const bazaarListWrap = getRequiredElementById("bazaarListWrap");
 const bazaarDetailModalOverlay = getRequiredElementById("bazaarDetailModalOverlay");
 const bazaarDetailModalDialog = getRequiredElementById("bazaarDetailModalDialog");
 const bazaarDetailModalCloseButton = getRequiredElementById("bazaarDetailModalCloseButton");
+const bazaarDetailModalHandle = getRequiredElementById("bazaarDetailModalHandle");
 const bazaarDetailModalBody = getRequiredElementById("bazaarDetailModalBody");
 const presentCodeListWrap = getRequiredElementById("presentCodeListWrap");
 const fieldFarmingListWrap = getRequiredElementById("fieldFarmingListWrap");
@@ -4192,6 +4198,10 @@ function syncBodyModalOpenState() {
 
 function closeBazaarDetailModal() {
   if (!bazaarDetailModalOverlay) return;
+  bazaarDetailModalSwipeState = null;
+  bazaarDetailModalDialog?.classList.remove("is-swipe-dragging");
+  bazaarDetailModalDialog?.style.removeProperty("transform");
+  bazaarDetailModalDialog?.style.removeProperty("opacity");
   bazaarDetailModalOverlay.hidden = true;
   bazaarDetailModalOverlay.classList.remove("is-open");
   activeBazaarDetailModalKey = "";
@@ -4238,6 +4248,85 @@ function openBazaarDetailModal(materialKey) {
   bazaarDetailModalOverlay.classList.add("is-open");
   syncBodyModalOpenState();
   bazaarDetailModalDialog?.focus();
+}
+
+function handleBazaarDetailSwipeStart(event) {
+  if (!bazaarDetailModalOverlay?.classList.contains("is-open")) return;
+  if (!bazaarDetailModalDialog) return;
+  if (event.pointerType !== "touch") return;
+  if (bazaarDetailModalDialog.scrollTop > 0) return;
+
+  bazaarDetailModalSwipeState = {
+    pointerId: event.pointerId,
+    startX: event.clientX,
+    startY: event.clientY,
+    latestY: event.clientY,
+    isDragging: false,
+    canceled: false,
+  };
+  bazaarDetailModalHandle?.setPointerCapture(event.pointerId);
+}
+
+function handleBazaarDetailSwipeMove(event) {
+  if (!bazaarDetailModalSwipeState) return;
+  if (event.pointerId !== bazaarDetailModalSwipeState.pointerId) return;
+  if (!bazaarDetailModalDialog) return;
+  if (bazaarDetailModalSwipeState.canceled) return;
+
+  const deltaY = event.clientY - bazaarDetailModalSwipeState.startY;
+  const absDeltaX = Math.abs(event.clientX - bazaarDetailModalSwipeState.startX);
+  const absDeltaY = Math.abs(deltaY);
+  bazaarDetailModalSwipeState.latestY = event.clientY;
+
+  if (!bazaarDetailModalSwipeState.isDragging) {
+    if (absDeltaX < BAZAAR_DETAIL_MODAL_SWIPE_START_SLOP_PX && absDeltaY < BAZAAR_DETAIL_MODAL_SWIPE_START_SLOP_PX) return;
+    if (deltaY <= 0) {
+      bazaarDetailModalSwipeState.canceled = true;
+      return;
+    }
+    if (absDeltaY < absDeltaX * BAZAAR_DETAIL_MODAL_SWIPE_VERTICAL_DOMINANCE_RATIO) {
+      bazaarDetailModalSwipeState.canceled = true;
+      return;
+    }
+    if (bazaarDetailModalDialog.scrollTop > 0) {
+      bazaarDetailModalSwipeState.canceled = true;
+      return;
+    }
+    bazaarDetailModalSwipeState.isDragging = true;
+    bazaarDetailModalDialog.classList.add("is-swipe-dragging");
+  }
+
+  const translateY = Math.min(Math.max(deltaY, 0), BAZAAR_DETAIL_MODAL_SWIPE_MAX_TRANSLATE_PX);
+  const progress = Math.min(translateY / BAZAAR_DETAIL_MODAL_SWIPE_CLOSE_THRESHOLD_PX, 1);
+  bazaarDetailModalDialog.style.transform = `translateY(${translateY.toFixed(2)}px)`;
+  bazaarDetailModalDialog.style.opacity = `${(1 - progress * 0.14).toFixed(3)}`;
+  event.preventDefault();
+}
+
+function finalizeBazaarDetailSwipe(event) {
+  if (!bazaarDetailModalSwipeState) return;
+  if (event.pointerId !== bazaarDetailModalSwipeState.pointerId) return;
+  if (!bazaarDetailModalDialog) {
+    bazaarDetailModalSwipeState = null;
+    return;
+  }
+  bazaarDetailModalHandle?.releasePointerCapture?.(event.pointerId);
+
+  const totalDeltaY = (bazaarDetailModalSwipeState.latestY || bazaarDetailModalSwipeState.startY) - bazaarDetailModalSwipeState.startY;
+  const shouldClose =
+    bazaarDetailModalSwipeState.isDragging &&
+    !bazaarDetailModalSwipeState.canceled &&
+    totalDeltaY >= BAZAAR_DETAIL_MODAL_SWIPE_CLOSE_THRESHOLD_PX;
+
+  bazaarDetailModalSwipeState = null;
+
+  bazaarDetailModalDialog.classList.remove("is-swipe-dragging");
+  if (shouldClose) {
+    closeBazaarDetailModal();
+    return;
+  }
+  bazaarDetailModalDialog.style.removeProperty("transform");
+  bazaarDetailModalDialog.style.removeProperty("opacity");
 }
 
 function closeFavoriteMaterialModal() {
@@ -5123,6 +5212,13 @@ if (bazaarDetailModalCloseButton) {
   bazaarDetailModalCloseButton.addEventListener("click", () => {
     closeBazaarDetailModal();
   });
+}
+
+if (bazaarDetailModalHandle) {
+  bazaarDetailModalHandle.addEventListener("pointerdown", handleBazaarDetailSwipeStart);
+  bazaarDetailModalHandle.addEventListener("pointermove", handleBazaarDetailSwipeMove);
+  bazaarDetailModalHandle.addEventListener("pointerup", finalizeBazaarDetailSwipe);
+  bazaarDetailModalHandle.addEventListener("pointercancel", finalizeBazaarDetailSwipe);
 }
 
 if (fieldFarmingMapModalCloseButton) {

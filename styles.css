@@ -2004,6 +2004,12 @@ button {
   border-radius: 999px;
   background: rgba(87, 57, 34, 0.28);
   margin: 0 auto 10px;
+  touch-action: none;
+  cursor: grab;
+}
+
+.bazaar-detail-modal.is-swipe-dragging {
+  transition: none;
 }
 
 .bazaar-detail-modal-close {
