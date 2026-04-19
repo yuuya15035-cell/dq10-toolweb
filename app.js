@@ -1266,12 +1266,14 @@ function buildSiteSearchIndex() {
   });
 
   (equipmentDbEntries || []).forEach((entry) => {
+    const equipmentGroup = String(entry.equipmentGroup || "weapon").trim() === "armor" ? "armor" : "weapon";
     entries.push({
       name: entry.equipmentName,
       type: "装備データ",
       subLabel: "装備一覧",
       tabId: "equipment-db",
       targetValue: entry.equipmentName,
+      equipmentGroup,
       keywords: [entry.equipmentName, entry.equipmentType, entry.equipmentGroup].filter(Boolean).join(" "),
     });
   });
@@ -3783,14 +3785,16 @@ function renderBazaarPrices() {
             : ""
         }
       </label>
-      <label class="field inline-field bazaar-favorite-filter-field">
-        <input id="bazaarFavoritesOnlyToggle" type="checkbox" ${showBazaarFavoritesOnly ? "checked" : ""} />
-        <span>お気に入りのみ表示</span>
-      </label>
-      <label class="field inline-field bazaar-monitoring-filter-field">
-        <input id="bazaarMonitoringOnlyToggle" type="checkbox" ${showBazaarMonitoringOnly ? "checked" : ""} />
-        <span>監視中のみ表示</span>
-      </label>
+      <div class="bazaar-filter-toggle-row">
+        <label class="field inline-field bazaar-favorite-filter-field">
+          <input id="bazaarFavoritesOnlyToggle" type="checkbox" ${showBazaarFavoritesOnly ? "checked" : ""} />
+          <span>お気に入りのみ表示</span>
+        </label>
+        <label class="field inline-field bazaar-monitoring-filter-field">
+          <input id="bazaarMonitoringOnlyToggle" type="checkbox" ${showBazaarMonitoringOnly ? "checked" : ""} />
+          <span>監視中のみ表示</span>
+        </label>
+      </div>
     </div>
     <div class="bazaar-list">
       ${
@@ -4401,7 +4405,20 @@ async function ensureSiteSearchDataLoaded() {
 function applySiteSearchNavigation(entry) {
   if (!entry) return;
   const keyword = String(entry.targetValue || "").trim();
+  const resetSearchUi = () => {
+    siteSearchKeyword = "";
+    syncSiteSearchInputValues();
+    if (siteSearchResultWrap) {
+      siteSearchResultWrap.hidden = true;
+      siteSearchResultWrap.innerHTML = "";
+    }
+    if (toolSiteSearchResultWrap) {
+      toolSiteSearchResultWrap.hidden = true;
+      toolSiteSearchResultWrap.innerHTML = "";
+    }
+  };
   if (entry.tabId === "updates") {
+    resetSearchUi();
     const params = new URLSearchParams();
     if (keyword) params.set("q", keyword);
     const queryText = params.toString();
@@ -4409,14 +4426,19 @@ function applySiteSearchNavigation(entry) {
     return;
   }
   if (entry.tabId === "profit") {
+    resetSearchUi();
     openRecipeFromFavorite(keyword);
     return;
   }
   if (entry.tabId === "equipment-db") {
+    selectedEquipmentDbGroup = String(entry.equipmentGroup || "weapon") === "armor" ? "armor" : "weapon";
+    selectedEquipmentDbType = "";
+    expandedEquipmentDbId = "";
     equipmentDbNameKeyword = keyword;
     switchTab("equipment-db");
-    navigateByAppParams({ tab: "equipment-db", equipmentId: "", materialKey: "" });
+    navigateByAppParams({ tab: "equipment-db", equipmentId: "", materialKey: "", equipmentDbGroup: selectedEquipmentDbGroup });
     renderEquipmentDbCards();
+    resetSearchUi();
     document.getElementById("equipment-db")?.scrollIntoView({ block: "start", behavior: "smooth" });
     return;
   }
@@ -4431,6 +4453,7 @@ function applySiteSearchNavigation(entry) {
       materialKey: pendingBazaarFocusMaterialKey,
     });
     renderBazaarPrices();
+    resetSearchUi();
     document.getElementById("bazaar")?.scrollIntoView({ block: "start", behavior: "smooth" });
     return;
   }
@@ -4439,6 +4462,7 @@ function applySiteSearchNavigation(entry) {
     switchTab("white-boxes");
     navigateByAppParams({ tab: "white-boxes", equipmentId: "", materialKey: "" });
     renderWhiteBoxCards();
+    resetSearchUi();
     document.getElementById("white-boxes")?.scrollIntoView({ block: "start", behavior: "smooth" });
     return;
   }
@@ -4447,6 +4471,7 @@ function applySiteSearchNavigation(entry) {
     switchTab("field-farming");
     navigateByAppParams({ tab: "field-farming", equipmentId: "", materialKey: "" });
     renderFieldFarmingRanking();
+    resetSearchUi();
     document.getElementById("field-farming")?.scrollIntoView({ block: "start", behavior: "smooth" });
     return;
   }
@@ -4455,6 +4480,7 @@ function applySiteSearchNavigation(entry) {
     switchTab("present-codes");
     navigateByAppParams({ tab: "present-codes", equipmentId: "", materialKey: "" });
     renderPresentCodes();
+    resetSearchUi();
     document.getElementById("present-codes")?.scrollIntoView({ block: "start", behavior: "smooth" });
   }
 }
@@ -4507,8 +4533,6 @@ function renderSiteSearchCandidates() {
         const candidateIndex = Number(button.dataset.siteSearchCandidateIndex || -1);
         const selected = candidates[candidateIndex];
         if (!selected) return;
-        siteSearchKeyword = String(selected.name || "");
-        syncSiteSearchInputValues();
         applySiteSearchNavigation(selected);
         wrap.hidden = true;
       });
@@ -5395,6 +5419,9 @@ function buildAppQueryParams(nextValues = {}) {
   if (tab) params.set("tab", tab);
   if (nextValues.equipmentId) params.set("equipmentId", nextValues.equipmentId);
   if (nextValues.materialKey) params.set("materialKey", nextValues.materialKey);
+  if (nextValues.equipmentDbGroup === "armor" || nextValues.equipmentDbGroup === "weapon") {
+    params.set("equipmentDbGroup", nextValues.equipmentDbGroup);
+  }
   return params;
 }
 
@@ -5422,6 +5449,10 @@ function applyAppRouteFromUrl() {
   const equipmentId = String(params.get("equipmentId") || "").trim();
   if (equipmentId && state.equipments.some((equipment) => equipment.id === equipmentId)) {
     selectedEquipmentId = equipmentId;
+  }
+  const equipmentDbGroupParam = String(params.get("equipmentDbGroup") || "").trim();
+  if (equipmentDbGroupParam === "armor" || equipmentDbGroupParam === "weapon") {
+    selectedEquipmentDbGroup = equipmentDbGroupParam;
   }
 
   pendingBazaarFocusMaterialKey = String(params.get("materialKey") || "").trim();
@@ -7214,6 +7245,7 @@ equipmentDbGroupTabButtons.forEach((button) => {
     selectedEquipmentDbGroup = nextGroup === "armor" ? "armor" : "weapon";
     selectedEquipmentDbType = "";
     expandedEquipmentDbId = "";
+    navigateByAppParams({ equipmentDbGroup: selectedEquipmentDbGroup });
     renderEquipmentDbCards();
   });
 });
@@ -7279,6 +7311,7 @@ async function initialize() {
       tab: appMode === "tool" ? activeTabId : "",
       equipmentId: activeTabId === "profit" ? selectedEquipmentId : "",
       materialKey: activeTabId === "bazaar" ? pendingBazaarFocusMaterialKey : "",
+      equipmentDbGroup: activeTabId === "equipment-db" ? selectedEquipmentDbGroup : "",
     },
     { replace: true }
   );

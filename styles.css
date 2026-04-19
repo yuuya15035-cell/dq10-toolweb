@@ -1305,7 +1305,6 @@ button {
 .bazaar-favorite-filter-field,
 .bazaar-monitoring-filter-field {
   margin-bottom: 0;
-  align-self: end;
   gap: 8px;
 }
 
@@ -1313,6 +1312,13 @@ button {
 .bazaar-monitoring-filter-field span {
   font-size: 0.82rem;
   color: #6e553e;
+}
+
+.bazaar-filter-toggle-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
 }
 
 .bazaar-category-field select,
@@ -2687,6 +2693,10 @@ button {
   .bazaar-search-field {
     grid-column: 1 / -1;
   }
+
+  .bazaar-filter-toggle-row {
+    grid-column: 1 / -1;
+  }
 }
 
 @media (min-width: 920px) {
@@ -2697,6 +2707,11 @@ button {
 
   .bazaar-search-field {
     grid-column: auto;
+  }
+
+  .bazaar-filter-toggle-row {
+    grid-column: span 2;
+    justify-content: flex-start;
   }
 }
 
