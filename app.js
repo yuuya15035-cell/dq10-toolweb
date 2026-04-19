@@ -950,7 +950,7 @@ let appMode = "home";
 let pendingBazaarFocusMaterialKey = "";
 let bazaarPriceHistoryByMaterialKey = new Map();
 let selectedBazaarChartRangeDays = DEFAULT_BAZAAR_CHART_RANGE_DAYS;
-let expandedBazaarChartMaterialKeyMobile = "";
+let activeBazaarDetailModalKey = "";
 let activeFavoriteMaterialModalKey = "";
 let presentCodes = [];
 let fieldFarmingMonsters = [];
@@ -1084,6 +1084,10 @@ const saveBazaarHistoryButton = getRequiredElementById("saveBazaarHistoryButton"
 const bazaarHistorySnapshotDateInput = getRequiredElementById("bazaarHistorySnapshotDateInput");
 const bazaarHistorySaveMessage = getRequiredElementById("bazaarHistorySaveMessage");
 const bazaarListWrap = getRequiredElementById("bazaarListWrap");
+const bazaarDetailModalOverlay = getRequiredElementById("bazaarDetailModalOverlay");
+const bazaarDetailModalDialog = getRequiredElementById("bazaarDetailModalDialog");
+const bazaarDetailModalCloseButton = getRequiredElementById("bazaarDetailModalCloseButton");
+const bazaarDetailModalBody = getRequiredElementById("bazaarDetailModalBody");
 const presentCodeListWrap = getRequiredElementById("presentCodeListWrap");
 const fieldFarmingListWrap = getRequiredElementById("fieldFarmingListWrap");
 const orbListWrap = getRequiredElementById("orbListWrap");
@@ -3633,43 +3637,31 @@ function renderBazaarPrices() {
           const hasOfficialUrl = row.officialUrl !== "";
           const history = getBazaarHistoryForRange(row.materialKey, selectedBazaarChartRangeDays);
           const hasHistory = history.length > 0;
-          const isMobileExpanded = expandedBazaarChartMaterialKeyMobile === row.materialKey;
-          const isExpandableOnMobile = hasHistory;
           const sparklineSvgDesktop = hasHistory
             ? buildBazaarSparklineSvg(history, {
                 includeYAxisLabels: false,
                 xAxisLabelCount: 3,
               })
             : "";
-          const sparklineSvgMobile = hasHistory
-            ? buildBazaarSparklineSvg(history, {
-                includeYAxisLabels: true,
-                xAxisLabelCount: 2,
-                yAxisTickCount: 3,
-              })
-            : "";
           const externalYAxisLabels = hasHistory ? buildBazaarChartExternalYAxisLabels(history) : "";
-          const shouldShowComment = row.comment !== "" && row.comment !== priceStatusBadgeLabel;
           const priceStatusBadgeHtml =
             priceStatusBadgeLabel !== ""
               ? `<p class="bazaar-price-status-badge ${priceVisualToneClass}">${priceStatusBadgeLabel}</p>`
               : "";
-          const commentHtml = shouldShowComment ? `<p class="bazaar-price-comment ${priceVisualToneClass}">${row.comment}</p>` : "";
           const updatedAtText = formatBazaarUpdatedAt(row.updatedAt);
           const changeArrowHtml = changePresentation.isComputable
             ? `<span class="bazaar-change-arrow ${changePresentation.toneClass}" aria-hidden="true">${changePresentation.arrow}</span>`
             : "";
 
           return `
-            <article class="bazaar-card ${pendingBazaarFocusMaterialKey !== "" && row.materialKey === pendingBazaarFocusMaterialKey ? "is-focused" : ""} ${isMobileExpanded ? "is-mobile-expanded" : ""}" data-bazaar-material-key="${row.materialKey}">
+            <article class="bazaar-card ${pendingBazaarFocusMaterialKey !== "" && row.materialKey === pendingBazaarFocusMaterialKey ? "is-focused" : ""}" data-bazaar-material-key="${row.materialKey}">
               <header class="bazaar-card-header">
                 <div class="bazaar-card-title-group">
                   <h3>
                     <button
                       type="button"
-                      class="bazaar-material-name-button ${isExpandableOnMobile ? "is-expandable" : ""}"
-                      data-bazaar-chart-toggle-key="${row.materialKey}"
-                      aria-expanded="${isMobileExpanded ? "true" : "false"}"
+                      class="bazaar-material-name-button"
+                      data-bazaar-detail-open-key="${row.materialKey}"
                     >${row.materialName}</button>
                   </h3>
                 </div>
@@ -3684,12 +3676,11 @@ function renderBazaarPrices() {
                 </button>
               </header>
               <div
-                class="bazaar-sub-row bazaar-card-summary-toggle ${isExpandableOnMobile ? "is-expandable" : ""}"
+                class="bazaar-sub-row bazaar-card-summary-toggle"
                 aria-label="ジャンル"
-                data-bazaar-chart-toggle-key="${row.materialKey}"
+                data-bazaar-detail-open-key="${row.materialKey}"
                 role="button"
                 tabindex="0"
-                aria-expanded="${isMobileExpanded ? "true" : "false"}"
               >
                 <p class="bazaar-category">${buildBazaarCategoryLabelHtml(row.itemCategory)}</p>
               </div>
@@ -3709,11 +3700,10 @@ function renderBazaarPrices() {
                   : ""
               }
               <div
-                class="bazaar-main bazaar-card-summary-toggle ${isExpandableOnMobile ? "is-expandable" : ""}"
-                data-bazaar-chart-toggle-key="${row.materialKey}"
+                class="bazaar-main bazaar-card-summary-toggle"
+                data-bazaar-detail-open-key="${row.materialKey}"
                 role="button"
                 tabindex="0"
-                aria-expanded="${isMobileExpanded ? "true" : "false"}"
               >
                 <div class="bazaar-primary">
                   <p class="bazaar-today-price ${priceVisualToneClass}">${todayPriceHtml}</p>
@@ -3735,25 +3725,6 @@ function renderBazaarPrices() {
                       : `<p class="bazaar-mini-chart-empty">履歴なし</p>`
                   }
                 </div>
-              </div>
-              <div class="bazaar-mobile-chart-panel ${isMobileExpanded ? "is-open" : ""}">
-                ${
-                  hasHistory
-                    ? `
-                      <p class="bazaar-updated-at">更新: ${updatedAtText}</p>
-                      <p class="bazaar-previous-price">前日: ${formatBazaarPriceWithUnit(row.previousDayPrice)}</p>
-                      ${sparklineSvgMobile}
-                      <p class="bazaar-mini-chart-meta">表示期間: 直近${selectedBazaarChartRangeDays}日（${history.length}件）</p>
-                      <p class="bazaar-mobile-chart-latest">最新価格: ${formatBazaarPriceWithUnit(history[history.length - 1].price)}</p>
-                      ${commentHtml}
-                    `
-                    : `
-                      <p class="bazaar-updated-at">更新: ${updatedAtText}</p>
-                      <p class="bazaar-previous-price">前日: ${formatBazaarPriceWithUnit(row.previousDayPrice)}</p>
-                      <p class="bazaar-mini-chart-empty">表示できる履歴がありません。</p>
-                      ${commentHtml}
-                    `
-                }
               </div>
               <div class="bazaar-footer-row">
                 <p class="bazaar-updated-at">更新: ${updatedAtText}</p>
@@ -3859,35 +3830,23 @@ function renderBazaarPrices() {
     });
   });
 
-  const toggleBazaarMobileChart = (materialKey) => {
-    if (materialKey === "") return;
-    const isMobile = window.matchMedia("(max-width: 700px)").matches;
-    if (!isMobile) return;
-    if (expandedBazaarChartMaterialKeyMobile === materialKey) {
-      expandedBazaarChartMaterialKeyMobile = "";
-    } else {
-      expandedBazaarChartMaterialKeyMobile = materialKey;
-    }
-    renderBazaarPrices();
-  };
-
-  bazaarListWrap.querySelectorAll("[data-bazaar-chart-toggle-key]").forEach((button) => {
+  bazaarListWrap.querySelectorAll("[data-bazaar-detail-open-key]").forEach((button) => {
     button.addEventListener("click", () => {
       if (button.dataset.touchMoved === "true") {
         delete button.dataset.touchMoved;
         delete button.dataset.touchY;
         return;
       }
-      const materialKey = String(button.dataset.bazaarChartToggleKey || "");
-      toggleBazaarMobileChart(materialKey);
+      const materialKey = String(button.dataset.bazaarDetailOpenKey || "");
+      openBazaarDetailModal(materialKey);
     });
 
     if (button.tagName !== "BUTTON") {
       button.addEventListener("keydown", (event) => {
         if (event.key !== "Enter" && event.key !== " ") return;
         event.preventDefault();
-        const materialKey = String(button.dataset.bazaarChartToggleKey || "");
-        toggleBazaarMobileChart(materialKey);
+        const materialKey = String(button.dataset.bazaarDetailOpenKey || "");
+        openBazaarDetailModal(materialKey);
       });
     }
 
@@ -4227,8 +4186,58 @@ function getBazaarRowByMaterialKey(materialKey) {
 }
 
 function syncBodyModalOpenState() {
-  const hasOpenModal = Boolean(activeFavoriteMaterialModalKey || activeFieldFarmingMapModalRowId);
+  const hasOpenModal = Boolean(activeBazaarDetailModalKey || activeFavoriteMaterialModalKey || activeFieldFarmingMapModalRowId);
   document.body.classList.toggle("is-modal-open", hasOpenModal);
+}
+
+function closeBazaarDetailModal() {
+  if (!bazaarDetailModalOverlay) return;
+  bazaarDetailModalOverlay.hidden = true;
+  bazaarDetailModalOverlay.classList.remove("is-open");
+  activeBazaarDetailModalKey = "";
+  syncBodyModalOpenState();
+}
+
+function openBazaarDetailModal(materialKey) {
+  if (!bazaarDetailModalOverlay || !bazaarDetailModalBody) return;
+  const row = getBazaarRowByMaterialKey(materialKey);
+  if (!row) return;
+
+  const history = getBazaarHistoryForRange(row.materialKey, selectedBazaarChartRangeDays);
+  const updatedAtText = formatBazaarUpdatedAt(row.updatedAt);
+  const chartHtml =
+    history.length > 0
+      ? `
+        <div class="bazaar-detail-modal-chart">${buildBazaarSparklineSvg(history, {
+          width: 320,
+          height: 176,
+          includeYAxisLabels: true,
+          xAxisLabelCount: 2,
+          yAxisTickCount: 4,
+          pointRadius: 2,
+        })}</div>
+      `
+      : `<p class="bazaar-detail-modal-chart-empty">表示できる履歴がありません。</p>`;
+
+  bazaarDetailModalBody.innerHTML = `
+    <h3 class="bazaar-detail-modal-title">${row.materialName}</h3>
+    <p class="bazaar-detail-modal-updated-at">更新: ${updatedAtText}</p>
+    <p class="bazaar-detail-modal-previous">前日価格: ${formatBazaarPriceWithUnit(row.previousDayPrice)}</p>
+    ${chartHtml}
+    <p class="bazaar-detail-modal-period">表示期間: 直近${selectedBazaarChartRangeDays}日（${history.length}件）</p>
+    <p class="bazaar-detail-modal-latest">最新価格: <strong>${formatBazaarPriceWithUnit(row.displayPrice)}</strong></p>
+    ${
+      row.officialUrl
+        ? `<a class="bazaar-detail-modal-link" href="${row.officialUrl}" target="_blank" rel="noopener noreferrer">公式相場で確認</a>`
+        : ""
+    }
+  `;
+
+  activeBazaarDetailModalKey = row.materialKey;
+  bazaarDetailModalOverlay.hidden = false;
+  bazaarDetailModalOverlay.classList.add("is-open");
+  syncBodyModalOpenState();
+  bazaarDetailModalDialog?.focus();
 }
 
 function closeFavoriteMaterialModal() {
@@ -5088,6 +5097,14 @@ if (favoriteMaterialModalOverlay) {
   });
 }
 
+if (bazaarDetailModalOverlay) {
+  bazaarDetailModalOverlay.addEventListener("click", (event) => {
+    if (event.target === bazaarDetailModalOverlay) {
+      closeBazaarDetailModal();
+    }
+  });
+}
+
 if (fieldFarmingMapModalOverlay) {
   fieldFarmingMapModalOverlay.addEventListener("click", (event) => {
     if (event.target === fieldFarmingMapModalOverlay) {
@@ -5099,6 +5116,12 @@ if (fieldFarmingMapModalOverlay) {
 if (favoriteMaterialModalCloseButton) {
   favoriteMaterialModalCloseButton.addEventListener("click", () => {
     closeFavoriteMaterialModal();
+  });
+}
+
+if (bazaarDetailModalCloseButton) {
+  bazaarDetailModalCloseButton.addEventListener("click", () => {
+    closeBazaarDetailModal();
   });
 }
 
@@ -5573,6 +5596,10 @@ if (bazaarAdminListWrap) {
 
 document.addEventListener("keydown", (event) => {
   if (event.key === "Escape") {
+    if (activeBazaarDetailModalKey) {
+      closeBazaarDetailModal();
+      return;
+    }
     if (activeFieldFarmingMapModalRowId) {
       closeFieldFarmingMapModal();
       return;

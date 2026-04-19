@@ -1963,6 +1963,129 @@ button {
   line-height: 1;
 }
 
+.bazaar-detail-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(24, 15, 9, 0.52);
+  display: none;
+  align-items: flex-end;
+  justify-content: center;
+  padding: 14px;
+  z-index: 1190;
+}
+
+.bazaar-detail-modal-overlay.is-open {
+  display: flex;
+}
+
+.bazaar-detail-modal {
+  width: min(620px, 100%);
+  max-height: min(86vh, 760px);
+  overflow: auto;
+  border: 1px solid #997656;
+  border-radius: 16px;
+  background: #f6ead9;
+  box-shadow: 0 12px 34px rgba(22, 13, 7, 0.32);
+  padding: 16px 14px 14px;
+  position: relative;
+  transform: translateY(18px);
+  opacity: 0;
+  transition: transform 180ms ease-out, opacity 180ms ease-out;
+}
+
+.bazaar-detail-modal-overlay.is-open .bazaar-detail-modal {
+  transform: translateY(0);
+  opacity: 1;
+}
+
+.bazaar-detail-modal-handle {
+  width: 44px;
+  height: 4px;
+  border-radius: 999px;
+  background: rgba(87, 57, 34, 0.28);
+  margin: 0 auto 10px;
+}
+
+.bazaar-detail-modal-close {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  width: 34px;
+  height: 34px;
+  border-radius: 999px;
+  border: 1px solid #b89370;
+  background: #fff9f0;
+  color: #4a3120;
+  font-size: 1.2rem;
+  line-height: 1;
+  padding: 0;
+}
+
+.bazaar-detail-modal-title {
+  margin: 0 40px 8px 0;
+  font-size: 1.05rem;
+  color: #4b321f;
+}
+
+.bazaar-detail-modal-updated-at,
+.bazaar-detail-modal-previous,
+.bazaar-detail-modal-period,
+.bazaar-detail-modal-chart-empty {
+  margin: 0 0 8px;
+  font-size: 0.86rem;
+  color: #654d39;
+}
+
+.bazaar-detail-modal-latest {
+  margin: 0 0 10px;
+  font-size: 0.92rem;
+  color: #4f3726;
+}
+
+.bazaar-detail-modal-latest strong {
+  color: #3b2819;
+  font-size: 1.04rem;
+}
+
+.bazaar-detail-modal-chart {
+  border: 1px solid #c4ac8f;
+  border-radius: 8px;
+  background: #fffdf8;
+  padding: 6px;
+  margin-bottom: 8px;
+}
+
+.bazaar-detail-modal-chart .bazaar-mini-chart-svg {
+  height: 188px;
+}
+
+.bazaar-detail-modal-chart .bazaar-mini-chart-axis-label,
+.bazaar-detail-modal-chart .bazaar-mini-chart-axis-date {
+  font-size: 9px;
+}
+
+.bazaar-detail-modal-link {
+  display: inline-flex;
+  margin-top: 2px;
+  border-radius: 8px;
+  border: 1px solid #b79068;
+  background: #ead5b7;
+  color: #56371f;
+  padding: 9px 11px;
+  font-size: 0.84rem;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.bazaar-detail-modal-link::after {
+  content: "↗";
+  margin-left: 4px;
+}
+
+.bazaar-detail-modal-link:hover {
+  background: #e6cda9;
+}
+
 .favorite-material-modal-overlay {
   position: fixed;
   inset: 0;
@@ -2351,52 +2474,42 @@ button {
     align-items: center;
   }
 
-  .bazaar-material-name-button.is-expandable {
-    text-decoration: underline;
-    text-decoration-style: dotted;
-    text-underline-offset: 2px;
-  }
-
-  .bazaar-card-summary-toggle.is-expandable:active {
-    background: rgba(138, 98, 61, 0.12);
-  }
-
-  .bazaar-card-summary-toggle.is-expandable:focus-visible {
-    box-shadow: 0 0 0 2px rgba(138, 98, 61, 0.38);
-  }
-
   .bazaar-mini-chart-wrap {
     display: none !important;
   }
 
-  .bazaar-mobile-chart-panel.is-open {
-    display: block;
-    margin-top: 8px;
-    border-top: 1px dashed rgba(107, 77, 50, 0.35);
-    padding-top: 8px;
+  .bazaar-detail-modal-overlay {
+    padding: 10px 8px;
   }
 
-  .bazaar-card.is-mobile-expanded .bazaar-mobile-chart-panel .bazaar-mini-chart-svg {
-    height: 106px;
+  .bazaar-detail-modal {
+    border-radius: 16px 16px 12px 12px;
+    width: 100%;
+    max-height: 84vh;
+    padding-bottom: 16px;
   }
 
-  .bazaar-card.is-mobile-expanded .bazaar-mobile-chart-panel .bazaar-mini-chart-axis-label {
-    font-size: 8.2px;
+  .bazaar-detail-modal-chart .bazaar-mini-chart-svg {
+    height: 206px;
   }
 
-  .bazaar-card.is-mobile-expanded .bazaar-mobile-chart-panel .bazaar-mini-chart-axis-date {
-    font-size: 8.4px;
+  .bazaar-detail-modal-chart .bazaar-mini-chart-axis-label,
+  .bazaar-detail-modal-chart .bazaar-mini-chart-axis-date {
+    font-size: 9.6px;
+  }
+}
+
+@media (min-width: 700px) {
+  .bazaar-detail-modal-overlay {
+    align-items: center;
   }
 
-  .bazaar-card.is-mobile-expanded .bazaar-mobile-chart-panel .bazaar-mini-chart-meta,
-  .bazaar-card.is-mobile-expanded .bazaar-mobile-chart-panel .bazaar-mobile-chart-latest,
-  .bazaar-card.is-mobile-expanded .bazaar-mobile-chart-panel .bazaar-updated-at,
-  .bazaar-card.is-mobile-expanded .bazaar-mobile-chart-panel .bazaar-previous-price {
-    font-size: 0.74rem;
+  .bazaar-detail-modal {
+    border-radius: 16px;
   }
 
-  .bazaar-mobile-chart-panel .bazaar-mini-chart-axis-label-middle {
-    opacity: 0.84;
+  .bazaar-detail-modal-handle {
+    display: none;
   }
 }
 
