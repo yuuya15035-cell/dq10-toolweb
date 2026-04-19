@@ -56,6 +56,10 @@ body.is-modal-open {
   padding-bottom: calc(14px + var(--mobile-bottom-nav-height) + env(safe-area-inset-bottom));
 }
 
+.app.is-home-mode {
+  padding-bottom: 14px;
+}
+
 .hamburger-button {
   position: fixed;
   top: 12px;
@@ -2843,6 +2847,10 @@ button {
   -webkit-backdrop-filter: blur(6px);
   box-shadow: 0 -2px 8px rgba(61, 39, 24, 0.12);
   transition: transform 0.2s ease, opacity 0.2s ease;
+}
+
+.mobile-bottom-nav.is-disabled {
+  display: none;
 }
 
 .mobile-bottom-nav.is-hidden {

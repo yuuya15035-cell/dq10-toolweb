@@ -1035,6 +1035,7 @@ const menuToggleButton = getRequiredElementById("menuToggleButton");
 const sideMenu = getRequiredElementById("sideMenu");
 const menuOverlay = getRequiredElementById("menuOverlay");
 const sideMenuItems = document.querySelectorAll(".side-menu-item");
+const appRoot = document.querySelector(".app");
 const mobileBottomNav = document.querySelector(".mobile-bottom-nav");
 const mobileBottomNavItems = document.querySelectorAll(".mobile-bottom-nav-item");
 const appHeader = document.querySelector(".app-header");
@@ -4762,8 +4763,14 @@ function scrollToHomeTop() {
 
 function applyAppMode() {
   const isHomeMode = appMode === "home";
+  appRoot?.classList.toggle("is-home-mode", isHomeMode);
   appHeader?.classList.toggle("is-collapsed", !isHomeMode);
+  topQuickAccessSection?.classList.toggle("is-collapsed", !isHomeMode);
   topUpdateSection?.classList.toggle("is-collapsed", !isHomeMode);
+  mobileBottomNav?.classList.toggle("is-disabled", isHomeMode);
+  if (isHomeMode) {
+    setMobileBottomNavHidden(false);
+  }
 }
 
 function clampNumber(value, min, max) {
@@ -4924,6 +4931,7 @@ const mobileBottomNavRevealDelayMs = 140;
 
 function setMobileBottomNavHidden(isHidden) {
   if (!mobileBottomNav) return;
+  if (mobileBottomNav.classList.contains("is-disabled")) return;
   mobileBottomNav.classList.toggle("is-hidden", isHidden);
 }
 
