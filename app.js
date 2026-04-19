@@ -109,6 +109,7 @@ const BAZAAR_SORT_OPTIONS = [
   { value: "standard", label: "標準順" },
   { value: "rate_desc", label: "変動率高い順" },
   { value: "rate_asc", label: "変動率低い順" },
+  { value: "monitoring_only", label: "監視中のみ" },
 ];
 const BAZAAR_CHART_RANGE_DAYS = {
   week: 7,
@@ -3618,7 +3619,7 @@ function compareNullableNumbers(a, b, direction = "desc") {
 function getSortedBazaarRows(rows, currentCategory, currentSort) {
   const normalizedSort = BAZAAR_SORT_OPTIONS.some((option) => option.value === currentSort) ? currentSort : "standard";
   return rows.slice().sort((a, b) => {
-    if (normalizedSort === "standard") {
+    if (normalizedSort === "standard" || normalizedSort === "monitoring_only") {
       // 「標準順」は変動率では並べ替えず、元の並びに戻す。
       // 「すべて」表示時のみカテゴリ既定順を先に適用し、カテゴリ内は CSV 既定順で表示する。
       if (currentCategory === "") {
@@ -3667,7 +3668,8 @@ function getBazaarSearchCandidates(keyword) {
 
 function getVisibleBazaarRows() {
   const targetRows = bazaarPrices.filter((row) => selectedBazaarCategory === "" || row.itemCategory === selectedBazaarCategory);
-  const favoriteFilteredRows = showBazaarFavoritesOnly ? targetRows.filter((row) => isBazaarFavoriteRow(row)) : targetRows;
+  const monitoringFilteredRows = selectedBazaarSort === "monitoring_only" ? targetRows.filter((row) => isMonitoringByComment(row.comment)) : targetRows;
+  const favoriteFilteredRows = showBazaarFavoritesOnly ? monitoringFilteredRows.filter((row) => isBazaarFavoriteRow(row)) : monitoringFilteredRows;
   const normalizedKeyword = normalizeBazaarSearchText(bazaarSearchText);
   const keywordFilteredRows =
     normalizedKeyword === ""
@@ -3786,7 +3788,13 @@ function renderBazaarPrices() {
     <div class="bazaar-list">
       ${
         visibleRows.length === 0
-          ? `<p>${showBazaarFavoritesOnly ? "お気に入り登録された素材がありません。" : "選択した条件のデータがありません。"}</p>`
+          ? `<p>${
+              selectedBazaarSort === "monitoring_only"
+                ? "監視中の素材が見つかりません。"
+                : showBazaarFavoritesOnly
+                  ? "お気に入り登録された素材がありません。"
+                  : "選択した条件のデータがありません。"
+            }</p>`
           : visibleRows
               .map((row) => {
           const todayPriceHtml = formatBazaarPriceWithUnit(row.displayPrice);
