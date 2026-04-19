@@ -3515,6 +3515,23 @@ button {
   padding: 9px 10px 10px;
 }
 
+.equipment-db-card-actions {
+  padding: 0 10px 10px;
+}
+
+.equipment-db-open-profit-button {
+  width: 100%;
+  min-height: 42px;
+  border: 1px solid rgba(78, 59, 44, 0.24);
+  background: rgba(255, 255, 255, 0.88);
+  color: #463426;
+  font-weight: 700;
+}
+
+.equipment-db-open-profit-button:hover {
+  background: rgba(255, 255, 255, 0.96);
+}
+
 .equipment-db-card-weapon .equipment-db-card-traits {
   border-top-color: #e0b29e;
   background: rgba(255, 248, 244, 0.84);
@@ -3523,6 +3540,10 @@ button {
 .equipment-db-card-armor .equipment-db-card-traits {
   border-top-color: #bad5ea;
   background: rgba(247, 252, 255, 0.92);
+}
+
+.equipment-db-card-armor .equipment-db-open-profit-button {
+  border-color: rgba(68, 104, 134, 0.34);
 }
 
 .equipment-db-traits-title {
