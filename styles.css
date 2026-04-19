@@ -844,7 +844,7 @@ button {
 .search-toggle-stack {
   display: grid;
   gap: 8px;
-  margin-bottom: 10px;
+  margin-bottom: 0;
 }
 
 .search-toggle-group {
@@ -868,6 +868,24 @@ button {
 
 .search-field-collapsible[hidden] {
   display: none;
+}
+
+.assist-sub-search {
+  margin: 8px 0 10px;
+}
+
+.assist-sub-search-label {
+  margin: 0 0 6px;
+  color: #5e4631;
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+.search-toggle-note {
+  margin: 2px 0 8px;
+  color: #6b5240;
+  font-size: 0.74rem;
+  line-height: 1.35;
 }
 
 .material-header-actions {
