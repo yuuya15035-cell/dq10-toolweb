@@ -109,7 +109,6 @@ const BAZAAR_SORT_OPTIONS = [
   { value: "standard", label: "標準順" },
   { value: "rate_desc", label: "変動率高い順" },
   { value: "rate_asc", label: "変動率低い順" },
-  { value: "monitoring_only", label: "監視中のみ" },
 ];
 const BAZAAR_CHART_RANGE_DAYS = {
   week: 7,
@@ -951,6 +950,7 @@ let selectedBazaarMaterialName = "";
 let isBazaarSearchComposing = false;
 let shouldRefocusBazaarSearchInput = false;
 let showBazaarFavoritesOnly = false;
+let showBazaarMonitoringOnly = false;
 let activeFavoritesTabId = "recipes";
 let bazaarFavoriteMaterialKeys = new Set();
 let recipeFavoriteKeys = new Set();
@@ -3623,7 +3623,7 @@ function compareNullableNumbers(a, b, direction = "desc") {
 function getSortedBazaarRows(rows, currentCategory, currentSort) {
   const normalizedSort = BAZAAR_SORT_OPTIONS.some((option) => option.value === currentSort) ? currentSort : "standard";
   return rows.slice().sort((a, b) => {
-    if (normalizedSort === "standard" || normalizedSort === "monitoring_only") {
+    if (normalizedSort === "standard") {
       // 「標準順」は変動率では並べ替えず、元の並びに戻す。
       // 「すべて」表示時のみカテゴリ既定順を先に適用し、カテゴリ内は CSV 既定順で表示する。
       if (currentCategory === "") {
@@ -3671,16 +3671,15 @@ function getBazaarSearchCandidates(keyword) {
 }
 
 function getVisibleBazaarRows() {
-  const targetRows = bazaarPrices.filter((row) => selectedBazaarCategory === "" || row.itemCategory === selectedBazaarCategory);
-  const monitoringFilteredRows = selectedBazaarSort === "monitoring_only" ? targetRows.filter((row) => isMonitoringByComment(row.comment)) : targetRows;
-  const favoriteFilteredRows = showBazaarFavoritesOnly ? monitoringFilteredRows.filter((row) => isBazaarFavoriteRow(row)) : monitoringFilteredRows;
+  const categoryFilteredRows = bazaarPrices.filter((row) => selectedBazaarCategory === "" || row.itemCategory === selectedBazaarCategory);
   const normalizedKeyword = normalizeBazaarSearchText(bazaarSearchText);
   const keywordFilteredRows =
     normalizedKeyword === ""
-      ? favoriteFilteredRows
-      : favoriteFilteredRows.filter((row) => normalizeBazaarSearchText(row.materialName).includes(normalizedKeyword));
-  const filteredRows = keywordFilteredRows;
-  return getSortedBazaarRows(filteredRows, selectedBazaarCategory, selectedBazaarSort);
+      ? categoryFilteredRows
+      : categoryFilteredRows.filter((row) => normalizeBazaarSearchText(row.materialName).includes(normalizedKeyword));
+  const favoriteFilteredRows = showBazaarFavoritesOnly ? keywordFilteredRows.filter((row) => isBazaarFavoriteRow(row)) : keywordFilteredRows;
+  const monitoringFilteredRows = showBazaarMonitoringOnly ? favoriteFilteredRows.filter((row) => isMonitoringByComment(row.comment)) : favoriteFilteredRows;
+  return getSortedBazaarRows(monitoringFilteredRows, selectedBazaarCategory, selectedBazaarSort);
 }
 
 function renderBazaarPrices() {
@@ -3788,12 +3787,16 @@ function renderBazaarPrices() {
         <input id="bazaarFavoritesOnlyToggle" type="checkbox" ${showBazaarFavoritesOnly ? "checked" : ""} />
         <span>お気に入りのみ表示</span>
       </label>
+      <label class="field inline-field bazaar-monitoring-filter-field">
+        <input id="bazaarMonitoringOnlyToggle" type="checkbox" ${showBazaarMonitoringOnly ? "checked" : ""} />
+        <span>監視中のみ表示</span>
+      </label>
     </div>
     <div class="bazaar-list">
       ${
         visibleRows.length === 0
           ? `<p>${
-              selectedBazaarSort === "monitoring_only"
+              showBazaarMonitoringOnly
                 ? "監視中の素材が見つかりません。"
                 : showBazaarFavoritesOnly
                   ? "お気に入り登録された素材がありません。"
@@ -3935,6 +3938,15 @@ function renderBazaarPrices() {
     bazaarFavoritesOnlyToggle.addEventListener("change", (event) => {
       showBazaarFavoritesOnly = Boolean(event.target.checked);
       saveBazaarFavoriteState();
+      renderBazaarPrices();
+    });
+  }
+
+  const bazaarMonitoringOnlyToggle = bazaarListWrap.querySelector("#bazaarMonitoringOnlyToggle");
+  if (bazaarMonitoringOnlyToggle) {
+    bazaarMonitoringOnlyToggle.checked = showBazaarMonitoringOnly;
+    bazaarMonitoringOnlyToggle.addEventListener("change", (event) => {
+      showBazaarMonitoringOnly = Boolean(event.target.checked);
       renderBazaarPrices();
     });
   }
