@@ -93,8 +93,8 @@
         <p id="contentSiteNotice" class="app-header-price-note">
           ※価格・情報は手動確認ベースのため、更新タイミングにより実際のゲーム内状況と差が出る場合があります。
         </p>
-        <p id="contentSiteIntro">ドラゴンクエスト10の日常プレイを少し便利にする支援サイトです。</p>
-        <p id="contentSiteSummary" data-content-key="site_summary">バザー確認、職人準備、装備検索などをスマホでも見やすくまとめています。</p>
+        <p id="contentSiteIntro">ドラゴンクエスト10の普段使いをまとめた支援サイトです。</p>
+        <p id="contentSiteSummary" data-content-key="site_summary">バザー確認・職人準備・装備検索をスマホで使いやすく整理しています。</p>
       </header>
 
       <section class="top-quick-access" aria-label="よく使う機能">
@@ -116,39 +116,6 @@
           <span class="assist-section-title-note">※ 装備選択・素材確認・原価計算・利益確認ができます</span>
         </h2>
 
-        <div class="search-toggle-stack">
-          <div class="search-toggle-group">
-            <button
-              id="equipmentSearchToggleButton"
-              class="search-toggle-button"
-              type="button"
-              aria-expanded="false"
-              aria-controls="equipmentSearchField"
-            >
-              ＋ 装備名で検索
-            </button>
-            <label id="equipmentSearchField" class="field search-field-collapsible" hidden>
-              <span>装備名検索（部分一致）</span>
-              <input id="equipmentSearchInput" type="text" placeholder="例: はがね / つるぎ" />
-            </label>
-          </div>
-          <div class="search-toggle-group">
-            <button
-              id="materialSearchToggleButton"
-              class="search-toggle-button"
-              type="button"
-              aria-expanded="false"
-              aria-controls="materialSearchField"
-            >
-              ＋ 素材で検索
-            </button>
-            <label id="materialSearchField" class="field search-field-collapsible" hidden>
-              <span>素材で検索（部分一致）</span>
-              <input id="materialSearchInput" type="text" placeholder="例: 竜の涙" />
-            </label>
-          </div>
-        </div>
-
         <div class="search-filter-grid">
           <label class="field">
             <span>職人種別</span>
@@ -167,6 +134,43 @@
         <div id="selectedEquipmentTypeMeta" class="selected-equipment-type-meta" aria-live="polite"></div>
         <div id="recipeFavoriteActionWrap"></div>
         <div id="craftIdealValueWrap" class="craft-ideal-value-wrap"></div>
+        <div class="assist-sub-search">
+          <p class="assist-sub-search-label">補助検索（必要なときだけ）</p>
+          <div class="search-toggle-stack">
+            <div class="search-toggle-group">
+              <button
+                id="equipmentSearchToggleButton"
+                class="search-toggle-button"
+                type="button"
+                aria-expanded="false"
+                aria-controls="equipmentSearchField"
+              >
+                ＋ 装備名で検索
+              </button>
+              <label id="equipmentSearchField" class="field search-field-collapsible" hidden>
+                <span>装備名検索（部分一致）</span>
+                <p class="search-toggle-note">装備名から直接探したい方はこちら</p>
+                <input id="equipmentSearchInput" type="text" placeholder="例: はがね / つるぎ" />
+              </label>
+            </div>
+            <div class="search-toggle-group">
+              <button
+                id="materialSearchToggleButton"
+                class="search-toggle-button"
+                type="button"
+                aria-expanded="false"
+                aria-controls="materialSearchField"
+              >
+                ＋ 素材で検索
+              </button>
+              <label id="materialSearchField" class="field search-field-collapsible" hidden>
+                <span>素材で検索（部分一致）</span>
+                <p class="search-toggle-note">素材名から逆引きしたい方はこちら</p>
+                <input id="materialSearchInput" type="text" placeholder="例: 竜の涙" />
+              </label>
+            </div>
+          </div>
+        </div>
 
         <div class="card">
           <div class="card-header-inline">
