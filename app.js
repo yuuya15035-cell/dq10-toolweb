@@ -1035,6 +1035,7 @@ const menuToggleButton = getRequiredElementById("menuToggleButton");
 const sideMenu = getRequiredElementById("sideMenu");
 const menuOverlay = getRequiredElementById("menuOverlay");
 const sideMenuItems = document.querySelectorAll(".side-menu-item");
+const mobileBottomNav = document.querySelector(".mobile-bottom-nav");
 const mobileBottomNavItems = document.querySelectorAll(".mobile-bottom-nav-item");
 const appHeader = document.querySelector(".app-header");
 const topUpdateSection = document.getElementById("topUpdateSection");
@@ -1042,7 +1043,7 @@ const topUpdateList = document.getElementById("topUpdateList");
 const topUpdateViewAllLink = document.getElementById("topUpdateViewAllLink");
 const topQuickAccessSection = document.querySelector(".top-quick-access");
 const homeQuickFeatureGrid = getRequiredElementById("homeQuickFeatureGrid");
-const homeModeButton = getRequiredElementById("homeModeButton");
+const homeModeButton = document.getElementById("homeModeButton");
 
 const equipmentSelect = getRequiredElementById("equipmentSelect");
 const selectedEquipmentTypeMeta = getRequiredElementById("selectedEquipmentTypeMeta");
@@ -4893,6 +4894,9 @@ function setMenuOpen(isOpen) {
   sideMenu.setAttribute("aria-hidden", isOpen ? "false" : "true");
   menuToggleButton.setAttribute("aria-expanded", isOpen ? "true" : "false");
   menuOverlay.hidden = !isOpen;
+  if (isOpen) {
+    setMobileBottomNavHidden(false);
+  }
   updateMobileBottomNavState();
 }
 
@@ -4911,6 +4915,45 @@ function updateMobileBottomNavState() {
       item.removeAttribute("aria-current");
     }
   });
+}
+
+let lastScrollY = window.scrollY;
+let mobileBottomNavRevealTimer = null;
+const mobileBottomNavScrollThreshold = 12;
+const mobileBottomNavRevealDelayMs = 140;
+
+function setMobileBottomNavHidden(isHidden) {
+  if (!mobileBottomNav) return;
+  mobileBottomNav.classList.toggle("is-hidden", isHidden);
+}
+
+function handleMobileBottomNavScroll() {
+  if (!mobileBottomNav || window.innerWidth >= 700) return;
+  if (sideMenu?.classList.contains("is-open")) {
+    setMobileBottomNavHidden(false);
+    return;
+  }
+
+  const currentY = Math.max(window.scrollY, 0);
+  const deltaY = currentY - lastScrollY;
+  if (Math.abs(deltaY) < mobileBottomNavScrollThreshold) return;
+
+  if (mobileBottomNavRevealTimer) {
+    window.clearTimeout(mobileBottomNavRevealTimer);
+    mobileBottomNavRevealTimer = null;
+  }
+
+  if (deltaY > 0 && currentY > 24) {
+    setMobileBottomNavHidden(true);
+  } else {
+    setMobileBottomNavHidden(false);
+  }
+  lastScrollY = currentY;
+
+  mobileBottomNavRevealTimer = window.setTimeout(() => {
+    setMobileBottomNavHidden(false);
+    mobileBottomNavRevealTimer = null;
+  }, mobileBottomNavRevealDelayMs);
 }
 
 function scrollToBlock(blockId) {
@@ -5026,6 +5069,12 @@ mobileBottomNavItems.forEach((item) => {
     scrollToBlock(targetId);
     setMenuOpen(false);
   });
+});
+
+window.addEventListener("scroll", handleMobileBottomNavScroll, { passive: true });
+window.addEventListener("resize", () => {
+  lastScrollY = window.scrollY;
+  setMobileBottomNavHidden(false);
 });
 
 if (uiSettingsControlList) {
