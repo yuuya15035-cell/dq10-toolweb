@@ -104,6 +104,11 @@ const DEFAULT_CONTENT = Object.freeze({
 const FAVORITES_TAB_IDS = new Set(["recipes", "materials"]);
 const RECIPE_SUMMARY_MATERIAL_LIMIT = 4;
 const CRAFT_IDEAL_TARGET_JOBS = new Set(["裁縫職人", "木工職人"]);
+const PROFIT_EQUIPMENT_NAVIGATION_TYPES = Object.freeze({
+  weapon: "weapon",
+  armorSet: "armor_set",
+});
+const PROFIT_ARMOR_PART_ORDER = Object.freeze(["頭", "からだ上", "からだ下", "腕", "足"]);
 const BAZAAR_CATEGORY_ORDER = ["石系", "植物系", "モンスター系", "その他", "消費アイテム"];
 const BAZAAR_SORT_OPTIONS = [
   { value: "standard", label: "標準順" },
@@ -939,6 +944,7 @@ let materialSearchKeyword = "";
 let selectedCraftsman = "";
 let selectedCategory = "";
 let selectedToolId = "";
+let pendingProfitArmorSetContext = null;
 let isToolCostIncluded = false;
 let isEquipmentSearchExpanded = false;
 let isMaterialSearchExpanded = false;
@@ -1076,6 +1082,7 @@ const homeModeButton = document.getElementById("homeModeButton");
 const equipmentSelect = getRequiredElementById("equipmentSelect");
 const selectedEquipmentTypeMeta = getRequiredElementById("selectedEquipmentTypeMeta");
 const recipeFavoriteActionWrap = getRequiredElementById("recipeFavoriteActionWrap");
+const profitArmorSetAssistWrap = getRequiredElementById("profitArmorSetAssistWrap");
 const craftIdealValueWrap = getRequiredElementById("craftIdealValueWrap");
 const equipmentSearchToggleButton = getRequiredElementById("equipmentSearchToggleButton");
 const equipmentSearchField = getRequiredElementById("equipmentSearchField");
@@ -4426,8 +4433,74 @@ function selectProfitEquipment(equipmentId) {
   return true;
 }
 
+function clearProfitArmorSetContext() {
+  pendingProfitArmorSetContext = null;
+}
+
+function getArmorSetPartCandidates(setName, part) {
+  const normalizedSetName = String(setName || "").trim();
+  const normalizedPart = String(part || "").trim();
+  const setBaseName = stripArmorSetSuffix(normalizedSetName);
+  if (setBaseName === "" || normalizedPart === "") return [];
+  return state.equipments.filter((equipment) => {
+    if (String(equipment?.category || "").trim() !== normalizedPart) return false;
+    if (!["防具職人", "裁縫職人"].includes(String(equipment?.craftsman || "").trim())) return false;
+    return String(equipment?.name || "").trim().startsWith(setBaseName);
+  });
+}
+
+function buildProfitArmorSetContext(setName, options = {}) {
+  const normalizedSetName = String(setName || "").trim();
+  if (normalizedSetName === "") return null;
+  const setBaseName = stripArmorSetSuffix(normalizedSetName);
+  if (setBaseName === "") return null;
+
+  const availableParts = PROFIT_ARMOR_PART_ORDER.filter((part) => getArmorSetPartCandidates(normalizedSetName, part).length > 0);
+  return {
+    type: PROFIT_EQUIPMENT_NAVIGATION_TYPES.armorSet,
+    setName: normalizedSetName,
+    availableParts,
+    errorMessage: String(options.errorMessage || "").trim(),
+  };
+}
+
+function resolveArmorSetPartEquipmentId(setName, part) {
+  const candidates = getArmorSetPartCandidates(setName, part);
+  if (candidates.length !== 1) return "";
+  return String(candidates[0]?.id || "");
+}
+
+function openProfitArmorSetPart(setName, part) {
+  const normalizedSetName = String(setName || "").trim();
+  const normalizedPart = String(part || "").trim();
+  if (normalizedSetName === "" || normalizedPart === "") return;
+
+  const resolvedEquipmentId = resolveArmorSetPartEquipmentId(normalizedSetName, normalizedPart);
+  if (!resolvedEquipmentId) {
+    pendingProfitArmorSetContext = buildProfitArmorSetContext(normalizedSetName, {
+      errorMessage: "該当部位のレシピを特定できませんでした。別の部位を選ぶか、手動で装備を選択してください。",
+    });
+    navigateByAppParams({
+      tab: "profit",
+      equipmentId: "",
+      materialKey: "",
+      profitEntryType: PROFIT_EQUIPMENT_NAVIGATION_TYPES.armorSet,
+      profitArmorSetName: normalizedSetName,
+      profitArmorPart: normalizedPart,
+    });
+    rerenderAll();
+    return;
+  }
+
+  clearProfitArmorSetContext();
+  selectProfitEquipment(resolvedEquipmentId);
+  navigateByAppParams({ tab: "profit", equipmentId: resolvedEquipmentId, materialKey: "" });
+  rerenderAll();
+}
+
 function openRecipeFromFavorite(equipmentId) {
   if (!equipmentId) return;
+  clearProfitArmorSetContext();
   if (!selectProfitEquipment(equipmentId)) return;
   switchTab("profit");
   navigateByAppParams({ tab: "profit", equipmentId, materialKey: "" });
@@ -4436,6 +4509,27 @@ function openRecipeFromFavorite(equipmentId) {
 }
 
 function openProfitFromEquipmentDb(entry) {
+  const normalizedGroup = String(entry?.equipmentGroup || "").trim();
+  const normalizedName = String(entry?.equipmentName || "").trim();
+  const isArmorSet = normalizedGroup === "armor" && normalizedName !== "";
+
+  if (isArmorSet) {
+    pendingProfitArmorSetContext = buildProfitArmorSetContext(normalizedName);
+    switchTab("profit");
+    navigateByAppParams({
+      tab: "profit",
+      equipmentId: "",
+      materialKey: "",
+      profitEntryType: PROFIT_EQUIPMENT_NAVIGATION_TYPES.armorSet,
+      profitArmorSetName: normalizedName,
+      profitEquipmentGroup: normalizedGroup,
+    });
+    rerenderAll();
+    document.getElementById("profit")?.scrollIntoView({ block: "start", behavior: "smooth" });
+    return;
+  }
+
+  clearProfitArmorSetContext();
   const payload = {
     equipmentId: resolveProfitEquipmentIdFromParams({
       equipmentName: entry?.equipmentName,
@@ -4454,6 +4548,7 @@ function openProfitFromEquipmentDb(entry) {
     tab: "profit",
     equipmentId: payload.equipmentId,
     materialKey: "",
+    profitEntryType: PROFIT_EQUIPMENT_NAVIGATION_TYPES.weapon,
     profitEquipmentName: payload.equipmentName,
     profitEquipmentType: payload.equipmentType,
     profitEquipmentGroup: payload.equipmentGroup,
@@ -5514,6 +5609,11 @@ function buildAppQueryParams(nextValues = {}) {
   if (nextValues.profitEquipmentGroup === "armor" || nextValues.profitEquipmentGroup === "weapon") {
     params.set("profitEquipmentGroup", nextValues.profitEquipmentGroup);
   }
+  if (Object.values(PROFIT_EQUIPMENT_NAVIGATION_TYPES).includes(nextValues.profitEntryType)) {
+    params.set("profitEntryType", nextValues.profitEntryType);
+  }
+  if (nextValues.profitArmorSetName) params.set("profitArmorSetName", nextValues.profitArmorSetName);
+  if (PROFIT_ARMOR_PART_ORDER.includes(nextValues.profitArmorPart)) params.set("profitArmorPart", nextValues.profitArmorPart);
   return params;
 }
 
@@ -5539,15 +5639,33 @@ function applyAppRouteFromUrl() {
   }
 
   const equipmentId = String(params.get("equipmentId") || "").trim();
+  const profitEntryType = String(params.get("profitEntryType") || "").trim();
+  const profitArmorSetName = String(params.get("profitArmorSetName") || "").trim();
+  const profitArmorPart = String(params.get("profitArmorPart") || "").trim();
   const profitEquipmentName = String(params.get("profitEquipmentName") || "").trim();
   const profitEquipmentType = String(params.get("profitEquipmentType") || "").trim();
-  const resolvedEquipmentId = resolveProfitEquipmentIdFromParams({
-    equipmentId,
-    equipmentName: profitEquipmentName,
-    equipmentType: profitEquipmentType,
-  });
-  if (resolvedEquipmentId) {
-    selectProfitEquipment(resolvedEquipmentId);
+  clearProfitArmorSetContext();
+  if (profitEntryType === PROFIT_EQUIPMENT_NAVIGATION_TYPES.armorSet && profitArmorSetName) {
+    pendingProfitArmorSetContext = buildProfitArmorSetContext(profitArmorSetName);
+    if (profitArmorPart) {
+      const resolvedArmorPartEquipmentId = resolveArmorSetPartEquipmentId(profitArmorSetName, profitArmorPart);
+      if (resolvedArmorPartEquipmentId) {
+        selectProfitEquipment(resolvedArmorPartEquipmentId);
+      } else {
+        pendingProfitArmorSetContext = buildProfitArmorSetContext(profitArmorSetName, {
+          errorMessage: "指定された部位レシピを見つけられませんでした。部位を選び直してください。",
+        });
+      }
+    }
+  } else {
+    const resolvedEquipmentId = resolveProfitEquipmentIdFromParams({
+      equipmentId,
+      equipmentName: profitEquipmentName,
+      equipmentType: profitEquipmentType,
+    });
+    if (resolvedEquipmentId) {
+      selectProfitEquipment(resolvedEquipmentId);
+    }
   }
   const equipmentDbGroupParam = String(params.get("equipmentDbGroup") || "").trim();
   if (equipmentDbGroupParam === "armor" || equipmentDbGroupParam === "weapon") {
@@ -6253,6 +6371,46 @@ function renderEquipmentSelectors() {
   renderRecipeFavoriteAction();
 }
 
+function renderProfitArmorSetAssist() {
+  if (!profitArmorSetAssistWrap) return;
+  if (!pendingProfitArmorSetContext || pendingProfitArmorSetContext.type !== PROFIT_EQUIPMENT_NAVIGATION_TYPES.armorSet) {
+    profitArmorSetAssistWrap.hidden = true;
+    profitArmorSetAssistWrap.innerHTML = "";
+    return;
+  }
+
+  const setName = String(pendingProfitArmorSetContext.setName || "").trim();
+  const availableParts = Array.isArray(pendingProfitArmorSetContext.availableParts)
+    ? pendingProfitArmorSetContext.availableParts.filter((part) => PROFIT_ARMOR_PART_ORDER.includes(part))
+    : [];
+  const parts = availableParts.length > 0 ? availableParts : PROFIT_ARMOR_PART_ORDER;
+  const helperText =
+    availableParts.length > 0
+      ? "部位を選ぶと、その部位のレシピを開けます。"
+      : "部位候補を特定できませんでした。部位を選ぶか、通常の装備検索をご利用ください。";
+  const errorMessage = String(pendingProfitArmorSetContext.errorMessage || "").trim();
+
+  profitArmorSetAssistWrap.hidden = false;
+  profitArmorSetAssistWrap.innerHTML = `
+    <section class="card profit-armor-set-assist-card" aria-live="polite">
+      <h3 class="profit-armor-set-assist-title">防具セットから移動: ${setName}</h3>
+      <p class="profit-armor-set-assist-note">${helperText}</p>
+      ${errorMessage ? `<p class="profit-armor-set-assist-error">${errorMessage}</p>` : ""}
+      <div class="profit-armor-set-assist-parts">
+        ${parts
+          .map((part) => `<button type="button" class="profit-armor-set-part-button" data-profit-armor-set-part="${part}">${part}</button>`)
+          .join("")}
+      </div>
+    </section>
+  `;
+
+  profitArmorSetAssistWrap.querySelectorAll("[data-profit-armor-set-part]").forEach((button) => {
+    button.addEventListener("click", () => {
+      openProfitArmorSetPart(setName, String(button.dataset.profitArmorSetPart || ""));
+    });
+  });
+}
+
 function renderSelectedEquipmentTypeMeta() {
   if (!selectedEquipmentTypeMeta) return;
 
@@ -6908,6 +7066,7 @@ function renderRecipeAdminList() {
 }
 
 function rerenderAll() {
+  renderProfitArmorSetAssist();
   renderFilterSelectors();
   renderEquipmentSelectors();
   renderMaterialSelector();
@@ -6940,6 +7099,7 @@ function rerenderAll() {
 if (equipmentSelect) {
   equipmentSelect.addEventListener("change", (e) => {
     selectedEquipmentId = e.target.value;
+    clearProfitArmorSetContext();
     if (activeTabId === "profit") {
       navigateByAppParams({ tab: "profit", equipmentId: selectedEquipmentId, materialKey: "" });
     }
@@ -7028,6 +7188,7 @@ if (materialSearchInput) {
 if (craftsmanFilterSelect) {
   craftsmanFilterSelect.addEventListener("change", (e) => {
     selectedCraftsman = e.target.value;
+    clearProfitArmorSetContext();
     rerenderAll();
   });
 }
@@ -7035,6 +7196,7 @@ if (craftsmanFilterSelect) {
 if (categoryFilterSelect) {
   categoryFilterSelect.addEventListener("change", (e) => {
     selectedCategory = e.target.value;
+    clearProfitArmorSetContext();
     rerenderAll();
   });
 }
@@ -7411,6 +7573,11 @@ async function initialize() {
       equipmentId: activeTabId === "profit" ? selectedEquipmentId : "",
       materialKey: activeTabId === "bazaar" ? pendingBazaarFocusMaterialKey : "",
       equipmentDbGroup: activeTabId === "equipment-db" ? selectedEquipmentDbGroup : "",
+      profitEntryType:
+        activeTabId === "profit" && pendingProfitArmorSetContext?.type === PROFIT_EQUIPMENT_NAVIGATION_TYPES.armorSet
+          ? PROFIT_EQUIPMENT_NAVIGATION_TYPES.armorSet
+          : "",
+      profitArmorSetName: activeTabId === "profit" ? String(pendingProfitArmorSetContext?.setName || "") : "",
     },
     { replace: true }
   );
