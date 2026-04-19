@@ -1009,6 +1009,7 @@ let isEquipmentDbDataLoading = false;
 let isBazaarLoading = false;
 let isBazaarHistoryLoading = false;
 let isCraftIdealValuesLoading = false;
+let isToolSiteSearchOpen = false;
 let presentCodesLoadingPromise = null;
 let fieldFarmingLoadingPromise = null;
 let orbDataLoadingPromise = null;
@@ -1056,8 +1057,14 @@ const appRoot = document.querySelector(".app");
 const mobileBottomNav = document.querySelector(".mobile-bottom-nav");
 const mobileBottomNavItems = document.querySelectorAll(".mobile-bottom-nav-item");
 const appHeader = document.querySelector(".app-header");
+const homeSiteSearch = document.getElementById("homeSiteSearch");
 const siteSearchInput = getRequiredElementById("siteSearchInput");
 const siteSearchResultWrap = getRequiredElementById("siteSearchResultWrap");
+const toolSiteSearchDock = document.getElementById("toolSiteSearchDock");
+const toolSiteSearchToggleButton = document.getElementById("toolSiteSearchToggleButton");
+const toolSiteSearchPanel = document.getElementById("toolSiteSearchPanel");
+const toolSiteSearchInput = document.getElementById("toolSiteSearchInput");
+const toolSiteSearchResultWrap = document.getElementById("toolSiteSearchResultWrap");
 const topUpdateSection = document.getElementById("topUpdateSection");
 const topUpdateList = document.getElementById("topUpdateList");
 const topUpdateViewAllLink = document.getElementById("topUpdateViewAllLink");
@@ -3454,26 +3461,6 @@ function formatBazaarChartDateLabel(timestamp) {
   return new Intl.DateTimeFormat("ja-JP", { month: "numeric", day: "numeric" }).format(parsed);
 }
 
-function buildBazaarChartExternalYAxisLabels(history) {
-  const points = Array.isArray(history)
-    ? history
-        .map((item) => Number(item?.price))
-        .filter((price) => Number.isFinite(price))
-    : [];
-  if (points.length === 0) return "";
-
-  const minPrice = Math.min(...points);
-  const maxPrice = Math.max(...points);
-  const middlePrice = (maxPrice + minPrice) / 2;
-  return `
-    <div class="bazaar-mini-chart-y-axis" aria-hidden="true">
-      <span class="bazaar-mini-chart-y-label bazaar-mini-chart-y-label-max">${formatBazaarPrice(maxPrice)} G</span>
-      <span class="bazaar-mini-chart-y-label bazaar-mini-chart-y-label-middle">${formatBazaarPrice(middlePrice)} G</span>
-      <span class="bazaar-mini-chart-y-label bazaar-mini-chart-y-label-min">${formatBazaarPrice(minPrice)} G</span>
-    </div>
-  `;
-}
-
 function buildBazaarSparklineSvg(history, options = {}) {
   const width = Number(options.width) || 320;
   const height = Number(options.height) || 108;
@@ -3814,11 +3801,11 @@ function renderBazaarPrices() {
           const hasHistory = history.length > 0;
           const sparklineSvgDesktop = hasHistory
             ? buildBazaarSparklineSvg(history, {
-                includeYAxisLabels: false,
+                includeYAxisLabels: true,
+                paddingLeft: 48,
                 xAxisLabelCount: 3,
               })
             : "";
-          const externalYAxisLabels = hasHistory ? buildBazaarChartExternalYAxisLabels(history) : "";
           const priceStatusBadgeHtml =
             priceStatusBadgeLabel !== ""
               ? `<p class="bazaar-price-status-badge ${priceVisualToneClass}">${priceStatusBadgeLabel}</p>`
@@ -3890,7 +3877,6 @@ function renderBazaarPrices() {
                     hasHistory
                       ? `
                         <div class="bazaar-mini-chart-plot">
-                          ${externalYAxisLabels}
                           <div class="bazaar-mini-chart-canvas">
                             ${sparklineSvgDesktop}
                           </div>
@@ -4450,46 +4436,58 @@ function applySiteSearchNavigation(entry) {
 }
 
 function renderSiteSearchCandidates() {
-  if (!siteSearchResultWrap) return;
+  const searchTargets = appMode === "home" ? [{ wrap: siteSearchResultWrap }] : [{ wrap: toolSiteSearchResultWrap }];
+  const enabledTargets = searchTargets.filter((target) => target.wrap);
+  if (enabledTargets.length === 0) return;
   const normalizedKeyword = normalizeSearchKeyword(siteSearchKeyword);
   if (normalizedKeyword === "") {
-    siteSearchResultWrap.hidden = true;
-    siteSearchResultWrap.innerHTML = "";
+    enabledTargets.forEach(({ wrap }) => {
+      wrap.hidden = true;
+      wrap.innerHTML = "";
+    });
     return;
   }
   const candidates = getSiteSearchCandidates(siteSearchKeyword);
-  siteSearchResultWrap.hidden = false;
+  enabledTargets.forEach(({ wrap }) => {
+    wrap.hidden = false;
+  });
   if (isSiteSearchDataLoading && !hasLoadedSiteSearchData) {
-    siteSearchResultWrap.innerHTML = `<p class="site-search-empty">検索データを読み込み中です...</p>`;
+    enabledTargets.forEach(({ wrap }) => {
+      wrap.innerHTML = `<p class="site-search-empty">検索データを読み込み中です...</p>`;
+    });
     return;
   }
   if (candidates.length === 0) {
-    siteSearchResultWrap.innerHTML = `<p class="site-search-empty">一致する候補がありません。</p>`;
+    enabledTargets.forEach(({ wrap }) => {
+      wrap.innerHTML = `<p class="site-search-empty">一致する候補がありません。</p>`;
+    });
     return;
   }
-  siteSearchResultWrap.innerHTML = candidates
+  const candidatesHtml = candidates
     .map(
       (entry, index) => `
-        <button type="button" class="site-search-result-item" data-site-search-candidate-index="${index}">
-          <p class="site-search-result-main">${escapeHtml(entry.name)}</p>
-          <p class="site-search-result-meta">
-            <span class="site-search-chip site-search-chip-type">${escapeHtml(entry.type)}</span>
-            <span class="site-search-chip">${escapeHtml(entry.subLabel)}</span>
-          </p>
-        </button>
-      `
+          <button type="button" class="site-search-result-item" data-site-search-candidate-index="${index}">
+            <p class="site-search-result-main">${escapeHtml(entry.name)}</p>
+            <p class="site-search-result-meta">
+              <span class="site-search-chip site-search-chip-type">${escapeHtml(entry.type)}</span>
+              <span class="site-search-chip">${escapeHtml(entry.subLabel)}</span>
+            </p>
+          </button>
+        `
     )
     .join("");
-
-  siteSearchResultWrap.querySelectorAll("[data-site-search-candidate-index]").forEach((button) => {
-    button.addEventListener("click", () => {
-      const candidateIndex = Number(button.dataset.siteSearchCandidateIndex || -1);
-      const selected = candidates[candidateIndex];
-      if (!selected) return;
-      siteSearchKeyword = String(selected.name || "");
-      if (siteSearchInput) siteSearchInput.value = siteSearchKeyword;
-      applySiteSearchNavigation(selected);
-      siteSearchResultWrap.hidden = true;
+  enabledTargets.forEach(({ wrap }) => {
+    wrap.innerHTML = candidatesHtml;
+    wrap.querySelectorAll("[data-site-search-candidate-index]").forEach((button) => {
+      button.addEventListener("click", () => {
+        const candidateIndex = Number(button.dataset.siteSearchCandidateIndex || -1);
+        const selected = candidates[candidateIndex];
+        if (!selected) return;
+        siteSearchKeyword = String(selected.name || "");
+        syncSiteSearchInputValues();
+        applySiteSearchNavigation(selected);
+        wrap.hidden = true;
+      });
     });
   });
 }
@@ -5246,10 +5244,35 @@ function scrollToHomeTop() {
   window.scrollTo({ top: 0, behavior: "smooth" });
 }
 
+function syncSiteSearchInputValues() {
+  if (siteSearchInput && siteSearchInput.value !== siteSearchKeyword) {
+    siteSearchInput.value = siteSearchKeyword;
+  }
+  if (toolSiteSearchInput && toolSiteSearchInput.value !== siteSearchKeyword) {
+    toolSiteSearchInput.value = siteSearchKeyword;
+  }
+}
+
+function setToolSiteSearchOpen(isOpen) {
+  isToolSiteSearchOpen = Boolean(isOpen);
+  if (toolSiteSearchPanel) toolSiteSearchPanel.hidden = !isToolSiteSearchOpen;
+  if (toolSiteSearchToggleButton) {
+    toolSiteSearchToggleButton.setAttribute("aria-expanded", isToolSiteSearchOpen ? "true" : "false");
+  }
+  if (!isToolSiteSearchOpen && toolSiteSearchResultWrap) {
+    toolSiteSearchResultWrap.hidden = true;
+  }
+}
+
 function applyAppMode() {
   const isHomeMode = appMode === "home";
   appRoot?.classList.toggle("is-home-mode", isHomeMode);
   appHeader?.classList.toggle("is-collapsed", !isHomeMode);
+  homeSiteSearch?.classList.toggle("is-hidden", !isHomeMode);
+  toolSiteSearchDock?.classList.toggle("is-visible", !isHomeMode);
+  if (isHomeMode) {
+    setToolSiteSearchOpen(false);
+  }
   topQuickAccessSection?.classList.toggle("is-collapsed", !isHomeMode);
   topUpdateSection?.classList.toggle("is-collapsed", !isHomeMode);
   mobileBottomNav?.classList.toggle("is-disabled", isHomeMode);
@@ -7108,6 +7131,7 @@ if (equipmentDbMonsterSearchInput) {
 if (siteSearchInput) {
   siteSearchInput.addEventListener("input", (event) => {
     siteSearchKeyword = String(event.target.value || "");
+    syncSiteSearchInputValues();
     if (normalizeSearchKeyword(siteSearchKeyword) !== "" && !hasLoadedSiteSearchData) {
       void ensureSiteSearchDataLoaded().then(() => {
         renderSiteSearchCandidates();
@@ -7120,12 +7144,44 @@ if (siteSearchInput) {
   });
 }
 
+if (toolSiteSearchInput) {
+  toolSiteSearchInput.addEventListener("input", (event) => {
+    siteSearchKeyword = String(event.target.value || "");
+    syncSiteSearchInputValues();
+    if (normalizeSearchKeyword(siteSearchKeyword) !== "" && !hasLoadedSiteSearchData) {
+      void ensureSiteSearchDataLoaded().then(() => {
+        renderSiteSearchCandidates();
+      });
+    }
+    renderSiteSearchCandidates();
+  });
+  toolSiteSearchInput.addEventListener("focus", () => {
+    renderSiteSearchCandidates();
+  });
+}
+
+if (toolSiteSearchToggleButton) {
+  toolSiteSearchToggleButton.addEventListener("click", () => {
+    const nextOpen = !isToolSiteSearchOpen;
+    setToolSiteSearchOpen(nextOpen);
+    if (nextOpen) {
+      syncSiteSearchInputValues();
+      toolSiteSearchInput?.focus({ preventScroll: true });
+      renderSiteSearchCandidates();
+    }
+  });
+}
+
 document.addEventListener("click", (event) => {
-  if (!siteSearchResultWrap || !siteSearchInput) return;
   const target = event.target;
   if (!(target instanceof Node)) return;
-  if (siteSearchResultWrap.contains(target) || siteSearchInput.contains(target)) return;
-  siteSearchResultWrap.hidden = true;
+  const isInsideHomeSearch = Boolean(siteSearchResultWrap?.contains(target) || siteSearchInput?.contains(target));
+  const isInsideToolSearch = Boolean(
+    toolSiteSearchDock?.contains(target) || toolSiteSearchResultWrap?.contains(target) || toolSiteSearchInput?.contains(target)
+  );
+  if (isInsideHomeSearch || isInsideToolSearch) return;
+  if (siteSearchResultWrap) siteSearchResultWrap.hidden = true;
+  if (toolSiteSearchResultWrap) toolSiteSearchResultWrap.hidden = true;
 });
 
 equipmentDbGroupTabButtons.forEach((button) => {
