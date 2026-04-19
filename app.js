@@ -3685,15 +3685,29 @@ function renderBazaarPrices() {
               </header>
               <div
                 class="bazaar-sub-row bazaar-card-summary-toggle ${isExpandableOnMobile ? "is-expandable" : ""}"
-                aria-label="ジャンルと更新日"
+                aria-label="ジャンル"
                 data-bazaar-chart-toggle-key="${row.materialKey}"
                 role="button"
                 tabindex="0"
                 aria-expanded="${isMobileExpanded ? "true" : "false"}"
               >
                 <p class="bazaar-category">${buildBazaarCategoryLabelHtml(row.itemCategory)}</p>
-                <p class="bazaar-updated-at">更新: ${updatedAtText}</p>
               </div>
+              ${
+                hasOfficialUrl
+                  ? `<div class="bazaar-quick-actions">
+                      <a
+                        class="bazaar-official-link-button bazaar-official-link-button-compact"
+                        href="${row.officialUrl}"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        aria-label="${row.materialName}の公式相場サイトを新しいタブで開く"
+                      >
+                        公式相場
+                      </a>
+                    </div>`
+                  : ""
+              }
               <div
                 class="bazaar-main bazaar-card-summary-toggle ${isExpandableOnMobile ? "is-expandable" : ""}"
                 data-bazaar-chart-toggle-key="${row.materialKey}"
@@ -3704,7 +3718,6 @@ function renderBazaarPrices() {
                 <div class="bazaar-primary">
                   <p class="bazaar-today-price ${priceVisualToneClass}">${todayPriceHtml}</p>
                   ${priceStatusBadgeHtml}
-                  ${commentHtml}
                   <p class="bazaar-change-rate">前日比: <span class="bazaar-change-value ${changePresentation.toneClass}">${changePresentation.text}</span>${changeArrowHtml}</p>
                 </div>
                 <div class="bazaar-mini-chart-wrap" aria-label="${row.materialName}の価格推移（直近${selectedBazaarChartRangeDays}日）">
@@ -3727,30 +3740,24 @@ function renderBazaarPrices() {
                 ${
                   hasHistory
                     ? `
+                      <p class="bazaar-updated-at">更新: ${updatedAtText}</p>
+                      <p class="bazaar-previous-price">前日: ${formatBazaarPriceWithUnit(row.previousDayPrice)}</p>
                       ${sparklineSvgMobile}
                       <p class="bazaar-mini-chart-meta">表示期間: 直近${selectedBazaarChartRangeDays}日（${history.length}件）</p>
                       <p class="bazaar-mobile-chart-latest">最新価格: ${formatBazaarPriceWithUnit(history[history.length - 1].price)}</p>
+                      ${commentHtml}
                     `
-                    : `<p class="bazaar-mini-chart-empty">表示できる履歴がありません。</p>`
+                    : `
+                      <p class="bazaar-updated-at">更新: ${updatedAtText}</p>
+                      <p class="bazaar-previous-price">前日: ${formatBazaarPriceWithUnit(row.previousDayPrice)}</p>
+                      <p class="bazaar-mini-chart-empty">表示できる履歴がありません。</p>
+                      ${commentHtml}
+                    `
                 }
               </div>
               <div class="bazaar-footer-row">
+                <p class="bazaar-updated-at">更新: ${updatedAtText}</p>
                 <p class="bazaar-previous-price">前日: ${formatBazaarPriceWithUnit(row.previousDayPrice)}</p>
-                ${
-                  hasOfficialUrl
-                    ? `<div class="bazaar-actions">
-                      <a
-                        class="bazaar-official-link-button"
-                        href="${row.officialUrl}"
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        aria-label="${row.materialName}の公式相場サイトを新しいタブで開く"
-                      >
-                        公式相場サイト
-                      </a>
-                    </div>`
-                    : ""
-                }
               </div>
             </article>
           `;
