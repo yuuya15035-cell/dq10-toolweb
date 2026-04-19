@@ -175,6 +175,17 @@ body.is-modal-open {
   color: #4f3a29;
 }
 
+#contentSiteIntro,
+#contentSiteSummary {
+  max-width: 44em;
+  line-height: 1.65;
+}
+
+#contentSiteSummary {
+  margin-top: 4px;
+  white-space: pre-line;
+}
+
 .app-header-price-note {
   margin: 0 0 5px;
   padding: 5px 7px;

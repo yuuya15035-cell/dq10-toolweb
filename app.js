@@ -86,8 +86,8 @@ const CONTENT_DEFINITIONS = [
 ];
 const DEFAULT_CONTENT = Object.freeze({
   site_title: "ドラゴンクエスト10支援サイト",
-  site_intro: "ドラゴンクエスト10の普段使いをまとめた支援サイトです。",
-  site_summary: "バザー確認・職人準備・装備検索をスマホで使いやすく整理しています。",
+  site_intro: "ドラゴンクエスト10の日常プレイを少し便利にする支援サイトです。",
+  site_summary: "バザー確認、職人準備、装備検索をスマホでも見やすくまとめています。\nよく使う機能はホームに追加して、自分用に使いやすくできます。",
   site_notice: "※価格・情報は手動確認ベースのため、更新タイミングにより実際のゲーム内状況と差が出る場合があります。",
   updates_heading: "更新情報",
   tools_heading: "よく使う機能",
