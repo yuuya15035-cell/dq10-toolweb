@@ -1118,6 +1118,7 @@ const saveBazaarHistoryButton = getRequiredElementById("saveBazaarHistoryButton"
 const bazaarHistorySnapshotDateInput = getRequiredElementById("bazaarHistorySnapshotDateInput");
 const bazaarHistorySaveMessage = getRequiredElementById("bazaarHistorySaveMessage");
 const bazaarListWrap = getRequiredElementById("bazaarListWrap");
+const bazaarPageUpdatedAt = document.getElementById("bazaarPageUpdatedAt");
 const bazaarDetailModalOverlay = getRequiredElementById("bazaarDetailModalOverlay");
 const bazaarDetailModalDialog = getRequiredElementById("bazaarDetailModalDialog");
 const bazaarDetailModalCloseButton = getRequiredElementById("bazaarDetailModalCloseButton");
@@ -1447,6 +1448,31 @@ function getBazaarChangePresentation(rate) {
     toneClass: getBazaarChangeToneClass(normalizedRate),
     isComputable: true,
   };
+}
+
+function formatBazaarPageUpdatedAt(rawValue) {
+  const normalized = String(rawValue || "").trim();
+  if (normalized === "") return "-";
+
+  const slashNormalized = normalized
+    .replace(/-/g, "/")
+    .replace(/^(\d{4})\/(\d{1,2})\/(\d{1,2})\/(\d{1,2}:\d{2})$/, "$1/$2/$3 $4");
+
+  const directMatch = slashNormalized.match(/^(\d{4})\/(\d{1,2})\/(\d{1,2})\s+(\d{1,2}):(\d{2})$/);
+  if (directMatch) {
+    const [, year, month, day, hour, minute] = directMatch;
+    return `${year}/${String(month).padStart(2, "0")}/${String(day).padStart(2, "0")} ${String(hour).padStart(2, "0")}:${minute}`;
+  }
+
+  const parsed = new Date(slashNormalized);
+  if (Number.isNaN(parsed.getTime())) return normalized;
+
+  return `${parsed.getFullYear()}/${String(parsed.getMonth() + 1).padStart(2, "0")}/${String(parsed.getDate()).padStart(2, "0")} ${String(parsed.getHours()).padStart(2, "0")}:${String(parsed.getMinutes()).padStart(2, "0")}`;
+}
+
+function getBazaarPageUpdatedAtLabel(rows) {
+  const firstUpdatedAt = (Array.isArray(rows) ? rows : []).find((row) => String(row?.updatedAt || "").trim() !== "")?.updatedAt || "";
+  return `ページ更新: ${formatBazaarPageUpdatedAt(firstUpdatedAt)}`;
 }
 
 function formatBazaarUpdatedAt(rawValue) {
@@ -3714,6 +3740,9 @@ function renderBazaarPrices() {
   if (!Array.isArray(bazaarPrices) || bazaarPrices.length === 0) {
     bazaarListWrap.innerHTML = `<p>表示できる価格データがありません。CSV内容を確認してください。</p>`;
     return;
+  }
+  if (bazaarPageUpdatedAt) {
+    bazaarPageUpdatedAt.textContent = getBazaarPageUpdatedAtLabel(bazaarPrices);
   }
 
   const categorySet = new Set(
