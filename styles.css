@@ -1415,7 +1415,7 @@ button {
 
 .bazaar-mini-chart-line {
   fill: none;
-  stroke-width: 2.2;
+  stroke-width: 1.9;
   vector-effect: non-scaling-stroke;
 }
 
@@ -1432,14 +1432,14 @@ button {
 }
 
 .bazaar-mini-chart-grid-line {
-  stroke: rgba(112, 84, 58, 0.14);
+  stroke: rgba(112, 84, 58, 0.1);
   stroke-width: 1;
   stroke-dasharray: 3 3;
 }
 
 .bazaar-mini-chart-grid-line.is-edge {
   stroke-dasharray: none;
-  stroke: rgba(112, 84, 58, 0.2);
+  stroke: rgba(112, 84, 58, 0.15);
 }
 
 .bazaar-mini-chart-axis-label,
@@ -2340,21 +2340,19 @@ button {
   }
 
   .bazaar-mobile-chart-panel .bazaar-mini-chart-svg {
-    height: 84px;
+    height: 86px;
   }
 
   .bazaar-mobile-chart-panel .bazaar-mini-chart-axis-label {
-    font-size: 8px;
+    font-size: 7.6px;
   }
 
   .bazaar-mobile-chart-panel .bazaar-mini-chart-axis-date {
     font-size: 8px;
   }
 
-  .bazaar-mobile-chart-panel .bazaar-mini-chart-axis-label-middle,
-  .bazaar-mobile-chart-panel .bazaar-mini-chart-axis-date-middle,
-  .bazaar-mobile-chart-panel .bazaar-mini-chart-axis-label-max {
-    display: none;
+  .bazaar-mobile-chart-panel .bazaar-mini-chart-axis-label-middle {
+    opacity: 0.84;
   }
 }
 

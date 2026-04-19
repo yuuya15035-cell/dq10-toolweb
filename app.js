@@ -3307,6 +3307,8 @@ function buildBazaarSparklineSvg(history, options = {}) {
   const chartStroke = options.stroke || "#8b5e3c";
   const areaFill = options.areaFill || "rgba(139, 94, 60, 0.18)";
   const includeYAxisLabels = options.includeYAxisLabels !== false;
+  const xAxisLabelCount = Math.max(1, Number(options.xAxisLabelCount) || 3);
+  const yAxisTickCount = Math.max(2, Math.min(3, Number(options.yAxisTickCount) || 3));
   const points = Array.isArray(history)
     ? history
         .map((item) => ({
@@ -3348,11 +3350,17 @@ function buildBazaarSparklineSvg(history, options = {}) {
     ? `<circle cx="${latestCoord.x.toFixed(2)}" cy="${latestCoord.y.toFixed(2)}" r="${latestPointRadius}" class="bazaar-mini-chart-latest-point"></circle>`
     : "";
 
-  const yAxisLabels = [
-    { price: maxPrice, className: "bazaar-mini-chart-axis-label-max" },
-    { price: middlePrice, className: "bazaar-mini-chart-axis-label-middle" },
-    { price: minPrice, className: "bazaar-mini-chart-axis-label-min" },
-  ];
+  const yAxisLabels =
+    yAxisTickCount >= 3
+      ? [
+          { price: maxPrice, className: "bazaar-mini-chart-axis-label-max" },
+          { price: middlePrice, className: "bazaar-mini-chart-axis-label-middle" },
+          { price: minPrice, className: "bazaar-mini-chart-axis-label-min" },
+        ]
+      : [
+          { price: maxPrice, className: "bazaar-mini-chart-axis-label-max" },
+          { price: minPrice, className: "bazaar-mini-chart-axis-label-min" },
+        ];
   const yAxisLabelsHtml = includeYAxisLabels
     ? yAxisLabels
         .map(({ price, className }) => {
@@ -3362,14 +3370,13 @@ function buildBazaarSparklineSvg(history, options = {}) {
         .join("")
     : "";
 
-  const MAX_X_AXIS_LABELS = 3;
   const xAxisIndexes =
     points.length <= 1
       ? [0]
-      : points.length === 2
+      : xAxisLabelCount <= 2 || points.length === 2
         ? [0, points.length - 1]
         : [0, Math.floor((points.length - 1) / 2), points.length - 1];
-  const xAxisLabelIndexes = Array.from(new Set(xAxisIndexes)).slice(0, MAX_X_AXIS_LABELS);
+  const xAxisLabelIndexes = Array.from(new Set(xAxisIndexes)).slice(0, xAxisLabelCount);
   const xAxisLabelsHtml = xAxisLabelIndexes
     .map((index, orderIndex, array) => {
       const point = points[index];
@@ -3628,8 +3635,19 @@ function renderBazaarPrices() {
           const hasHistory = history.length > 0;
           const isMobileExpanded = expandedBazaarChartMaterialKeyMobile === row.materialKey;
           const isExpandableOnMobile = hasHistory;
-          const sparklineSvgDesktop = hasHistory ? buildBazaarSparklineSvg(history, { includeYAxisLabels: false }) : "";
-          const sparklineSvgMobile = hasHistory ? buildBazaarSparklineSvg(history) : "";
+          const sparklineSvgDesktop = hasHistory
+            ? buildBazaarSparklineSvg(history, {
+                includeYAxisLabels: false,
+                xAxisLabelCount: 3,
+              })
+            : "";
+          const sparklineSvgMobile = hasHistory
+            ? buildBazaarSparklineSvg(history, {
+                includeYAxisLabels: true,
+                xAxisLabelCount: 2,
+                yAxisTickCount: 3,
+              })
+            : "";
           const externalYAxisLabels = hasHistory ? buildBazaarChartExternalYAxisLabels(history) : "";
           const shouldShowComment = row.comment !== "" && row.comment !== priceStatusBadgeLabel;
           const priceStatusBadgeHtml =
