@@ -1323,6 +1323,16 @@ button {
   gap: 4px;
 }
 
+.bazaar-card-summary-toggle {
+  border-radius: 8px;
+  outline: none;
+  touch-action: pan-y;
+}
+
+.bazaar-card-summary-toggle.is-expandable {
+  cursor: pointer;
+}
+
 .bazaar-sub-row {
   margin-top: 3px;
   display: flex;
@@ -2326,6 +2336,14 @@ button {
     text-decoration: underline;
     text-decoration-style: dotted;
     text-underline-offset: 2px;
+  }
+
+  .bazaar-card-summary-toggle.is-expandable:active {
+    background: rgba(138, 98, 61, 0.12);
+  }
+
+  .bazaar-card-summary-toggle.is-expandable:focus-visible {
+    box-shadow: 0 0 0 2px rgba(138, 98, 61, 0.38);
   }
 
   .bazaar-mini-chart-wrap {

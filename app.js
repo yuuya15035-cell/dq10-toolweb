@@ -3683,11 +3683,24 @@ function renderBazaarPrices() {
                   ♥
                 </button>
               </header>
-              <div class="bazaar-sub-row" aria-label="ジャンルと更新日">
+              <div
+                class="bazaar-sub-row bazaar-card-summary-toggle ${isExpandableOnMobile ? "is-expandable" : ""}"
+                aria-label="ジャンルと更新日"
+                data-bazaar-chart-toggle-key="${row.materialKey}"
+                role="button"
+                tabindex="0"
+                aria-expanded="${isMobileExpanded ? "true" : "false"}"
+              >
                 <p class="bazaar-category">${buildBazaarCategoryLabelHtml(row.itemCategory)}</p>
                 <p class="bazaar-updated-at">更新: ${updatedAtText}</p>
               </div>
-              <div class="bazaar-main">
+              <div
+                class="bazaar-main bazaar-card-summary-toggle ${isExpandableOnMobile ? "is-expandable" : ""}"
+                data-bazaar-chart-toggle-key="${row.materialKey}"
+                role="button"
+                tabindex="0"
+                aria-expanded="${isMobileExpanded ? "true" : "false"}"
+              >
                 <div class="bazaar-primary">
                   <p class="bazaar-today-price ${priceVisualToneClass}">${todayPriceHtml}</p>
                   ${priceStatusBadgeHtml}
@@ -3839,18 +3852,58 @@ function renderBazaarPrices() {
     });
   });
 
+  const toggleBazaarMobileChart = (materialKey) => {
+    if (materialKey === "") return;
+    const isMobile = window.matchMedia("(max-width: 700px)").matches;
+    if (!isMobile) return;
+    if (expandedBazaarChartMaterialKeyMobile === materialKey) {
+      expandedBazaarChartMaterialKeyMobile = "";
+    } else {
+      expandedBazaarChartMaterialKeyMobile = materialKey;
+    }
+    renderBazaarPrices();
+  };
+
   bazaarListWrap.querySelectorAll("[data-bazaar-chart-toggle-key]").forEach((button) => {
     button.addEventListener("click", () => {
-      const materialKey = String(button.dataset.bazaarChartToggleKey || "");
-      if (materialKey === "") return;
-      const isMobile = window.matchMedia("(max-width: 700px)").matches;
-      if (!isMobile) return;
-      if (expandedBazaarChartMaterialKeyMobile === materialKey) {
-        expandedBazaarChartMaterialKeyMobile = "";
-      } else {
-        expandedBazaarChartMaterialKeyMobile = materialKey;
+      if (button.dataset.touchMoved === "true") {
+        delete button.dataset.touchMoved;
+        delete button.dataset.touchY;
+        return;
       }
-      renderBazaarPrices();
+      const materialKey = String(button.dataset.bazaarChartToggleKey || "");
+      toggleBazaarMobileChart(materialKey);
+    });
+
+    if (button.tagName !== "BUTTON") {
+      button.addEventListener("keydown", (event) => {
+        if (event.key !== "Enter" && event.key !== " ") return;
+        event.preventDefault();
+        const materialKey = String(button.dataset.bazaarChartToggleKey || "");
+        toggleBazaarMobileChart(materialKey);
+      });
+    }
+
+    button.addEventListener("pointerdown", (event) => {
+      if (event.pointerType === "touch") {
+        button.dataset.touchY = String(event.clientY);
+        button.dataset.touchMoved = "false";
+      }
+    });
+    button.addEventListener("pointermove", (event) => {
+      if (event.pointerType !== "touch") return;
+      const touchY = Number(button.dataset.touchY || "");
+      if (!Number.isFinite(touchY)) return;
+      if (Math.abs(event.clientY - touchY) > 12) {
+        button.dataset.touchMoved = "true";
+      }
+    });
+    button.addEventListener("pointerup", () => {
+      delete button.dataset.touchY;
+    });
+    button.addEventListener("pointercancel", () => {
+      delete button.dataset.touchY;
+      delete button.dataset.touchMoved;
     });
   });
 
