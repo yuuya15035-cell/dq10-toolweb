@@ -1597,13 +1597,17 @@ function normalizeBazaarAdminNumberText(value) {
   return digits === "" ? "" : String(Number(digits));
 }
 
+function normalizeBazaarCommentText(comment) {
+  return String(comment ?? "").trim();
+}
+
 function isExcludedByComment(comment) {
-  const text = String(comment || "");
+  const text = normalizeBazaarCommentText(comment);
   return text.includes("固定価格") || text.includes("現在固定") || text.includes("店売り価格固定");
 }
 
 function isMonitoringByComment(comment) {
-  return String(comment || "").includes("現在監視中");
+  return normalizeBazaarCommentText(comment) === "";
 }
 
 function buildBazaarAdminCsvModel(lines) {
