@@ -1103,6 +1103,7 @@ button {
 .bazaar-list {
   display: grid;
   gap: 8px;
+  grid-template-columns: 1fr;
 }
 
 .bazaar-control-wrap {
@@ -1352,8 +1353,9 @@ button {
 .bazaar-footer-row {
   margin-top: 5px;
   display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
+  align-items: center;
+  justify-content: flex-start;
+  flex-wrap: wrap;
   gap: 8px;
 }
 
@@ -1380,6 +1382,16 @@ button {
   line-height: 1.2;
   text-decoration: none;
   white-space: nowrap;
+}
+
+.bazaar-quick-actions {
+  margin-top: 4px;
+}
+
+.bazaar-official-link-button-compact {
+  min-height: 30px;
+  padding: 4px 8px;
+  font-size: 0.72rem;
 }
 
 .bazaar-official-link-button::after {
@@ -2180,6 +2192,7 @@ button {
 
   .bazaar-list {
     gap: 6px;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   .bazaar-control-wrap {
@@ -2202,7 +2215,7 @@ button {
   }
 
   .bazaar-card {
-    padding: 8px 9px 7px;
+    padding: 7px 8px 6px;
     border-radius: 10px;
   }
 
@@ -2223,11 +2236,12 @@ button {
   }
 
   .bazaar-card-header h3 {
-    font-size: 0.9rem;
+    font-size: 0.84rem;
+    line-height: 1.2;
   }
 
   .bazaar-category {
-    font-size: 0.72rem;
+    font-size: 0.68rem;
   }
 
   .bazaar-category-icon,
@@ -2241,27 +2255,26 @@ button {
   }
 
   .bazaar-main {
-    margin-top: 3px;
+    margin-top: 2px;
   }
 
   .bazaar-footer-row {
-    margin-top: 4px;
-    align-items: flex-start;
-    gap: 7px;
+    display: none;
   }
 
-  .bazaar-actions {
-    margin-top: -2px;
+  .bazaar-quick-actions {
+    margin-top: 3px;
   }
 
-  .bazaar-official-link-button {
-    min-height: 37px;
-    font-size: 0.74rem;
-    padding: 6px 9px;
+  .bazaar-official-link-button-compact {
+    min-height: 32px;
+    width: 100%;
+    font-size: 0.68rem;
+    padding: 4px 7px;
   }
 
   .bazaar-today-price {
-    font-size: 1.06rem;
+    font-size: 0.96rem;
   }
 
   .bazaar-today-price span {
@@ -2269,12 +2282,12 @@ button {
   }
 
   .bazaar-change-rate {
-    font-size: 0.8rem;
+    font-size: 0.72rem;
     gap: 3px;
   }
 
   .bazaar-previous-price {
-    font-size: 0.72rem;
+    font-size: 0.68rem;
     margin-top: 0;
   }
 
@@ -2375,6 +2388,10 @@ button {
 }
 
 @media (min-width: 700px) {
+  .bazaar-list {
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  }
+
   .bazaar-main {
     grid-template-columns: minmax(160px, 0.9fr) minmax(0, 2.8fr);
     column-gap: 10px;
@@ -2422,6 +2439,10 @@ button {
   .bazaar-mobile-chart-panel {
     display: none !important;
   }
+
+  .bazaar-quick-actions {
+    display: none;
+  }
 }
 
 @media (min-width: 560px) {
@@ -2435,6 +2456,10 @@ button {
 }
 
 @media (min-width: 920px) {
+  .bazaar-list {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
   .bazaar-control-wrap {
     grid-template-columns: repeat(4, minmax(0, 1fr));
     align-items: start;
@@ -3548,6 +3573,10 @@ button {
 }
 
 @media (min-width: 1200px) {
+  .bazaar-list {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+
   .equipment-db-card-grid {
     grid-template-columns: repeat(4, minmax(0, 1fr));
   }
