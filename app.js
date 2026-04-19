@@ -1035,6 +1035,7 @@ const menuToggleButton = getRequiredElementById("menuToggleButton");
 const sideMenu = getRequiredElementById("sideMenu");
 const menuOverlay = getRequiredElementById("menuOverlay");
 const sideMenuItems = document.querySelectorAll(".side-menu-item");
+const mobileBottomNavItems = document.querySelectorAll(".mobile-bottom-nav-item");
 const appHeader = document.querySelector(".app-header");
 const topUpdateSection = document.getElementById("topUpdateSection");
 const topUpdateList = document.getElementById("topUpdateList");
@@ -4795,6 +4796,7 @@ function switchToHomeMode(options = {}) {
   appMode = "home";
   tabContents.forEach((tab) => tab.classList.remove("active"));
   applyAppMode();
+  updateMobileBottomNavState();
   navigateByAppParams({ tab: "", equipmentId: "", materialKey: "" }, { replace: true });
   if (scroll) scrollToHomeTop();
 }
@@ -4812,6 +4814,7 @@ function switchTab(target) {
   activeTabId = normalizedTarget;
   appMode = "tool";
   applyAppMode();
+  updateMobileBottomNavState();
   tabButtons.forEach((btn) => btn.classList.toggle("active", btn.dataset.tab === normalizedTarget));
   tabContents.forEach((tab) => tab.classList.toggle("active", tab.id === normalizedTarget));
   if (normalizedTarget === "present-codes") {
@@ -4890,6 +4893,24 @@ function setMenuOpen(isOpen) {
   sideMenu.setAttribute("aria-hidden", isOpen ? "false" : "true");
   menuToggleButton.setAttribute("aria-expanded", isOpen ? "true" : "false");
   menuOverlay.hidden = !isOpen;
+  updateMobileBottomNavState();
+}
+
+function updateMobileBottomNavState() {
+  mobileBottomNavItems.forEach((item) => {
+    const action = String(item.dataset.bottomNavAction || "");
+    const targetId = String(item.dataset.bottomNavTarget || "");
+    const isActive =
+      (action === "home" && appMode === "home") ||
+      (action === "menu" && sideMenu?.classList.contains("is-open")) ||
+      (targetId !== "" && appMode === "tool" && activeTabId === targetId);
+    item.classList.toggle("is-active", isActive);
+    if (isActive) {
+      item.setAttribute("aria-current", "page");
+    } else {
+      item.removeAttribute("aria-current");
+    }
+  });
 }
 
 function scrollToBlock(blockId) {
@@ -4986,6 +5007,26 @@ if (homeModeButton) {
     switchToHomeMode();
   });
 }
+
+mobileBottomNavItems.forEach((item) => {
+  item.addEventListener("click", () => {
+    const action = String(item.dataset.bottomNavAction || "");
+    if (action === "home") {
+      switchToHomeMode();
+      setMenuOpen(false);
+      return;
+    }
+    if (action === "menu") {
+      const next = menuToggleButton?.getAttribute("aria-expanded") !== "true";
+      setMenuOpen(next);
+      return;
+    }
+    const targetId = String(item.dataset.bottomNavTarget || "");
+    if (!targetId) return;
+    scrollToBlock(targetId);
+    setMenuOpen(false);
+  });
+});
 
 if (uiSettingsControlList) {
   uiSettingsControlList.addEventListener("input", (event) => {
