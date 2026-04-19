@@ -1302,13 +1302,15 @@ button {
   font-size: 0.84rem;
 }
 
-.bazaar-favorite-filter-field {
+.bazaar-favorite-filter-field,
+.bazaar-monitoring-filter-field {
   margin-bottom: 0;
   align-self: end;
   gap: 8px;
 }
 
-.bazaar-favorite-filter-field span {
+.bazaar-favorite-filter-field span,
+.bazaar-monitoring-filter-field span {
   font-size: 0.82rem;
   color: #6e553e;
 }
@@ -2451,7 +2453,8 @@ button {
   .bazaar-category-field span,
   .bazaar-sort-field span,
   .bazaar-search-field span,
-  .bazaar-favorite-filter-field span {
+  .bazaar-favorite-filter-field span,
+  .bazaar-monitoring-filter-field span {
     font-size: 0.75rem;
   }
 
