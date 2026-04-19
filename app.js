@@ -3661,7 +3661,7 @@ function renderBazaarPrices() {
             : "";
 
           return `
-            <article class="bazaar-card ${pendingBazaarFocusMaterialKey !== "" && row.materialKey === pendingBazaarFocusMaterialKey ? "is-focused" : ""}" data-bazaar-material-key="${row.materialKey}">
+            <article class="bazaar-card ${pendingBazaarFocusMaterialKey !== "" && row.materialKey === pendingBazaarFocusMaterialKey ? "is-focused" : ""} ${isMobileExpanded ? "is-mobile-expanded" : ""}" data-bazaar-material-key="${row.materialKey}">
               <header class="bazaar-card-header">
                 <div class="bazaar-card-title-group">
                   <h3>

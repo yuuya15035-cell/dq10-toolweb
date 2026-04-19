@@ -2219,6 +2219,12 @@ button {
     border-radius: 10px;
   }
 
+  .bazaar-card.is-mobile-expanded {
+    grid-column: 1 / -1;
+    border-color: #8a623d;
+    box-shadow: 0 0 0 1px rgba(138, 98, 61, 0.22), 0 6px 14px rgba(68, 45, 24, 0.2);
+  }
+
   .recipe-favorite-toggle-button {
     min-height: 50px;
     font-size: 0.98rem;
@@ -2365,21 +2371,28 @@ button {
 
   .bazaar-mobile-chart-panel.is-open {
     display: block;
-    margin-top: 6px;
+    margin-top: 8px;
     border-top: 1px dashed rgba(107, 77, 50, 0.35);
-    padding-top: 6px;
+    padding-top: 8px;
   }
 
-  .bazaar-mobile-chart-panel .bazaar-mini-chart-svg {
-    height: 86px;
+  .bazaar-card.is-mobile-expanded .bazaar-mobile-chart-panel .bazaar-mini-chart-svg {
+    height: 106px;
   }
 
-  .bazaar-mobile-chart-panel .bazaar-mini-chart-axis-label {
-    font-size: 7.6px;
+  .bazaar-card.is-mobile-expanded .bazaar-mobile-chart-panel .bazaar-mini-chart-axis-label {
+    font-size: 8.2px;
   }
 
-  .bazaar-mobile-chart-panel .bazaar-mini-chart-axis-date {
-    font-size: 8px;
+  .bazaar-card.is-mobile-expanded .bazaar-mobile-chart-panel .bazaar-mini-chart-axis-date {
+    font-size: 8.4px;
+  }
+
+  .bazaar-card.is-mobile-expanded .bazaar-mobile-chart-panel .bazaar-mini-chart-meta,
+  .bazaar-card.is-mobile-expanded .bazaar-mobile-chart-panel .bazaar-mobile-chart-latest,
+  .bazaar-card.is-mobile-expanded .bazaar-mobile-chart-panel .bazaar-updated-at,
+  .bazaar-card.is-mobile-expanded .bazaar-mobile-chart-panel .bazaar-previous-price {
+    font-size: 0.74rem;
   }
 
   .bazaar-mobile-chart-panel .bazaar-mini-chart-axis-label-middle {
