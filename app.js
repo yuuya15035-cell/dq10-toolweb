@@ -34,7 +34,7 @@ const HOME_FEATURE_DEFINITIONS = [
   { id: "equipment-db", tabId: "equipment-db", title: "装備データ", icon: "🛡️" },
   { id: "field-farming", tabId: "field-farming", title: "フィールド狩り", icon: "⚔️" },
 ];
-const DEFAULT_HOME_FEATURE_IDS = Object.freeze(["bazaar", "profit", "favorites"]);
+const DEFAULT_HOME_FEATURE_IDS = Object.freeze(["profit", "bazaar", "favorites", "white-boxes"]);
 const HOME_FEATURE_ID_SET = new Set(HOME_FEATURE_DEFINITIONS.map((feature) => feature.id));
 const TAB_IDS = new Set([
   "profit",
