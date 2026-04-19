@@ -73,10 +73,31 @@ function renderUpdateList(updates) {
     .join("");
 }
 
+function getUpdateSearchKeywordFromUrl() {
+  const params = new URLSearchParams(window.location.search);
+  return String(params.get("q") || "").trim();
+}
+
+function renderUpdateSearchStatus(keyword, totalCount, filteredCount) {
+  const status = document.getElementById("updatesSearchStatus");
+  if (!status) return;
+  if (!keyword) {
+    status.textContent = "";
+    return;
+  }
+  status.textContent = `検索: 「${keyword}」 / ${filteredCount}件（全${totalCount}件）`;
+}
+
 async function initUpdatesPage() {
   try {
     const updates = await loadTopUpdates();
-    renderUpdateList(updates);
+    const keyword = getUpdateSearchKeywordFromUrl();
+    const normalizedKeyword = keyword.toLowerCase();
+    const filteredUpdates = normalizedKeyword
+      ? updates.filter((entry) => [entry.date, entry.text].join(" ").toLowerCase().includes(normalizedKeyword))
+      : updates;
+    renderUpdateSearchStatus(keyword, updates.length, filteredUpdates.length);
+    renderUpdateList(filteredUpdates);
   } catch (error) {
     console.error("更新情報一覧の初期化に失敗しました", error);
     renderUpdateList([]);

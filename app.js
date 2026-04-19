@@ -36,6 +36,12 @@ const HOME_FEATURE_DEFINITIONS = [
 ];
 const DEFAULT_HOME_FEATURE_IDS = Object.freeze(["profit", "bazaar", "favorites", "white-boxes"]);
 const HOME_FEATURE_ID_SET = new Set(HOME_FEATURE_DEFINITIONS.map((feature) => feature.id));
+const SITE_SEARCH_MAX_RESULTS = 10;
+const SITE_SEARCH_MATCH_RANK = Object.freeze({
+  exact: 0,
+  prefix: 1,
+  partial: 2,
+});
 const TAB_IDS = new Set([
   "profit",
   "present-codes",
@@ -967,6 +973,7 @@ let whiteBoxEntries = [];
 let selectedWhiteBoxType = "weapon";
 let selectedWhiteBoxSlot = "";
 let selectedWhiteBoxSort = "level_desc";
+let whiteBoxKeyword = "";
 let expandedWhiteBoxItemId = "";
 let equipmentDbEntries = [];
 let selectedEquipmentDbGroup = "weapon";
@@ -975,6 +982,11 @@ let selectedEquipmentDbType = "";
 let equipmentDbNameKeyword = "";
 let equipmentDbMonsterKeyword = "";
 let expandedEquipmentDbId = "";
+let presentCodesKeyword = "";
+let fieldFarmingKeyword = "";
+let siteSearchKeyword = "";
+let isSiteSearchDataLoading = false;
+let hasLoadedSiteSearchData = false;
 let topUpdates = [];
 let initialTopUpdates = [];
 let isContentEditModeEnabled = false;
@@ -1044,6 +1056,8 @@ const appRoot = document.querySelector(".app");
 const mobileBottomNav = document.querySelector(".mobile-bottom-nav");
 const mobileBottomNavItems = document.querySelectorAll(".mobile-bottom-nav-item");
 const appHeader = document.querySelector(".app-header");
+const siteSearchInput = getRequiredElementById("siteSearchInput");
+const siteSearchResultWrap = getRequiredElementById("siteSearchResultWrap");
 const topUpdateSection = document.getElementById("topUpdateSection");
 const topUpdateList = document.getElementById("topUpdateList");
 const topUpdateViewAllLink = document.getElementById("topUpdateViewAllLink");
@@ -1215,6 +1229,155 @@ function formatBazaarPrice(value) {
 function formatBazaarPriceWithUnit(value) {
   const text = formatBazaarPrice(value);
   return text === "-" ? "-" : `${text} G`;
+}
+
+function normalizeSearchKeyword(value) {
+  return String(value || "").trim().toLowerCase();
+}
+
+function getSearchMatchRank(text, normalizedKeyword) {
+  const normalizedText = normalizeSearchKeyword(text);
+  if (normalizedKeyword === "" || normalizedText === "") return Number.MAX_SAFE_INTEGER;
+  if (normalizedText === normalizedKeyword) return SITE_SEARCH_MATCH_RANK.exact;
+  if (normalizedText.startsWith(normalizedKeyword)) return SITE_SEARCH_MATCH_RANK.prefix;
+  if (normalizedText.includes(normalizedKeyword)) return SITE_SEARCH_MATCH_RANK.partial;
+  return Number.MAX_SAFE_INTEGER;
+}
+
+function buildSiteSearchIndex() {
+  const entries = [];
+  state.equipments.forEach((equipment) => {
+    entries.push({
+      name: equipment.name,
+      type: "レシピ",
+      subLabel: "職人アシスト",
+      tabId: "profit",
+      targetValue: equipment.id,
+      keywords: [equipment.name, equipment.craftsman, equipment.category].filter(Boolean).join(" "),
+    });
+  });
+
+  (equipmentDbEntries || []).forEach((entry) => {
+    entries.push({
+      name: entry.equipmentName,
+      type: "装備データ",
+      subLabel: "装備一覧",
+      tabId: "equipment-db",
+      targetValue: entry.equipmentName,
+      keywords: [entry.equipmentName, entry.equipmentType, entry.equipmentGroup].filter(Boolean).join(" "),
+    });
+  });
+
+  (bazaarPrices || []).forEach((row) => {
+    entries.push({
+      name: row.materialName,
+      type: "素材",
+      subLabel: "バザー価格一覧",
+      tabId: "bazaar",
+      targetValue: row.materialName,
+      materialKey: row.materialKey,
+      keywords: [row.materialName, row.category].filter(Boolean).join(" "),
+    });
+  });
+
+  (whiteBoxEntries || []).forEach((entry) => {
+    entries.push({
+      name: entry.itemName,
+      type: "白宝箱",
+      subLabel: "白宝箱",
+      tabId: "white-boxes",
+      targetValue: entry.itemName,
+      keywords: [entry.itemName, entry.itemSlot, ...(Array.isArray(entry.monsters) ? entry.monsters.map((monster) => monster.monsterName) : [])]
+        .filter(Boolean)
+        .join(" "),
+    });
+  });
+
+  (fieldFarmingMonsters || []).forEach((entry) => {
+    const commonKeywords = [entry.monsterName, entry.monsterArea, entry.area, entry.normalDrop, entry.rareDrop, entry.note]
+      .filter(Boolean)
+      .join(" ");
+    if (entry.monsterName) {
+      entries.push({
+        name: entry.monsterName,
+        type: "フィールド狩り",
+        subLabel: "フィールド狩り",
+        tabId: "field-farming",
+        targetValue: entry.monsterName,
+        keywords: commonKeywords,
+      });
+    }
+    if (entry.normalDrop) {
+      entries.push({
+        name: entry.normalDrop,
+        type: "フィールド狩り",
+        subLabel: "フィールド狩り",
+        tabId: "field-farming",
+        targetValue: entry.normalDrop,
+        keywords: commonKeywords,
+      });
+    }
+    if (entry.rareDrop) {
+      entries.push({
+        name: entry.rareDrop,
+        type: "フィールド狩り",
+        subLabel: "フィールド狩り",
+        tabId: "field-farming",
+        targetValue: entry.rareDrop,
+        keywords: commonKeywords,
+      });
+    }
+  });
+
+  (presentCodes || []).forEach((entry) => {
+    entries.push({
+      name: entry.code,
+      type: "プレゼントのじゅもん",
+      subLabel: "プレゼントのじゅもん",
+      tabId: "present-codes",
+      targetValue: entry.code,
+      keywords: [entry.code, entry.reward, entry.note, entry.expiresAt].filter(Boolean).join(" "),
+    });
+  });
+
+  (topUpdates || []).forEach((entry) => {
+    entries.push({
+      name: entry.text,
+      type: "更新情報",
+      subLabel: "更新情報一覧",
+      tabId: "updates",
+      targetValue: entry.text,
+      keywords: [entry.date, entry.text].filter(Boolean).join(" "),
+    });
+  });
+
+  return entries.filter((entry) => String(entry.name || "").trim() !== "");
+}
+
+function getSiteSearchCandidates(keyword) {
+  const normalizedKeyword = normalizeSearchKeyword(keyword);
+  if (normalizedKeyword === "") return [];
+  return buildSiteSearchIndex()
+    .map((entry, index) => {
+      const rankByName = getSearchMatchRank(entry.name, normalizedKeyword);
+      const rankByKeyword = getSearchMatchRank(entry.keywords, normalizedKeyword);
+      const rank = Math.min(rankByName, rankByKeyword);
+      return {
+        ...entry,
+        rank,
+        sourceIndex: index,
+      };
+    })
+    .filter((entry) => Number.isFinite(entry.rank) && entry.rank <= SITE_SEARCH_MATCH_RANK.partial)
+    .sort((a, b) => {
+      if (a.rank !== b.rank) return a.rank - b.rank;
+      const lengthDiff = String(a.name || "").length - String(b.name || "").length;
+      if (lengthDiff !== 0) return lengthDiff;
+      const nameDiff = String(a.name || "").localeCompare(String(b.name || ""), "ja");
+      if (nameDiff !== 0) return nameDiff;
+      return a.sourceIndex - b.sourceIndex;
+    })
+    .slice(0, SITE_SEARCH_MAX_RESULTS);
 }
 
 function normalizeBazaarRate(rate) {
@@ -2324,9 +2487,15 @@ function compareWhiteBoxEntries(a, b) {
 }
 
 function getWhiteBoxFilteredEntries() {
+  const normalizedKeyword = normalizeSearchKeyword(whiteBoxKeyword);
   return (whiteBoxEntries || [])
     .filter((entry) => getWhiteBoxTypeBySlot(entry.itemSlot) === selectedWhiteBoxType)
     .filter((entry) => selectedWhiteBoxSlot === "" || String(entry.itemSlot || "") === selectedWhiteBoxSlot)
+    .filter((entry) => {
+      if (normalizedKeyword === "") return true;
+      const monsterNames = Array.isArray(entry.monsters) ? entry.monsters.map((monster) => monster.monsterName) : [];
+      return [entry.itemName, entry.itemSlot, ...monsterNames].join(" ").toLowerCase().includes(normalizedKeyword);
+    })
     .sort(compareWhiteBoxEntries);
 }
 
@@ -3996,10 +4165,19 @@ function renderPresentCodes() {
     presentCodeListWrap.innerHTML = `<p class="card">表示できるプレゼントのじゅもんがありません。CSV内容を確認してください。</p>`;
     return;
   }
+  const normalizedKeyword = normalizeSearchKeyword(presentCodesKeyword);
+  const filteredCodes = normalizedKeyword
+    ? presentCodes.filter((row) =>
+        [row.code, row.reward, row.expiresAt, row.note]
+          .join(" ")
+          .toLowerCase()
+          .includes(normalizedKeyword)
+      )
+    : presentCodes;
 
   presentCodeListWrap.innerHTML = `
     <div class="present-code-list">
-      ${presentCodes
+      ${filteredCodes
         .map(
           (row) => `
             <article class="present-code-card${row.linkType === "url" ? " is-url" : ""}">
@@ -4063,6 +4241,7 @@ function renderFieldFarmingRanking() {
   }
 
   const priceByMaterialName = getFieldFarmingPriceByMaterialName();
+  const normalizedKeyword = normalizeSearchKeyword(fieldFarmingKeyword);
   const rankedRows = fieldFarmingMonsters
     .map((monster) => {
       const normalDropPrice = priceByMaterialName.get(normalizeMaterialNameKey(monster.normalDrop));
@@ -4079,6 +4258,13 @@ function renderFieldFarmingRanking() {
       const bPrice = Number.isFinite(b[targetPriceKey]) ? b[targetPriceKey] : -1;
       if (aPrice !== bPrice) return bPrice - aPrice;
       return a.monsterArea.localeCompare(b.monsterArea, "ja");
+    })
+    .filter((row) => {
+      if (normalizedKeyword === "") return true;
+      return [row.monsterName, row.monsterArea, row.area, row.normalDrop, row.rareDrop, row.note]
+        .join(" ")
+        .toLowerCase()
+        .includes(normalizedKeyword);
     });
 
   fieldFarmingListWrap.innerHTML = `
@@ -4183,6 +4369,129 @@ function openBazaarFromFavorite(materialKey) {
   navigateByAppParams({ tab: "bazaar", equipmentId: "", materialKey: materialKey || "" });
   renderBazaarPrices();
   document.getElementById("bazaar")?.scrollIntoView({ block: "start", behavior: "smooth" });
+}
+
+async function ensureSiteSearchDataLoaded() {
+  if (hasLoadedSiteSearchData || isSiteSearchDataLoading) return;
+  isSiteSearchDataLoading = true;
+  try {
+    await Promise.all([
+      ensureBazaarPricesLoaded(),
+      ensurePresentCodesLoaded(),
+      ensureFieldFarmingMonstersLoaded(),
+      ensureWhiteBoxDataLoaded(),
+      ensureEquipmentDbDataLoaded(),
+    ]);
+    hasLoadedSiteSearchData = true;
+  } finally {
+    isSiteSearchDataLoading = false;
+  }
+}
+
+function applySiteSearchNavigation(entry) {
+  if (!entry) return;
+  const keyword = String(entry.targetValue || "").trim();
+  if (entry.tabId === "updates") {
+    const params = new URLSearchParams();
+    if (keyword) params.set("q", keyword);
+    const queryText = params.toString();
+    window.location.href = `./updates.html${queryText ? `?${queryText}` : ""}`;
+    return;
+  }
+  if (entry.tabId === "profit") {
+    openRecipeFromFavorite(keyword);
+    return;
+  }
+  if (entry.tabId === "equipment-db") {
+    equipmentDbNameKeyword = keyword;
+    switchTab("equipment-db");
+    navigateByAppParams({ tab: "equipment-db", equipmentId: "", materialKey: "" });
+    renderEquipmentDbCards();
+    document.getElementById("equipment-db")?.scrollIntoView({ block: "start", behavior: "smooth" });
+    return;
+  }
+  if (entry.tabId === "bazaar") {
+    switchTab("bazaar");
+    bazaarSearchText = keyword;
+    selectedBazaarMaterialName = keyword;
+    pendingBazaarFocusMaterialKey = String(entry.materialKey || "");
+    navigateByAppParams({
+      tab: "bazaar",
+      equipmentId: "",
+      materialKey: pendingBazaarFocusMaterialKey,
+    });
+    renderBazaarPrices();
+    document.getElementById("bazaar")?.scrollIntoView({ block: "start", behavior: "smooth" });
+    return;
+  }
+  if (entry.tabId === "white-boxes") {
+    whiteBoxKeyword = keyword;
+    switchTab("white-boxes");
+    navigateByAppParams({ tab: "white-boxes", equipmentId: "", materialKey: "" });
+    renderWhiteBoxCards();
+    document.getElementById("white-boxes")?.scrollIntoView({ block: "start", behavior: "smooth" });
+    return;
+  }
+  if (entry.tabId === "field-farming") {
+    fieldFarmingKeyword = keyword;
+    switchTab("field-farming");
+    navigateByAppParams({ tab: "field-farming", equipmentId: "", materialKey: "" });
+    renderFieldFarmingRanking();
+    document.getElementById("field-farming")?.scrollIntoView({ block: "start", behavior: "smooth" });
+    return;
+  }
+  if (entry.tabId === "present-codes") {
+    presentCodesKeyword = keyword;
+    switchTab("present-codes");
+    navigateByAppParams({ tab: "present-codes", equipmentId: "", materialKey: "" });
+    renderPresentCodes();
+    document.getElementById("present-codes")?.scrollIntoView({ block: "start", behavior: "smooth" });
+  }
+}
+
+function renderSiteSearchCandidates() {
+  if (!siteSearchResultWrap) return;
+  const normalizedKeyword = normalizeSearchKeyword(siteSearchKeyword);
+  if (normalizedKeyword === "") {
+    siteSearchResultWrap.hidden = true;
+    siteSearchResultWrap.innerHTML = "";
+    return;
+  }
+  const candidates = getSiteSearchCandidates(siteSearchKeyword);
+  siteSearchResultWrap.hidden = false;
+  if (isSiteSearchDataLoading && !hasLoadedSiteSearchData) {
+    siteSearchResultWrap.innerHTML = `<p class="site-search-empty">検索データを読み込み中です...</p>`;
+    return;
+  }
+  if (candidates.length === 0) {
+    siteSearchResultWrap.innerHTML = `<p class="site-search-empty">一致する候補がありません。</p>`;
+    return;
+  }
+  siteSearchResultWrap.innerHTML = candidates
+    .map(
+      (entry, index) => `
+        <button type="button" class="site-search-result-item" data-site-search-candidate-index="${index}">
+          <p class="site-search-result-main">${escapeHtml(entry.name)}</p>
+          <p class="site-search-result-meta">
+            <span class="site-search-chip site-search-chip-type">${escapeHtml(entry.type)}</span>
+            <span class="site-search-chip">${escapeHtml(entry.subLabel)}</span>
+          </p>
+        </button>
+      `
+    )
+    .join("");
+
+  siteSearchResultWrap.querySelectorAll("[data-site-search-candidate-index]").forEach((button) => {
+    button.addEventListener("click", () => {
+      const candidateIndex = Number(button.dataset.siteSearchCandidateIndex || -1);
+      const selected = candidates[candidateIndex];
+      if (!selected) return;
+      siteSearchKeyword = String(selected.name || "");
+      if (siteSearchInput) siteSearchInput.value = siteSearchKeyword;
+      applySiteSearchNavigation(selected);
+      siteSearchResultWrap.hidden = true;
+    });
+  });
 }
 
 function getBazaarRowByMaterialKey(materialKey) {
@@ -6447,6 +6756,7 @@ function rerenderAll() {
   if (activeTabId === "orbs") renderOrbCards();
   if (activeTabId === "white-boxes") renderWhiteBoxCards();
   if (activeTabId === "equipment-db") renderEquipmentDbCards();
+  renderSiteSearchCandidates();
 }
 
 // --- イベント定義 ---
@@ -6794,6 +7104,29 @@ if (equipmentDbMonsterSearchInput) {
     renderEquipmentDbCards();
   });
 }
+
+if (siteSearchInput) {
+  siteSearchInput.addEventListener("input", (event) => {
+    siteSearchKeyword = String(event.target.value || "");
+    if (normalizeSearchKeyword(siteSearchKeyword) !== "" && !hasLoadedSiteSearchData) {
+      void ensureSiteSearchDataLoaded().then(() => {
+        renderSiteSearchCandidates();
+      });
+    }
+    renderSiteSearchCandidates();
+  });
+  siteSearchInput.addEventListener("focus", () => {
+    renderSiteSearchCandidates();
+  });
+}
+
+document.addEventListener("click", (event) => {
+  if (!siteSearchResultWrap || !siteSearchInput) return;
+  const target = event.target;
+  if (!(target instanceof Node)) return;
+  if (siteSearchResultWrap.contains(target) || siteSearchInput.contains(target)) return;
+  siteSearchResultWrap.hidden = true;
+});
 
 equipmentDbGroupTabButtons.forEach((button) => {
   button.addEventListener("click", () => {
