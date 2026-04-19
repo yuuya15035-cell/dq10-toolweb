@@ -1,0 +1,21 @@
+{
+  "name": "DQ10職人バザーアシスト",
+  "short_name": "DQ10アシスト",
+  "description": "DQ10の職人・バザー・お気に入り機能をまとめた支援ツール",
+  "start_url": "./../index.html",
+  "display": "standalone",
+  "theme_color": "#634027",
+  "background_color": "#e8e0d5",
+  "icons": [
+    {
+      "src": "./icons/app-icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "./icons/app-icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
