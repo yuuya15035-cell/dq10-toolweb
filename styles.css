@@ -222,6 +222,33 @@ body.is-modal-open {
   gap: 6px;
 }
 
+.home-shortcut-note {
+  margin-top: 10px;
+  padding: 9px 10px;
+  border: 1px solid #ccb391;
+  border-radius: 10px;
+  background: rgba(251, 245, 236, 0.86);
+}
+
+.home-shortcut-note h3 {
+  margin: 0 0 5px;
+  font-size: 0.9rem;
+  color: #503422;
+}
+
+.home-shortcut-note p {
+  margin: 0;
+  font-size: 0.8rem;
+  line-height: 1.5;
+  color: #5c4330;
+}
+
+.home-shortcut-note-sub {
+  margin-top: 4px !important;
+  font-size: 0.76rem !important;
+  color: #6a4f3a !important;
+}
+
 .site-search-result-item {
   width: 100%;
   text-align: left;
@@ -2334,6 +2361,20 @@ button {
     margin-bottom: 4px;
     font-size: 0.72rem;
     line-height: 1.4;
+  }
+
+  .home-shortcut-note {
+    margin-top: 8px;
+    padding: 8px 9px;
+  }
+
+  .home-shortcut-note h3 {
+    font-size: 0.86rem;
+  }
+
+  .home-shortcut-note p {
+    font-size: 0.76rem;
+    line-height: 1.45;
   }
 
   .top-quick-access {
