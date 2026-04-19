@@ -89,7 +89,6 @@
 
       <header class="app-header">
         <h1 id="contentSiteTitle" data-content-key="site_title">ドラゴンクエスト10支援サイト</h1>
-        <h2 class="app-header-subtitle">すぐ使えるホーム</h2>
         <p id="contentSiteNotice" class="app-header-price-note">
           ※価格・情報は手動確認ベースのため、更新タイミングにより実際のゲーム内状況と差が出る場合があります。
         </p>
@@ -348,7 +347,13 @@
       </section>
 
       <section id="bazaar" class="tab-content" aria-label="バザー価格一覧画面">
-        <h2>バザー価格一覧</h2>
+        <h2>
+          バザー価格一覧
+          <span class="tab-heading-note">
+            価格は更新時間時点での最安値になっております。<br>
+            <span id="bazaarPageUpdatedAt">ページ更新: -</span>
+          </span>
+        </h2>
         <div id="bazaarListWrap"></div>
       </section>
 
@@ -574,7 +579,12 @@
       </section>
 
       <section id="favorites" class="tab-content" aria-label="お気に入り一覧画面">
-        <h2>お気に入り</h2>
+        <h2>
+          お気に入り
+          <span class="tab-heading-note">
+            お気に入り登録したものを表示しています。<br>クリックで詳細確認や対象ページへの移動ができます。
+          </span>
+        </h2>
         <div class="favorites-tabs" role="tablist" aria-label="お気に入り表示切替">
           <button
             type="button"
