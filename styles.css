@@ -1624,6 +1624,15 @@ button {
   font-size: 0.72rem;
 }
 
+.bazaar-official-link-button-desktop {
+  display: none;
+  margin-top: 6px;
+  min-height: 28px;
+  padding: 4px 9px;
+  font-size: 0.7rem;
+  align-self: flex-start;
+}
+
 .bazaar-official-link-button::after {
   content: "↗";
   font-size: 0.9em;
@@ -2843,6 +2852,10 @@ button {
 
   .bazaar-quick-actions {
     display: none;
+  }
+
+  .bazaar-official-link-button-desktop {
+    display: inline-flex;
   }
 }
 
