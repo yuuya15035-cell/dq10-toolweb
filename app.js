@@ -960,6 +960,8 @@ let showBazaarMonitoringOnly = false;
 let activeFavoritesTabId = "recipes";
 let bazaarFavoriteMaterialKeys = new Set();
 let recipeFavoriteKeys = new Set();
+let pendingRemovedMaterialFavoriteKeys = new Set();
+let pendingRemovedRecipeFavoriteKeys = new Set();
 let homeFeatureIds = [...DEFAULT_HOME_FEATURE_IDS];
 let homeFeatureIdSet = new Set(homeFeatureIds);
 let activeTabId = "profit";
@@ -4990,6 +4992,21 @@ function switchFavoritesTab(targetTabId) {
   });
 }
 
+function commitPendingFavoriteRemovals() {
+  let hasChanged = false;
+  pendingRemovedRecipeFavoriteKeys.forEach((key) => {
+    if (recipeFavoriteKeys.delete(key)) hasChanged = true;
+  });
+  pendingRemovedMaterialFavoriteKeys.forEach((key) => {
+    if (bazaarFavoriteMaterialKeys.delete(key)) hasChanged = true;
+  });
+  pendingRemovedRecipeFavoriteKeys.clear();
+  pendingRemovedMaterialFavoriteKeys.clear();
+  if (!hasChanged) return;
+  saveRecipeFavoriteState();
+  saveBazaarFavoriteState();
+}
+
 function renderFavoriteRecipesSection() {
   if (!favoriteRecipesListWrap) return;
   const favoriteEquipments = state.equipments
@@ -5005,8 +5022,10 @@ function renderFavoriteRecipesSection() {
     <div class="favorites-list">
       ${favoriteEquipments
         .map((equipment) => {
+          const favoriteKey = getRecipeFavoriteKey(equipment);
+          const isPendingRemoval = favoriteKey !== "" && pendingRemovedRecipeFavoriteKeys.has(favoriteKey);
           return `
-            <article class="favorite-item-card">
+            <article class="favorite-item-card ${isPendingRemoval ? "is-pending-removal" : ""}">
               <header class="favorite-item-header">
                 <button type="button" class="favorite-item-title-button" data-favorite-recipe-id="${equipment.id}">
                   ${equipment.name}
@@ -5015,6 +5034,19 @@ function renderFavoriteRecipesSection() {
               <p class="favorite-item-meta">原価目安: ${formatGold(getRoundedEquipmentMaterialCost(equipment.id))}</p>
               <p class="favorite-item-meta">必要素材: ${getFavoriteRecipeMaterialSummary(equipment.id)}</p>
               <a href="#" class="favorite-link-button" data-favorite-recipe-link-id="${equipment.id}">職人アシストで開く</a>
+              <button
+                type="button"
+                class="favorite-sub-action-button ${isPendingRemoval ? "is-restore" : ""}"
+                data-favorite-recipe-toggle-key="${favoriteKey}"
+                aria-label="${equipment.name}をお気に入り${isPendingRemoval ? "再登録" : "解除"}"
+              >
+                ${isPendingRemoval ? "★ もう一度登録" : "☆ お気に入り解除"}
+              </button>
+              ${
+                isPendingRemoval
+                  ? `<p class="favorite-pending-note">このページを離れると一覧から外れます。</p>`
+                  : ""
+              }
             </article>
           `;
         })
@@ -5031,6 +5063,18 @@ function renderFavoriteRecipesSection() {
     link.addEventListener("click", (event) => {
       event.preventDefault();
       openRecipeFromFavorite(String(link.dataset.favoriteRecipeLinkId || ""));
+    });
+  });
+  favoriteRecipesListWrap.querySelectorAll("[data-favorite-recipe-toggle-key]").forEach((button) => {
+    button.addEventListener("click", () => {
+      const key = String(button.dataset.favoriteRecipeToggleKey || "");
+      if (key === "") return;
+      if (pendingRemovedRecipeFavoriteKeys.has(key)) {
+        pendingRemovedRecipeFavoriteKeys.delete(key);
+      } else {
+        pendingRemovedRecipeFavoriteKeys.add(key);
+      }
+      renderFavoriteRecipesSection();
     });
   });
 }
@@ -5052,6 +5096,7 @@ function renderFavoriteMaterialsSection() {
     <div class="favorite-materials-grid">
       ${favoriteRows
         .map((row) => {
+          const isPendingRemoval = pendingRemovedMaterialFavoriteKeys.has(row.materialKey);
           const changeRate = getBazaarRowChangeRate(row);
           const changePresentation = getBazaarChangePresentation(changeRate);
           const changeArrowHtml =
@@ -5059,7 +5104,7 @@ function renderFavoriteMaterialsSection() {
               ? `<span class="favorite-material-change-arrow ${changePresentation.toneClass}" aria-hidden="true">${changePresentation.arrow}</span>`
               : "";
           return `
-            <article class="favorite-material-card">
+            <article class="favorite-material-card ${isPendingRemoval ? "is-pending-removal" : ""}">
               <header class="favorite-material-header">
                 <button
                   type="button"
@@ -5076,6 +5121,19 @@ function renderFavoriteMaterialsSection() {
                 <span class="favorite-material-change-value ${changePresentation.toneClass}">${changePresentation.text}</span>
                 ${changeArrowHtml}
               </p>
+              <button
+                type="button"
+                class="favorite-sub-action-button ${isPendingRemoval ? "is-restore" : ""}"
+                data-favorite-material-toggle-key="${row.materialKey}"
+                aria-label="${row.materialName}をお気に入り${isPendingRemoval ? "再登録" : "解除"}"
+              >
+                ${isPendingRemoval ? "★ もう一度登録" : "☆ お気に入り解除"}
+              </button>
+              ${
+                isPendingRemoval
+                  ? `<p class="favorite-pending-note">このページを離れると一覧から外れます。</p>`
+                  : ""
+              }
             </article>
           `;
         })
@@ -5086,6 +5144,18 @@ function renderFavoriteMaterialsSection() {
   favoriteMaterialsListWrap.querySelectorAll("[data-favorite-material-key]").forEach((button) => {
     button.addEventListener("click", () => {
       openFavoriteMaterialModal(String(button.dataset.favoriteMaterialKey || ""));
+    });
+  });
+  favoriteMaterialsListWrap.querySelectorAll("[data-favorite-material-toggle-key]").forEach((button) => {
+    button.addEventListener("click", () => {
+      const key = String(button.dataset.favoriteMaterialToggleKey || "");
+      if (key === "") return;
+      if (pendingRemovedMaterialFavoriteKeys.has(key)) {
+        pendingRemovedMaterialFavoriteKeys.delete(key);
+      } else {
+        pendingRemovedMaterialFavoriteKeys.add(key);
+      }
+      renderFavoriteMaterialsSection();
     });
   });
 }
@@ -5556,6 +5626,9 @@ function scrollToToolSection(target) {
 
 function switchToHomeMode(options = {}) {
   const { scroll = true } = options;
+  if (appMode === "tool" && activeTabId === "favorites") {
+    commitPendingFavoriteRemovals();
+  }
   appMode = "home";
   tabContents.forEach((tab) => tab.classList.remove("active"));
   applyAppMode();
@@ -5574,6 +5647,9 @@ function switchTab(target) {
     !isAdminModeEnabled
       ? "profit"
       : requestedTarget;
+  if (activeTabId === "favorites" && normalizedTarget !== "favorites") {
+    commitPendingFavoriteRemovals();
+  }
   activeTabId = normalizedTarget;
   appMode = "tool";
   applyAppMode();

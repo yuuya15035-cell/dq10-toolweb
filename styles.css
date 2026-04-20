@@ -2072,6 +2072,11 @@ button {
   box-shadow: 0 3px 10px rgba(77, 53, 31, 0.12);
 }
 
+.favorite-item-card.is-pending-removal,
+.favorite-material-card.is-pending-removal {
+  opacity: 0.62;
+}
+
 .favorite-item-header {
   display: flex;
   align-items: center;
@@ -2111,6 +2116,35 @@ button {
   font-size: 0.88rem;
   font-weight: 700;
   text-decoration: none;
+}
+
+.favorite-sub-action-button {
+  margin-top: 8px;
+  border: 1px solid #9c7858;
+  border-radius: 8px;
+  background: #f8efe2;
+  color: #6b4a2f;
+  padding: 7px 10px;
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+.favorite-sub-action-button:hover {
+  cursor: pointer;
+  background: #f4e7d6;
+}
+
+.favorite-sub-action-button.is-restore {
+  border-color: #4f7d58;
+  color: #2e5f38;
+  background: #edf8ef;
+}
+
+.favorite-pending-note {
+  margin: 6px 0 0;
+  font-size: 0.72rem;
+  line-height: 1.35;
+  color: #775f48;
 }
 
 .favorite-materials-grid {
