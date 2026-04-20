@@ -1064,9 +1064,6 @@ const appRoot = document.querySelector(".app");
 const mobileBottomNav = document.querySelector(".mobile-bottom-nav");
 const mobileBottomNavItems = document.querySelectorAll(".mobile-bottom-nav-item");
 const appHeader = document.querySelector(".app-header");
-const homeSiteSearch = document.getElementById("homeSiteSearch");
-const siteSearchInput = getRequiredElementById("siteSearchInput");
-const siteSearchResultWrap = getRequiredElementById("siteSearchResultWrap");
 const toolSiteSearchDock = document.getElementById("toolSiteSearchDock");
 const toolSiteSearchToggleButton = document.getElementById("toolSiteSearchToggleButton");
 const toolSiteSearchPanel = document.getElementById("toolSiteSearchPanel");
@@ -1076,6 +1073,7 @@ const topUpdateSection = document.getElementById("topUpdateSection");
 const topUpdateList = document.getElementById("topUpdateList");
 const topUpdateViewAllLink = document.getElementById("topUpdateViewAllLink");
 const topQuickAccessSection = document.querySelector(".top-quick-access");
+const homeShortcutNoteBottom = document.getElementById("homeShortcutNoteBottom");
 const homeQuickFeatureGrid = getRequiredElementById("homeQuickFeatureGrid");
 const homeModeButton = document.getElementById("homeModeButton");
 
@@ -4619,10 +4617,6 @@ function applySiteSearchNavigation(entry) {
   const resetSearchUi = () => {
     siteSearchKeyword = "";
     syncSiteSearchInputValues();
-    if (siteSearchResultWrap) {
-      siteSearchResultWrap.hidden = true;
-      siteSearchResultWrap.innerHTML = "";
-    }
     if (toolSiteSearchResultWrap) {
       toolSiteSearchResultWrap.hidden = true;
       toolSiteSearchResultWrap.innerHTML = "";
@@ -4697,7 +4691,7 @@ function applySiteSearchNavigation(entry) {
 }
 
 function renderSiteSearchCandidates() {
-  const searchTargets = appMode === "home" ? [{ wrap: siteSearchResultWrap }] : [{ wrap: toolSiteSearchResultWrap }];
+  const searchTargets = [{ wrap: toolSiteSearchResultWrap }];
   const enabledTargets = searchTargets.filter((target) => target.wrap);
   if (enabledTargets.length === 0) return;
   const normalizedKeyword = normalizeSearchKeyword(siteSearchKeyword);
@@ -5504,9 +5498,6 @@ function scrollToHomeTop() {
 }
 
 function syncSiteSearchInputValues() {
-  if (siteSearchInput && siteSearchInput.value !== siteSearchKeyword) {
-    siteSearchInput.value = siteSearchKeyword;
-  }
   if (toolSiteSearchInput && toolSiteSearchInput.value !== siteSearchKeyword) {
     toolSiteSearchInput.value = siteSearchKeyword;
   }
@@ -5527,13 +5518,10 @@ function applyAppMode() {
   const isHomeMode = appMode === "home";
   appRoot?.classList.toggle("is-home-mode", isHomeMode);
   appHeader?.classList.toggle("is-collapsed", !isHomeMode);
-  homeSiteSearch?.classList.toggle("is-hidden", !isHomeMode);
-  toolSiteSearchDock?.classList.toggle("is-visible", !isHomeMode);
-  if (isHomeMode) {
-    setToolSiteSearchOpen(false);
-  }
+  toolSiteSearchDock?.classList.add("is-visible");
   topQuickAccessSection?.classList.toggle("is-collapsed", !isHomeMode);
   topUpdateSection?.classList.toggle("is-collapsed", !isHomeMode);
+  homeShortcutNoteBottom?.classList.toggle("is-collapsed", !isHomeMode);
   mobileBottomNav?.classList.toggle("is-disabled", isHomeMode);
   if (isHomeMode) {
     setMobileBottomNavHidden(false);
@@ -7473,22 +7461,6 @@ if (equipmentDbMonsterSearchInput) {
   });
 }
 
-if (siteSearchInput) {
-  siteSearchInput.addEventListener("input", (event) => {
-    siteSearchKeyword = String(event.target.value || "");
-    syncSiteSearchInputValues();
-    if (normalizeSearchKeyword(siteSearchKeyword) !== "" && !hasLoadedSiteSearchData) {
-      void ensureSiteSearchDataLoaded().then(() => {
-        renderSiteSearchCandidates();
-      });
-    }
-    renderSiteSearchCandidates();
-  });
-  siteSearchInput.addEventListener("focus", () => {
-    renderSiteSearchCandidates();
-  });
-}
-
 if (toolSiteSearchInput) {
   toolSiteSearchInput.addEventListener("input", (event) => {
     siteSearchKeyword = String(event.target.value || "");
@@ -7520,12 +7492,10 @@ if (toolSiteSearchToggleButton) {
 document.addEventListener("click", (event) => {
   const target = event.target;
   if (!(target instanceof Node)) return;
-  const isInsideHomeSearch = Boolean(siteSearchResultWrap?.contains(target) || siteSearchInput?.contains(target));
   const isInsideToolSearch = Boolean(
     toolSiteSearchDock?.contains(target) || toolSiteSearchResultWrap?.contains(target) || toolSiteSearchInput?.contains(target)
   );
-  if (isInsideHomeSearch || isInsideToolSearch) return;
-  if (siteSearchResultWrap) siteSearchResultWrap.hidden = true;
+  if (isInsideToolSearch) return;
   if (toolSiteSearchResultWrap) toolSiteSearchResultWrap.hidden = true;
 });
 
