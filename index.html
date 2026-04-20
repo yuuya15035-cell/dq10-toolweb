@@ -95,23 +95,9 @@
         <p id="contentSiteIntro">ドラゴンクエスト10の日常プレイを少し便利にする支援サイトです。</p>
         <p id="contentSiteSummary" data-content-key="site_summary">バザー確認、職人準備、装備検索をスマホでも見やすくまとめています。
 よく使う機能はホームに追加して、自分用に使いやすくできます。</p>
-        <section id="homeSiteSearch" class="site-search" aria-label="サイト内検索">
-          <label class="field site-search-field" for="siteSearchInput">
-            <span>サイト内検索</span>
-            <input id="siteSearchInput" type="search" placeholder="装備名・素材名・モンスター名などで検索" autocomplete="off" />
-          </label>
-          <div id="siteSearchResultWrap" class="site-search-result-wrap" hidden></div>
-        </section>
-        <section class="home-shortcut-note" aria-label="ホーム画面追加案内">
-          <h3>ホーム画面に追加できます</h3>
-          <p>よく使う方はホーム画面に追加していただくと、日々の確認がよりスムーズになります。</p>
-          <p class="home-shortcut-note-sub">
-            iPhone は共有メニューから「ホーム画面に追加」、Android はブラウザメニューから「ホーム画面に追加」で登録できます。
-          </p>
-        </section>
       </header>
 
-      <section id="toolSiteSearchDock" class="tool-site-search-dock" aria-label="サイト内検索（ツールページ）">
+      <section id="toolSiteSearchDock" class="tool-site-search-dock" aria-label="サイト内検索（全ページ共通）">
         <button
           id="toolSiteSearchToggleButton"
           class="tool-site-search-toggle"
@@ -728,6 +714,14 @@
           </div>
           <p id="bazaarHistorySaveMessage" class="helper-text" aria-live="polite"></p>
         </div>
+      </section>
+
+      <section id="homeShortcutNoteBottom" class="home-shortcut-note home-shortcut-note-bottom" aria-label="ホーム画面追加案内">
+        <h3>ホーム画面に追加</h3>
+        <p>毎日使う方は追加しておくと、次回からすぐ開けます。</p>
+        <p class="home-shortcut-note-sub">
+          iPhone は共有メニュー、Android はブラウザメニューから「ホーム画面に追加」を選択してください。
+        </p>
       </section>
     </main>
 

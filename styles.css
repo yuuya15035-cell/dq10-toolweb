@@ -260,6 +260,17 @@ body.is-modal-open {
   color: #6a4f3a !important;
 }
 
+.home-shortcut-note.is-collapsed {
+  display: none;
+}
+
+.home-shortcut-note-bottom {
+  margin-top: calc(var(--ui-section-vertical-space) + 8px);
+  margin-bottom: 6px;
+  border-color: #d7c5ad;
+  background: rgba(248, 243, 235, 0.86);
+}
+
 .site-search-result-item {
   width: 100%;
   text-align: left;
@@ -2444,6 +2455,12 @@ button {
   .home-shortcut-note p {
     font-size: 0.76rem;
     line-height: 1.45;
+  }
+
+  .home-shortcut-note-bottom {
+    margin-top: 12px;
+    margin-bottom: 2px;
+    padding: 7px 8px;
   }
 
   .top-quick-access {
