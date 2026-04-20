@@ -3939,6 +3939,20 @@ function renderBazaarPrices() {
                   <p class="bazaar-today-price ${priceVisualToneClass}">${todayPriceHtml}</p>
                   ${priceStatusBadgeHtml}
                   <p class="bazaar-change-rate">前日比: <span class="bazaar-change-value ${changePresentation.toneClass}">${changePresentation.text}</span>${changeArrowHtml}</p>
+                  ${
+                    hasOfficialUrl
+                      ? `<a
+                          class="bazaar-official-link-button bazaar-official-link-button-desktop"
+                          href="${row.officialUrl}"
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          aria-label="${row.materialName}の公式相場サイトを新しいタブで開く"
+                          data-bazaar-official-link="true"
+                        >
+                          公式相場
+                        </a>`
+                      : ""
+                  }
                 </div>
                 <div class="bazaar-mini-chart-wrap" aria-label="${row.materialName}の価格推移（直近${selectedBazaarChartRangeDays}日）">
                   ${
@@ -4065,6 +4079,12 @@ function renderBazaarPrices() {
       saveBazaarFavoriteState();
       renderBazaarPrices();
       renderFavoritesPage();
+    });
+  });
+
+  bazaarListWrap.querySelectorAll("[data-bazaar-official-link]").forEach((link) => {
+    link.addEventListener("click", (event) => {
+      event.stopPropagation();
     });
   });
 
