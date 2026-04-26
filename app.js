@@ -1638,7 +1638,7 @@ function normalizeBazaarCommentText(comment) {
 
 function isExcludedByComment(comment) {
   const text = normalizeBazaarCommentText(comment);
-  return text.includes("固定価格") || text.includes("現在固定") || text.includes("店売り価格固定");
+  return text.includes("固定価格") || text.includes("現在固定") || text.includes("店売り価格固定") || text.includes("除外");
 }
 
 function isMonitoringByComment(comment) {
@@ -1679,6 +1679,7 @@ function buildBazaarAdminCsvModel(lines) {
       return {
         id: `bazaar-admin-row-${index}`,
         cells,
+        originalCells: [...cells],
         lineNumber: entry.lineNumber,
         originalIndex: entry.originalIndex,
         materialName,
@@ -1691,6 +1692,7 @@ function buildBazaarAdminCsvModel(lines) {
         shopPriceText: String(cells[indexes.shopPrice] || "").trim(),
         officialUrl: parseOfficialUrl(cells[indexes.officialUrl]),
         excluded: isExcludedByComment(comment),
+        isUpdated: false,
       };
     })
     .filter((row) => row.materialName !== "");
@@ -1706,7 +1708,8 @@ function serializeBazaarAdminCsvModel(model) {
     (a, b) => Number(a?.originalIndex ?? Number.MAX_SAFE_INTEGER) - Number(b?.originalIndex ?? Number.MAX_SAFE_INTEGER)
   );
   rowsInOriginalOrder.forEach((row) => {
-    lines.push(row.cells.map((value) => escapeCsvValue(value)).join(","));
+    const rowCells = row?.isUpdated ? row.cells : row.originalCells || row.cells;
+    lines.push(rowCells.map((value) => escapeCsvValue(value)).join(","));
   });
   return `\uFEFF${lines.join("\n")}\n`;
 }
@@ -1744,7 +1747,7 @@ function extractUnitPrice(text) {
 
 function applyPriceUpdate(row, newPrice) {
   const safePriceText = normalizeBazaarAdminNumberText(newPrice);
-  if (!row || !safePriceText) return false;
+  if (!row || row.excluded || !safePriceText) return false;
   const currentToday = String(row.cells[bazaarAdminCsvModel.indexes.todayPrice] || "").trim();
   row.cells[bazaarAdminCsvModel.indexes.previousDayPrice] = currentToday;
   row.cells[bazaarAdminCsvModel.indexes.todayPrice] = safePriceText;
@@ -1752,6 +1755,7 @@ function applyPriceUpdate(row, newPrice) {
   row.todayPriceText = safePriceText;
   row.previousDayPriceText = currentToday;
   row.updatedAtText = String(row.cells[bazaarAdminCsvModel.indexes.updatedAt] || "");
+  row.isUpdated = true;
   return true;
 }
 
@@ -1764,7 +1768,7 @@ async function reloadBazaarAdminCsvModel() {
 }
 
 function isBazaarAdminRowUpdated(row) {
-  return bazaarAdminLastResults.get(row?.id)?.status === "success";
+  return row?.isUpdated === true;
 }
 
 function sortBazaarAdminRows(rows, options = {}) {
