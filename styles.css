@@ -627,6 +627,46 @@ body.is-modal-open {
   display: block;
 }
 
+.monster-info-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 10px;
+}
+.monster-info-card {
+  text-align: left;
+}
+.monster-info-name {
+  margin: 0 0 6px;
+  font-size: 1rem;
+}
+.monster-type {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: #f2ece5;
+  font-size: 0.78rem;
+}
+.monster-drop-normal { color: #2d6a4f; }
+.monster-drop-rare { color: #7b2cbf; }
+.monster-info-more { color: #6b5d4e; font-size: 0.82rem; }
+.monster-info-modal-overlay {
+  position: fixed; inset: 0; background: rgba(0,0,0,.45); z-index: 1200;
+  display: flex; align-items: center; justify-content: center; padding: 14px;
+}
+.monster-info-modal {
+  width: min(680px, 100%);
+  max-height: min(82vh, 700px);
+  overflow: auto;
+  background: #fff;
+  border-radius: 14px;
+  padding: 14px;
+  position: relative;
+}
+.monster-info-modal-close { position: sticky; top: 0; margin-left: auto; display: block; }
+.monster-info-chip-list { display: flex; flex-wrap: wrap; gap: 6px; }
+.monster-info-chip { background: #f4f4f4; border-radius: 999px; padding: 2px 8px; font-size: .82rem; }
+.monster-info-habitat-list { padding-left: 1.1rem; margin: 0; }
+
 .field-farming-description {
   margin-top: 0;
   margin-bottom: 12px;

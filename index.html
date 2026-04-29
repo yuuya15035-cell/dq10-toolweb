@@ -82,6 +82,9 @@
               <button type="button" class="side-menu-item side-menu-sub-item" data-menu-target="equipment-db">
                 装備
               </button>
+              <button type="button" class="side-menu-item side-menu-sub-item" data-menu-target="monster-info">
+                モンスター情報
+              </button>
             </div>
           </section>
         </nav>
@@ -491,6 +494,21 @@
         <div id="equipmentDbListWrap"></div>
       </section>
 
+      <section id="monster-info" class="tab-content" aria-label="モンスター情報画面">
+        <h2>データベース &gt; モンスター情報</h2>
+        <div class="monster-info-controls card">
+          <label class="field" for="monsterInfoSearchInput">
+            <span>検索（モンスター名・ドロップ・生息地）</span>
+            <input id="monsterInfoSearchInput" type="search" placeholder="例: スライム / やくそう / ガートラント" autocomplete="off" />
+          </label>
+          <label class="field" for="monsterInfoTypeFilterSelect">
+            <span>モンスター種別</span>
+            <select id="monsterInfoTypeFilterSelect"></select>
+          </label>
+        </div>
+        <div id="monsterInfoListWrap"></div>
+      </section>
+
       <section id="ui-settings" class="tab-content" aria-label="UI設定画面">
         <h2 data-content-key="ui_settings_heading">UI設定</h2>
         <div class="card ui-settings-panel">
@@ -838,6 +856,13 @@
           ×
         </button>
         <div id="fieldFarmingMapModalBody"></div>
+      </section>
+    </div>
+
+    <div id="monsterInfoModalOverlay" class="monster-info-modal-overlay" hidden>
+      <section id="monsterInfoModalDialog" class="monster-info-modal" role="dialog" aria-modal="true" aria-label="モンスター詳細" tabindex="-1">
+        <button id="monsterInfoModalCloseButton" class="monster-info-modal-close" type="button" aria-label="閉じる">×</button>
+        <div id="monsterInfoModalBody"></div>
       </section>
     </div>
 
