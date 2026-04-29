@@ -15,6 +15,8 @@ const MONSTER_DATA_CSV_PATH = "./data/monster_data.csv";
 const ORB_MONSTERS_CSV_PATH = "./data/orb_monsters.csv";
 const WHITE_BOX_CSV_PATH = "./data/white_box.csv";
 const EQUIPMENT_DB_CSV_PATH = "./data/equipment_data.csv";
+const MONSTER_DETAIL_DATA_CSV_PATH = "./data/monster_detail_data.csv";
+const MAP_MASTER_CSV_PATH = "./data/map_master.csv";
 const UPDATES_JSON_PATH = "./data/updates.json";
 const UI_SETTINGS_JSON_PATH = "./data/ui-settings.json";
 const CONTENT_JSON_PATH = "./data/content.json";
@@ -32,6 +34,7 @@ const HOME_FEATURE_DEFINITIONS = [
   { id: "orbs", tabId: "orbs", title: "宝珠", icon: "💎" },
   { id: "white-boxes", tabId: "white-boxes", title: "白宝箱", icon: "📦" },
   { id: "equipment-db", tabId: "equipment-db", title: "装備データ", icon: "🛡️" },
+  { id: "monster-info", tabId: "monster-info", title: "モンスター情報", icon: "👾" },
   { id: "field-farming", tabId: "field-farming", title: "フィールド狩り", icon: "⚔️" },
 ];
 const DEFAULT_HOME_FEATURE_IDS = Object.freeze(["profit", "bazaar", "favorites", "white-boxes"]);
@@ -52,6 +55,7 @@ const TAB_IDS = new Set([
   "orbs",
   "white-boxes",
   "equipment-db",
+  "monster-info",
   "ui-settings",
   "content-editor",
   "updates-editor",
@@ -1006,6 +1010,7 @@ let hasLoadedFieldFarmingMonsters = false;
 let hasLoadedOrbData = false;
 let hasLoadedWhiteBoxData = false;
 let hasLoadedEquipmentDbData = false;
+let hasLoadedMonsterInfoData = false;
 let hasLoadedBazaarPrices = false;
 let hasLoadedBazaarPriceHistory = false;
 let hasLoadedCraftIdealValues = false;
@@ -1015,12 +1020,14 @@ let fieldFarmingLoadError = false;
 let orbLoadError = false;
 let whiteBoxLoadError = false;
 let equipmentDbLoadError = false;
+let monsterInfoLoadError = false;
 let hasSyncedMaterialPricesWithBazaar = false;
 let isPresentCodesLoading = false;
 let isFieldFarmingLoading = false;
 let isOrbDataLoading = false;
 let isWhiteBoxDataLoading = false;
 let isEquipmentDbDataLoading = false;
+let isMonsterInfoDataLoading = false;
 let isBazaarLoading = false;
 let isBazaarHistoryLoading = false;
 let isCraftIdealValuesLoading = false;
@@ -1030,6 +1037,12 @@ let fieldFarmingLoadingPromise = null;
 let orbDataLoadingPromise = null;
 let whiteBoxDataLoadingPromise = null;
 let equipmentDbDataLoadingPromise = null;
+let monsterInfoDataLoadingPromise = null;
+let monsterDetailEntries = [];
+let mapMasterByName = new Map();
+let selectedMonsterInfoType = "";
+let monsterInfoSearchKeyword = "";
+let activeMonsterInfoId = "";
 let bazaarLoadingPromise = null;
 let bazaarHistoryLoadingPromise = null;
 let bazaarAdminCsvModel = null;
@@ -1150,6 +1163,13 @@ const equipmentDbNameSearchInput = getRequiredElementById("equipmentDbNameSearch
 const equipmentDbMonsterSearchToggleButton = getRequiredElementById("equipmentDbMonsterSearchToggleButton");
 const equipmentDbMonsterSearchField = getRequiredElementById("equipmentDbMonsterSearchField");
 const equipmentDbMonsterSearchInput = getRequiredElementById("equipmentDbMonsterSearchInput");
+const monsterInfoSearchInput = getRequiredElementById("monsterInfoSearchInput");
+const monsterInfoTypeFilterSelect = getRequiredElementById("monsterInfoTypeFilterSelect");
+const monsterInfoListWrap = getRequiredElementById("monsterInfoListWrap");
+const monsterInfoModalOverlay = getRequiredElementById("monsterInfoModalOverlay");
+const monsterInfoModalDialog = getRequiredElementById("monsterInfoModalDialog");
+const monsterInfoModalCloseButton = getRequiredElementById("monsterInfoModalCloseButton");
+const monsterInfoModalBody = getRequiredElementById("monsterInfoModalBody");
 const fieldFarmingSortSelect = getRequiredElementById("fieldFarmingSortSelect");
 const fieldFarmingMapModalOverlay = getRequiredElementById("fieldFarmingMapModalOverlay");
 const fieldFarmingMapModalDialog = getRequiredElementById("fieldFarmingMapModalDialog");
@@ -2919,6 +2939,101 @@ async function ensureEquipmentDbDataLoaded() {
   return equipmentDbDataLoadingPromise;
 }
 
+function findHeaderIndex(headers, candidates) {
+  const normalized = headers.map((h) => String(h || "").trim().toLowerCase());
+  return candidates
+    .map((name) => String(name || "").trim().toLowerCase())
+    .map((name) => normalized.indexOf(name))
+    .find((index) => index >= 0) ?? -1;
+}
+
+function parsePipeList(value) {
+  return String(value || "")
+    .split("｜")
+    .map((item) => item.trim())
+    .filter(Boolean);
+}
+
+async function loadMonsterDetailDataCsv() {
+  const lines = await fetchCsvLines(MONSTER_DETAIL_DATA_CSV_PATH);
+  if (lines.length <= 1) return [];
+  const headers = parseCsvLine(lines[0]);
+  const idx = {
+    id: findHeaderIndex(headers, ["monster_id", "id"]),
+    name: findHeaderIndex(headers, ["monster_name", "name", "monster"]),
+    type: findHeaderIndex(headers, ["monster_type", "type"]),
+    exp: findHeaderIndex(headers, ["exp", "experience"]),
+    gold: findHeaderIndex(headers, ["gold"]),
+    normalDrop: findHeaderIndex(headers, ["normal_drop", "drop_normal"]),
+    rareDrop: findHeaderIndex(headers, ["rare_drop", "drop_rare"]),
+    whiteBox: findHeaderIndex(headers, ["white_box", "whitebox"]),
+    orbs: findHeaderIndex(headers, ["orbs", "orb"]),
+    habitats: findHeaderIndex(headers, ["habitats", "habitat"]),
+  };
+  return lines.slice(1).map((line, index) => {
+    const row = parseCsvLine(line);
+    const name = row[idx.name] || "";
+    const habitats = parsePipeList(row[idx.habitats]);
+    return {
+      id: row[idx.id] || `monster:${index}:${name}`,
+      name,
+      type: row[idx.type] || "不明",
+      exp: row[idx.exp] || "-",
+      gold: row[idx.gold] || "-",
+      normalDrop: row[idx.normalDrop] || "-",
+      rareDrop: row[idx.rareDrop] || "-",
+      whiteBoxList: parsePipeList(row[idx.whiteBox]),
+      orbList: parsePipeList(row[idx.orbs]),
+      habitats,
+      searchText: [name, row[idx.normalDrop], row[idx.rareDrop], habitats.join(" "), row[idx.type]].join(" ").toLowerCase(),
+    };
+  }).filter((row) => row.name);
+}
+
+async function loadMapMasterCsv() {
+  const lines = await fetchCsvLines(MAP_MASTER_CSV_PATH);
+  const byName = new Map();
+  if (lines.length <= 1) return byName;
+  const headers = parseCsvLine(lines[0]);
+  const mapNameIndex = findHeaderIndex(headers, ["map_name", "name"]);
+  const verIndex = findHeaderIndex(headers, ["unlock_version", "version"]);
+  const groupIndex = findHeaderIndex(headers, ["area_group", "area"]);
+  for (const line of lines.slice(1)) {
+    const row = parseCsvLine(line);
+    const mapName = String(row[mapNameIndex] || "").trim();
+    if (!mapName) continue;
+    byName.set(mapName, { version: String(row[verIndex] || "").trim(), areaGroup: String(row[groupIndex] || "").trim() });
+  }
+  return byName;
+}
+
+async function ensureMonsterInfoDataLoaded() {
+  if (hasLoadedMonsterInfoData || isMonsterInfoDataLoading) return monsterInfoDataLoadingPromise;
+  isMonsterInfoDataLoading = true;
+  monsterInfoDataLoadingPromise = (async () => {
+    try {
+      monsterDetailEntries = await loadMonsterDetailDataCsv();
+      hasLoadedMonsterInfoData = true;
+      monsterInfoLoadError = false;
+      try {
+        mapMasterByName = await loadMapMasterCsv();
+      } catch (error) {
+        console.warn(`map_master.csv の読み込みに失敗しました: path=${MAP_MASTER_CSV_PATH}`, error);
+        mapMasterByName = new Map();
+      }
+    } catch (error) {
+      console.error(`monster_detail_data.csv の読み込みに失敗しました: path=${MONSTER_DETAIL_DATA_CSV_PATH}`, error);
+      monsterDetailEntries = [];
+      mapMasterByName = new Map();
+      monsterInfoLoadError = true;
+    } finally {
+      isMonsterInfoDataLoading = false;
+      if (activeTabId === "monster-info") renderMonsterInfoCards();
+    }
+  })();
+  return monsterInfoDataLoadingPromise;
+}
+
 function prefetchDataForTab(tabId) {
   if (tabId === "present-codes") {
     void ensurePresentCodesLoaded();
@@ -2951,6 +3066,10 @@ function prefetchDataForTab(tabId) {
     void ensureEquipmentDbDataLoaded();
     return;
   }
+  if (tabId === "monster-info") {
+    void ensureMonsterInfoDataLoaded();
+    return;
+  }
   if (tabId === "bazaar-admin") {
     if (!bazaarAdminCsvModel) {
       void reloadBazaarAdminCsvModel()
@@ -2963,6 +3082,44 @@ function prefetchDataForTab(tabId) {
         });
     }
   }
+}
+
+function getFilteredMonsterDetailEntries() {
+  const keyword = normalizeSearchKeyword(monsterInfoSearchKeyword);
+  return monsterDetailEntries.filter((entry) => {
+    if (selectedMonsterInfoType && entry.type !== selectedMonsterInfoType) return false;
+    if (!keyword) return true;
+    return entry.searchText.includes(keyword);
+  });
+}
+
+function renderMonsterInfoCards() {
+  if (!monsterInfoListWrap || !monsterInfoTypeFilterSelect) return;
+  if (isMonsterInfoDataLoading && !hasLoadedMonsterInfoData) {
+    monsterInfoListWrap.innerHTML = `<p class="card">読み込み中です。しばらくお待ちください。</p>`;
+    return;
+  }
+  if (!monsterDetailEntries.length) {
+    monsterInfoListWrap.innerHTML = monsterInfoLoadError ? `<p class="card">モンスターデータを読み込めませんでした。</p>` : `<p class="card">表示できるデータがありません。</p>`;
+    return;
+  }
+  const types = Array.from(new Set(monsterDetailEntries.map((entry) => entry.type).filter(Boolean))).sort((a, b) => a.localeCompare(b, "ja"));
+  if (selectedMonsterInfoType && !types.includes(selectedMonsterInfoType)) selectedMonsterInfoType = "";
+  monsterInfoTypeFilterSelect.innerHTML = `<option value="">すべて</option>${types.map((type) => `<option value="${escapeHtml(type)}" ${selectedMonsterInfoType === type ? "selected" : ""}>${escapeHtml(type)}</option>`).join("")}`;
+  const filtered = getFilteredMonsterDetailEntries();
+  monsterInfoListWrap.innerHTML = `<div class="monster-info-grid">${filtered.map((entry) => {
+    const habitats = entry.habitats.slice(0, 2);
+    const remain = Math.max(entry.habitats.length - habitats.length, 0);
+    return `<button type="button" class="card monster-info-card" data-monster-info-id="${escapeHtml(entry.id)}">
+      <h3 class="monster-info-name">${escapeHtml(entry.name)}</h3>
+      <p><span class="monster-type" data-type="${escapeHtml(entry.type)}">${escapeHtml(entry.type)}</span></p>
+      <p>経験値：${escapeHtml(entry.exp)}</p>
+      <p class="monster-drop-normal">通常：${escapeHtml(entry.normalDrop || "-")}</p>
+      <p class="monster-drop-rare">レア：${escapeHtml(entry.rareDrop || "-")}</p>
+      <p>生息地：${escapeHtml(habitats.join(" / ") || "-")}</p>
+      ${remain > 0 ? `<p class="monster-info-more">ほか${remain}件</p>` : ""}
+    </button>`;
+  }).join("")}</div>`;
 }
 
 function renderWhiteBoxCards() {
@@ -5726,6 +5883,8 @@ function switchTab(target) {
     renderWhiteBoxCards();
   } else if (normalizedTarget === "equipment-db") {
     renderEquipmentDbCards();
+  } else if (normalizedTarget === "monster-info") {
+    renderMonsterInfoCards();
   } else if (normalizedTarget === "bazaar-admin") {
     renderBazaarAdminPanel();
   } else if (normalizedTarget === "profit") {
@@ -5954,6 +6113,14 @@ if (fieldFarmingMapModalOverlay) {
     }
   });
 }
+if (monsterInfoModalOverlay) {
+  monsterInfoModalOverlay.addEventListener("click", (event) => {
+    if (event.target === monsterInfoModalOverlay) {
+      monsterInfoModalOverlay.hidden = true;
+      activeMonsterInfoId = "";
+    }
+  });
+}
 
 if (favoriteMaterialModalCloseButton) {
   favoriteMaterialModalCloseButton.addEventListener("click", () => {
@@ -5977,6 +6144,50 @@ if (bazaarDetailModalHandle) {
 if (fieldFarmingMapModalCloseButton) {
   fieldFarmingMapModalCloseButton.addEventListener("click", () => {
     closeFieldFarmingMapModal();
+  });
+}
+if (monsterInfoModalCloseButton) {
+  monsterInfoModalCloseButton.addEventListener("click", () => {
+    if (monsterInfoModalOverlay) monsterInfoModalOverlay.hidden = true;
+    activeMonsterInfoId = "";
+  });
+}
+if (monsterInfoSearchInput) {
+  monsterInfoSearchInput.addEventListener("input", () => {
+    monsterInfoSearchKeyword = monsterInfoSearchInput.value;
+    renderMonsterInfoCards();
+  });
+}
+if (monsterInfoTypeFilterSelect) {
+  monsterInfoTypeFilterSelect.addEventListener("change", () => {
+    selectedMonsterInfoType = monsterInfoTypeFilterSelect.value;
+    renderMonsterInfoCards();
+  });
+}
+if (monsterInfoListWrap) {
+  monsterInfoListWrap.addEventListener("click", (event) => {
+    const button = event.target.closest("[data-monster-info-id]");
+    if (!(button instanceof HTMLElement)) return;
+    const targetId = String(button.dataset.monsterInfoId || "");
+    const entry = monsterDetailEntries.find((item) => item.id === targetId);
+    if (!entry || !monsterInfoModalOverlay || !monsterInfoModalBody) return;
+    activeMonsterInfoId = targetId;
+    const habitatsHtml = entry.habitats.map((name) => {
+      const meta = mapMasterByName.get(name);
+      const version = meta?.version ? `ver${escapeHtml(meta.version)}` : "ver未設定";
+      const area = meta?.areaGroup ? escapeHtml(meta.areaGroup) : "";
+      return `<li><strong>${escapeHtml(name)}</strong><br>${version}${area ? ` / ${area}` : ""}</li>`;
+    }).join("");
+    const chips = (values) => values.length ? values.map((v) => `<span class="monster-info-chip">${escapeHtml(v)}</span>`).join("") : "なし";
+    monsterInfoModalBody.innerHTML = `<h3>${escapeHtml(entry.name)}</h3><p><span class="monster-type" data-type="${escapeHtml(entry.type)}">${escapeHtml(entry.type)}</span></p>
+      <p>経験値：${escapeHtml(entry.exp)} / ゴールド：${escapeHtml(entry.gold)}</p>
+      <p class="monster-drop-normal">通常ドロップ：${escapeHtml(entry.normalDrop || "-")}</p>
+      <p class="monster-drop-rare">レアドロップ：${escapeHtml(entry.rareDrop || "-")}</p>
+      <div><p>白宝箱</p><div class="monster-info-chip-list">${chips(entry.whiteBoxList)}</div></div>
+      <div><p>宝珠 / オーブ</p><div class="monster-info-chip-list">${chips(entry.orbList)}</div></div>
+      <div><p>生息地</p><ul class="monster-info-habitat-list">${habitatsHtml || "<li>なし</li>"}</ul></div>`;
+    monsterInfoModalOverlay.hidden = false;
+    monsterInfoModalDialog?.focus();
   });
 }
 
@@ -7241,6 +7452,7 @@ function rerenderAll() {
   if (activeTabId === "orbs") renderOrbCards();
   if (activeTabId === "white-boxes") renderWhiteBoxCards();
   if (activeTabId === "equipment-db") renderEquipmentDbCards();
+  if (activeTabId === "monster-info") renderMonsterInfoCards();
   renderSiteSearchCandidates();
 }
 
