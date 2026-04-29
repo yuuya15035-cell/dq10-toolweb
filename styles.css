@@ -178,7 +178,12 @@ body.is-modal-open {
 #contentSiteIntro,
 #contentSiteSummary {
   max-width: 44em;
-  line-height: 1.65;
+  line-height: 1.58;
+}
+
+#contentSiteIntro,
+#contentSiteSummary {
+  font-size: 0.95rem;
 }
 
 #contentSiteSummary {
@@ -2472,6 +2477,14 @@ button {
 
   .app-header h1 {
     margin-bottom: 6px;
+    font-size: calc(var(--ui-title-font-size) * 0.88);
+    line-height: 1.2;
+  }
+
+  #contentSiteIntro,
+  #contentSiteSummary {
+    font-size: 0.84rem;
+    line-height: 1.5;
   }
 
   .app-header-subtitle {

@@ -1009,6 +1009,12 @@ let hasLoadedEquipmentDbData = false;
 let hasLoadedBazaarPrices = false;
 let hasLoadedBazaarPriceHistory = false;
 let hasLoadedCraftIdealValues = false;
+let bazaarLoadError = false;
+let presentCodesLoadError = false;
+let fieldFarmingLoadError = false;
+let orbLoadError = false;
+let whiteBoxLoadError = false;
+let equipmentDbLoadError = false;
 let hasSyncedMaterialPricesWithBazaar = false;
 let isPresentCodesLoading = false;
 let isFieldFarmingLoading = false;
@@ -2756,9 +2762,11 @@ async function ensurePresentCodesLoaded() {
     try {
       presentCodes = await loadPresentCodesCsv();
       hasLoadedPresentCodes = true;
+      presentCodesLoadError = false;
     } catch (error) {
       console.error(`datapresent_codes.csv の読み込みに失敗しました: path=${PRESENT_CODES_CSV_PATH}`, error);
       presentCodes = [];
+      presentCodesLoadError = true;
     } finally {
       isPresentCodesLoading = false;
       if (activeTabId === "present-codes") renderPresentCodes();
@@ -2774,6 +2782,7 @@ async function ensureBazaarPricesLoaded() {
     try {
       bazaarPrices = await loadBazaarPricesCsv();
       hasLoadedBazaarPrices = true;
+      bazaarLoadError = false;
       if (!hasSyncedMaterialPricesWithBazaar) {
         const materialSyncResult = syncMaterialPricesWithBazaar(state.materials, bazaarPrices);
         state.materials = materialSyncResult.materials;
@@ -2783,6 +2792,7 @@ async function ensureBazaarPricesLoaded() {
     } catch (error) {
       console.error(`bazaar_prices.csv の読み込みに失敗しました: path=${BAZAAR_CSV_PATH}`, error);
       bazaarPrices = [];
+      bazaarLoadError = true;
     } finally {
       isBazaarLoading = false;
       if (activeTabId === "bazaar") renderBazaarPrices();
@@ -2823,9 +2833,11 @@ async function ensureFieldFarmingMonstersLoaded() {
     try {
       fieldFarmingMonsters = await loadFieldFarmingMonstersCsv();
       hasLoadedFieldFarmingMonsters = true;
+      fieldFarmingLoadError = false;
     } catch (error) {
       console.error(`field_farming_monsters.csv の読み込みに失敗しました: path=${FIELD_FARMING_CSV_PATH}`, error);
       fieldFarmingMonsters = [];
+      fieldFarmingLoadError = true;
     } finally {
       isFieldFarmingLoading = false;
       if (activeTabId === "field-farming") renderFieldFarmingRanking();
@@ -2841,9 +2853,11 @@ async function ensureOrbDataLoaded() {
     try {
       orbEntries = await loadOrbDataCsv();
       hasLoadedOrbData = true;
+      orbLoadError = false;
     } catch (error) {
       console.error(`orb_data.csv の読み込みに失敗しました: path=${ORB_DATA_CSV_PATH}`, error);
       orbEntries = [];
+      orbLoadError = true;
     } finally {
       isOrbDataLoading = false;
       if (activeTabId === "orbs") renderOrbCards();
@@ -2859,9 +2873,11 @@ async function ensureWhiteBoxDataLoaded() {
     try {
       whiteBoxEntries = await loadWhiteBoxCsv();
       hasLoadedWhiteBoxData = true;
+      whiteBoxLoadError = false;
     } catch (error) {
       console.error(`white_box.csv の読み込みに失敗しました: path=${WHITE_BOX_CSV_PATH}`, error);
       whiteBoxEntries = [];
+      whiteBoxLoadError = true;
     } finally {
       isWhiteBoxDataLoading = false;
       if (activeTabId === "white-boxes") renderWhiteBoxCards();
@@ -2880,17 +2896,21 @@ async function ensureEquipmentDbDataLoaded() {
         try {
           whiteBoxEntries = await loadWhiteBoxCsv();
           hasLoadedWhiteBoxData = true;
+      whiteBoxLoadError = false;
         } catch (whiteBoxError) {
           console.error(`white_box.csv の読み込みに失敗しました: path=${WHITE_BOX_CSV_PATH}`, whiteBoxError);
           whiteBoxEntries = [];
+      whiteBoxLoadError = true;
         }
       }
       const whiteBoxSummaryByName = buildWhiteBoxSummaryByItemName(whiteBoxEntries);
       equipmentDbEntries = attachWhiteBoxDropsToEquipmentEntries(loadedEquipmentDbEntries, whiteBoxSummaryByName);
       hasLoadedEquipmentDbData = true;
+      equipmentDbLoadError = false;
     } catch (error) {
       console.error(`equipment_data.csv の読み込みに失敗しました: path=${EQUIPMENT_DB_CSV_PATH}`, error);
       equipmentDbEntries = [];
+      equipmentDbLoadError = true;
     } finally {
       isEquipmentDbDataLoading = false;
       if (activeTabId === "equipment-db") renderEquipmentDbCards();
@@ -2958,11 +2978,13 @@ function renderWhiteBoxCards() {
   whiteBoxSortSelect.value = selectedWhiteBoxSort;
 
   if (isWhiteBoxDataLoading && !hasLoadedWhiteBoxData) {
-    whiteBoxListWrap.innerHTML = `<p class="card">白宝箱データを読み込み中です...</p>`;
+    whiteBoxListWrap.innerHTML = `<p class="card">読み込み中です。しばらくお待ちください。</p>`;
     return;
   }
   if (!Array.isArray(whiteBoxEntries) || whiteBoxEntries.length === 0) {
-    whiteBoxListWrap.innerHTML = `<p class="card">表示できる白宝箱データがありません。CSV内容を確認してください。</p>`;
+    whiteBoxListWrap.innerHTML = whiteBoxLoadError
+      ? `<p class="card">データを読み込めませんでした。<br>時間をおいて再度お試しください。</p>`
+      : `<p class="card">現在表示できるデータがありません。</p>`;
     whiteBoxSlotFilterSelect.innerHTML = `<option value="">すべて</option>`;
     return;
   }
@@ -2994,7 +3016,7 @@ function renderWhiteBoxCards() {
     <div class="whitebox-card-grid">
       ${
         filteredEntries.length === 0
-          ? `<p class="card whitebox-empty">条件に一致する装備がありません。</p>`
+          ? `<p class="card whitebox-empty">条件に一致するデータが見つかりませんでした。<br>検索条件を変えてお試しください。</p>`
           : filteredEntries
               .map((entry) => {
                 const isExpanded = expandedWhiteBoxItemId === entry.id;
@@ -3136,7 +3158,7 @@ function renderEquipmentDbCards() {
   equipmentDbSortSelect.value = selectedEquipmentDbSort;
 
   if (isEquipmentDbDataLoading && !hasLoadedEquipmentDbData) {
-    equipmentDbListWrap.innerHTML = `<p class="card">装備データを読み込み中です...</p>`;
+    equipmentDbListWrap.innerHTML = `<p class="card">読み込み中です。しばらくお待ちください。</p>`;
     return;
   }
   if (!Array.isArray(equipmentDbEntries) || equipmentDbEntries.length === 0) {
@@ -3144,7 +3166,9 @@ function renderEquipmentDbCards() {
       equipmentDbTypeFilterField.hidden = selectedEquipmentDbGroup === "armor";
     }
     equipmentDbTypeFilterSelect.disabled = selectedEquipmentDbGroup === "armor";
-    equipmentDbListWrap.innerHTML = `<p class="card">表示できる装備データがありません。CSV内容を確認してください。</p>`;
+    equipmentDbListWrap.innerHTML = equipmentDbLoadError
+      ? `<p class="card">データを読み込めませんでした。<br>時間をおいて再度お試しください。</p>`
+      : `<p class="card">現在表示できるデータがありません。</p>`;
     equipmentDbTypeFilterSelect.innerHTML = `<option value="">すべて</option>`;
     return;
   }
@@ -3182,7 +3206,7 @@ function renderEquipmentDbCards() {
     <div class="equipment-db-card-grid">
       ${
         filteredEntries.length === 0
-          ? `<p class="card equipment-db-empty">条件に一致する装備がありません。</p>`
+          ? `<p class="card equipment-db-empty">条件に一致するデータが見つかりませんでした。<br>検索条件を変えてお試しください。</p>`
           : filteredEntries
               .map((entry) => {
                 const isExpanded = expandedEquipmentDbId === entry.id;
@@ -3737,12 +3761,14 @@ function getVisibleBazaarRows() {
 function renderBazaarPrices() {
   if (!bazaarListWrap) return;
   if (isBazaarLoading && !hasLoadedBazaarPrices) {
-    bazaarListWrap.innerHTML = `<p>バザー価格データを読み込み中です...</p>`;
+    bazaarListWrap.innerHTML = `<p>読み込み中です。しばらくお待ちください。</p>`;
     return;
   }
 
   if (!Array.isArray(bazaarPrices) || bazaarPrices.length === 0) {
-    bazaarListWrap.innerHTML = `<p>表示できる価格データがありません。CSV内容を確認してください。</p>`;
+    bazaarListWrap.innerHTML = bazaarLoadError
+      ? `<p>データを読み込めませんでした。<br>時間をおいて再度お試しください。</p>`
+      : `<p>現在表示できるデータがありません。</p>`;
     return;
   }
   if (bazaarPageUpdatedAt) {
@@ -3854,10 +3880,10 @@ function renderBazaarPrices() {
         visibleRows.length === 0
           ? `<p>${
               showBazaarMonitoringOnly
-                ? "監視中の素材が見つかりません。"
+                ? "条件に一致するデータが見つかりませんでした。検索条件を変えてお試しください。"
                 : showBazaarFavoritesOnly
-                  ? "お気に入り登録された素材がありません。"
-                  : "選択した条件のデータがありません。"
+                  ? "条件に一致するデータが見つかりませんでした。検索条件を変えてお試しください。"
+                  : "条件に一致するデータが見つかりませんでした。検索条件を変えてお試しください。"
             }</p>`
           : visibleRows
               .map((row) => {
@@ -4170,11 +4196,13 @@ function renderOrbCards() {
     orbSearchInput.value = orbSearchKeyword;
   }
   if (isOrbDataLoading && !hasLoadedOrbData) {
-    orbListWrap.innerHTML = `<p class="card">宝珠データを読み込み中です...</p>`;
+    orbListWrap.innerHTML = `<p class="card">読み込み中です。しばらくお待ちください。</p>`;
     return;
   }
   if (!Array.isArray(orbEntries) || orbEntries.length === 0) {
-    orbListWrap.innerHTML = `<p class="card">表示できる宝珠データがありません。CSV内容を確認してください。</p>`;
+    orbListWrap.innerHTML = orbLoadError
+      ? `<p class="card">データを読み込めませんでした。<br>時間をおいて再度お試しください。</p>`
+      : `<p class="card">現在表示できるデータがありません。</p>`;
     orbCategoryFilterWrap.innerHTML = "";
     return;
   }
@@ -4198,7 +4226,7 @@ function renderOrbCards() {
     <div class="orb-card-grid">
       ${
         filteredRows.length === 0
-          ? `<p class="card orb-empty">条件に一致する宝珠がありません。</p>`
+          ? `<p class="card orb-empty">条件に一致するデータが見つかりませんでした。<br>検索条件を変えてお試しください。</p>`
           : filteredRows
               .map((row) => {
                 const isExpanded = expandedOrbId === row.id;
@@ -4245,11 +4273,13 @@ function renderOrbCards() {
 function renderPresentCodes() {
   if (!presentCodeListWrap) return;
   if (isPresentCodesLoading && !hasLoadedPresentCodes) {
-    presentCodeListWrap.innerHTML = `<p class="card">プレゼントのじゅもんを読み込み中です...</p>`;
+    presentCodeListWrap.innerHTML = `<p class="card">読み込み中です。しばらくお待ちください。</p>`;
     return;
   }
   if (!Array.isArray(presentCodes) || presentCodes.length === 0) {
-    presentCodeListWrap.innerHTML = `<p class="card">表示できるプレゼントのじゅもんがありません。CSV内容を確認してください。</p>`;
+    presentCodeListWrap.innerHTML = presentCodesLoadError
+      ? `<p class="card">データを読み込めませんでした。<br>時間をおいて再度お試しください。</p>`
+      : `<p class="card">現在表示できるデータがありません。</p>`;
     return;
   }
   const normalizedKeyword = normalizeSearchKeyword(presentCodesKeyword);
@@ -4316,14 +4346,16 @@ function getFieldFarmingPriceByMaterialName() {
 function renderFieldFarmingRanking() {
   if (!fieldFarmingListWrap) return;
   if (isFieldFarmingLoading && !hasLoadedFieldFarmingMonsters) {
-    fieldFarmingListWrap.innerHTML = `<p class="card">フィールド狩りデータを読み込み中です...</p>`;
+    fieldFarmingListWrap.innerHTML = `<p class="card">読み込み中です。しばらくお待ちください。</p>`;
     return;
   }
   if (fieldFarmingSortSelect) {
     fieldFarmingSortSelect.value = selectedFieldFarmingSort;
   }
   if (!Array.isArray(fieldFarmingMonsters) || fieldFarmingMonsters.length === 0) {
-    fieldFarmingListWrap.innerHTML = `<p class="card">表示できるフィールド狩りデータがありません。CSV内容を確認してください。</p>`;
+    fieldFarmingListWrap.innerHTML = fieldFarmingLoadError
+      ? `<p class="card">データを読み込めませんでした。<br>時間をおいて再度お試しください。</p>`
+      : `<p class="card">現在表示できるデータがありません。</p>`;
     return;
   }
 
