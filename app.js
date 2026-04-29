@@ -2545,6 +2545,11 @@ function normalizeWhiteBoxSlot(rawSlot) {
   return WHITE_BOX_SLOT_NORMALIZE_MAP.get(slot) || slot;
 }
 
+function isOneHandSwordCategory(categoryName) {
+  const normalized = String(categoryName || "").trim().toLowerCase().replace(/[\s_\-]/g, "");
+  return normalized === "片手剣" || normalized === "片手剣系" || normalized === "onehandsword" || normalized === "sword";
+}
+
 function getWhiteBoxTypeBySlot(itemSlot) {
   return isArmorSlot(itemSlot) ? "armor" : "weapon";
 }
@@ -3105,6 +3110,9 @@ function renderMonsterInfoCards() {
   }
   const types = Array.from(new Set(monsterDetailEntries.map((entry) => entry.type).filter(Boolean))).sort((a, b) => a.localeCompare(b, "ja"));
   if (selectedMonsterInfoType && !types.includes(selectedMonsterInfoType)) selectedMonsterInfoType = "";
+  if (selectedMonsterInfoType === "") {
+    selectedMonsterInfoType = types.includes("スライム系") ? "スライム系" : types[0] || "";
+  }
   monsterInfoTypeFilterSelect.innerHTML = `<option value="">すべて</option>${types.map((type) => `<option value="${escapeHtml(type)}" ${selectedMonsterInfoType === type ? "selected" : ""}>${escapeHtml(type)}</option>`).join("")}`;
   const filtered = getFilteredMonsterDetailEntries();
   monsterInfoListWrap.innerHTML = `<div class="monster-info-grid">${filtered.map((entry) => {
@@ -3161,6 +3169,9 @@ function renderWhiteBoxCards() {
 
   if (selectedWhiteBoxSlot !== "" && !slots.includes(selectedWhiteBoxSlot)) {
     selectedWhiteBoxSlot = "";
+  }
+  if (selectedWhiteBoxSlot === "") {
+    selectedWhiteBoxSlot = slots.find((slot) => isOneHandSwordCategory(slot)) || "";
   }
 
   whiteBoxSlotFilterSelect.innerHTML = `
@@ -3344,6 +3355,9 @@ function renderEquipmentDbCards() {
 
   if (isArmorGroup || (selectedEquipmentDbType !== "" && !types.includes(selectedEquipmentDbType))) {
     selectedEquipmentDbType = "";
+  }
+  if (!isArmorGroup && selectedEquipmentDbType === "") {
+    selectedEquipmentDbType = types.find((type) => isOneHandSwordCategory(type)) || "";
   }
   if (equipmentDbTypeFilterField) {
     equipmentDbTypeFilterField.hidden = isArmorGroup;
@@ -4367,6 +4381,9 @@ function renderOrbCards() {
   const categories = ["炎", "水", "風", "光", "闇"].filter((category) =>
     orbEntries.some((row) => normalizeOrbCategoryName(row.orbCategory) === category)
   );
+  if (selectedOrbCategory === "") {
+    selectedOrbCategory = categories.includes("炎") ? "炎" : categories[0] || "";
+  }
   orbCategoryFilterWrap.innerHTML = `
     <button type="button" class="orb-category-button ${selectedOrbCategory === "" ? "is-active" : ""}" data-orb-category="">すべて</button>
     ${categories
