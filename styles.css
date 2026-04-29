@@ -629,15 +629,37 @@ body.is-modal-open {
 
 .monster-info-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
   gap: 10px;
+  align-items: stretch;
 }
 .monster-info-card {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
   text-align: left;
+  color: #111;
+}
+.monster-info-card p {
+  margin: 0 0 6px;
+  color: #111;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+.monster-info-title-area {
+  min-height: calc(1.4em * 2);
+  margin-bottom: 6px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid #c9b9a5;
 }
 .monster-info-name {
-  margin: 0 0 6px;
+  margin: 0;
   font-size: 1rem;
+  line-height: 1.4;
+  color: #111;
+}
+.monster-info-line {
+  margin-top: 0;
 }
 .monster-type {
   display: inline-block;
@@ -645,10 +667,12 @@ body.is-modal-open {
   border-radius: 999px;
   background: #f2ece5;
   font-size: 0.78rem;
+  color: #111;
 }
-.monster-drop-normal { color: #2d6a4f; }
-.monster-drop-rare { color: #7b2cbf; }
-.monster-info-more { color: #6b5d4e; font-size: 0.82rem; }
+.monster-drop-normal { color: #111; }
+.monster-drop-rare { color: #2d6a4f; }
+.monster-label { color: inherit; }
+.monster-info-more { color: #111; font-size: 0.82rem; }
 .monster-info-modal-overlay {
   position: fixed; inset: 0; background: rgba(0,0,0,.45); z-index: 1200;
   display: flex; align-items: center; justify-content: center; padding: 14px;
@@ -665,10 +689,23 @@ body.is-modal-open {
   padding: 14px;
   position: relative;
 }
+.monster-info-modal,
+.monster-info-modal p,
+.monster-info-modal li,
+.monster-info-modal h3,
+.monster-info-modal strong {
+  color: #111;
+}
 .monster-info-modal-close { position: sticky; top: 0; margin-left: auto; display: block; }
 .monster-info-chip-list { display: flex; flex-wrap: wrap; gap: 6px; }
 .monster-info-chip { background: #f4f4f4; border-radius: 999px; padding: 2px 8px; font-size: .82rem; }
 .monster-info-habitat-list { padding-left: 1.1rem; margin: 0; }
+
+@media (max-width: 640px) {
+  .monster-info-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
 
 .field-farming-description {
   margin-top: 0;

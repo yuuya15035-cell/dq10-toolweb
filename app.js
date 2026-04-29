@@ -3119,11 +3119,13 @@ function renderMonsterInfoCards() {
     const habitats = entry.habitats.slice(0, 2);
     const remain = Math.max(entry.habitats.length - habitats.length, 0);
     return `<button type="button" class="card monster-info-card" data-monster-info-id="${escapeHtml(entry.id)}">
-      <h3 class="monster-info-name">${escapeHtml(entry.name)}</h3>
-      <p><span class="monster-type" data-type="${escapeHtml(entry.type)}">${escapeHtml(entry.type)}</span></p>
+      <div class="monster-info-title-area">
+        <h3 class="monster-info-name">${escapeHtml(entry.name)}</h3>
+      </div>
+      <p class="monster-info-line"><span class="monster-type" data-type="${escapeHtml(entry.type)}">${escapeHtml(entry.type)}</span></p>
       <p>経験値：${escapeHtml(entry.exp)}</p>
-      <p class="monster-drop-normal">通常：${escapeHtml(entry.normalDrop || "-")}</p>
-      <p class="monster-drop-rare">レア：${escapeHtml(entry.rareDrop || "-")}</p>
+      <p class="monster-drop-normal"><span class="monster-label">通常：</span>${escapeHtml(entry.normalDrop || "-")}</p>
+      <p class="monster-drop-rare"><span class="monster-label">レア：</span>${escapeHtml(entry.rareDrop || "-")}</p>
       <p>生息地：${escapeHtml(habitats.join(" / ") || "-")}</p>
       ${remain > 0 ? `<p class="monster-info-more">ほか${remain}件</p>` : ""}
     </button>`;
@@ -6206,8 +6208,8 @@ if (monsterInfoListWrap) {
     const chips = (values) => values.length ? values.map((v) => `<span class="monster-info-chip">${escapeHtml(v)}</span>`).join("") : "なし";
     monsterInfoModalBody.innerHTML = `<h3>${escapeHtml(entry.name)}</h3><p><span class="monster-type" data-type="${escapeHtml(entry.type)}">${escapeHtml(entry.type)}</span></p>
       <p>経験値：${escapeHtml(entry.exp)} / ゴールド：${escapeHtml(entry.gold)}</p>
-      <p class="monster-drop-normal">通常ドロップ：${escapeHtml(entry.normalDrop || "-")}</p>
-      <p class="monster-drop-rare">レアドロップ：${escapeHtml(entry.rareDrop || "-")}</p>
+      <p class="monster-drop-normal"><span class="monster-label">通常ドロップ：</span>${escapeHtml(entry.normalDrop || "-")}</p>
+      <p class="monster-drop-rare"><span class="monster-label">レアドロップ：</span>${escapeHtml(entry.rareDrop || "-")}</p>
       <div><p>白宝箱</p><div class="monster-info-chip-list">${chips(entry.whiteBoxList)}</div></div>
       <div><p>宝珠 / オーブ</p><div class="monster-info-chip-list">${chips(entry.orbList)}</div></div>
       <div><p>生息地</p><ul class="monster-info-habitat-list">${habitatsHtml || "<li>なし</li>"}</ul></div>`;
