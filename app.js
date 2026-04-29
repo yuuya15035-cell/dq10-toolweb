@@ -5863,6 +5863,9 @@ function switchTab(target) {
   if (activeTabId === "favorites" && normalizedTarget !== "favorites") {
     commitPendingFavoriteRemovals();
   }
+  if (normalizedTarget !== "monster-info") {
+    closeMonsterInfoModal();
+  }
   activeTabId = normalizedTarget;
   appMode = "tool";
   applyAppMode();
@@ -6113,11 +6116,17 @@ if (fieldFarmingMapModalOverlay) {
     }
   });
 }
+function closeMonsterInfoModal() {
+  if (!monsterInfoModalOverlay) return;
+  monsterInfoModalOverlay.hidden = true;
+  if (monsterInfoModalBody) monsterInfoModalBody.innerHTML = "";
+  activeMonsterInfoId = "";
+}
+
 if (monsterInfoModalOverlay) {
   monsterInfoModalOverlay.addEventListener("click", (event) => {
     if (event.target === monsterInfoModalOverlay) {
-      monsterInfoModalOverlay.hidden = true;
-      activeMonsterInfoId = "";
+      closeMonsterInfoModal();
     }
   });
 }
@@ -6148,8 +6157,7 @@ if (fieldFarmingMapModalCloseButton) {
 }
 if (monsterInfoModalCloseButton) {
   monsterInfoModalCloseButton.addEventListener("click", () => {
-    if (monsterInfoModalOverlay) monsterInfoModalOverlay.hidden = true;
-    activeMonsterInfoId = "";
+    closeMonsterInfoModal();
   });
 }
 if (monsterInfoSearchInput) {
@@ -6170,7 +6178,7 @@ if (monsterInfoListWrap) {
     if (!(button instanceof HTMLElement)) return;
     const targetId = String(button.dataset.monsterInfoId || "");
     const entry = monsterDetailEntries.find((item) => item.id === targetId);
-    if (!entry || !monsterInfoModalOverlay || !monsterInfoModalBody) return;
+    if (!entry || !monsterInfoModalOverlay || !monsterInfoModalBody || activeTabId !== "monster-info") return;
     activeMonsterInfoId = targetId;
     const habitatsHtml = entry.habitats.map((name) => {
       const meta = mapMasterByName.get(name);
@@ -6666,6 +6674,10 @@ document.addEventListener("keydown", (event) => {
     }
     if (activeFavoriteMaterialModalKey) {
       closeFavoriteMaterialModal();
+      return;
+    }
+    if (activeMonsterInfoId) {
+      closeMonsterInfoModal();
       return;
     }
     if (adminFabPanel && !adminFabPanel.hidden) {

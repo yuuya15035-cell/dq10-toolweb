@@ -653,6 +653,9 @@ body.is-modal-open {
   position: fixed; inset: 0; background: rgba(0,0,0,.45); z-index: 1200;
   display: flex; align-items: center; justify-content: center; padding: 14px;
 }
+.monster-info-modal-overlay[hidden] {
+  display: none !important;
+}
 .monster-info-modal {
   width: min(680px, 100%);
   max-height: min(82vh, 700px);
