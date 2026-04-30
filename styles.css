@@ -3352,6 +3352,7 @@ button {
   display: grid;
   grid-template-columns: repeat(var(--ui-mobile-card-columns), minmax(0, 1fr));
   gap: 10px;
+  align-items: start;
 }
 
 .ui-settings-control-list {
@@ -3757,6 +3758,14 @@ button {
   line-height: 1.4;
 }
 
+.equipment-db-card-meta-row {
+  margin-top: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
 .equipment-db-stats-list {
   margin: 8px 0 0;
   padding: 0;
@@ -3796,13 +3805,23 @@ button {
   padding: 0 10px 10px;
 }
 
+.equipment-db-material-cost {
+  margin: 0;
+  font-size: 0.78rem;
+  color: #4d3a2b;
+}
+
 .equipment-db-open-profit-button {
-  width: 100%;
-  min-height: 42px;
+  width: auto;
+  min-height: 30px;
   border: 1px solid rgba(78, 59, 44, 0.24);
   background: rgba(255, 255, 255, 0.88);
   color: #463426;
   font-weight: 700;
+  font-size: 0.72rem;
+  padding: 4px 8px;
+  border-radius: 8px;
+  flex-shrink: 0;
 }
 
 .equipment-db-open-profit-button:hover {
