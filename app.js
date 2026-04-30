@@ -3489,7 +3489,7 @@ function renderEquipmentDbCards() {
                 const estimatedCostText = profitEquipmentId ? `${formatGold(getRoundedEquipmentMaterialCost(profitEquipmentId))}` : "未計算";
                 return `
                   <article class="card equipment-db-card equipment-db-card-${isArmor ? "armor" : "weapon"} ${isExpanded ? "is-expanded" : ""}">
-                    <button type="button" class="equipment-db-card-toggle" data-equipment-db-id="${entry.id}" aria-expanded="${isExpanded ? "true" : "false"}">
+                    <div class="equipment-db-card-toggle" role="button" tabindex="0" data-equipment-db-id="${entry.id}" aria-expanded="${isExpanded ? "true" : "false"}">
                       <h3 class="equipment-db-card-name">${entry.equipmentName}</h3>
                       ${isArmor && isArmorSet ? `<p class="equipment-db-card-meta">${typeMetaText}</p>` : isArmor ? "" : `<p class="equipment-db-card-meta">${typeMetaText}</p>`}
                       <div class="equipment-db-card-meta-row">
@@ -3498,7 +3498,7 @@ function renderEquipmentDbCards() {
                       </div>
                       ${!isArmor && stats.length > 0 ? `<ul class="equipment-db-stats-list">${stats.join("")}</ul>` : ""}
                       ${collapsedTraitsHtml}
-                    </button>
+                    </div>
                     <div class="equipment-db-card-actions">
                       <p class="equipment-db-material-cost">推定原価（バザー由来）: ${estimatedCostText}</p>
                     </div>
@@ -3519,11 +3519,17 @@ function renderEquipmentDbCards() {
     </div>
   `;
 
-  equipmentDbListWrap.querySelectorAll("[data-equipment-db-id]").forEach((button) => {
-    button.addEventListener("click", () => {
-      const clickedId = String(button.dataset.equipmentDbId || "");
+  equipmentDbListWrap.querySelectorAll("[data-equipment-db-id]").forEach((toggle) => {
+    const handleToggle = () => {
+      const clickedId = String(toggle.dataset.equipmentDbId || "");
       expandedEquipmentDbId = expandedEquipmentDbId === clickedId ? "" : clickedId;
       renderEquipmentDbCards();
+    };
+    toggle.addEventListener("click", handleToggle);
+    toggle.addEventListener("keydown", (event) => {
+      if (event.key !== "Enter" && event.key !== " ") return;
+      event.preventDefault();
+      handleToggle();
     });
   });
   equipmentDbListWrap.querySelectorAll("[data-equipment-db-open-profit]").forEach((button) => {
