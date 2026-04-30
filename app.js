@@ -2476,6 +2476,55 @@ function attachWhiteBoxDropsToEquipmentEntries(entries, whiteBoxSummaryByName) {
   });
 }
 
+
+const ARMOR_SET_PART_DISPLAY_ORDER = ["頭", "からだ上", "からだ下", "腕", "足"];
+
+function normalizeArmorPartCategory(category) {
+  const normalized = String(category || "").trim();
+  if (normalized === "") return "";
+  if (normalized === "頭" || normalized === "アタマ") return "頭";
+  if (normalized === "からだ上" || normalized === "体上") return "からだ上";
+  if (normalized === "からだ下" || normalized === "体下") return "からだ下";
+  if (normalized === "腕" || normalized === "うで") return "腕";
+  if (normalized === "足" || normalized === "あし") return "足";
+  return "";
+}
+
+function getArmorSetPartsFromRecipes(setName) {
+  const setKey = stripArmorSetSuffix(setName);
+  if (!setKey) return [];
+
+  const slotMap = new Map();
+  state.equipments.forEach((equipment) => {
+    const equipmentName = String(equipment?.name || "").trim();
+    const partCategory = normalizeArmorPartCategory(equipment?.category);
+    if (!equipmentName || !partCategory) return;
+    if (!equipmentName.includes(setKey)) return;
+    if (!slotMap.has(partCategory)) {
+      slotMap.set(partCategory, equipmentName);
+    }
+  });
+
+  return ARMOR_SET_PART_DISPLAY_ORDER
+    .filter((part) => slotMap.has(part))
+    .map((part) => ({ part, name: slotMap.get(part) }));
+}
+
+function buildArmorSetPartsHtml(setName) {
+  const parts = getArmorSetPartsFromRecipes(setName);
+  if (parts.length === 0) {
+    return `<p class="equipment-db-trait-empty">部位情報なし</p>`;
+  }
+  return `<dl class="equipment-db-armor-part-grid">${parts
+    .map((part) => `<div><dt>${part.part}</dt><dd>${part.name}</dd></div>`)
+    .join("")}</dl>`;
+}
+
+function formatEstimatedMaterialCostText(equipmentId) {
+  if (!equipmentId) return "未計算";
+  const cost = getRoundedEquipmentMaterialCost(equipmentId);
+  return `${cost.toLocaleString("ja-JP")} G`;
+}
 function stripArmorSetSuffix(name) {
   const normalizedName = String(name || "").trim();
   return normalizedName.endsWith("セット") ? normalizedName.slice(0, -3) : normalizedName;
@@ -3459,6 +3508,12 @@ function renderEquipmentDbCards() {
                       <p class="equipment-db-card-meta">${typeMetaText}</p>
                     </div>`
                   : "";
+                const armorSetPartsHtml = isArmorSet
+                  ? `<div class="equipment-db-detail-section">
+                      <p class="equipment-db-traits-title">セット部位</p>
+                      ${buildArmorSetPartsHtml(entry.equipmentName)}
+                    </div>`
+                  : "";
                 const armorWhiteBoxDropHtml =
                   entry.whiteBoxHasDrop && Array.isArray(entry.whiteBoxArmorDropsBySlot) && entry.whiteBoxArmorDropsBySlot.length > 0
                     ? `<div class="equipment-db-armor-drop-list">${entry.whiteBoxArmorDropsBySlot
@@ -3486,7 +3541,7 @@ function renderEquipmentDbCards() {
                   equipmentName: entry?.equipmentName,
                   equipmentType: entry?.equipmentType,
                 });
-                const estimatedCostText = profitEquipmentId ? `${formatGold(getRoundedEquipmentMaterialCost(profitEquipmentId))}` : "未計算";
+                const estimatedCostText = formatEstimatedMaterialCostText(profitEquipmentId);
                 return `
                   <article class="card equipment-db-card equipment-db-card-${isArmor ? "armor" : "weapon"} ${isExpanded ? "is-expanded" : ""}">
                     <div class="equipment-db-card-toggle" role="button" tabindex="0" data-equipment-db-id="${entry.id}" aria-expanded="${isExpanded ? "true" : "false"}">
@@ -3500,11 +3555,12 @@ function renderEquipmentDbCards() {
                       ${collapsedTraitsHtml}
                     </div>
                     <div class="equipment-db-card-actions">
-                      <p class="equipment-db-material-cost">推定原価（バザー由来）: ${estimatedCostText}</p>
+                      <p class="equipment-db-material-cost">推定原価: ${estimatedCostText}</p>
                     </div>
                     <div class="equipment-db-card-traits ${isExpanded ? "is-open" : ""}" ${isExpanded ? "" : "hidden"}>
                       ${armorSetTypeMetaHtml}
                       ${armorStatsHtml}
+                      ${armorSetPartsHtml}
                       ${isArmor ? "" : `<p class="equipment-db-traits-title">特性</p>${traitsHtml}`}
                       <div class="equipment-db-detail-section">
                         <p class="equipment-db-traits-title">白宝箱ドロップモンスター</p>

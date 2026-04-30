@@ -3860,6 +3860,7 @@ button {
   font-size: 0.74rem;
   line-height: 1.2;
   color: #4d3a2b;
+  white-space: nowrap;
 }
 
 .equipment-db-open-profit-button {
@@ -3953,6 +3954,37 @@ button {
   margin-bottom: 10px;
 }
 
+
+.equipment-db-armor-part-grid {
+  margin: 0;
+  display: grid;
+  gap: 4px;
+}
+
+.equipment-db-armor-part-grid div {
+  display: grid;
+  grid-template-columns: 4.8em 1fr;
+  gap: 6px;
+  align-items: baseline;
+  border: 1px solid rgba(93, 70, 52, 0.14);
+  border-radius: 7px;
+  background: rgba(255, 253, 249, 0.86);
+  padding: 3px 6px;
+}
+
+.equipment-db-armor-part-grid dt {
+  margin: 0;
+  color: #6a5240;
+  font-size: 0.74rem;
+  font-weight: 700;
+}
+
+.equipment-db-armor-part-grid dd {
+  margin: 0;
+  color: #3f2f22;
+  font-size: 0.74rem;
+  line-height: 1.35;
+}
 .equipment-db-armor-drop-list {
   display: grid;
   gap: 8px;
