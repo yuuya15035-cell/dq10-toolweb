@@ -630,7 +630,7 @@ body.is-modal-open {
 .monster-info-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-  gap: 10px;
+  gap: 12px;
   align-items: stretch;
 }
 .monster-info-card {
@@ -638,6 +638,7 @@ body.is-modal-open {
   flex-direction: column;
   text-align: left;
   color: #111;
+  margin: 0;
 }
 .monster-info-card p {
   margin: 0 0 5px;
@@ -733,7 +734,7 @@ body.is-modal-open {
 @media (max-width: 640px) {
   .monster-info-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 8px;
+    gap: 10px;
   }
   .monster-info-card {
     padding: 7px;

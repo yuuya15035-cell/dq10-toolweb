@@ -2959,6 +2959,22 @@ function parsePipeList(value) {
     .filter(Boolean);
 }
 
+const MONSTER_TYPE_ORDER = [
+  "スライム系",
+  "あくま系",
+  "エレメント系",
+  "けもの系",
+  "ゾンビ系",
+  "ドラゴン系",
+  "マシン系",
+  "怪人系",
+  "植物系",
+  "水系",
+  "虫系",
+  "鳥系",
+  "物質系",
+];
+
 const MONSTER_TYPE_ICON_MAP = {
   "スライム系": "icons/slime.png",
   "けもの系": "icons/beast.png",
@@ -3134,7 +3150,12 @@ function renderMonsterInfoCards() {
     monsterInfoListWrap.innerHTML = monsterInfoLoadError ? `<p class="card">モンスターデータを読み込めませんでした。</p>` : `<p class="card">表示できるデータがありません。</p>`;
     return;
   }
-  const types = Array.from(new Set(monsterDetailEntries.map((entry) => entry.type).filter(Boolean))).sort((a, b) => a.localeCompare(b, "ja"));
+  const detectedTypes = Array.from(new Set(monsterDetailEntries.map((entry) => entry.type).filter(Boolean)));
+  const priorityTypes = MONSTER_TYPE_ORDER.filter((type) => detectedTypes.includes(type));
+  const trailingTypes = detectedTypes
+    .filter((type) => !MONSTER_TYPE_ORDER.includes(type))
+    .sort((a, b) => a.localeCompare(b, "ja"));
+  const types = [...priorityTypes, ...trailingTypes];
   if (selectedMonsterInfoType && !types.includes(selectedMonsterInfoType)) selectedMonsterInfoType = "";
   if (selectedMonsterInfoType === "") {
     selectedMonsterInfoType = types.includes("スライム系") ? "スライム系" : types[0] || "";
