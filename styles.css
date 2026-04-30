@@ -641,7 +641,7 @@ body.is-modal-open {
   color: #111;
 }
 .monster-info-card p {
-  margin: 0 0 6px;
+  margin: 0 0 5px;
   color: #111;
   white-space: nowrap;
   overflow: hidden;
@@ -650,38 +650,39 @@ body.is-modal-open {
   word-break: normal;
 }
 .monster-info-title-area {
-  min-height: 2.5em;
-  margin-bottom: 6px;
-  padding-bottom: 6px;
+  min-height: 1.7em;
+  margin-bottom: 5px;
+  padding-bottom: 5px;
   border-bottom: 1px solid #c9b9a5;
 }
 .monster-info-name {
   margin: 0;
-  font-size: 1rem;
-  line-height: 1.25;
+  font-size: 0.95rem;
+  line-height: 1.1;
+  letter-spacing: -0.01em;
   color: #111;
-  white-space: normal;
-  overflow: visible;
-  text-overflow: clip;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
   display: block;
-  word-break: keep-all;
-  overflow-wrap: anywhere;
+  word-break: normal;
+  overflow-wrap: normal;
 }
 .monster-info-line {
   margin-top: 0;
 }
 .monster-type {
   display: inline-block;
-  padding: 2px 8px;
+  padding: 1px 7px;
   border-radius: 999px;
   background: #f2ece5;
-  font-size: 0.78rem;
+  font-size: 0.72rem;
   color: #111;
 }
 .monster-drop-normal { color: #111; }
 .monster-drop-rare { color: #2d6a4f; }
 .monster-label { color: inherit; }
-.monster-info-more { color: #111; font-size: 0.82rem; }
+.monster-info-more { color: #111; font-size: 0.75rem; }
 .monster-info-modal-overlay {
   position: fixed; inset: 0; background: rgba(0,0,0,.45); z-index: 1200;
   display: flex; align-items: center; justify-content: center; padding: 14px;
@@ -713,6 +714,32 @@ body.is-modal-open {
 @media (max-width: 640px) {
   .monster-info-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+  }
+  .monster-info-card {
+    padding: 7px;
+  }
+  .monster-info-card p {
+    margin-bottom: 4px;
+    font-size: 0.74rem;
+    line-height: 1.2;
+  }
+  .monster-info-title-area {
+    min-height: 1.45em;
+    margin-bottom: 4px;
+    padding-bottom: 4px;
+  }
+  .monster-info-name {
+    font-size: clamp(0.62rem, 2.8vw, 0.78rem);
+    line-height: 1.05;
+    letter-spacing: -0.03em;
+  }
+  .monster-type {
+    font-size: 0.64rem;
+    padding: 1px 6px;
+  }
+  .monster-info-more {
+    font-size: 0.68rem;
   }
 }
 
