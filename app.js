@@ -2976,22 +2976,31 @@ const MONSTER_TYPE_ORDER = [
 ];
 
 const MONSTER_TYPE_ICON_MAP = {
-  "スライム系": "./icons/slime.png",
-  "けもの系": "./icons/beast.png",
-  "あくま系": "./icons/demon.png",
-  "植物系": "./icons/plant.png",
-  "物質系": "./icons/material.png",
-  "マシン系": "./icons/machine.png",
-  "鳥系": "./icons/bird.png",
-  "怪人系": "./icons/humanoid.png",
-  "ドラゴン系": "./icons/dragon.png",
-  "エレメント系": "./icons/element.png",
-  "ゾンビ系": "./icons/undead.png",
-  "水系": "./icons/water.png",
+  "スライム系": "icons/slime.png",
+  "けもの系": "icons/beast.png",
+  "あくま系": "icons/demon.png",
+  "植物系": "icons/plant.png",
+  "物質系": "icons/material.png",
+  "マシン系": "icons/machine.png",
+  "鳥系": "icons/bird.png",
+  "怪人系": "icons/humanoid.png",
+  "ドラゴン系": "icons/dragon.png",
+  "エレメント系": "icons/element.png",
+  "ゾンビ系": "icons/undead.png",
+  "水系": "icons/water.png",
+  "虫系": "icons/beetle.png",
 };
 
+function normalizeMonsterTypeLabel(type) {
+  const trimmed = String(type || "").trim();
+  const compact = trimmed.replace(/\s+/g, "");
+  if (compact === "水" || compact === "水系") return "水系";
+  if (compact === "虫" || compact === "虫系") return "虫系";
+  return trimmed;
+}
+
 function buildMonsterTypeLabelHtml(type) {
-  const label = String(type || "不明").trim() || "不明";
+  const label = normalizeMonsterTypeLabel(type) || "不明";
   const iconPath = MONSTER_TYPE_ICON_MAP[label];
   if (!iconPath) {
     return `<span class="monster-type" data-type="${escapeHtml(label)}">${escapeHtml(label)}</span>`;
