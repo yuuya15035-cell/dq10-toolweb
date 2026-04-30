@@ -3988,7 +3988,9 @@ button {
 
 .equipment-db-armor-part-name {
   min-width: 0;
-  overflow-wrap: anywhere;
+  overflow-wrap: break-word;
+  word-break: keep-all;
+  line-break: strict;
 }
 
 .equipment-db-armor-part-cost {
@@ -4016,6 +4018,21 @@ button {
   font-weight: 700;
 }
 
+.armor-set-detail-modal {
+  width: min(820px, 100%);
+  max-height: min(86vh, 760px);
+}
+
+.equipment-db-armor-part-grid-modal div {
+  grid-template-columns: 4.8em minmax(0, 1fr) max-content;
+  gap: 8px;
+  padding: 5px 8px;
+}
+
+.equipment-db-armor-set-level {
+  color: #3f2f22;
+}
+
 @media (max-width: 640px) {
   .equipment-db-armor-part-grid div {
     grid-template-columns: 4.4em minmax(0, 1fr);
@@ -4025,6 +4042,10 @@ button {
     grid-column: 1 / -1;
     text-align: left;
     padding-left: 4.4em;
+  }
+
+  .armor-set-detail-modal {
+    width: min(100%, 740px);
   }
 }
 
