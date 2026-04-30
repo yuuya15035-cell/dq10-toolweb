@@ -3435,14 +3435,7 @@ function renderEquipmentDbCards() {
                   ? `<span class="equipment-type-meta"><img src="${resolveProjectScopedAssetUrl(typeIconPath)}" alt="" class="equipment-type-icon" loading="lazy" decoding="async"><span>${typeLabel}</span></span>`
                   : typeLabel;
                 const stats = buildEquipmentDbStatsHtml(entry);
-                const collapsedTraitsHtml =
-                  isArmor && entry.traits.length > 0
-                    ? `<ul class="equipment-db-traits-list equipment-db-traits-list-collapsed">${entry.traits
-                        .map((trait) => `<li>${trait}</li>`)
-                        .join("")}</ul>`
-                    : isArmor
-                      ? `<p class="equipment-db-trait-empty equipment-db-trait-empty-collapsed">特性情報なし</p>`
-                      : "";
+                const collapsedTraitsHtml = "";
 
                 const traitsHtml =
                   entry.traits.length > 0

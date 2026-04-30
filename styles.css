@@ -767,6 +767,52 @@ body.is-modal-open {
   .monster-info-more {
     font-size: 0.68rem;
   }
+
+  .equipment-db-card-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    row-gap: 9px;
+    column-gap: 9px;
+  }
+
+  .equipment-db-card-toggle {
+    padding: 7px;
+  }
+
+  .equipment-db-card-name {
+    font-size: clamp(0.62rem, 2.8vw, 0.78rem);
+    line-height: 1.05;
+    letter-spacing: -0.03em;
+    margin-bottom: 4px;
+  }
+
+  .equipment-db-card-meta,
+  .equipment-db-stats-list li,
+  .equipment-db-stats-list li strong,
+  .equipment-db-material-cost,
+  .equipment-db-traits-title,
+  .equipment-db-traits-list,
+  .equipment-db-trait-empty {
+    font-size: 0.74rem;
+    line-height: 1.2;
+  }
+
+  .equipment-db-card-meta-row {
+    margin-top: 3px;
+  }
+
+  .equipment-db-open-profit-button {
+    min-height: 26px;
+    font-size: 0.68rem;
+    padding: 2px 6px;
+  }
+
+  .equipment-db-card-actions {
+    padding: 0 7px 7px;
+  }
+
+  .equipment-db-card-traits {
+    padding: 7px;
+  }
 }
 
 .field-farming-description {
@@ -3350,8 +3396,9 @@ button {
 
 .equipment-db-card-grid {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 10px;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  row-gap: 12px;
+  column-gap: 12px;
   align-items: start;
 }
 
@@ -3720,8 +3767,10 @@ button {
 .equipment-db-card {
   padding: 0;
   overflow: hidden;
-  border-color: #d6c5ad;
+  border: 1px solid #d6c5ad;
+  border-radius: 12px;
   background: #fffaf5;
+  box-shadow: 0 1px 3px rgba(63, 47, 34, 0.08);
 }
 
 .equipment-db-card-weapon {
@@ -3739,23 +3788,24 @@ button {
   text-align: left;
   border: 0;
   background: transparent;
-  padding: 11px 10px 10px;
+  padding: 9px 9px 8px;
   cursor: pointer;
   color: #3f2f22;
 }
 
 .equipment-db-card-name {
   margin: 0 0 5px;
-  font-size: 0.94rem;
+  font-size: 0.95rem;
   color: #3c2d20;
-  line-height: 1.35;
+  line-height: 1.1;
+  letter-spacing: -0.01em;
 }
 
 .equipment-db-card-meta {
   margin: 0;
   color: #5a4635;
-  font-size: 0.78rem;
-  line-height: 1.4;
+  font-size: 0.74rem;
+  line-height: 1.2;
 }
 
 .equipment-db-card-meta-row {
@@ -3767,7 +3817,7 @@ button {
 }
 
 .equipment-db-stats-list {
-  margin: 8px 0 0;
+  margin: 6px 0 0;
   padding: 0;
   list-style: none;
   display: grid;
@@ -3778,12 +3828,12 @@ button {
   display: flex;
   justify-content: space-between;
   gap: 6px;
-  font-size: 0.78rem;
+  font-size: 0.74rem;
   color: #4d3a2b;
   border: 1px solid rgba(93, 70, 52, 0.14);
   border-radius: 7px;
   background: rgba(255, 253, 249, 0.86);
-  padding: 4px 6px;
+  padding: 3px 6px;
 }
 
 .equipment-db-stats-list li span {
@@ -3791,35 +3841,36 @@ button {
 }
 
 .equipment-db-stats-list li strong {
-  font-size: 0.81rem;
+  font-size: 0.74rem;
   color: #3f2f22;
 }
 
 .equipment-db-card-traits {
   border-top: 1px solid #dcc7ad;
   background: rgba(255, 255, 255, 0.62);
-  padding: 9px 10px 10px;
+  padding: 8px 9px 9px;
 }
 
 .equipment-db-card-actions {
-  padding: 0 10px 10px;
+  padding: 0 9px 8px;
 }
 
 .equipment-db-material-cost {
   margin: 0;
-  font-size: 0.78rem;
+  font-size: 0.74rem;
+  line-height: 1.2;
   color: #4d3a2b;
 }
 
 .equipment-db-open-profit-button {
   width: auto;
-  min-height: 30px;
+  min-height: 28px;
   border: 1px solid rgba(78, 59, 44, 0.24);
   background: rgba(255, 255, 255, 0.88);
   color: #463426;
   font-weight: 700;
-  font-size: 0.72rem;
-  padding: 4px 8px;
+  font-size: 0.7rem;
+  padding: 3px 7px;
   border-radius: 8px;
   flex-shrink: 0;
 }
@@ -3846,7 +3897,7 @@ button {
   margin: 0 0 6px;
   font-weight: 700;
   color: #5f4734;
-  font-size: 0.8rem;
+  font-size: 0.74rem;
 }
 
 .equipment-db-traits-list {
@@ -3856,7 +3907,7 @@ button {
   display: grid;
   gap: 4px;
   color: #4f3e2f;
-  font-size: 0.78rem;
+  font-size: 0.74rem;
 }
 
 .equipment-db-traits-list li {
@@ -3881,7 +3932,7 @@ button {
 .equipment-db-trait-empty {
   margin: 0;
   color: #7f6852;
-  font-size: 0.78rem;
+  font-size: 0.74rem;
 }
 
 .equipment-db-trait-empty-collapsed {
