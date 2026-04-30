@@ -1041,6 +1041,7 @@ let mapMasterByName = new Map();
 let selectedMonsterInfoType = "";
 let monsterInfoSearchKeyword = "";
 let activeMonsterInfoId = "";
+let activeArmorSetDetailId = "";
 let bazaarLoadingPromise = null;
 let bazaarHistoryLoadingPromise = null;
 let bazaarAdminCsvModel = null;
@@ -1168,6 +1169,10 @@ const monsterInfoModalOverlay = getRequiredElementById("monsterInfoModalOverlay"
 const monsterInfoModalDialog = getRequiredElementById("monsterInfoModalDialog");
 const monsterInfoModalCloseButton = getRequiredElementById("monsterInfoModalCloseButton");
 const monsterInfoModalBody = getRequiredElementById("monsterInfoModalBody");
+const armorSetDetailModalOverlay = getRequiredElementById("armorSetDetailModalOverlay");
+const armorSetDetailModalDialog = getRequiredElementById("armorSetDetailModalDialog");
+const armorSetDetailModalCloseButton = getRequiredElementById("armorSetDetailModalCloseButton");
+const armorSetDetailModalBody = getRequiredElementById("armorSetDetailModalBody");
 const fieldFarmingSortSelect = getRequiredElementById("fieldFarmingSortSelect");
 const fieldFarmingMapModalOverlay = getRequiredElementById("fieldFarmingMapModalOverlay");
 const fieldFarmingMapModalDialog = getRequiredElementById("fieldFarmingMapModalDialog");
@@ -2529,6 +2534,63 @@ function buildArmorSetPartsHtml(setName) {
     .join("")}</dl>`;
 }
 
+function buildArmorSetDetailModalHtml(entry) {
+  const levelText = Number.isFinite(entry?.equipmentLevel) ? `Lv${entry.equipmentLevel}` : "Lv-";
+  const parts = getArmorSetPartsWithEstimatedCost(entry?.equipmentName || "");
+  const stats = buildEquipmentDbStatsHtml(entry);
+  const whiteBoxDrops = Array.isArray(entry?.whiteBoxArmorDropsBySlot) ? entry.whiteBoxArmorDropsBySlot : [];
+  const whiteBoxHtml =
+    entry?.whiteBoxHasDrop && whiteBoxDrops.length > 0
+      ? `<div class="equipment-db-armor-drop-list">${whiteBoxDrops
+          .map(
+            (slotEntry) => `
+          <section class="equipment-db-armor-drop-slot">
+            <p class="equipment-db-armor-drop-slot-title">${escapeHtml(slotEntry.slot)}</p>
+            <ul class="equipment-db-traits-list">
+              ${slotEntry.items
+                .map((item) => `<li><span class="equipment-db-armor-item-name">${escapeHtml(item.itemName)}</span><br>${escapeHtml(item.monsterNames.join(" / "))}</li>`)
+                .join("")}
+            </ul>
+          </section>`
+          )
+          .join("")}</div>`
+      : `<p class="equipment-db-trait-empty">白宝箱ドロップなし</p>`;
+
+  return `<h3>${escapeHtml(entry?.equipmentName || "-")}</h3>
+    <p><span class="monster-type">防具セット</span></p>
+    <div class="equipment-db-detail-section equipment-db-detail-section-first">
+      <p class="equipment-db-traits-title">基本情報</p>
+      <p class="equipment-db-trait-empty equipment-db-armor-set-level">${levelText}</p>
+    </div>
+    <div class="equipment-db-detail-section">
+      <p class="equipment-db-traits-title">各部位</p>
+      <dl class="equipment-db-armor-part-grid equipment-db-armor-part-grid-modal">
+        ${parts
+          .map((part) => `<div><dt>${escapeHtml(part.part)}</dt><dd class="equipment-db-armor-part-name">${escapeHtml(part.name)}</dd><dd class="equipment-db-armor-part-cost">推定原価：${escapeHtml(part.costText)}</dd></div>`)
+          .join("")}
+      </dl>
+    </div>
+    <div class="equipment-db-detail-section">
+      <p class="equipment-db-traits-title">上昇能力値</p>
+      ${stats.length > 0 ? `<ul class="equipment-db-stats-list">${stats.join("")}</ul>` : `<p class="equipment-db-trait-empty">上昇能力値なし</p>`}
+    </div>
+    <div class="equipment-db-detail-section">
+      <p class="equipment-db-traits-title">セット効果 / 特性</p>
+      ${entry?.traits?.length > 0 ? `<ul class="equipment-db-traits-list">${entry.traits.map((trait) => `<li>${escapeHtml(trait)}</li>`).join("")}</ul>` : `<p class="equipment-db-trait-empty">特性情報なし</p>`}
+    </div>
+    <div class="equipment-db-detail-section">
+      <p class="equipment-db-traits-title">白宝箱ドロップモンスター</p>
+      ${whiteBoxHtml}
+    </div>`;
+}
+
+function closeArmorSetDetailModal() {
+  if (!armorSetDetailModalOverlay) return;
+  armorSetDetailModalOverlay.hidden = true;
+  if (armorSetDetailModalBody) armorSetDetailModalBody.innerHTML = "";
+  activeArmorSetDetailId = "";
+}
+
 function formatEstimatedMaterialCostText(equipmentId) {
   if (!equipmentId) return "未計算";
   const cost = getRoundedEquipmentMaterialCost(equipmentId);
@@ -3582,6 +3644,15 @@ function renderEquipmentDbCards() {
   equipmentDbListWrap.querySelectorAll("[data-equipment-db-id]").forEach((toggle) => {
     const handleToggle = () => {
       const clickedId = String(toggle.dataset.equipmentDbId || "");
+      const targetEntry = filteredEntries.find((entry) => entry.id === clickedId);
+      if (targetEntry && isArmorSetEntry(targetEntry)) {
+        if (!armorSetDetailModalOverlay || !armorSetDetailModalBody) return;
+        activeArmorSetDetailId = clickedId;
+        armorSetDetailModalBody.innerHTML = buildArmorSetDetailModalHtml(targetEntry);
+        armorSetDetailModalOverlay.hidden = false;
+        armorSetDetailModalDialog?.focus();
+        return;
+      }
       expandedEquipmentDbId = expandedEquipmentDbId === clickedId ? "" : clickedId;
       renderEquipmentDbCards();
     };
@@ -5987,6 +6058,9 @@ function switchTab(target) {
   if (normalizedTarget !== "monster-info") {
     closeMonsterInfoModal();
   }
+  if (normalizedTarget !== "equipment-db") {
+    closeArmorSetDetailModal();
+  }
   activeTabId = normalizedTarget;
   appMode = "tool";
   applyAppMode();
@@ -6280,6 +6354,18 @@ if (fieldFarmingMapModalCloseButton) {
 if (monsterInfoModalCloseButton) {
   monsterInfoModalCloseButton.addEventListener("click", () => {
     closeMonsterInfoModal();
+  });
+}
+if (armorSetDetailModalOverlay) {
+  armorSetDetailModalOverlay.addEventListener("click", (event) => {
+    if (event.target === armorSetDetailModalOverlay) {
+      closeArmorSetDetailModal();
+    }
+  });
+}
+if (armorSetDetailModalCloseButton) {
+  armorSetDetailModalCloseButton.addEventListener("click", () => {
+    closeArmorSetDetailModal();
   });
 }
 if (monsterInfoSearchInput) {
@@ -6800,6 +6886,10 @@ document.addEventListener("keydown", (event) => {
     }
     if (activeMonsterInfoId) {
       closeMonsterInfoModal();
+      return;
+    }
+    if (activeArmorSetDetailId) {
+      closeArmorSetDetailModal();
       return;
     }
     if (adminFabPanel && !adminFabPanel.hidden) {
