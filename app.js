@@ -32,12 +32,11 @@ const HOME_FEATURE_DEFINITIONS = [
   { id: "favorites", tabId: "favorites", title: "お気に入り", icon: "📌" },
   { id: "present-codes", tabId: "present-codes", title: "プレゼント", icon: "🎁" },
   { id: "orbs", tabId: "orbs", title: "宝珠", icon: "💎" },
-  { id: "white-boxes", tabId: "white-boxes", title: "白宝箱", icon: "📦" },
-  { id: "equipment-db", tabId: "equipment-db", title: "装備データ", icon: "🛡️" },
+    { id: "equipment-db", tabId: "equipment-db", title: "装備データ", icon: "🛡️" },
   { id: "monster-info", tabId: "monster-info", title: "モンスター情報", icon: "👾" },
   { id: "field-farming", tabId: "field-farming", title: "フィールド狩り", icon: "⚔️" },
 ];
-const DEFAULT_HOME_FEATURE_IDS = Object.freeze(["profit", "bazaar", "favorites", "white-boxes"]);
+const DEFAULT_HOME_FEATURE_IDS = Object.freeze(["profit", "bazaar", "favorites", "equipment-db"]);
 const HOME_FEATURE_ID_SET = new Set(HOME_FEATURE_DEFINITIONS.map((feature) => feature.id));
 const SITE_SEARCH_MAX_RESULTS = 10;
 const SITE_SEARCH_MATCH_RANK = Object.freeze({
@@ -53,7 +52,6 @@ const TAB_IDS = new Set([
   "data",
   "field-farming",
   "orbs",
-  "white-boxes",
   "equipment-db",
   "monster-info",
   "ui-settings",
@@ -1324,18 +1322,6 @@ function buildSiteSearchIndex() {
     });
   });
 
-  (whiteBoxEntries || []).forEach((entry) => {
-    entries.push({
-      name: entry.itemName,
-      type: "白宝箱",
-      subLabel: "白宝箱",
-      tabId: "white-boxes",
-      targetValue: entry.itemName,
-      keywords: [entry.itemName, entry.itemSlot, ...(Array.isArray(entry.monsters) ? entry.monsters.map((monster) => monster.monsterName) : [])]
-        .filter(Boolean)
-        .join(" "),
-    });
-  });
 
   (fieldFarmingMonsters || []).forEach((entry) => {
     const commonKeywords = [entry.monsterName, entry.monsterArea, entry.area, entry.normalDrop, entry.rareDrop, entry.note]
@@ -3503,19 +3489,25 @@ function renderEquipmentDbCards() {
                   entry.whiteBoxHasDrop && entry.whiteBoxMonsterNames.length > 0
                     ? `<ul class="equipment-db-traits-list">${entry.whiteBoxMonsterNames.map((monsterName) => `<li>${monsterName}</li>`).join("")}</ul>`
                     : `<p class="equipment-db-trait-empty">白宝箱ドロップなし</p>`;
+                const profitEquipmentId = resolveProfitEquipmentIdFromParams({
+                  equipmentName: entry?.equipmentName,
+                  equipmentType: entry?.equipmentType,
+                });
+                const estimatedCostText = profitEquipmentId ? `${formatGold(getRoundedEquipmentMaterialCost(profitEquipmentId))}` : "未計算";
                 return `
                   <article class="card equipment-db-card equipment-db-card-${isArmor ? "armor" : "weapon"} ${isExpanded ? "is-expanded" : ""}">
                     <button type="button" class="equipment-db-card-toggle" data-equipment-db-id="${entry.id}" aria-expanded="${isExpanded ? "true" : "false"}">
                       <h3 class="equipment-db-card-name">${entry.equipmentName}</h3>
                       ${isArmor && isArmorSet ? `<p class="equipment-db-card-meta">${typeMetaText}</p>` : isArmor ? "" : `<p class="equipment-db-card-meta">${typeMetaText}</p>`}
-                      <p class="equipment-db-card-meta">${levelText}</p>
+                      <div class="equipment-db-card-meta-row">
+                        <p class="equipment-db-card-meta">${levelText}</p>
+                        <button type="button" class="equipment-db-open-profit-button" data-equipment-db-open-profit="${entry.id}">職人アシスト</button>
+                      </div>
                       ${!isArmor && stats.length > 0 ? `<ul class="equipment-db-stats-list">${stats.join("")}</ul>` : ""}
                       ${collapsedTraitsHtml}
                     </button>
                     <div class="equipment-db-card-actions">
-                      <button type="button" class="equipment-db-open-profit-button" data-equipment-db-open-profit="${entry.id}">
-                        職人アシストで開く
-                      </button>
+                      <p class="equipment-db-material-cost">推定原価（バザー由来）: ${estimatedCostText}</p>
                     </div>
                     <div class="equipment-db-card-traits ${isExpanded ? "is-open" : ""}" ${isExpanded ? "" : "hidden"}>
                       ${armorSetTypeMetaHtml}
@@ -3542,7 +3534,9 @@ function renderEquipmentDbCards() {
     });
   });
   equipmentDbListWrap.querySelectorAll("[data-equipment-db-open-profit]").forEach((button) => {
-    button.addEventListener("click", () => {
+    button.addEventListener("click", (event) => {
+      event.preventDefault();
+      event.stopPropagation();
       const clickedId = String(button.dataset.equipmentDbOpenProfit || "");
       const targetEntry = filteredEntries.find((entry) => entry.id === clickedId);
       if (!targetEntry) return;
@@ -4953,15 +4947,6 @@ function applySiteSearchNavigation(entry) {
     document.getElementById("bazaar")?.scrollIntoView({ block: "start", behavior: "smooth" });
     return;
   }
-  if (entry.tabId === "white-boxes") {
-    whiteBoxKeyword = keyword;
-    switchTab("white-boxes");
-    navigateByAppParams({ tab: "white-boxes", equipmentId: "", materialKey: "" });
-    renderWhiteBoxCards();
-    resetSearchUi();
-    document.getElementById("white-boxes")?.scrollIntoView({ block: "start", behavior: "smooth" });
-    return;
-  }
   if (entry.tabId === "field-farming") {
     fieldFarmingKeyword = keyword;
     switchTab("field-farming");
@@ -5928,14 +5913,15 @@ function switchToHomeMode(options = {}) {
 
 function switchTab(target) {
   const requestedTarget = TAB_IDS.has(target) ? target : "profit";
+  const migratedTarget = requestedTarget === "white-boxes" ? "equipment-db" : requestedTarget;
   const normalizedTarget =
-    (requestedTarget === "ui-settings" ||
-      requestedTarget === "content-editor" ||
-      requestedTarget === "updates-editor" ||
-      requestedTarget === "bazaar-admin") &&
+    (migratedTarget === "ui-settings" ||
+      migratedTarget === "content-editor" ||
+      migratedTarget === "updates-editor" ||
+      migratedTarget === "bazaar-admin") &&
     !isAdminModeEnabled
       ? "profit"
-      : requestedTarget;
+      : migratedTarget;
   if (activeTabId === "favorites" && normalizedTarget !== "favorites") {
     commitPendingFavoriteRemovals();
   }
@@ -5959,7 +5945,8 @@ function switchTab(target) {
   } else if (normalizedTarget === "orbs") {
     renderOrbCards();
   } else if (normalizedTarget === "white-boxes") {
-    renderWhiteBoxCards();
+    selectedEquipmentDbGroup = "weapon";
+    renderEquipmentDbCards();
   } else if (normalizedTarget === "equipment-db") {
     renderEquipmentDbCards();
   } else if (normalizedTarget === "monster-info") {
