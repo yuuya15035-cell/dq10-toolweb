@@ -2959,6 +2959,32 @@ function parsePipeList(value) {
     .filter(Boolean);
 }
 
+const MONSTER_TYPE_ICON_MAP = {
+  "スライム系": "./assets/icons/monster-type/slime.png",
+  "けもの系": "./assets/icons/monster-type/beast.png",
+  "あくま系": "./assets/icons/monster-type/demon.png",
+  "植物系": "./assets/icons/monster-type/plant.png",
+  "物質系": "./assets/icons/monster-type/material.png",
+  "マシン系": "./assets/icons/monster-type/machine.png",
+  "鳥系": "./assets/icons/monster-type/bird.png",
+  "怪人系": "./assets/icons/monster-type/humanoid.png",
+  "ドラゴン系": "./assets/icons/monster-type/dragon.png",
+  "エレメント系": "./assets/icons/monster-type/element.png",
+  "ゾンビ系": "./assets/icons/monster-type/zombie.png",
+};
+
+function buildMonsterTypeLabelHtml(type) {
+  const label = String(type || "不明").trim() || "不明";
+  const iconPath = MONSTER_TYPE_ICON_MAP[label];
+  if (!iconPath) {
+    return `<span class="monster-type" data-type="${escapeHtml(label)}">${escapeHtml(label)}</span>`;
+  }
+  return `<span class="monster-type monster-type-with-icon" data-type="${escapeHtml(label)}">
+    <img src="${escapeHtml(iconPath)}" alt="" class="monster-type-icon" loading="lazy" decoding="async" fetchpriority="low" />
+    <span class="monster-type-text">${escapeHtml(label)}</span>
+  </span>`;
+}
+
 async function loadMonsterDetailDataCsv() {
   const lines = await fetchCsvLines(MONSTER_DETAIL_DATA_CSV_PATH);
   if (lines.length <= 1) return [];
@@ -3116,17 +3142,17 @@ function renderMonsterInfoCards() {
   monsterInfoTypeFilterSelect.innerHTML = `<option value="">すべて</option>${types.map((type) => `<option value="${escapeHtml(type)}" ${selectedMonsterInfoType === type ? "selected" : ""}>${escapeHtml(type)}</option>`).join("")}`;
   const filtered = getFilteredMonsterDetailEntries();
   monsterInfoListWrap.innerHTML = `<div class="monster-info-grid">${filtered.map((entry) => {
-    const habitats = entry.habitats.slice(0, 2);
-    const remain = Math.max(entry.habitats.length - habitats.length, 0);
+    const firstHabitat = entry.habitats[0] || "-";
+    const remain = Math.max(entry.habitats.length - 1, 0);
     return `<button type="button" class="card monster-info-card" data-monster-info-id="${escapeHtml(entry.id)}">
       <div class="monster-info-title-area">
         <h3 class="monster-info-name">${escapeHtml(entry.name)}</h3>
       </div>
-      <p class="monster-info-line"><span class="monster-type" data-type="${escapeHtml(entry.type)}">${escapeHtml(entry.type)}</span></p>
+      <p class="monster-info-line">${buildMonsterTypeLabelHtml(entry.type)}</p>
       <p>経験値：${escapeHtml(entry.exp)}</p>
       <p class="monster-drop-normal"><span class="monster-label">通常：</span>${escapeHtml(entry.normalDrop || "-")}</p>
       <p class="monster-drop-rare"><span class="monster-label">レア：</span>${escapeHtml(entry.rareDrop || "-")}</p>
-      <p>生息地：${escapeHtml(habitats.join(" / ") || "-")}</p>
+      <p class="monster-info-habitat">生息地：${escapeHtml(firstHabitat)}</p>
       ${remain > 0 ? `<p class="monster-info-more">ほか${remain}件</p>` : ""}
     </button>`;
   }).join("")}</div>`;
