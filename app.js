@@ -3609,7 +3609,7 @@ function renderEquipmentDbCards() {
                 });
                 const estimatedCostText = formatEstimatedMaterialCostText(profitEquipmentId);
                 return `
-                  <article class="card equipment-db-card equipment-db-card-${isArmor ? "armor" : "weapon"} ${isExpanded ? "is-expanded" : ""}">
+                  <article class="card equipment-db-card equipment-db-card-${isArmor ? "armor" : "weapon"} ${isExpanded ? "is-expanded" : ""}" data-equipment-db-id="${entry.id}">
                     <div class="equipment-db-card-toggle" role="button" tabindex="0" data-equipment-db-id="${entry.id}" aria-expanded="${isExpanded ? "true" : "false"}">
                       <h3 class="equipment-db-card-name">${entry.equipmentName}</h3>
                       ${isArmor ? "" : `<p class="equipment-db-card-meta">${typeMetaText}</p>`}
@@ -3641,28 +3641,45 @@ function renderEquipmentDbCards() {
     </div>
   `;
 
-  equipmentDbListWrap.querySelectorAll("[data-equipment-db-id]").forEach((toggle) => {
+  const openEquipmentDbDetail = (clickedId) => {
+    const targetEntry = filteredEntries.find((entry) => entry.id === clickedId);
+    if (targetEntry && isArmorSetEntry(targetEntry)) {
+      if (!armorSetDetailModalOverlay || !armorSetDetailModalBody) return;
+      activeArmorSetDetailId = clickedId;
+      armorSetDetailModalBody.innerHTML = buildArmorSetDetailModalHtml(targetEntry);
+      armorSetDetailModalOverlay.hidden = false;
+      armorSetDetailModalDialog?.focus();
+      return;
+    }
+    expandedEquipmentDbId = expandedEquipmentDbId === clickedId ? "" : clickedId;
+    renderEquipmentDbCards();
+  };
+
+  equipmentDbListWrap.querySelectorAll(".equipment-db-card-toggle").forEach((toggle) => {
     const handleToggle = () => {
       const clickedId = String(toggle.dataset.equipmentDbId || "");
-      const targetEntry = filteredEntries.find((entry) => entry.id === clickedId);
-      if (targetEntry && isArmorSetEntry(targetEntry)) {
-        if (!armorSetDetailModalOverlay || !armorSetDetailModalBody) return;
-        activeArmorSetDetailId = clickedId;
-        armorSetDetailModalBody.innerHTML = buildArmorSetDetailModalHtml(targetEntry);
-        armorSetDetailModalOverlay.hidden = false;
-        armorSetDetailModalDialog?.focus();
-        return;
-      }
-      expandedEquipmentDbId = expandedEquipmentDbId === clickedId ? "" : clickedId;
-      renderEquipmentDbCards();
+      openEquipmentDbDetail(clickedId);
     };
-    toggle.addEventListener("click", handleToggle);
+    toggle.addEventListener("click", (event) => {
+      event.stopPropagation();
+      handleToggle();
+    });
     toggle.addEventListener("keydown", (event) => {
       if (event.key !== "Enter" && event.key !== " ") return;
       event.preventDefault();
       handleToggle();
     });
   });
+  equipmentDbListWrap.querySelectorAll(".equipment-db-card").forEach((card) => {
+    card.addEventListener("click", (event) => {
+      if (event.target.closest("[data-equipment-db-open-profit]")) return;
+      if (event.target.closest(".equipment-db-card-toggle")) return;
+      const clickedId = String(card.dataset.equipmentDbId || "");
+      if (!clickedId) return;
+      openEquipmentDbDetail(clickedId);
+    });
+  });
+
   equipmentDbListWrap.querySelectorAll("[data-equipment-db-open-profit]").forEach((button) => {
     button.addEventListener("click", (event) => {
       event.preventDefault();
