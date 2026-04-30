@@ -2501,13 +2501,22 @@ function getArmorSetPartsFromRecipes(setName) {
     if (!equipmentName || !partCategory) return;
     if (!equipmentName.includes(setKey)) return;
     if (!slotMap.has(partCategory)) {
-      slotMap.set(partCategory, equipmentName);
+      slotMap.set(partCategory, equipment);
     }
   });
 
   return ARMOR_SET_PART_DISPLAY_ORDER
     .filter((part) => slotMap.has(part))
-    .map((part) => ({ part, name: slotMap.get(part) }));
+    .map((part) => {
+      const equipment = slotMap.get(part);
+      const equipmentName = String(equipment?.name || "").trim();
+      const equipmentId = String(equipment?.id || "").trim();
+      return {
+        part,
+        name: equipmentName,
+        costText: formatEstimatedMaterialCostText(equipmentId),
+      };
+    });
 }
 
 function buildArmorSetPartsHtml(setName) {
@@ -2516,7 +2525,7 @@ function buildArmorSetPartsHtml(setName) {
     return `<p class="equipment-db-trait-empty">部位情報なし</p>`;
   }
   return `<dl class="equipment-db-armor-part-grid">${parts
-    .map((part) => `<div><dt>${part.part}</dt><dd>${part.name}</dd></div>`)
+    .map((part) => `<div><dt>${part.part}</dt><dd class="equipment-db-armor-part-name">${part.name}</dd><dd class="equipment-db-armor-part-cost">原価：${part.costText}</dd></div>`)
     .join("")}</dl>`;
 }
 
@@ -3505,15 +3514,10 @@ function renderEquipmentDbCards() {
                 const armorSetTypeMetaHtml = isArmorSet
                   ? `<div class="equipment-db-detail-section equipment-db-detail-section-first">
                       <p class="equipment-db-traits-title">装備種別</p>
-                      <p class="equipment-db-card-meta">${typeMetaText}</p>
-                    </div>`
-                  : "";
-                const armorSetPartsHtml = isArmorSet
-                  ? `<div class="equipment-db-detail-section">
-                      <p class="equipment-db-traits-title">セット部位</p>
                       ${buildArmorSetPartsHtml(entry.equipmentName)}
                     </div>`
                   : "";
+                const armorSetPartsHtml = "";
                 const armorWhiteBoxDropHtml =
                   entry.whiteBoxHasDrop && Array.isArray(entry.whiteBoxArmorDropsBySlot) && entry.whiteBoxArmorDropsBySlot.length > 0
                     ? `<div class="equipment-db-armor-drop-list">${entry.whiteBoxArmorDropsBySlot
@@ -3546,7 +3550,7 @@ function renderEquipmentDbCards() {
                   <article class="card equipment-db-card equipment-db-card-${isArmor ? "armor" : "weapon"} ${isExpanded ? "is-expanded" : ""}">
                     <div class="equipment-db-card-toggle" role="button" tabindex="0" data-equipment-db-id="${entry.id}" aria-expanded="${isExpanded ? "true" : "false"}">
                       <h3 class="equipment-db-card-name">${entry.equipmentName}</h3>
-                      ${isArmor && isArmorSet ? `<p class="equipment-db-card-meta">${typeMetaText}</p>` : isArmor ? "" : `<p class="equipment-db-card-meta">${typeMetaText}</p>`}
+                      ${isArmor ? "" : `<p class="equipment-db-card-meta">${typeMetaText}</p>`}
                       <div class="equipment-db-card-meta-row">
                         <p class="equipment-db-card-meta">${levelText}</p>
                         <button type="button" class="equipment-db-open-profit-button" data-equipment-db-open-profit="${entry.id}">職人アシスト</button>

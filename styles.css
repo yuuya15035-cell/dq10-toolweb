@@ -3963,7 +3963,7 @@ button {
 
 .equipment-db-armor-part-grid div {
   display: grid;
-  grid-template-columns: 4.8em 1fr;
+  grid-template-columns: 4.8em minmax(0, 1fr) max-content;
   gap: 6px;
   align-items: baseline;
   border: 1px solid rgba(93, 70, 52, 0.14);
@@ -3985,6 +3985,16 @@ button {
   font-size: 0.74rem;
   line-height: 1.35;
 }
+
+.equipment-db-armor-part-name {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.equipment-db-armor-part-cost {
+  white-space: nowrap;
+  text-align: right;
+}
 .equipment-db-armor-drop-list {
   display: grid;
   gap: 8px;
@@ -4004,6 +4014,18 @@ button {
 
 .equipment-db-armor-item-name {
   font-weight: 700;
+}
+
+@media (max-width: 640px) {
+  .equipment-db-armor-part-grid div {
+    grid-template-columns: 4.4em minmax(0, 1fr);
+  }
+
+  .equipment-db-armor-part-cost {
+    grid-column: 1 / -1;
+    text-align: left;
+    padding-left: 4.4em;
+  }
 }
 
 .equipment-db-empty {
