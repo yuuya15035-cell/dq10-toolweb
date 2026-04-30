@@ -630,7 +630,8 @@ body.is-modal-open {
 .monster-info-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-  gap: 12px;
+  row-gap: 12px;
+  column-gap: 12px;
   align-items: stretch;
 }
 .monster-info-card {
@@ -734,7 +735,8 @@ body.is-modal-open {
 @media (max-width: 640px) {
   .monster-info-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 10px;
+    row-gap: 9px;
+    column-gap: 9px;
   }
   .monster-info-card {
     padding: 7px;
