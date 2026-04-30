@@ -2976,17 +2976,18 @@ const MONSTER_TYPE_ORDER = [
 ];
 
 const MONSTER_TYPE_ICON_MAP = {
-  "スライム系": "icons/slime.png",
-  "けもの系": "icons/beast.png",
-  "あくま系": "icons/demon.png",
-  "植物系": "icons/plant.png",
-  "物質系": "icons/material.png",
-  "マシン系": "icons/machine.png",
-  "鳥系": "icons/bird.png",
-  "怪人系": "icons/humanoid.png",
-  "ドラゴン系": "icons/dragon.png",
-  "エレメント系": "icons/element.png",
-  "ゾンビ系": "icons/undead.png",
+  "スライム系": "./icons/slime.png",
+  "けもの系": "./icons/beast.png",
+  "あくま系": "./icons/demon.png",
+  "植物系": "./icons/plant.png",
+  "物質系": "./icons/material.png",
+  "マシン系": "./icons/machine.png",
+  "鳥系": "./icons/bird.png",
+  "怪人系": "./icons/humanoid.png",
+  "ドラゴン系": "./icons/dragon.png",
+  "エレメント系": "./icons/element.png",
+  "ゾンビ系": "./icons/undead.png",
+  "水系": "./icons/water.png",
 };
 
 function buildMonsterTypeLabelHtml(type) {
