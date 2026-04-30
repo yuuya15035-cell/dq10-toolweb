@@ -2960,17 +2960,17 @@ function parsePipeList(value) {
 }
 
 const MONSTER_TYPE_ICON_MAP = {
-  "スライム系": "./assets/icons/monster-type/slime.png",
-  "けもの系": "./assets/icons/monster-type/beast.png",
-  "あくま系": "./assets/icons/monster-type/demon.png",
-  "植物系": "./assets/icons/monster-type/plant.png",
-  "物質系": "./assets/icons/monster-type/material.png",
-  "マシン系": "./assets/icons/monster-type/machine.png",
-  "鳥系": "./assets/icons/monster-type/bird.png",
-  "怪人系": "./assets/icons/monster-type/humanoid.png",
-  "ドラゴン系": "./assets/icons/monster-type/dragon.png",
-  "エレメント系": "./assets/icons/monster-type/element.png",
-  "ゾンビ系": "./assets/icons/monster-type/zombie.png",
+  "スライム系": "icons/slime.png",
+  "けもの系": "icons/beast.png",
+  "あくま系": "icons/demon.png",
+  "植物系": "icons/plant.png",
+  "物質系": "icons/material.png",
+  "マシン系": "icons/machine.png",
+  "鳥系": "icons/bird.png",
+  "怪人系": "icons/humanoid.png",
+  "ドラゴン系": "icons/dragon.png",
+  "エレメント系": "icons/element.png",
+  "ゾンビ系": "icons/undead.png",
 };
 
 function buildMonsterTypeLabelHtml(type) {
@@ -2980,7 +2980,7 @@ function buildMonsterTypeLabelHtml(type) {
     return `<span class="monster-type" data-type="${escapeHtml(label)}">${escapeHtml(label)}</span>`;
   }
   return `<span class="monster-type monster-type-with-icon" data-type="${escapeHtml(label)}">
-    <img src="${escapeHtml(iconPath)}" alt="" class="monster-type-icon" loading="lazy" decoding="async" fetchpriority="low" />
+    <img src="${escapeHtml(iconPath)}" alt="${escapeHtml(label)}" class="monster-type-icon" loading="lazy" decoding="async" fetchpriority="low" onerror="this.style.display='none'" />
     <span class="monster-type-text">${escapeHtml(label)}</span>
   </span>`;
 }
