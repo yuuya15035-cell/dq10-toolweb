@@ -1004,6 +1004,7 @@ let bazaarDetailModalSwipeState = null;
 let memoEntries = [];
 let memoPanelSwipeState = null;
 const expandedMemoIds = new Set();
+let memoToastTimer = null;
 let activeFavoriteMaterialModalKey = "";
 let presentCodes = [];
 let fieldFarmingMonsters = [];
@@ -1256,8 +1257,10 @@ const adminExportUpdatesButton = getRequiredElementById("adminExportUpdatesButto
 const adminLockButton = getRequiredElementById("adminLockButton");
 const adminFabMessage = getRequiredElementById("adminFabMessage");
 const memoDockButton = getRequiredElementById("memoDockButton");
+const memoToast = getRequiredElementById("memoToast");
 const memoPanel = getRequiredElementById("memoPanel");
 const memoPanelHandle = getRequiredElementById("memoPanelHandle");
+const memoPanelHeader = memoPanel?.querySelector(".memo-panel-header");
 const memoPanelCloseButton = getRequiredElementById("memoPanelCloseButton");
 const memoClearAllButton = getRequiredElementById("memoClearAllButton");
 const memoPanelStatus = getRequiredElementById("memoPanelStatus");
@@ -1346,6 +1349,19 @@ function setMemoStatus(message) {
   memoPanelStatus.textContent = message || "";
 }
 
+function showMemoToast(message) {
+  if (!memoToast) return;
+  memoToast.textContent = message || "";
+  memoToast.hidden = !message;
+  memoToast.classList.toggle("is-visible", Boolean(message));
+  if (memoToastTimer) window.clearTimeout(memoToastTimer);
+  if (!message) return;
+  memoToastTimer = window.setTimeout(() => {
+    memoToast.classList.remove("is-visible");
+    memoToast.hidden = true;
+  }, 1600);
+}
+
 function openMemoPanel(message = "") {
   if (!memoPanel) return;
   memoPanel.hidden = false;
@@ -1365,15 +1381,22 @@ function closeMemoPanel() {
   }, 180);
 }
 
-function addMemoEntry(entry) {
+function addMemoEntry(entry, options = {}) {
+  const { openPanel = false, messageOnAdded = "メモに追加しました", messageOnExisting = "既にメモ済みです" } = options;
   if (!entry) return;
   if (memoEntries.some((memo) => memo.id === entry.id)) {
-    openMemoPanel("既に追加済みです");
-    return;
+    showMemoToast(messageOnExisting);
+    setMemoStatus(messageOnExisting);
+    if (openPanel) openMemoPanel(messageOnExisting);
+    return false;
   }
   memoEntries = [entry, ...memoEntries];
   saveMemoEntries();
-  openMemoPanel("メモに追加しました");
+  renderMemoList();
+  showMemoToast(messageOnAdded);
+  setMemoStatus(messageOnAdded);
+  if (openPanel) openMemoPanel(messageOnAdded);
+  return true;
 }
 
 function renderMemoList() {
@@ -6839,6 +6862,7 @@ if (monsterInfoModalBody) {
       event.stopPropagation();
       const entry = monsterDetailEntries.find((item) => String(item.id || "") === String(memoButton.dataset.memoMonsterId || ""));
       addMemoEntry(createMonsterMemoEntry(entry));
+      closeMonsterInfoModal();
       return;
     }
     const orbButton = target.closest("[data-monster-orb-name]");
@@ -8954,6 +8978,7 @@ if (armorSetDetailModalBody) {
       event.stopPropagation();
       const entry = findEquipmentDbEntryById(String(memoButton.dataset.memoArmorSetId || ""));
       addMemoEntry(createArmorSetMemoEntry(entry));
+      closeArmorSetDetailModal();
       return;
     }
     const monsterButton = target.closest("[data-equipment-db-monster-name]");
@@ -9054,27 +9079,58 @@ if (memoListWrap) {
   });
 }
 
+function startMemoPanelSwipe(event) {
+  if (!memoPanel) return;
+  if (event.target instanceof Element && event.target.closest("button")) return;
+  memoPanelSwipeState = { startY: event.clientY, currentY: event.clientY };
+  memoPanel.classList.add("is-swipe-dragging");
+  event.currentTarget?.setPointerCapture?.(event.pointerId);
+}
+
+function moveMemoPanelSwipe(event) {
+  if (!memoPanel || !memoPanelSwipeState) return;
+  memoPanelSwipeState.currentY = event.clientY;
+  const deltaY = Math.max(0, event.clientY - memoPanelSwipeState.startY);
+  memoPanel.style.transform = `translateY(${deltaY}px)`;
+}
+
+function endMemoPanelSwipe() {
+  if (!memoPanel || !memoPanelSwipeState) return;
+  const deltaY = Math.max(0, memoPanelSwipeState.currentY - memoPanelSwipeState.startY);
+  memoPanelSwipeState = null;
+  memoPanel.classList.remove("is-swipe-dragging");
+  memoPanel.style.transform = "";
+  if (deltaY > 56) closeMemoPanel();
+}
+
 if (memoPanelHandle && memoPanel) {
   memoPanelHandle.addEventListener("pointerdown", (event) => {
-    memoPanelSwipeState = { startY: event.clientY, currentY: event.clientY };
-    memoPanel.classList.add("is-swipe-dragging");
-    memoPanelHandle.setPointerCapture?.(event.pointerId);
+    startMemoPanelSwipe(event);
   });
   memoPanelHandle.addEventListener("pointermove", (event) => {
-    if (!memoPanelSwipeState) return;
-    memoPanelSwipeState.currentY = event.clientY;
-    const deltaY = Math.max(0, event.clientY - memoPanelSwipeState.startY);
-    memoPanel.style.transform = `translateY(${deltaY}px)`;
+    moveMemoPanelSwipe(event);
   });
   memoPanelHandle.addEventListener("pointerup", () => {
-    if (!memoPanelSwipeState) return;
-    const deltaY = Math.max(0, memoPanelSwipeState.currentY - memoPanelSwipeState.startY);
+    endMemoPanelSwipe();
+  });
+  memoPanelHandle.addEventListener("pointercancel", () => {
     memoPanelSwipeState = null;
     memoPanel.classList.remove("is-swipe-dragging");
     memoPanel.style.transform = "";
-    if (deltaY > 80) closeMemoPanel();
   });
-  memoPanelHandle.addEventListener("pointercancel", () => {
+}
+
+if (memoPanelHeader && memoPanel) {
+  memoPanelHeader.addEventListener("pointerdown", (event) => {
+    startMemoPanelSwipe(event);
+  });
+  memoPanelHeader.addEventListener("pointermove", (event) => {
+    moveMemoPanelSwipe(event);
+  });
+  memoPanelHeader.addEventListener("pointerup", () => {
+    endMemoPanelSwipe();
+  });
+  memoPanelHeader.addEventListener("pointercancel", () => {
     memoPanelSwipeState = null;
     memoPanel.classList.remove("is-swipe-dragging");
     memoPanel.style.transform = "";

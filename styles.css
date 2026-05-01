@@ -3660,6 +3660,29 @@ button {
   box-shadow: 0 8px 18px rgba(35, 22, 10, 0.2);
 }
 
+.memo-toast {
+  position: absolute;
+  right: 0;
+  bottom: 54px;
+  margin: 0;
+  padding: 6px 10px;
+  border-radius: 999px;
+  background: rgba(71, 49, 29, 0.94);
+  color: #fff8ef;
+  font-size: 0.74rem;
+  line-height: 1.2;
+  white-space: nowrap;
+  box-shadow: 0 6px 16px rgba(19, 12, 7, 0.18);
+  opacity: 0;
+  transform: translateY(6px);
+  transition: opacity 140ms ease-out, transform 140ms ease-out;
+}
+
+.memo-toast.is-visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
 .memo-panel {
   pointer-events: auto;
   position: fixed;
@@ -3714,6 +3737,17 @@ button {
 .memo-panel-header h2,
 .memo-target-header h3 {
   margin: 0;
+}
+
+.memo-target-header {
+  padding-top: 4px;
+  padding-right: 54px;
+  margin: 0 0 8px;
+}
+
+.memo-target-header .memo-add-button {
+  margin-top: 6px;
+  flex: 0 0 auto;
 }
 
 .memo-panel-actions {
