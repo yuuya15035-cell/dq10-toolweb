@@ -791,14 +791,16 @@ body.is-modal-open {
 .monster-info-modal-close { position: sticky; top: 0; margin-left: auto; display: block; }
 .monster-info-chip-list { display: flex; flex-wrap: wrap; gap: 6px; }
 .monster-info-chip { background: #f4f4f4; border-radius: 999px; padding: 2px 8px; font-size: .82rem; }
-.monster-info-equipment-link {
+.monster-info-equipment-link,
+.monster-info-nav-link {
   border: 1px solid #c7ad8d;
   color: #3f2a1a;
   cursor: pointer;
   text-decoration: underline;
   text-underline-offset: 2px;
 }
-.monster-info-equipment-link:hover {
+.monster-info-equipment-link:hover,
+.monster-info-nav-link:hover {
   background: #f3e7d7;
 }
 .monster-info-habitat-list { padding-left: 1.1rem; margin: 0; }
@@ -4246,6 +4248,23 @@ button {
   background: rgba(255, 253, 249, 0.82);
   padding: 4px 6px;
   line-height: 1.35;
+}
+
+.orb-monster-link {
+  width: 100%;
+  border: 0;
+  background: transparent;
+  color: #3f2a1a;
+  cursor: pointer;
+  font: inherit;
+  padding: 0;
+  text-align: left;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.orb-monster-link:hover {
+  color: #7a4f1e;
 }
 
 .orb-monster-empty {

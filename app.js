@@ -2593,10 +2593,20 @@ function buildArmorSetPartsHtml(setName, options = {}) {
     .join("")}</dl>`;
 }
 
+function getMeaningfulEquipmentTraits(entry) {
+  const emptyLabels = new Set(["", "-", "なし", "未設定", "特性情報なし", "セット効果なし"]);
+  return Array.isArray(entry?.traits)
+    ? entry.traits
+        .map((trait) => String(trait || "").trim())
+        .filter((trait) => !emptyLabels.has(trait))
+    : [];
+}
+
 function buildArmorSetDetailModalHtml(entry) {
   const levelText = Number.isFinite(entry?.equipmentLevel) ? `Lv${entry.equipmentLevel}` : "Lv-";
   const parts = getArmorSetPartsWithEstimatedCost(entry?.equipmentName || "");
   const stats = buildEquipmentDbStatsHtml(entry);
+  const meaningfulTraits = getMeaningfulEquipmentTraits(entry);
   const whiteBoxDrops = Array.isArray(entry?.whiteBoxArmorDropsBySlot) ? entry.whiteBoxArmorDropsBySlot : [];
   const whiteBoxHtml =
     entry?.whiteBoxHasDrop && whiteBoxDrops.length > 0
@@ -2646,7 +2656,7 @@ function buildArmorSetDetailModalHtml(entry) {
     </div>
     <div class="equipment-db-detail-section">
       <p class="equipment-db-traits-title">セット効果 / 特性</p>
-      ${entry?.traits?.length > 0 ? `<ul class="equipment-db-traits-list">${entry.traits.map((trait) => `<li>${escapeHtml(trait)}</li>`).join("")}</ul>` : `<p class="equipment-db-trait-empty">特性情報なし</p>`}
+      ${meaningfulTraits.length > 0 ? `<ul class="equipment-db-traits-list">${meaningfulTraits.map((trait) => `<li>${escapeHtml(trait)}</li>`).join("")}</ul>` : `<p class="equipment-db-trait-empty">セット効果なし</p>`}
     </div>
     <div class="equipment-db-detail-section">
       <p class="equipment-db-traits-title">白宝箱ドロップモンスター</p>
@@ -3378,7 +3388,7 @@ function renderMonsterInfoCards() {
     .sort((a, b) => a.localeCompare(b, "ja"));
   const types = [...priorityTypes, ...trailingTypes];
   if (selectedMonsterInfoType && !types.includes(selectedMonsterInfoType)) selectedMonsterInfoType = "";
-  if (selectedMonsterInfoType === "") {
+  if (selectedMonsterInfoType === "" && String(monsterInfoSearchKeyword || "").trim() === "") {
     selectedMonsterInfoType = types.includes("スライム系") ? "スライム系" : types[0] || "";
   }
   monsterInfoTypeFilterSelect.innerHTML = `<option value="">すべて</option>${types.map((type) => `<option value="${escapeHtml(type)}" ${selectedMonsterInfoType === type ? "selected" : ""}>${escapeHtml(type)}</option>`).join("")}`;
@@ -3562,8 +3572,8 @@ function buildEquipmentDbStatsHtml(entry) {
 }
 
 function buildEquipmentDbCollapsedTraitSummaryHtml(entry) {
-  const traits = Array.isArray(entry?.traits) ? entry.traits.filter((trait) => String(trait || "").trim() !== "") : [];
-  if (traits.length === 0) return `<p class="equipment-db-trait-empty equipment-db-trait-empty-collapsed">セット効果あり</p>`;
+  const traits = getMeaningfulEquipmentTraits(entry);
+  if (traits.length === 0) return `<p class="equipment-db-trait-empty equipment-db-trait-empty-collapsed">セット効果なし</p>`;
   const visibleTraits = traits.slice(0, 3);
   const remainingCount = traits.length - visibleTraits.length;
   return `<ul class="equipment-db-traits-list equipment-db-traits-list-collapsed">
@@ -3701,9 +3711,9 @@ function renderEquipmentDbCards() {
                 const collapsedTraitsHtml = isArmorSet ? buildEquipmentDbCollapsedTraitSummaryHtml(entry) : "";
 
                 const traitsHtml =
-                  entry.traits.length > 0
-                    ? `<ul class="equipment-db-traits-list">${entry.traits.map((trait) => `<li>${trait}</li>`).join("")}</ul>`
-                    : `<p class="equipment-db-trait-empty">特性情報なし</p>`;
+                  getMeaningfulEquipmentTraits(entry).length > 0
+                    ? `<ul class="equipment-db-traits-list">${getMeaningfulEquipmentTraits(entry).map((trait) => `<li>${escapeHtml(trait)}</li>`).join("")}</ul>`
+                    : `<p class="equipment-db-trait-empty">セット効果なし</p>`;
                 const armorStatsHtml =
                   isArmor && stats.length > 0
                     ? `<div class="equipment-db-detail-section ${isArmorSet ? "" : "equipment-db-detail-section-first"}">
@@ -4678,7 +4688,7 @@ function renderOrbCards() {
   const categories = ["炎", "水", "風", "光", "闇"].filter((category) =>
     orbEntries.some((row) => normalizeOrbCategoryName(row.orbCategory) === category)
   );
-  if (selectedOrbCategory === "") {
+  if (selectedOrbCategory === "" && String(orbSearchKeyword || "").trim() === "") {
     selectedOrbCategory = categories.includes("炎") ? "炎" : categories[0] || "";
   }
   orbCategoryFilterWrap.innerHTML = `
@@ -4702,10 +4712,7 @@ function renderOrbCards() {
               .map((row) => {
                 const isExpanded = expandedOrbId === row.id;
                 const orbCategoryClass = getOrbCategoryClassName(row.orbCategory);
-                const monsterListHtml =
-                  row.monsterNames.length > 0
-                    ? `<ul class="orb-monster-list">${row.monsterNames.map((name) => `<li>${name}</li>`).join("")}</ul>`
-                    : `<p class="orb-monster-empty">ドロップモンスター情報なし</p>`;
+                const monsterListHtml = buildOrbMonsterLinksHtml(row.monsterNames);
                 return `
                   <article class="card orb-card orb-card-category-${orbCategoryClass} ${isExpanded ? "is-expanded" : ""}">
                     <button type="button" class="orb-card-toggle" data-orb-id="${row.id}" aria-expanded="${isExpanded ? "true" : "false"}">
@@ -4737,6 +4744,13 @@ function renderOrbCards() {
       const clickedOrbId = String(button.dataset.orbId || "");
       expandedOrbId = expandedOrbId === clickedOrbId ? "" : clickedOrbId;
       renderOrbCards();
+    });
+  });
+  orbListWrap.querySelectorAll("[data-orb-monster-name]").forEach((button) => {
+    button.addEventListener("click", (event) => {
+      event.preventDefault();
+      event.stopPropagation();
+      void openMonsterInfoFromOrb(String(button.dataset.orbMonsterName || ""));
     });
   });
 }
@@ -6233,6 +6247,8 @@ function buildAppQueryParams(nextValues = {}) {
   if (tab) params.set("tab", tab);
   if (nextValues.equipmentId) params.set("equipmentId", nextValues.equipmentId);
   if (nextValues.materialKey) params.set("materialKey", nextValues.materialKey);
+  if (nextValues.orbSearch) params.set("orbSearch", nextValues.orbSearch);
+  if (nextValues.monsterSearch) params.set("monsterSearch", nextValues.monsterSearch);
   if (nextValues.equipmentDbGroup === "armor" || nextValues.equipmentDbGroup === "weapon") {
     params.set("equipmentDbGroup", nextValues.equipmentDbGroup);
   }
@@ -6302,6 +6318,16 @@ function applyAppRouteFromUrl() {
   const equipmentDbGroupParam = String(params.get("equipmentDbGroup") || "").trim();
   if (equipmentDbGroupParam === "armor" || equipmentDbGroupParam === "weapon") {
     selectedEquipmentDbGroup = equipmentDbGroupParam;
+  }
+  const orbSearchParam = String(params.get("orbSearch") || "").trim();
+  if (orbSearchParam) {
+    orbSearchKeyword = orbSearchParam;
+    selectedOrbCategory = "";
+  }
+  const monsterSearchParam = String(params.get("monsterSearch") || "").trim();
+  if (monsterSearchParam) {
+    monsterInfoSearchKeyword = monsterSearchParam;
+    selectedMonsterInfoType = "";
   }
 
   pendingBazaarFocusMaterialKey = String(params.get("materialKey") || "").trim();
@@ -6485,6 +6511,12 @@ if (monsterInfoModalBody) {
   monsterInfoModalBody.addEventListener("click", (event) => {
     const target = event.target;
     if (!(target instanceof Element)) return;
+    const orbButton = target.closest("[data-monster-orb-name]");
+    if (orbButton && monsterInfoModalBody.contains(orbButton)) {
+      event.preventDefault();
+      void openOrbFromMonsterInfo(String(orbButton.dataset.monsterOrbName || ""));
+      return;
+    }
     const button = target.closest("[data-monster-white-box-equipment]");
     if (!button || !monsterInfoModalBody.contains(button)) return;
     event.preventDefault();
@@ -6535,7 +6567,7 @@ if (monsterInfoListWrap) {
       <div class="monster-drop-normal">${buildMonsterDropHtml("通常ドロップ", entry.normalDrop, { modal: true })}</div>
       <div class="monster-drop-rare">${buildMonsterDropHtml("レアドロップ", entry.rareDrop, { modal: true })}</div>
       <div><p>白宝箱</p><div class="monster-info-chip-list">${buildMonsterWhiteBoxLinksHtml(entry.whiteBoxList)}</div></div>
-      <div><p>宝珠 / オーブ</p><div class="monster-info-chip-list">${chips(entry.orbList)}</div></div>
+      <div><p>宝珠 / オーブ</p><div class="monster-info-chip-list">${buildMonsterOrbLinksHtml(entry.orbList)}</div></div>
       <div><p>生息地</p><ul class="monster-info-habitat-list">${habitatsHtml || "<li>なし</li>"}</ul></div>`;
     monsterInfoModalOverlay.hidden = false;
     monsterInfoModalDialog?.focus();
@@ -7304,6 +7336,56 @@ function buildMonsterWhiteBoxLinksHtml(values) {
         `<button type="button" class="monster-info-chip monster-info-equipment-link" data-monster-white-box-equipment="${escapeHtml(itemName)}">${escapeHtml(itemName)}</button>`
     )
     .join("");
+}
+
+function buildMonsterOrbLinksHtml(values) {
+  const items = Array.isArray(values) ? values.filter((value) => String(value || "").trim() !== "" && String(value || "").trim() !== "-") : [];
+  if (items.length === 0) return "なし";
+  return items
+    .map(
+      (orbName) =>
+        `<button type="button" class="monster-info-chip monster-info-nav-link" data-monster-orb-name="${escapeHtml(orbName)}">${escapeHtml(orbName)}</button>`
+    )
+    .join("");
+}
+
+function buildOrbMonsterLinksHtml(monsterNames) {
+  const names = Array.isArray(monsterNames) ? monsterNames.filter((name) => String(name || "").trim() !== "" && String(name || "").trim() !== "-") : [];
+  if (names.length === 0) return `<p class="orb-monster-empty">ドロップモンスター情報なし</p>`;
+  return `<ul class="orb-monster-list">${names
+    .map(
+      (name) =>
+        `<li><button type="button" class="orb-monster-link" data-orb-monster-name="${escapeHtml(name)}">${escapeHtml(name)}</button></li>`
+    )
+    .join("")}</ul>`;
+}
+
+async function openOrbFromMonsterInfo(orbName) {
+  const normalizedOrbName = String(orbName || "").trim();
+  if (normalizedOrbName === "" || normalizedOrbName === "-") return;
+  closeMonsterInfoModal();
+  await ensureOrbDataLoaded();
+  const matchedOrb = (orbEntries || []).find((entry) => String(entry?.orbName || "").trim() === normalizedOrbName);
+  selectedOrbCategory = matchedOrb ? normalizeOrbCategoryName(matchedOrb.orbCategory) : "";
+  orbSearchKeyword = normalizedOrbName;
+  expandedOrbId = matchedOrb?.id || "";
+  switchTab("orbs");
+  navigateByAppParams({ tab: "orbs", orbSearch: normalizedOrbName, equipmentId: "", materialKey: "" });
+  renderOrbCards();
+  document.getElementById("orbs")?.scrollIntoView({ block: "start", behavior: "smooth" });
+}
+
+async function openMonsterInfoFromOrb(monsterName) {
+  const normalizedMonsterName = String(monsterName || "").trim();
+  if (normalizedMonsterName === "" || normalizedMonsterName === "-") return;
+  await ensureMonsterInfoDataLoaded();
+  const matchedMonster = (monsterDetailEntries || []).find((entry) => String(entry?.name || "").trim() === normalizedMonsterName);
+  selectedMonsterInfoType = matchedMonster?.type || "";
+  monsterInfoSearchKeyword = normalizedMonsterName;
+  switchTab("monster-info");
+  navigateByAppParams({ tab: "monster-info", monsterSearch: normalizedMonsterName, equipmentId: "", materialKey: "" });
+  renderMonsterInfoCards();
+  document.getElementById("monster-info")?.scrollIntoView({ block: "start", behavior: "smooth" });
 }
 
 function renderProfitArmorSetAssist() {
@@ -8600,6 +8682,8 @@ async function initialize() {
       tab: appMode === "tool" ? activeTabId : "",
       equipmentId: activeTabId === "profit" ? selectedEquipmentId : "",
       materialKey: activeTabId === "bazaar" ? pendingBazaarFocusMaterialKey : "",
+      orbSearch: activeTabId === "orbs" ? orbSearchKeyword : "",
+      monsterSearch: activeTabId === "monster-info" ? monsterInfoSearchKeyword : "",
       equipmentDbGroup: activeTabId === "equipment-db" ? selectedEquipmentDbGroup : "",
       profitEntryType:
         activeTabId === "profit" && pendingProfitArmorSetContext?.type === PROFIT_EQUIPMENT_NAVIGATION_TYPES.armorSet
