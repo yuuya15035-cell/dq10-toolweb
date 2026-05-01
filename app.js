@@ -2953,13 +2953,16 @@ function getOfficialBazaarUrlByMaterialName(materialName) {
 function getBazaarPriceInfoByMaterialName(materialName) {
   const normalizedMaterialName = normalizeMaterialNameKey(materialName);
   if (normalizedMaterialName === "" || normalizedMaterialName === "-") {
-    return { priceText: "-", comment: "" };
+    return { priceText: "", hasDisplayPrice: false };
   }
   const matchedRow = bazaarPrices.find((row) => normalizeMaterialNameKey(row?.materialName) === normalizedMaterialName);
+  if (!matchedRow || !isMonitoringByComment(matchedRow.comment)) {
+    return { priceText: "", hasDisplayPrice: false };
+  }
   const price = getPreferredBazaarUnitPrice(matchedRow);
   return {
-    priceText: Number.isFinite(price) ? formatGold(price) : "-",
-    comment: String(matchedRow?.comment || "").trim(),
+    priceText: Number.isFinite(price) ? `${formatGold(price)}G` : "",
+    hasDisplayPrice: Number.isFinite(price),
   };
 }
 
@@ -2967,18 +2970,20 @@ function buildMonsterDropHtml(label, itemName, options = {}) {
   const { modal = false } = options;
   const normalizedItemName = String(itemName || "-").trim() || "-";
   const priceInfo = getBazaarPriceInfoByMaterialName(normalizedItemName);
-  const commentHtml = priceInfo.comment ? `<span class="monster-drop-comment">${escapeHtml(priceInfo.comment)}</span>` : "";
+  const priceHtml = priceInfo.hasDisplayPrice ? `<span class="monster-drop-price">${escapeHtml(priceInfo.priceText)}</span>` : "";
   if (modal) {
     return `<div class="monster-drop-detail">
       <p class="monster-drop-title">${escapeHtml(label)}</p>
-      <p class="monster-drop-item-name">${escapeHtml(normalizedItemName)}</p>
-      <p class="monster-drop-price">現在価格：${escapeHtml(priceInfo.priceText)}${commentHtml}</p>
+      <p class="monster-drop-row monster-drop-row-detail">
+        <span class="monster-drop-item-name">${escapeHtml(normalizedItemName)}</span>
+        ${priceHtml}
+      </p>
     </div>`;
   }
   return `<p class="monster-drop-row">
     <span class="monster-label">${escapeHtml(label)}：</span>
     <span class="monster-drop-item-name">${escapeHtml(normalizedItemName)}</span>
-    <span class="monster-drop-price">価格：${escapeHtml(priceInfo.priceText)}${commentHtml}</span>
+    ${priceHtml}
   </p>`;
 }
 
