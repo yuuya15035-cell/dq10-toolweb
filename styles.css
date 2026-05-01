@@ -664,11 +664,19 @@ body.is-modal-open {
   align-items: stretch;
 }
 .monster-info-card {
+  position: relative;
   display: flex;
   flex-direction: column;
   text-align: left;
   color: #111;
   margin: 0;
+  padding-bottom: 40px;
+}
+
+.monster-info-card-toggle {
+  display: block;
+  cursor: pointer;
+  color: inherit;
 }
 .monster-info-card p {
   margin: 0 0 5px;
@@ -773,6 +781,14 @@ body.is-modal-open {
   text-overflow: clip !important;
   line-height: 1.3;
 }
+
+.monster-info-card-memo-button {
+  position: absolute;
+  right: 8px;
+  bottom: 8px;
+  margin: 0;
+  z-index: 1;
+}
 .monster-info-modal-overlay {
   position: fixed; inset: 0; background: rgba(0,0,0,.45); z-index: 1200;
   display: flex; align-items: center; justify-content: center; padding: 14px;
@@ -830,7 +846,7 @@ body.is-modal-open {
     column-gap: 9px;
   }
   .monster-info-card {
-    padding: 7px;
+    padding: 7px 7px 40px;
   }
   .monster-info-card p {
     margin-bottom: 4px;

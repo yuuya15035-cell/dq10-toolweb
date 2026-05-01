@@ -3619,17 +3619,20 @@ function renderMonsterInfoCards() {
   monsterInfoListWrap.innerHTML = `<div class="monster-info-grid">${filtered.map((entry) => {
     const firstHabitat = entry.habitats[0] || "-";
     const remain = Math.max(entry.habitats.length - 1, 0);
-    return `<button type="button" class="card monster-info-card" data-monster-info-id="${escapeHtml(entry.id)}">
-      <div class="monster-info-title-area">
-        <h3 class="monster-info-name">${escapeHtml(entry.name)}</h3>
+    return `<article class="card monster-info-card">
+      <div class="monster-info-card-toggle" role="button" tabindex="0" data-monster-info-id="${escapeHtml(entry.id)}" aria-label="${escapeHtml(entry.name)}の詳細を開く">
+        <div class="monster-info-title-area">
+          <h3 class="monster-info-name">${escapeHtml(entry.name)}</h3>
+        </div>
+        <p class="monster-info-line">${buildMonsterTypeLabelHtml(entry.type)}</p>
+        <p>経験値：${escapeHtml(entry.exp)}</p>
+        <div class="monster-drop-normal">${buildMonsterDropHtml("通常", entry.normalDrop)}</div>
+        <div class="monster-drop-rare">${buildMonsterDropHtml("レア", entry.rareDrop)}</div>
+        <p class="monster-info-habitat">生息地：${escapeHtml(firstHabitat)}</p>
+        ${remain > 0 ? `<p class="monster-info-more">ほか${remain}件</p>` : ""}
       </div>
-      <p class="monster-info-line">${buildMonsterTypeLabelHtml(entry.type)}</p>
-      <p>経験値：${escapeHtml(entry.exp)}</p>
-      <div class="monster-drop-normal">${buildMonsterDropHtml("通常", entry.normalDrop)}</div>
-      <div class="monster-drop-rare">${buildMonsterDropHtml("レア", entry.rareDrop)}</div>
-      <p class="monster-info-habitat">生息地：${escapeHtml(firstHabitat)}</p>
-      ${remain > 0 ? `<p class="monster-info-more">ほか${remain}件</p>` : ""}
-    </button>`;
+      <button type="button" class="memo-add-button monster-info-card-memo-button" data-memo-monster-id="${escapeHtml(entry.id)}">＋メモ</button>
+    </article>`;
   }).join("")}</div>`;
 }
 
@@ -7020,6 +7023,14 @@ if (monsterInfoTypeFilterSelect) {
 }
 if (monsterInfoListWrap) {
   monsterInfoListWrap.addEventListener("click", (event) => {
+    const memoButton = event.target.closest("[data-memo-monster-id]");
+    if (memoButton && monsterInfoListWrap.contains(memoButton)) {
+      event.preventDefault();
+      event.stopPropagation();
+      const entry = monsterDetailEntries.find((item) => String(item.id || "") === String(memoButton.dataset.memoMonsterId || ""));
+      addMemoEntry(createMonsterMemoEntry(entry));
+      return;
+    }
     const button = event.target.closest("[data-monster-info-id]");
     if (!(button instanceof HTMLElement)) return;
     const targetId = String(button.dataset.monsterInfoId || "");
@@ -7046,6 +7057,17 @@ if (monsterInfoListWrap) {
       <div><p>生息地</p><ul class="monster-info-habitat-list">${habitatsHtml || "<li>なし</li>"}</ul></div>`;
     monsterInfoModalOverlay.hidden = false;
     monsterInfoModalDialog?.focus();
+  });
+
+  monsterInfoListWrap.addEventListener("keydown", (event) => {
+    if (event.key !== "Enter" && event.key !== " ") return;
+    const target = event.target;
+    if (!(target instanceof Element)) return;
+    if (target.closest("[data-memo-monster-id]")) return;
+    const button = target.closest("[data-monster-info-id]");
+    if (!(button instanceof HTMLElement) || !monsterInfoListWrap.contains(button)) return;
+    event.preventDefault();
+    button.click();
   });
 }
 
