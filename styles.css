@@ -788,6 +788,9 @@ body.is-modal-open {
   bottom: 8px;
   margin: 0;
   z-index: 1;
+  min-height: 28px;
+  padding: 4px 8px;
+  font-size: 0.72rem;
 }
 .monster-info-modal-overlay {
   position: fixed; inset: 0; background: rgba(0,0,0,.45); z-index: 1200;
@@ -846,7 +849,7 @@ body.is-modal-open {
     column-gap: 9px;
   }
   .monster-info-card {
-    padding: 7px 7px 40px;
+    padding: 7px 7px 42px;
   }
   .monster-info-card p {
     margin-bottom: 4px;
@@ -854,14 +857,16 @@ body.is-modal-open {
     line-height: 1.2;
   }
   .monster-info-title-area {
-    min-height: 1.45em;
+    min-height: 1.65em;
     margin-bottom: 4px;
     padding-bottom: 4px;
   }
   .monster-info-name {
     font-size: clamp(0.62rem, 2.8vw, 0.78rem);
-    line-height: 1.05;
-    letter-spacing: -0.03em;
+    line-height: 1.12;
+    letter-spacing: 0;
+    word-break: keep-all;
+    overflow-wrap: break-word;
   }
   .monster-type {
     font-size: 0.64rem;
@@ -887,8 +892,10 @@ body.is-modal-open {
 
   .equipment-db-card-name {
     font-size: clamp(0.62rem, 2.8vw, 0.78rem);
-    line-height: 1.05;
-    letter-spacing: -0.03em;
+    line-height: 1.12;
+    letter-spacing: 0;
+    word-break: keep-all;
+    overflow-wrap: break-word;
     margin-bottom: 4px;
   }
 
@@ -905,6 +912,9 @@ body.is-modal-open {
 
   .equipment-db-card-meta-row {
     margin-top: 3px;
+    flex-wrap: wrap;
+    align-items: flex-start;
+    gap: 4px 8px;
   }
 
   .equipment-db-open-profit-button {
@@ -918,7 +928,7 @@ body.is-modal-open {
   }
 
   .equipment-db-card-traits {
-    padding: 7px 7px 40px;
+    padding: 7px 7px 42px;
   }
 }
 
@@ -3017,6 +3027,8 @@ button {
   .bazaar-card-header h3 {
     font-size: 0.84rem;
     line-height: 1.2;
+    word-break: keep-all;
+    overflow-wrap: break-word;
   }
 
   .bazaar-card-header-actions {
@@ -3034,7 +3046,7 @@ button {
   }
 
   .bazaar-card {
-    padding-bottom: 40px;
+    padding-bottom: 42px;
   }
 
   .bazaar-category {
@@ -3103,7 +3115,7 @@ button {
   }
 
   .orb-card-toggle {
-    padding: 10px 10px 40px;
+    padding: 10px 10px 42px;
   }
 
   .orb-card-monsters {
@@ -3693,7 +3705,7 @@ button {
 .memo-dock {
   position: fixed;
   right: 10px;
-  bottom: calc(var(--mobile-bottom-nav-height) + 12px + env(safe-area-inset-bottom));
+  bottom: calc(var(--mobile-bottom-nav-height) + 16px + env(safe-area-inset-bottom));
   z-index: 1300;
   pointer-events: none;
   display: flex;
@@ -3768,7 +3780,7 @@ body.memo-panel-open {
   position: fixed;
   left: 8px;
   right: 8px;
-  bottom: calc(var(--mobile-bottom-nav-height) + 8px + env(safe-area-inset-bottom));
+  bottom: calc(var(--mobile-bottom-nav-height) + 10px + env(safe-area-inset-bottom));
   width: min(620px, calc(100vw - 16px));
   max-height: min(78vh, 680px);
   margin: 0 auto;
@@ -3822,15 +3834,15 @@ body.memo-panel-open {
 
 .memo-target-header {
   padding-top: 4px;
-  padding-right: 96px;
+  padding-right: 108px;
   margin: 0 0 8px;
-  min-height: 34px;
+  min-height: 36px;
 }
 
 .memo-target-header .memo-add-button {
   position: absolute;
-  top: 0;
-  right: 44px;
+  top: 1px;
+  right: 50px;
   margin-top: 0;
   flex: 0 0 auto;
 }
@@ -3954,6 +3966,7 @@ body.memo-panel-open {
   color: #806247;
 }
 
+.monster-info-card-memo-button,
 .equipment-db-memo-button,
 .orb-memo-button,
 .bazaar-card-memo-button {
@@ -4583,6 +4596,8 @@ body.memo-panel-open {
   margin: 4px 0 6px;
   font-size: 1.02rem;
   color: #3c2d20;
+  word-break: keep-all;
+  overflow-wrap: break-word;
 }
 
 .orb-card-effect {
@@ -4905,6 +4920,27 @@ body.memo-panel-open {
 }
 
 @media (max-width: 640px) {
+  .admin-fab-wrap {
+    bottom: calc(var(--mobile-bottom-nav-height) + 16px + env(safe-area-inset-bottom));
+  }
+
+  .history-back-button,
+  .memo-dock-button {
+    min-height: 44px;
+    padding: 7px 11px;
+  }
+
+  .monster-info-card-memo-button,
+  .equipment-db-memo-button,
+  .orb-memo-button,
+  .bazaar-card-memo-button {
+    right: 7px;
+    bottom: 7px;
+    min-height: 26px;
+    padding: 3px 7px;
+    font-size: 0.68rem;
+  }
+
   .site-footer {
     margin-top: 14px;
     padding: 0 12px 16px;
