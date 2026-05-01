@@ -2483,6 +2483,23 @@ function attachWhiteBoxDropsToEquipmentEntries(entries, whiteBoxSummaryByName) {
 
 
 const ARMOR_SET_PART_DISPLAY_ORDER = ["頭", "からだ上", "からだ下", "腕", "足"];
+const ARMOR_SET_REPRESENTATIVE_PART_WORDS = [
+  "はちまき",
+  "クラウン",
+  "ヘルム",
+  "帽子",
+  "ぼうし",
+  "かぶと",
+  "ローブ",
+  "装束",
+  "よろい",
+  "こて",
+  "グローブ",
+  "ブーツ",
+  "くつ",
+  "脚帯",
+  "足袋",
+];
 
 function normalizeArmorPartCategory(category) {
   const normalized = String(category || "").trim();
@@ -2495,16 +2512,34 @@ function normalizeArmorPartCategory(category) {
   return "";
 }
 
+function buildArmorSetRecipeSearchKeys(setName) {
+  const baseName = stripArmorSetSuffix(setName);
+  const keys = [];
+  const addKey = (value) => {
+    const key = String(value || "").trim();
+    if (key.length < 2 || keys.includes(key)) return;
+    keys.push(key);
+  };
+
+  addKey(baseName);
+  ARMOR_SET_REPRESENTATIVE_PART_WORDS.forEach((word) => {
+    if (!baseName.endsWith(word)) return;
+    addKey(baseName.slice(0, -word.length).replace(/の$/, ""));
+  });
+
+  return keys;
+}
+
 function getArmorSetPartsFromRecipes(setName) {
-  const setKey = stripArmorSetSuffix(setName);
-  if (!setKey) return [];
+  const setKeys = buildArmorSetRecipeSearchKeys(setName);
+  if (setKeys.length === 0) return [];
 
   const slotMap = new Map();
   state.equipments.forEach((equipment) => {
     const equipmentName = String(equipment?.name || "").trim();
     const partCategory = normalizeArmorPartCategory(equipment?.category);
     if (!equipmentName || !partCategory) return;
-    if (!equipmentName.includes(setKey)) return;
+    if (!setKeys.some((setKey) => equipmentName.includes(setKey))) return;
     if (!slotMap.has(partCategory)) {
       slotMap.set(partCategory, equipment);
     }
@@ -2532,13 +2567,6 @@ function getArmorSetPartsWithEstimatedCost(setName) {
   return getArmorSetPartsFromRecipes(setName);
 }
 
-function formatArmorSetEstimatedCostText(parts) {
-  const normalizedParts = Array.isArray(parts) ? parts : [];
-  if (normalizedParts.length === 0 || normalizedParts.some((part) => !Number.isFinite(part?.costValue))) return "未計算";
-  const totalCost = normalizedParts.reduce((sum, part) => sum + part.costValue, 0);
-  return `${totalCost.toLocaleString("ja-JP")} G`;
-}
-
 function buildArmorSetPartsHtml(setName) {
   const parts = getArmorSetPartsFromRecipes(setName);
   if (parts.length === 0) {
@@ -2552,7 +2580,6 @@ function buildArmorSetPartsHtml(setName) {
 function buildArmorSetDetailModalHtml(entry) {
   const levelText = Number.isFinite(entry?.equipmentLevel) ? `Lv${entry.equipmentLevel}` : "Lv-";
   const parts = getArmorSetPartsWithEstimatedCost(entry?.equipmentName || "");
-  const totalCostText = formatArmorSetEstimatedCostText(parts);
   const stats = buildEquipmentDbStatsHtml(entry);
   const whiteBoxDrops = Array.isArray(entry?.whiteBoxArmorDropsBySlot) ? entry.whiteBoxArmorDropsBySlot : [];
   const whiteBoxHtml =
@@ -2577,7 +2604,6 @@ function buildArmorSetDetailModalHtml(entry) {
     <div class="equipment-db-detail-section equipment-db-detail-section-first">
       <p class="equipment-db-traits-title">基本情報</p>
       <p class="equipment-db-trait-empty equipment-db-armor-set-level">${levelText}</p>
-      <p class="equipment-db-trait-empty">推定原価：${escapeHtml(totalCostText)}</p>
     </div>
     <div class="equipment-db-detail-section">
       <p class="equipment-db-traits-title">各部位</p>
@@ -3671,9 +3697,7 @@ function renderEquipmentDbCards() {
                   equipmentName: entry?.equipmentName,
                   equipmentType: entry?.equipmentType,
                 });
-                const estimatedCostText = isArmorSet
-                  ? formatArmorSetEstimatedCostText(getArmorSetPartsWithEstimatedCost(entry?.equipmentName || ""))
-                  : formatEstimatedMaterialCostText(profitEquipmentId);
+                const estimatedCostText = formatEstimatedMaterialCostText(profitEquipmentId);
                 return `
                   <article class="card equipment-db-card equipment-db-card-${isArmor ? "armor" : "weapon"} ${isExpanded ? "is-expanded" : ""}">
                     <div class="equipment-db-card-toggle" role="button" tabindex="0" data-equipment-db-id="${entry.id}" aria-expanded="${isExpanded ? "true" : "false"}">
@@ -3686,9 +3710,9 @@ function renderEquipmentDbCards() {
                       ${!isArmor && stats.length > 0 ? `<ul class="equipment-db-stats-list">${stats.join("")}</ul>` : ""}
                       ${collapsedTraitsHtml}
                     </div>
-                    <div class="equipment-db-card-actions">
+                    ${isArmorSet ? "" : `<div class="equipment-db-card-actions">
                       <p class="equipment-db-material-cost">推定原価: ${estimatedCostText}</p>
-                    </div>
+                    </div>`}
                     <div class="equipment-db-card-traits ${isExpanded ? "is-open" : ""}" ${isExpanded ? "" : "hidden"}>
                       ${armorSetTypeMetaHtml}
                       ${armorStatsHtml}
