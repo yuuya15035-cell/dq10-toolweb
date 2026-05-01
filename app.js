@@ -2516,12 +2516,27 @@ function getArmorSetPartsFromRecipes(setName) {
       const equipment = slotMap.get(part);
       const equipmentName = String(equipment?.name || "").trim();
       const equipmentId = String(equipment?.id || "").trim();
+      const hasEstimatedCost = equipmentId !== "" && state.recipes.some((row) => row.equipmentId === equipmentId);
+      const costValue = hasEstimatedCost ? getRoundedEquipmentMaterialCost(equipmentId) : null;
       return {
         part,
         name: equipmentName,
+        equipmentId,
+        costValue,
         costText: formatEstimatedMaterialCostText(equipmentId),
       };
     });
+}
+
+function getArmorSetPartsWithEstimatedCost(setName) {
+  return getArmorSetPartsFromRecipes(setName);
+}
+
+function formatArmorSetEstimatedCostText(parts) {
+  const normalizedParts = Array.isArray(parts) ? parts : [];
+  if (normalizedParts.length === 0 || normalizedParts.some((part) => !Number.isFinite(part?.costValue))) return "未計算";
+  const totalCost = normalizedParts.reduce((sum, part) => sum + part.costValue, 0);
+  return `${totalCost.toLocaleString("ja-JP")} G`;
 }
 
 function buildArmorSetPartsHtml(setName) {
@@ -2537,6 +2552,7 @@ function buildArmorSetPartsHtml(setName) {
 function buildArmorSetDetailModalHtml(entry) {
   const levelText = Number.isFinite(entry?.equipmentLevel) ? `Lv${entry.equipmentLevel}` : "Lv-";
   const parts = getArmorSetPartsWithEstimatedCost(entry?.equipmentName || "");
+  const totalCostText = formatArmorSetEstimatedCostText(parts);
   const stats = buildEquipmentDbStatsHtml(entry);
   const whiteBoxDrops = Array.isArray(entry?.whiteBoxArmorDropsBySlot) ? entry.whiteBoxArmorDropsBySlot : [];
   const whiteBoxHtml =
@@ -2561,14 +2577,26 @@ function buildArmorSetDetailModalHtml(entry) {
     <div class="equipment-db-detail-section equipment-db-detail-section-first">
       <p class="equipment-db-traits-title">基本情報</p>
       <p class="equipment-db-trait-empty equipment-db-armor-set-level">${levelText}</p>
+      <p class="equipment-db-trait-empty">推定原価：${escapeHtml(totalCostText)}</p>
     </div>
     <div class="equipment-db-detail-section">
       <p class="equipment-db-traits-title">各部位</p>
-      <dl class="equipment-db-armor-part-grid equipment-db-armor-part-grid-modal">
-        ${parts
-          .map((part) => `<div><dt>${escapeHtml(part.part)}</dt><dd class="equipment-db-armor-part-name">${escapeHtml(part.name)}</dd><dd class="equipment-db-armor-part-cost">推定原価：${escapeHtml(part.costText)}</dd></div>`)
-          .join("")}
-      </dl>
+      ${
+        parts.length > 0
+          ? `<dl class="equipment-db-armor-part-grid equipment-db-armor-part-grid-modal">
+              ${parts
+                .map(
+                  (part) => `<div>
+                    <dt>${escapeHtml(part.part)}</dt>
+                    <dd class="equipment-db-armor-part-name">${escapeHtml(part.name)}</dd>
+                    <dd class="equipment-db-armor-part-cost">推定原価：${escapeHtml(part.costText)}</dd>
+                    <dd class="equipment-db-armor-part-action"><button type="button" class="equipment-db-open-profit-button" data-armor-part-open-profit="${escapeHtml(part.equipmentId)}">職人アシスト</button></dd>
+                  </div>`
+                )
+                .join("")}
+            </dl>`
+          : `<p class="equipment-db-trait-empty">部位情報なし</p>`
+      }
     </div>
     <div class="equipment-db-detail-section">
       <p class="equipment-db-traits-title">上昇能力値</p>
@@ -2593,6 +2621,7 @@ function closeArmorSetDetailModal() {
 
 function formatEstimatedMaterialCostText(equipmentId) {
   if (!equipmentId) return "未計算";
+  if (!state.recipes.some((row) => row.equipmentId === equipmentId)) return "未計算";
   const cost = getRoundedEquipmentMaterialCost(equipmentId);
   return `${cost.toLocaleString("ja-JP")} G`;
 }
@@ -3453,6 +3482,41 @@ function buildEquipmentDbStatsHtml(entry) {
   return stats;
 }
 
+function buildEquipmentDbCollapsedTraitSummaryHtml(entry) {
+  const traits = Array.isArray(entry?.traits) ? entry.traits.filter((trait) => String(trait || "").trim() !== "") : [];
+  if (traits.length === 0) return `<p class="equipment-db-trait-empty equipment-db-trait-empty-collapsed">セット効果あり</p>`;
+  const visibleTraits = traits.slice(0, 3);
+  const remainingCount = traits.length - visibleTraits.length;
+  return `<ul class="equipment-db-traits-list equipment-db-traits-list-collapsed">
+    ${visibleTraits.map((trait) => `<li>${escapeHtml(trait)}</li>`).join("")}
+    ${remainingCount > 0 ? `<li>ほか${remainingCount}件</li>` : ""}
+  </ul>`;
+}
+
+function findEquipmentDbEntryById(entryId) {
+  const normalizedEntryId = String(entryId || "");
+  return (Array.isArray(equipmentDbEntries) ? equipmentDbEntries : []).find((entry) => String(entry?.id || "") === normalizedEntryId);
+}
+
+function openArmorSetDetailModal(entry) {
+  if (!entry || !armorSetDetailModalOverlay || !armorSetDetailModalBody) return;
+  activeArmorSetDetailId = String(entry.id || "");
+  armorSetDetailModalBody.innerHTML = buildArmorSetDetailModalHtml(entry);
+  armorSetDetailModalOverlay.hidden = false;
+  armorSetDetailModalDialog?.focus();
+}
+
+function activateEquipmentDbCard(entryId) {
+  const targetEntry = findEquipmentDbEntryById(entryId);
+  if (!targetEntry) return;
+  if (isArmorSetEntry(targetEntry)) {
+    openArmorSetDetailModal(targetEntry);
+    return;
+  }
+  expandedEquipmentDbId = expandedEquipmentDbId === entryId ? "" : entryId;
+  renderEquipmentDbCards();
+}
+
 function renderEquipmentDbCards() {
   if (!equipmentDbListWrap || !equipmentDbTypeFilterSelect || !equipmentDbSortSelect) return;
 
@@ -3555,7 +3619,7 @@ function renderEquipmentDbCards() {
                   ? `<span class="equipment-type-meta"><img src="${resolveProjectScopedAssetUrl(typeIconPath)}" alt="" class="equipment-type-icon" loading="lazy" decoding="async"><span>${typeLabel}</span></span>`
                   : typeLabel;
                 const stats = buildEquipmentDbStatsHtml(entry);
-                const collapsedTraitsHtml = "";
+                const collapsedTraitsHtml = isArmorSet ? buildEquipmentDbCollapsedTraitSummaryHtml(entry) : "";
 
                 const traitsHtml =
                   entry.traits.length > 0
@@ -3607,7 +3671,9 @@ function renderEquipmentDbCards() {
                   equipmentName: entry?.equipmentName,
                   equipmentType: entry?.equipmentType,
                 });
-                const estimatedCostText = formatEstimatedMaterialCostText(profitEquipmentId);
+                const estimatedCostText = isArmorSet
+                  ? formatArmorSetEstimatedCostText(getArmorSetPartsWithEstimatedCost(entry?.equipmentName || ""))
+                  : formatEstimatedMaterialCostText(profitEquipmentId);
                 return `
                   <article class="card equipment-db-card equipment-db-card-${isArmor ? "armor" : "weapon"} ${isExpanded ? "is-expanded" : ""}">
                     <div class="equipment-db-card-toggle" role="button" tabindex="0" data-equipment-db-id="${entry.id}" aria-expanded="${isExpanded ? "true" : "false"}">
@@ -3615,7 +3681,7 @@ function renderEquipmentDbCards() {
                       ${isArmor ? "" : `<p class="equipment-db-card-meta">${typeMetaText}</p>`}
                       <div class="equipment-db-card-meta-row">
                         <p class="equipment-db-card-meta">${levelText}</p>
-                        <button type="button" class="equipment-db-open-profit-button" data-equipment-db-open-profit="${entry.id}">職人アシスト</button>
+                        ${isArmor ? "" : `<button type="button" class="equipment-db-open-profit-button" data-equipment-db-open-profit="${entry.id}">職人アシスト</button>`}
                       </div>
                       ${!isArmor && stats.length > 0 ? `<ul class="equipment-db-stats-list">${stats.join("")}</ul>` : ""}
                       ${collapsedTraitsHtml}
@@ -3641,38 +3707,6 @@ function renderEquipmentDbCards() {
     </div>
   `;
 
-  equipmentDbListWrap.querySelectorAll("[data-equipment-db-id]").forEach((toggle) => {
-    const handleToggle = () => {
-      const clickedId = String(toggle.dataset.equipmentDbId || "");
-      const targetEntry = filteredEntries.find((entry) => entry.id === clickedId);
-      if (targetEntry && isArmorSetEntry(targetEntry)) {
-        if (!armorSetDetailModalOverlay || !armorSetDetailModalBody) return;
-        activeArmorSetDetailId = clickedId;
-        armorSetDetailModalBody.innerHTML = buildArmorSetDetailModalHtml(targetEntry);
-        armorSetDetailModalOverlay.hidden = false;
-        armorSetDetailModalDialog?.focus();
-        return;
-      }
-      expandedEquipmentDbId = expandedEquipmentDbId === clickedId ? "" : clickedId;
-      renderEquipmentDbCards();
-    };
-    toggle.addEventListener("click", handleToggle);
-    toggle.addEventListener("keydown", (event) => {
-      if (event.key !== "Enter" && event.key !== " ") return;
-      event.preventDefault();
-      handleToggle();
-    });
-  });
-  equipmentDbListWrap.querySelectorAll("[data-equipment-db-open-profit]").forEach((button) => {
-    button.addEventListener("click", (event) => {
-      event.preventDefault();
-      event.stopPropagation();
-      const clickedId = String(button.dataset.equipmentDbOpenProfit || "");
-      const targetEntry = filteredEntries.find((entry) => entry.id === clickedId);
-      if (!targetEntry) return;
-      openProfitFromEquipmentDb(targetEntry);
-    });
-  });
 }
 
 function parseBazaarHistoryDate(value) {
@@ -4944,6 +4978,17 @@ function openRecipeFromFavorite(equipmentId) {
   if (!equipmentId) return;
   clearProfitArmorSetContext();
   if (!selectProfitEquipment(equipmentId)) return;
+  switchTab("profit");
+  navigateByAppParams({ tab: "profit", equipmentId, materialKey: "" });
+  rerenderAll();
+  document.getElementById("profit")?.scrollIntoView({ block: "start", behavior: "smooth" });
+}
+
+function openProfitFromEquipmentId(equipmentId) {
+  if (!equipmentId) return;
+  clearProfitArmorSetContext();
+  if (!selectProfitEquipment(equipmentId)) return;
+  closeArmorSetDetailModal();
   switchTab("profit");
   navigateByAppParams({ tab: "profit", equipmentId, materialKey: "" });
   rerenderAll();
@@ -8026,6 +8071,49 @@ if (equipmentDbMonsterSearchInput) {
   equipmentDbMonsterSearchInput.addEventListener("input", (event) => {
     equipmentDbMonsterKeyword = String(event.target.value || "").trim();
     renderEquipmentDbCards();
+  });
+}
+
+if (equipmentDbListWrap) {
+  equipmentDbListWrap.addEventListener("click", (event) => {
+    const target = event.target;
+    if (!(target instanceof Element)) return;
+
+    const profitButton = target.closest("[data-equipment-db-open-profit]");
+    if (profitButton && equipmentDbListWrap.contains(profitButton)) {
+      event.preventDefault();
+      event.stopPropagation();
+      const targetEntry = findEquipmentDbEntryById(profitButton.dataset.equipmentDbOpenProfit);
+      if (targetEntry) openProfitFromEquipmentDb(targetEntry);
+      return;
+    }
+
+    const cardToggle = target.closest("[data-equipment-db-id]");
+    if (!cardToggle || !equipmentDbListWrap.contains(cardToggle)) return;
+    activateEquipmentDbCard(String(cardToggle.dataset.equipmentDbId || ""));
+  });
+
+  equipmentDbListWrap.addEventListener("keydown", (event) => {
+    if (event.key !== "Enter" && event.key !== " ") return;
+    const target = event.target;
+    if (!(target instanceof Element)) return;
+    if (target.closest("[data-equipment-db-open-profit]")) return;
+    const cardToggle = target.closest("[data-equipment-db-id]");
+    if (!cardToggle || !equipmentDbListWrap.contains(cardToggle)) return;
+    event.preventDefault();
+    activateEquipmentDbCard(String(cardToggle.dataset.equipmentDbId || ""));
+  });
+}
+
+if (armorSetDetailModalBody) {
+  armorSetDetailModalBody.addEventListener("click", (event) => {
+    const target = event.target;
+    if (!(target instanceof Element)) return;
+    const button = target.closest("[data-armor-part-open-profit]");
+    if (!button || !armorSetDetailModalBody.contains(button)) return;
+    event.preventDefault();
+    event.stopPropagation();
+    openProfitFromEquipmentId(String(button.dataset.armorPartOpenProfit || ""));
   });
 }
 

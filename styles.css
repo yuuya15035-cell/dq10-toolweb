@@ -4024,9 +4024,14 @@ button {
 }
 
 .equipment-db-armor-part-grid-modal div {
-  grid-template-columns: 4.8em minmax(0, 1fr) max-content;
+  grid-template-columns: 4.8em minmax(0, 1fr) max-content max-content;
   gap: 8px;
   padding: 5px 8px;
+}
+
+.equipment-db-armor-part-action {
+  white-space: nowrap;
+  text-align: right;
 }
 
 .equipment-db-armor-set-level {
@@ -4039,6 +4044,21 @@ button {
   }
 
   .equipment-db-armor-part-cost {
+    grid-column: 1 / -1;
+    text-align: left;
+    padding-left: 4.4em;
+  }
+
+  .equipment-db-armor-part-grid-modal div {
+    grid-template-columns: 4.4em minmax(0, 1fr);
+  }
+
+  .equipment-db-armor-part-grid-modal .equipment-db-armor-part-cost {
+    grid-column: 1 / -1;
+    padding-left: 4.4em;
+  }
+
+  .equipment-db-armor-part-action {
     grid-column: 1 / -1;
     text-align: left;
     padding-left: 4.4em;
