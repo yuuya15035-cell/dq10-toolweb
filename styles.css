@@ -1556,6 +1556,31 @@ button {
   font-weight: 700;
 }
 
+.sale-price-input-wrap {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 6px;
+  align-items: center;
+}
+
+.sale-price-reset-button {
+  min-width: 32px;
+  min-height: 32px;
+  padding: 0;
+  border: 1px solid #c8ab88;
+  border-radius: 999px;
+  background: #fff8ef;
+  color: #5a3c24;
+  font-size: 0.92rem;
+  font-weight: 700;
+  line-height: 1;
+  flex: 0 0 auto;
+}
+
+.sale-price-reset-button:hover {
+  background: #f4e7d4;
+}
+
 .sale-count-field span {
   font-size: 0.76rem;
 }
@@ -3329,6 +3354,15 @@ button {
 
   .sale-input-row {
     grid-template-columns: 1fr;
+  }
+
+  .sale-price-input-wrap {
+    gap: 5px;
+  }
+
+  .sale-price-reset-button {
+    min-width: 30px;
+    min-height: 30px;
   }
 
   .sale-star-badge {

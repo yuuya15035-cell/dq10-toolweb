@@ -1168,6 +1168,10 @@ const salePriceStar0Input = getRequiredElementById("salePriceStar0Input");
 const salePriceStar1Input = getRequiredElementById("salePriceStar1Input");
 const salePriceStar2Input = getRequiredElementById("salePriceStar2Input");
 const salePriceStar3Input = getRequiredElementById("salePriceStar3Input");
+const salePriceStar0ResetButton = getRequiredElementById("salePriceStar0ResetButton");
+const salePriceStar1ResetButton = getRequiredElementById("salePriceStar1ResetButton");
+const salePriceStar2ResetButton = getRequiredElementById("salePriceStar2ResetButton");
+const salePriceStar3ResetButton = getRequiredElementById("salePriceStar3ResetButton");
 const countStar0Input = getRequiredElementById("countStar0Input");
 const countStar1Input = getRequiredElementById("countStar1Input");
 const countStar2Input = getRequiredElementById("countStar2Input");
@@ -6298,6 +6302,26 @@ function normalizeProductionCount(value) {
   return Math.max(1, Math.floor(parsed));
 }
 
+function setSalePriceInputValue(input, value, options = {}) {
+  if (!input) return;
+  const force = options.force === true;
+  if (!force && document.activeElement === input) return;
+  const normalizedValue = Number(value || 0);
+  const nextValue = String(Number.isFinite(normalizedValue) ? normalizedValue : 0);
+  if (input.value !== nextValue) {
+    input.value = nextValue;
+  }
+}
+
+function syncSalePriceInputs(options = {}) {
+  const eq = getSelectedEquipment();
+  const salePrices = getSalePricesForEquipment(eq);
+  setSalePriceInputValue(salePriceStar0Input, salePrices.star0, options);
+  setSalePriceInputValue(salePriceStar1Input, salePrices.star1, options);
+  setSalePriceInputValue(salePriceStar2Input, salePrices.star2, options);
+  setSalePriceInputValue(salePriceStar3Input, salePrices.star3, options);
+}
+
 function normalizeStarCount(value) {
   const parsed = Number(value);
   if (!Number.isFinite(parsed)) return 0;
@@ -7897,11 +7921,7 @@ function applyProfitEquipmentSelection(equipmentId, options = {}) {
     navigateByAppParams({ tab: "profit", equipmentId: selectedEquipmentId, materialKey: "" });
   }
   const eq = getSelectedEquipment();
-  const salePrices = getSalePricesForEquipment(eq);
-  if (salePriceStar0Input) salePriceStar0Input.value = salePrices.star0;
-  if (salePriceStar1Input) salePriceStar1Input.value = salePrices.star1;
-  if (salePriceStar2Input) salePriceStar2Input.value = salePrices.star2;
-  if (salePriceStar3Input) salePriceStar3Input.value = salePrices.star3;
+  syncSalePriceInputs({ force: true });
   renderRecipeTable();
   renderCraftIdealValue();
   renderToolSection();
@@ -8748,12 +8768,7 @@ function rerenderAll() {
   renderMaterialSearchCandidates();
   renderMaterialSelector();
 
-  const eq = getSelectedEquipment();
-  const salePrices = getSalePricesForEquipment(eq);
-  if (salePriceStar0Input) salePriceStar0Input.value = salePrices.star0;
-  if (salePriceStar1Input) salePriceStar1Input.value = salePrices.star1;
-  if (salePriceStar2Input) salePriceStar2Input.value = salePrices.star2;
-  if (salePriceStar3Input) salePriceStar3Input.value = salePrices.star3;
+  syncSalePriceInputs();
   renderRecipeTable();
   renderCraftIdealValue();
   renderToolSectionVisibility();
@@ -8962,6 +8977,24 @@ if (categoryFilterSelect) {
     if (!eq) return;
     eq.salePrices = getSalePricesForEquipment(eq);
     eq.salePrices[key] = Number(e.target.value || 0);
+    saveData();
+    calcAndRenderSummary();
+  });
+});
+
+[
+  { button: salePriceStar0ResetButton, input: salePriceStar0Input, key: "star0" },
+  { button: salePriceStar1ResetButton, input: salePriceStar1Input, key: "star1" },
+  { button: salePriceStar2ResetButton, input: salePriceStar2Input, key: "star2" },
+  { button: salePriceStar3ResetButton, input: salePriceStar3Input, key: "star3" },
+].forEach(({ button, input, key }) => {
+  if (!button || !input) return;
+  button.addEventListener("click", () => {
+    const eq = getSelectedEquipment();
+    if (!eq) return;
+    eq.salePrices = getSalePricesForEquipment(eq);
+    eq.salePrices[key] = 0;
+    input.value = "0";
     saveData();
     calcAndRenderSummary();
   });
