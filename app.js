@@ -2921,6 +2921,38 @@ function getOfficialBazaarUrlByMaterialName(materialName) {
   return OFFICIAL_BAZAAR_TOP_URL;
 }
 
+function getBazaarPriceInfoByMaterialName(materialName) {
+  const normalizedMaterialName = normalizeMaterialNameKey(materialName);
+  if (normalizedMaterialName === "" || normalizedMaterialName === "-") {
+    return { priceText: "-", comment: "" };
+  }
+  const matchedRow = bazaarPrices.find((row) => normalizeMaterialNameKey(row?.materialName) === normalizedMaterialName);
+  const price = getPreferredBazaarUnitPrice(matchedRow);
+  return {
+    priceText: Number.isFinite(price) ? formatGold(price) : "-",
+    comment: String(matchedRow?.comment || "").trim(),
+  };
+}
+
+function buildMonsterDropHtml(label, itemName, options = {}) {
+  const { modal = false } = options;
+  const normalizedItemName = String(itemName || "-").trim() || "-";
+  const priceInfo = getBazaarPriceInfoByMaterialName(normalizedItemName);
+  const commentHtml = priceInfo.comment ? `<span class="monster-drop-comment">${escapeHtml(priceInfo.comment)}</span>` : "";
+  if (modal) {
+    return `<div class="monster-drop-detail">
+      <p class="monster-drop-title">${escapeHtml(label)}</p>
+      <p class="monster-drop-item-name">${escapeHtml(normalizedItemName)}</p>
+      <p class="monster-drop-price">現在価格：${escapeHtml(priceInfo.priceText)}${commentHtml}</p>
+    </div>`;
+  }
+  return `<p class="monster-drop-row">
+    <span class="monster-label">${escapeHtml(label)}：</span>
+    <span class="monster-drop-item-name">${escapeHtml(normalizedItemName)}</span>
+    <span class="monster-drop-price">価格：${escapeHtml(priceInfo.priceText)}${commentHtml}</span>
+  </p>`;
+}
+
 async function loadBazaarPricesCsv() {
   const lines = await fetchCsvLines(BAZAAR_CSV_PATH);
   return parseBazaarPricesFromLines(lines);
@@ -2986,6 +3018,7 @@ async function ensureBazaarPricesLoaded() {
       if (activeTabId === "bazaar") renderBazaarPrices();
       if (activeTabId === "field-farming") renderFieldFarmingRanking();
       if (activeTabId === "favorites") renderFavoritesPage();
+      if (activeTabId === "monster-info") renderMonsterInfoCards();
       if (activeTabId === "profit") {
         renderRecipeTable();
         calcAndRenderSummary();
@@ -3287,6 +3320,7 @@ function prefetchDataForTab(tabId) {
     return;
   }
   if (tabId === "monster-info") {
+    void ensureBazaarPricesLoaded();
     void ensureMonsterInfoDataLoaded();
     return;
   }
@@ -3344,8 +3378,8 @@ function renderMonsterInfoCards() {
       </div>
       <p class="monster-info-line">${buildMonsterTypeLabelHtml(entry.type)}</p>
       <p>経験値：${escapeHtml(entry.exp)}</p>
-      <p class="monster-drop-normal"><span class="monster-label">通常：</span>${escapeHtml(entry.normalDrop || "-")}</p>
-      <p class="monster-drop-rare"><span class="monster-label">レア：</span>${escapeHtml(entry.rareDrop || "-")}</p>
+      <div class="monster-drop-normal">${buildMonsterDropHtml("通常", entry.normalDrop)}</div>
+      <div class="monster-drop-rare">${buildMonsterDropHtml("レア", entry.rareDrop)}</div>
       <p class="monster-info-habitat">生息地：${escapeHtml(firstHabitat)}</p>
       ${remain > 0 ? `<p class="monster-info-more">ほか${remain}件</p>` : ""}
     </button>`;
@@ -6427,6 +6461,16 @@ if (monsterInfoModalCloseButton) {
     closeMonsterInfoModal();
   });
 }
+if (monsterInfoModalBody) {
+  monsterInfoModalBody.addEventListener("click", (event) => {
+    const target = event.target;
+    if (!(target instanceof Element)) return;
+    const button = target.closest("[data-monster-white-box-equipment]");
+    if (!button || !monsterInfoModalBody.contains(button)) return;
+    event.preventDefault();
+    void openEquipmentDbFromMonsterWhiteBox(String(button.dataset.monsterWhiteBoxEquipment || ""));
+  });
+}
 if (armorSetDetailModalOverlay) {
   armorSetDetailModalOverlay.addEventListener("click", (event) => {
     if (event.target === armorSetDetailModalOverlay) {
@@ -6468,9 +6512,9 @@ if (monsterInfoListWrap) {
     const chips = (values) => values.length ? values.map((v) => `<span class="monster-info-chip">${escapeHtml(v)}</span>`).join("") : "なし";
     monsterInfoModalBody.innerHTML = `<h3>${escapeHtml(entry.name)}</h3><p><span class="monster-type" data-type="${escapeHtml(entry.type)}">${escapeHtml(entry.type)}</span></p>
       <p>経験値：${escapeHtml(entry.exp)} / ゴールド：${escapeHtml(entry.gold)}</p>
-      <p class="monster-drop-normal"><span class="monster-label">通常ドロップ：</span>${escapeHtml(entry.normalDrop || "-")}</p>
-      <p class="monster-drop-rare"><span class="monster-label">レアドロップ：</span>${escapeHtml(entry.rareDrop || "-")}</p>
-      <div><p>白宝箱</p><div class="monster-info-chip-list">${chips(entry.whiteBoxList)}</div></div>
+      <div class="monster-drop-normal">${buildMonsterDropHtml("通常ドロップ", entry.normalDrop, { modal: true })}</div>
+      <div class="monster-drop-rare">${buildMonsterDropHtml("レアドロップ", entry.rareDrop, { modal: true })}</div>
+      <div><p>白宝箱</p><div class="monster-info-chip-list">${buildMonsterWhiteBoxLinksHtml(entry.whiteBoxList)}</div></div>
       <div><p>宝珠 / オーブ</p><div class="monster-info-chip-list">${chips(entry.orbList)}</div></div>
       <div><p>生息地</p><ul class="monster-info-habitat-list">${habitatsHtml || "<li>なし</li>"}</ul></div>`;
     monsterInfoModalOverlay.hidden = false;
@@ -7098,6 +7142,63 @@ function applyProfitEquipmentSelection(equipmentId, options = {}) {
     isEquipmentSearchCandidateListOpen = false;
     renderEquipmentSearchCandidates();
   }
+}
+
+function getEquipmentDbGroupForWhiteBoxItem(itemName) {
+  const normalizedName = String(itemName || "").trim();
+  if (normalizedName === "") return "weapon";
+
+  const matchedEquipment = (equipmentDbEntries || []).find(
+    (entry) =>
+      String(entry?.equipmentName || "").trim() === normalizedName ||
+      String(entry?.equipmentName || "").includes(normalizedName)
+  );
+  if (matchedEquipment) {
+    return String(matchedEquipment.equipmentGroup || "weapon") === "armor" ? "armor" : "weapon";
+  }
+
+  const matchedWhiteBox = (whiteBoxEntries || []).find((entry) => String(entry?.itemName || "").trim() === normalizedName);
+  return getWhiteBoxTypeBySlot(matchedWhiteBox?.itemSlot) === "armor" ? "armor" : "weapon";
+}
+
+function getEquipmentDbTypeForWhiteBoxItem(itemName, equipmentGroup) {
+  if (equipmentGroup === "armor") return "";
+  const normalizedName = String(itemName || "").trim();
+  const matchedEquipment = (equipmentDbEntries || []).find(
+    (entry) => String(entry?.equipmentGroup || "") === "weapon" && String(entry?.equipmentName || "").trim() === normalizedName
+  );
+  if (matchedEquipment?.equipmentType) return String(matchedEquipment.equipmentType || "").trim();
+  const matchedWhiteBox = (whiteBoxEntries || []).find((entry) => String(entry?.itemName || "").trim() === normalizedName);
+  return String(matchedWhiteBox?.itemSlot || "").trim();
+}
+
+async function openEquipmentDbFromMonsterWhiteBox(itemName) {
+  const normalizedName = String(itemName || "").trim();
+  if (normalizedName === "" || normalizedName === "-") return;
+
+  closeMonsterInfoModal();
+  await ensureEquipmentDbDataLoaded();
+  const equipmentGroup = getEquipmentDbGroupForWhiteBoxItem(normalizedName);
+  selectedEquipmentDbGroup = equipmentGroup;
+  selectedEquipmentDbType = getEquipmentDbTypeForWhiteBoxItem(normalizedName, equipmentGroup);
+  expandedEquipmentDbId = "";
+  equipmentDbNameKeyword = normalizedName;
+  isEquipmentDbNameSearchOpen = true;
+  switchTab("equipment-db");
+  navigateByAppParams({ tab: "equipment-db", equipmentId: "", materialKey: "", equipmentDbGroup: selectedEquipmentDbGroup });
+  renderEquipmentDbCards();
+  document.getElementById("equipment-db")?.scrollIntoView({ block: "start", behavior: "smooth" });
+}
+
+function buildMonsterWhiteBoxLinksHtml(values) {
+  const items = Array.isArray(values) ? values.filter((value) => String(value || "").trim() !== "" && String(value || "").trim() !== "-") : [];
+  if (items.length === 0) return "なし";
+  return items
+    .map(
+      (itemName) =>
+        `<button type="button" class="monster-info-chip monster-info-equipment-link" data-monster-white-box-equipment="${escapeHtml(itemName)}">${escapeHtml(itemName)}</button>`
+    )
+    .join("");
 }
 
 function renderProfitArmorSetAssist() {
