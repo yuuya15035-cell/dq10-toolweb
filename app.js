@@ -4780,7 +4780,7 @@ function renderBazaarPrices() {
                 <div class="bazaar-card-header-actions">
                   <button
                     type="button"
-                    class="memo-add-button bazaar-memo-add-button"
+                    class="memo-add-button bazaar-card-memo-button"
                     data-memo-bazaar-key="${row.materialKey}"
                     aria-label="${row.materialName}をメモに追加"
                   >
@@ -5768,7 +5768,7 @@ function openBazaarDetailModal(materialKey) {
       <h3 class="bazaar-detail-modal-title">${row.materialName}</h3>
       <button
         type="button"
-        class="memo-add-button bazaar-memo-add-button"
+        class="memo-add-button bazaar-detail-memo-button"
         data-memo-bazaar-key="${row.materialKey}"
         aria-label="${row.materialName}をメモに追加"
       >

@@ -902,7 +902,7 @@ body.is-modal-open {
   }
 
   .equipment-db-card-traits {
-    padding: 7px;
+    padding: 7px 7px 40px;
   }
 }
 
@@ -1740,11 +1740,12 @@ button {
 }
 
 .bazaar-card {
+  position: relative;
   border: 1px solid var(--panel-border);
   border-radius: 12px;
   border-color: #b79876;
   background: linear-gradient(180deg, #f5e8d8 0%, #e8d6bf 100%);
-  padding: 10px;
+  padding: 10px 10px 40px;
   box-shadow: 0 4px 12px rgba(68, 45, 24, 0.16);
   overflow: hidden;
 }
@@ -3006,7 +3007,7 @@ button {
     position: static;
   }
 
-  .bazaar-memo-add-button {
+  .bazaar-card-memo-button {
     position: absolute;
     right: 8px;
     bottom: 8px;
@@ -3086,7 +3087,7 @@ button {
   }
 
   .orb-card-toggle {
-    padding: 10px;
+    padding: 10px 10px 40px;
   }
 
   .orb-card-monsters {
@@ -3795,6 +3796,7 @@ body.memo-panel-open {
   align-items: flex-start;
   justify-content: space-between;
   gap: 8px;
+  position: relative;
 }
 
 .memo-panel-header h2,
@@ -3804,16 +3806,21 @@ body.memo-panel-open {
 
 .memo-target-header {
   padding-top: 4px;
-  padding-right: 54px;
+  padding-right: 96px;
   margin: 0 0 8px;
+  min-height: 34px;
 }
 
 .memo-target-header .memo-add-button {
-  margin-top: 6px;
+  position: absolute;
+  top: 0;
+  right: 44px;
+  margin-top: 0;
   flex: 0 0 auto;
 }
 
-.bazaar-memo-add-button,
+.bazaar-card-memo-button,
+.bazaar-detail-memo-button,
 .profit-memo-add-button {
   flex: 0 0 auto;
 }
@@ -3932,8 +3939,13 @@ body.memo-panel-open {
 }
 
 .equipment-db-memo-button,
-.orb-memo-button {
-  margin: 6px 0 0;
+.orb-memo-button,
+.bazaar-card-memo-button {
+  position: absolute;
+  right: 8px;
+  bottom: 8px;
+  margin: 0;
+  z-index: 1;
 }
 
 .mobile-bottom-nav {
@@ -4175,6 +4187,7 @@ body.memo-panel-open {
 }
 
 .equipment-db-card {
+  position: relative;
   padding: 0;
   overflow: hidden;
   border: 1px solid #d6c5ad;
@@ -4258,7 +4271,8 @@ body.memo-panel-open {
 .equipment-db-card-traits {
   border-top: 1px solid #dcc7ad;
   background: rgba(255, 255, 255, 0.62);
-  padding: 8px 9px 9px;
+  padding: 8px 9px 44px;
+  position: relative;
 }
 
 .equipment-db-card-actions {
@@ -4513,16 +4527,12 @@ body.memo-panel-open {
   text-align: left;
   border: 0;
   background: transparent;
-  padding: 12px 72px 12px 12px;
+  padding: 12px 12px 42px;
   cursor: pointer;
   color: #3f2f22;
 }
 
 .orb-memo-button {
-  position: absolute;
-  top: 10px;
-  right: 10px;
-  z-index: 1;
   min-height: 30px;
   padding: 4px 8px;
   font-size: 0.74rem;
