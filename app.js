@@ -943,6 +943,7 @@ let selectedEquipmentId = "";
 let equipmentSearchKeyword = "";
 let isEquipmentSearchCandidateListOpen = false;
 let materialSearchKeyword = "";
+let isMaterialSearchCandidateListOpen = false;
 // 利益計算画面の絞り込み条件（未選択なら全件）
 let selectedCraftsman = "";
 let selectedCategory = "";
@@ -1110,6 +1111,7 @@ const equipmentSearchCandidateWrap = getRequiredElementById("equipmentSearchCand
 const materialSearchToggleButton = getRequiredElementById("materialSearchToggleButton");
 const materialSearchField = getRequiredElementById("materialSearchField");
 const materialSearchInput = getRequiredElementById("materialSearchInput");
+const materialSearchCandidateWrap = getRequiredElementById("materialSearchCandidateWrap");
 const craftsmanFilterSelect = getRequiredElementById("craftsmanFilterSelect");
 const categoryFilterSelect = getRequiredElementById("categoryFilterSelect");
 const productionCountInput = getRequiredElementById("productionCountInput");
@@ -7007,6 +7009,11 @@ document.addEventListener("keydown", (event) => {
       closeArmorSetDetailModal();
       return;
     }
+    if (isMaterialSearchCandidateListOpen) {
+      isMaterialSearchCandidateListOpen = false;
+      renderMaterialSearchCandidates();
+      return;
+    }
     if (isEquipmentSearchCandidateListOpen) {
       isEquipmentSearchCandidateListOpen = false;
       renderEquipmentSearchCandidates();
@@ -7120,6 +7127,84 @@ function renderEquipmentSearchCandidates() {
     .join("");
 }
 
+function getMaterialSearchCandidates() {
+  const keyword = materialSearchKeyword.trim().toLowerCase();
+  if (keyword === "") return { materials: [], equipments: [] };
+
+  const materials = state.materials
+    .filter((material) => String(material?.name || "").trim().toLowerCase().includes(keyword))
+    .sort((a, b) => String(a?.name || "").localeCompare(String(b?.name || ""), "ja"))
+    .slice(0, 8);
+
+  const { filteredEquipments, matchedRecipeByEquipmentId } = getFilteredEquipmentContext();
+  const equipments = filteredEquipments.slice(0, 10).map((equipment) => ({
+    equipment,
+    matchedMaterials: matchedRecipeByEquipmentId.get(equipment.id) || [],
+  }));
+
+  return { materials, equipments };
+}
+
+function renderMaterialSearchCandidates() {
+  if (!materialSearchCandidateWrap) return;
+  const shouldShow =
+    isMaterialSearchExpanded &&
+    isMaterialSearchCandidateListOpen &&
+    materialSearchKeyword.trim() !== "";
+
+  if (!shouldShow) {
+    materialSearchCandidateWrap.hidden = true;
+    materialSearchCandidateWrap.innerHTML = "";
+    return;
+  }
+
+  const { materials, equipments } = getMaterialSearchCandidates();
+  materialSearchCandidateWrap.hidden = false;
+
+  if (materials.length === 0 && equipments.length === 0) {
+    materialSearchCandidateWrap.innerHTML = `<p class="site-search-empty assist-search-empty">該当する素材・装備がありません。</p>`;
+    return;
+  }
+
+  const materialHtml = materials
+    .map((material) => {
+      const relatedEquipmentCount = state.recipes.filter((row) => row.materialId === material.id).length;
+      return `
+        <button type="button" class="site-search-result-item assist-search-candidate-item" data-material-search-candidate-material-id="${escapeHtml(material.id)}">
+          <p class="site-search-result-main">${escapeHtml(material.name)}</p>
+          <p class="site-search-result-meta">
+            <span class="site-search-chip site-search-chip-type">素材</span>
+            <span class="site-search-chip">該当装備 ${relatedEquipmentCount}件</span>
+          </p>
+        </button>
+      `;
+    })
+    .join("");
+
+  const equipmentHtml = equipments
+    .map(({ equipment, matchedMaterials }) => {
+      const roundedMaterialCost = getRoundedEquipmentMaterialCost(equipment.id);
+      const materialSummary = matchedMaterials
+        .map((material) => `${material.materialName}×${material.quantity}`)
+        .join(" / ");
+      return `
+        <button type="button" class="site-search-result-item assist-search-candidate-item" data-material-search-candidate-equipment-id="${escapeHtml(equipment.id)}">
+          <p class="site-search-result-main">${escapeHtml(equipment.name)}</p>
+          <p class="site-search-result-meta">
+            <span class="site-search-chip site-search-chip-type">装備</span>
+            <span class="site-search-chip">この装備に使用</span>
+            ${equipment.category ? `<span class="site-search-chip">${escapeHtml(equipment.category)}</span>` : ""}
+            <span class="site-search-chip">原価：${roundedMaterialCost.toLocaleString("ja-JP")} G</span>
+          </p>
+          ${materialSummary ? `<p class="assist-search-candidate-note">${escapeHtml(materialSummary)}</p>` : ""}
+        </button>
+      `;
+    })
+    .join("");
+
+  materialSearchCandidateWrap.innerHTML = `${materialHtml}${equipmentHtml}`;
+}
+
 function applyProfitEquipmentSelection(equipmentId, options = {}) {
   const normalizedEquipmentId = String(equipmentId || "");
   selectedEquipmentId = normalizedEquipmentId;
@@ -7140,7 +7225,9 @@ function applyProfitEquipmentSelection(equipmentId, options = {}) {
   renderEquipmentSelectors();
   if (options.closeCandidates) {
     isEquipmentSearchCandidateListOpen = false;
+    isMaterialSearchCandidateListOpen = false;
     renderEquipmentSearchCandidates();
+    renderMaterialSearchCandidates();
   }
 }
 
@@ -7900,6 +7987,7 @@ function rerenderAll() {
   renderFilterSelectors();
   renderEquipmentSelectors();
   renderEquipmentSearchCandidates();
+  renderMaterialSearchCandidates();
   renderMaterialSelector();
 
   const eq = getSelectedEquipment();
@@ -7970,6 +8058,7 @@ if (materialSearchToggleButton) {
     isMaterialSearchExpanded = !isMaterialSearchExpanded;
     if (!isMaterialSearchExpanded) {
       materialSearchKeyword = "";
+      isMaterialSearchCandidateListOpen = false;
       if (materialSearchInput) materialSearchInput.value = "";
       rerenderAll();
     }
@@ -8027,7 +8116,47 @@ if (equipmentSearchCandidateWrap) {
 if (materialSearchInput) {
   materialSearchInput.addEventListener("input", (e) => {
     materialSearchKeyword = e.target.value.trim();
+    isMaterialSearchCandidateListOpen = materialSearchKeyword !== "";
     rerenderAll();
+  });
+  materialSearchInput.addEventListener("focus", () => {
+    if (materialSearchKeyword !== "") {
+      isMaterialSearchCandidateListOpen = true;
+      renderMaterialSearchCandidates();
+    }
+  });
+  materialSearchInput.addEventListener("keydown", (event) => {
+    if (event.key !== "Escape") return;
+    isMaterialSearchCandidateListOpen = false;
+    renderMaterialSearchCandidates();
+  });
+}
+
+if (materialSearchCandidateWrap) {
+  materialSearchCandidateWrap.addEventListener("click", (event) => {
+    const target = event.target;
+    if (!(target instanceof Element)) return;
+
+    const materialButton = target.closest("[data-material-search-candidate-material-id]");
+    if (materialButton && materialSearchCandidateWrap.contains(materialButton)) {
+      event.preventDefault();
+      const materialId = String(materialButton.dataset.materialSearchCandidateMaterialId || "");
+      const material = state.materials.find((entry) => entry.id === materialId);
+      if (!material) return;
+      materialSearchKeyword = String(material.name || "");
+      if (materialSearchInput) materialSearchInput.value = materialSearchKeyword;
+      isMaterialSearchCandidateListOpen = true;
+      rerenderAll();
+      return;
+    }
+
+    const equipmentButton = target.closest("[data-material-search-candidate-equipment-id]");
+    if (!equipmentButton || !materialSearchCandidateWrap.contains(equipmentButton)) return;
+    event.preventDefault();
+    const equipmentId = String(equipmentButton.dataset.materialSearchCandidateEquipmentId || "");
+    applyProfitEquipmentSelection(equipmentId, { closeCandidates: true });
+    isMaterialSearchCandidateListOpen = false;
+    renderMaterialSearchCandidates();
   });
 }
 
@@ -8368,6 +8497,11 @@ document.addEventListener("click", (event) => {
   if (!isInsideEquipmentSearch && isEquipmentSearchCandidateListOpen) {
     isEquipmentSearchCandidateListOpen = false;
     renderEquipmentSearchCandidates();
+  }
+  const isInsideMaterialSearch = Boolean(materialSearchField?.contains(target) || materialSearchCandidateWrap?.contains(target));
+  if (!isInsideMaterialSearch && isMaterialSearchCandidateListOpen) {
+    isMaterialSearchCandidateListOpen = false;
+    renderMaterialSearchCandidates();
   }
   const isInsideToolSearch = Boolean(
     toolSiteSearchDock?.contains(target) || toolSiteSearchResultWrap?.contains(target) || toolSiteSearchInput?.contains(target)

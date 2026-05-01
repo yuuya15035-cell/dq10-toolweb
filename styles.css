@@ -346,6 +346,14 @@ body.is-modal-open {
   min-height: 48px;
 }
 
+.assist-search-candidate-note {
+  margin: 6px 0 0;
+  font-size: 0.75rem;
+  line-height: 1.35;
+  color: #6a4d36;
+  white-space: normal;
+}
+
 .assist-search-empty {
   margin-top: 0;
 }
