@@ -928,6 +928,10 @@ function saveMemoEntries() {
   );
 }
 
+function rebuildMemoEntryIdSet() {
+  memoEntryIdSet = new Set((memoEntries || []).map((memo) => String(memo?.id || "")).filter((id) => id !== ""));
+}
+
 // CSVデータをベースに、既存のローカル保存データ（価格や手数料）を重ねます。
 function mergeWithStoredData(csvData, storedData) {
   if (!storedData) return csvData;
@@ -1004,6 +1008,7 @@ let selectedBazaarChartRangeDays = DEFAULT_BAZAAR_CHART_RANGE_DAYS;
 let activeBazaarDetailModalKey = "";
 let bazaarDetailModalSwipeState = null;
 let memoEntries = [];
+let memoEntryIdSet = new Set();
 let memoPanelSwipeState = null;
 const expandedMemoIds = new Set();
 let memoToastTimer = null;
@@ -1403,13 +1408,14 @@ function closeMemoPanel() {
 function addMemoEntry(entry, options = {}) {
   const { openPanel = false, messageOnAdded = "メモに追加しました", messageOnExisting = "既にメモ済みです" } = options;
   if (!entry) return;
-  if (memoEntries.some((memo) => memo.id === entry.id)) {
+  if (memoEntryIdSet.has(entry.id)) {
     showMemoToast(messageOnExisting);
     setMemoStatus(messageOnExisting);
     if (openPanel) openMemoPanel(messageOnExisting);
     return false;
   }
   memoEntries = [entry, ...memoEntries];
+  memoEntryIdSet.add(entry.id);
   saveMemoEntries();
   renderMemoList();
   showMemoToast(messageOnAdded);
@@ -7707,7 +7713,7 @@ document.addEventListener("keydown", (event) => {
 
 window.addEventListener("popstate", () => {
   applyAppRouteFromUrl();
-  rerenderAll();
+  rerenderActiveTabOnly();
 });
 
 function renderEquipmentSelectors() {
@@ -8767,6 +8773,22 @@ function rerenderAll() {
   renderSiteSearchCandidates();
 }
 
+function rerenderActiveTabOnly() {
+  if (activeTabId === "profit") {
+    rerenderAll();
+    return;
+  }
+  if (activeTabId === "present-codes") renderPresentCodes();
+  if (activeTabId === "field-farming") renderFieldFarmingRanking();
+  if (activeTabId === "bazaar") renderBazaarPrices();
+  if (activeTabId === "favorites") renderFavoritesPage();
+  if (activeTabId === "orbs") renderOrbCards();
+  if (activeTabId === "white-boxes") renderWhiteBoxCards();
+  if (activeTabId === "equipment-db") renderEquipmentDbCards();
+  if (activeTabId === "monster-info") renderMonsterInfoCards();
+  renderSiteSearchCandidates();
+}
+
 // --- イベント定義 ---
 if (equipmentSelect) {
   equipmentSelect.addEventListener("change", (e) => {
@@ -9327,6 +9349,7 @@ if (memoClearAllButton) {
     if (!memoEntries.length) return;
     if (!window.confirm("メモをすべて削除しますか？")) return;
     memoEntries = [];
+    memoEntryIdSet.clear();
     expandedMemoIds.clear();
     saveMemoEntries();
     setMemoStatus("メモをすべて削除しました");
@@ -9342,6 +9365,7 @@ if (memoListWrap) {
     if (deleteButton && memoListWrap.contains(deleteButton)) {
       const memoId = String(deleteButton.dataset.memoDeleteId || "");
       memoEntries = memoEntries.filter((memo) => memo.id !== memoId);
+      memoEntryIdSet.delete(memoId);
       expandedMemoIds.delete(memoId);
       saveMemoEntries();
       setMemoStatus("メモを削除しました");
@@ -9524,6 +9548,7 @@ async function initialize() {
   setContentEditModeEnabled(false);
   setAdminModeEnabled(isAdminModeEnabled);
   memoEntries = loadMemoEntries();
+  rebuildMemoEntryIdSet();
   renderMemoList();
 
   try {
