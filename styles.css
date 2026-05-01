@@ -4050,6 +4050,11 @@ button {
   font-weight: 700;
 }
 
+.equipment-db-armor-part-grid .is-highlighted {
+  background: rgba(248, 232, 201, 0.92);
+  border-color: rgba(184, 138, 79, 0.34);
+}
+
 .equipment-db-armor-part-grid dd {
   margin: 0;
   color: #3f2f22;
@@ -4067,6 +4072,18 @@ button {
 .equipment-db-armor-part-cost {
   white-space: nowrap;
   text-align: right;
+}
+
+.equipment-db-armor-part-badge {
+  display: inline-block;
+  margin-left: 6px;
+  padding: 1px 6px;
+  border-radius: 999px;
+  background: rgba(187, 138, 79, 0.18);
+  color: #7a4f1e;
+  font-size: 0.65rem;
+  font-weight: 700;
+  vertical-align: middle;
 }
 .equipment-db-armor-drop-list {
   display: grid;

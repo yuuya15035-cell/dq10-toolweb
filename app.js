@@ -2571,13 +2571,25 @@ function getArmorSetPartsWithEstimatedCost(setName) {
   return getArmorSetPartsFromRecipes(setName);
 }
 
-function buildArmorSetPartsHtml(setName) {
+function isArmorSetPartMatchedByKeyword(part, keyword) {
+  const normalizedKeyword = String(keyword || "").trim().toLowerCase();
+  if (normalizedKeyword === "") return false;
+  const partName = String(part?.name || "").trim().toLowerCase();
+  const partLabel = String(part?.part || "").trim().toLowerCase();
+  return partName.includes(normalizedKeyword) || partLabel.includes(normalizedKeyword);
+}
+
+function buildArmorSetPartsHtml(setName, options = {}) {
+  const { highlightKeyword = "", showMatchedBadge = false } = options;
   const parts = getArmorSetPartsFromRecipes(setName);
   if (parts.length === 0) {
     return `<p class="equipment-db-trait-empty">部位情報なし</p>`;
   }
   return `<dl class="equipment-db-armor-part-grid">${parts
-    .map((part) => `<div><dt>${part.part}</dt><dd class="equipment-db-armor-part-name">${part.name}</dd><dd class="equipment-db-armor-part-cost">原価：${part.costText}</dd></div>`)
+    .map((part) => {
+      const isMatched = isArmorSetPartMatchedByKeyword(part, highlightKeyword);
+      return `<div class="${isMatched ? "is-highlighted" : ""}"><dt>${part.part}${showMatchedBadge && isMatched ? `<span class="equipment-db-armor-part-badge">白宝箱該当</span>` : ""}</dt><dd class="equipment-db-armor-part-name">${part.name}</dd><dd class="equipment-db-armor-part-cost">原価：${part.costText}</dd></div>`;
+    })
     .join("")}</dl>`;
 }
 
@@ -3511,7 +3523,10 @@ function getFilteredEquipmentDbEntries() {
     .filter((entry) => (selectedEquipmentDbType === "" ? true : String(entry.equipmentType || "") === selectedEquipmentDbType))
     .filter((entry) => {
       if (normalizedKeyword === "") return true;
-      return String(entry.equipmentName || "").toLowerCase().includes(normalizedKeyword);
+      const equipmentName = String(entry.equipmentName || "").toLowerCase();
+      if (equipmentName.includes(normalizedKeyword)) return true;
+      if (!isArmorSetEntry(entry)) return false;
+      return getArmorSetPartsFromRecipes(entry.equipmentName).some((part) => isArmorSetPartMatchedByKeyword(part, normalizedKeyword));
     })
     .filter((entry) => {
       if (normalizedMonsterKeyword === "") return true;
@@ -3703,8 +3718,11 @@ function renderEquipmentDbCards() {
                       : "";
                 const armorSetTypeMetaHtml = isArmorSet
                   ? `<div class="equipment-db-detail-section equipment-db-detail-section-first">
-                      <p class="equipment-db-traits-title">装備種別</p>
-                      ${buildArmorSetPartsHtml(entry.equipmentName)}
+                      <p class="equipment-db-traits-title">部位</p>
+                      ${buildArmorSetPartsHtml(entry.equipmentName, {
+                        highlightKeyword: equipmentDbNameKeyword,
+                        showMatchedBadge: selectedEquipmentDbGroup === "armor" && equipmentDbNameKeyword.trim() !== "",
+                      })}
                     </div>`
                   : "";
                 const armorSetPartsHtml = "";
