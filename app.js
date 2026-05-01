@@ -1083,7 +1083,7 @@ let monsterDetailEntryByName = new Map();
 let mapMasterByName = new Map();
 let selectedMonsterInfoType = "";
 let monsterInfoSearchKeyword = "";
-let selectedMonsterInfoSort = "default";
+let selectedMonsterInfoSort = "exp_asc";
 let activeMonsterInfoId = "";
 let keepMonsterInfoTypeCleared = false;
 let activeArmorSetDetailId = "";
@@ -3666,14 +3666,13 @@ function getMonsterExpValue(entry) {
 
 function getSortedMonsterDetailEntries(entries) {
   const list = Array.isArray(entries) ? entries : [];
-  if (selectedMonsterInfoSort === "default") return list;
   const sorted = [...list];
   sorted.sort((a, b) => {
-    if (selectedMonsterInfoSort === "exp_desc") {
-      return getMonsterExpValue(b) - getMonsterExpValue(a);
-    }
     if (selectedMonsterInfoSort === "exp_asc") {
       return getMonsterExpValue(a) - getMonsterExpValue(b);
+    }
+    if (selectedMonsterInfoSort === "exp_desc") {
+      return getMonsterExpValue(b) - getMonsterExpValue(a);
     }
     if (selectedMonsterInfoSort === "normal_drop_price_desc") {
       return getMonsterInfoSortPrice(b?.normalDrop) - getMonsterInfoSortPrice(a?.normalDrop);
@@ -3701,7 +3700,7 @@ function updateMonsterInfoClearButtonVisibility() {
   const hasActiveSearch = String(monsterInfoSearchKeyword || "").trim() !== "";
   const defaultType = getDefaultMonsterInfoType();
   const hasActiveType = String(selectedMonsterInfoType || "") !== "" && String(selectedMonsterInfoType || "") !== defaultType;
-  const hasActiveSort = selectedMonsterInfoSort !== "default";
+  const hasActiveSort = selectedMonsterInfoSort !== "exp_asc";
   monsterInfoClearFiltersButton.hidden = !(hasActiveSearch || hasActiveType || hasActiveSort);
 }
 
@@ -3709,7 +3708,7 @@ function clearMonsterInfoFilters() {
   closeMonsterInfoModal();
   monsterInfoSearchKeyword = "";
   selectedMonsterInfoType = "";
-  selectedMonsterInfoSort = "default";
+  selectedMonsterInfoSort = "exp_asc";
   activeMonsterInfoId = "";
   keepMonsterInfoTypeCleared = true;
   navigateByAppParams({ tab: "monster-info", monsterSearch: "", equipmentId: "", materialKey: "" });
@@ -7149,7 +7148,7 @@ if (monsterInfoTypeFilterSelect) {
 }
 if (monsterInfoSortSelect) {
   monsterInfoSortSelect.addEventListener("change", () => {
-    selectedMonsterInfoSort = String(monsterInfoSortSelect.value || "default");
+    selectedMonsterInfoSort = String(monsterInfoSortSelect.value || "exp_asc");
     renderMonsterInfoCards();
   });
 }
