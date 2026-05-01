@@ -1761,6 +1761,13 @@ button {
   gap: 8px;
 }
 
+.bazaar-card-header-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex: 0 0 auto;
+}
+
 .bazaar-card-title-group {
   min-width: 0;
 }
@@ -2613,6 +2620,14 @@ button {
   margin: 0 40px 8px 0;
   font-size: 1.05rem;
   color: #4b321f;
+}
+
+.bazaar-detail-modal-header {
+  margin-bottom: 8px;
+}
+
+.bazaar-detail-modal-header .bazaar-detail-modal-title {
+  margin: 0;
 }
 
 .bazaar-detail-modal-updated-at,
@@ -3645,13 +3660,30 @@ button {
   bottom: calc(var(--mobile-bottom-nav-height) + 12px + env(safe-area-inset-bottom));
   z-index: 1300;
   pointer-events: none;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 8px;
 }
 
+.history-back-button,
 .memo-dock-button {
   pointer-events: auto;
   min-width: 58px;
   min-height: 46px;
   padding: 8px 12px;
+}
+
+.history-back-button {
+  border: 1px solid #b7926d;
+  border-radius: 999px;
+  background: #fff5df;
+  color: #5a3d25;
+  font-weight: 800;
+  box-shadow: 0 8px 18px rgba(35, 22, 10, 0.16);
+}
+
+.memo-dock-button {
   border: 1px solid #b88b45;
   border-radius: 10px 10px 4px 10px;
   background: linear-gradient(180deg, #ffe49a 0%, #edc968 100%);
@@ -3747,6 +3779,11 @@ button {
 
 .memo-target-header .memo-add-button {
   margin-top: 6px;
+  flex: 0 0 auto;
+}
+
+.bazaar-memo-add-button,
+.profit-memo-add-button {
   flex: 0 0 auto;
 }
 

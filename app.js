@@ -1,4 +1,4 @@
-// DQ10職人ツールの最小実装。
+﻿// DQ10職人ツールの最小実装。
 // 日本語コメントを多めに入れて、将来の拡張をしやすくしています。
 
 const STORAGE_KEY = "dq10_toolweb_data_v1";
@@ -1136,6 +1136,7 @@ const selectedEquipmentTypeMeta = getRequiredElementById("selectedEquipmentTypeM
 const recipeFavoriteActionWrap = getRequiredElementById("recipeFavoriteActionWrap");
 const profitArmorSetAssistWrap = getRequiredElementById("profitArmorSetAssistWrap");
 const craftIdealValueWrap = getRequiredElementById("craftIdealValueWrap");
+const profitMemoAddButton = getRequiredElementById("profitMemoAddButton");
 const equipmentSearchToggleButton = getRequiredElementById("equipmentSearchToggleButton");
 const equipmentSearchField = getRequiredElementById("equipmentSearchField");
 const equipmentSearchInput = getRequiredElementById("equipmentSearchInput");
@@ -1256,6 +1257,7 @@ const adminExportContentButton = getRequiredElementById("adminExportContentButto
 const adminExportUpdatesButton = getRequiredElementById("adminExportUpdatesButton");
 const adminLockButton = getRequiredElementById("adminLockButton");
 const adminFabMessage = getRequiredElementById("adminFabMessage");
+const historyBackButton = getRequiredElementById("historyBackButton");
 const memoDockButton = getRequiredElementById("memoDockButton");
 const memoToast = getRequiredElementById("memoToast");
 const memoPanel = getRequiredElementById("memoPanel");
@@ -3898,6 +3900,50 @@ function createArmorSetMemoEntry(entry) {
   ]);
 }
 
+function createBazaarMemoEntry(row) {
+  const updatedAt = formatBazaarUpdatedAt(row?.updatedAt);
+  return createMemoEntry("バザー", row?.materialName, [
+    {
+      label: "現在価格",
+      value:
+        row && row.displayPrice !== null && row.displayPrice !== undefined && formatBazaarPriceWithUnit(row.displayPrice) !== "-"
+          ? formatBazaarPriceWithUnit(row.displayPrice)
+          : "価格なし",
+    },
+    { label: "更新日時", value: updatedAt !== "-" ? updatedAt : "" },
+  ]);
+}
+
+function createCraftAssistMemoEntry() {
+  const equipment = getSelectedEquipment();
+  if (!equipment) return null;
+  const rows = getRecipeRowsForSelectedEquipment();
+  const productionCount = getProductionCountForCalculation();
+  const totalMaterialCost = rows.reduce((sum, row) => {
+    const price = getEffectiveMaterialPrice(row.materialId);
+    return sum + (Number.isFinite(price) ? price : 0) * row.quantity * productionCount;
+  }, 0);
+  const materialLines = rows.map((row) => {
+    const material = state.materials.find((item) => item.id === row.materialId);
+    const price = getEffectiveMaterialPrice(row.materialId);
+    const safePrice = Number.isFinite(price) ? price : 0;
+    const totalRequired = row.quantity * productionCount;
+    const subtotal = safePrice * totalRequired;
+    return `${material?.name ?? "(削除済み素材)"} x${totalRequired} 単価${formatGold(safePrice)} 小計${formatGold(subtotal)}`;
+  });
+  const idealValue = getCraftIdealValueForSelectedEquipment();
+  const idealValueText = idealValue
+    ? `★3誤差 0〜${idealValue.star3Tolerance} / ${idealValue.cells.filter((cell) => normalizeMemoValue(cell) !== "").join(" / ")}`
+    : "";
+  return createMemoEntry("職人アシスト", `${equipment.name} ×${productionCount}`, [
+    { label: "装備名", value: equipment.name },
+    { label: "制作数", value: `${productionCount}` },
+    { label: "必要素材一覧", value: materialLines.length > 0 ? materialLines : "必要素材なし" },
+    { label: "合計原価", value: formatGold(totalMaterialCost) },
+    { label: "基準値", value: idealValueText },
+  ]);
+}
+
 function buildEquipmentDbCollapsedTraitSummaryHtml(entry) {
   const traits = getMeaningfulEquipmentTraits(entry);
   if (traits.length === 0) return `<p class="equipment-db-trait-empty equipment-db-trait-empty-collapsed">セット効果なし</p>`;
@@ -4723,15 +4769,25 @@ function renderBazaarPrices() {
                     >${row.materialName}</button>
                   </h3>
                 </div>
-                <button
-                  type="button"
-                  class="bazaar-favorite-button ${isFavorite ? "is-active" : ""}"
-                  aria-label="${row.materialName}をお気に入り${isFavorite ? "解除" : "登録"}"
-                  aria-pressed="${isFavorite ? "true" : "false"}"
-                  data-bazaar-row-id="${row.id}"
-                >
-                  ♥
-                </button>
+                <div class="bazaar-card-header-actions">
+                  <button
+                    type="button"
+                    class="memo-add-button bazaar-memo-add-button"
+                    data-memo-bazaar-key="${row.materialKey}"
+                    aria-label="${row.materialName}をメモに追加"
+                  >
+                    ＋メモ
+                  </button>
+                  <button
+                    type="button"
+                    class="bazaar-favorite-button ${isFavorite ? "is-active" : ""}"
+                    aria-label="${row.materialName}をお気に入り${isFavorite ? "解除" : "登録"}"
+                    aria-pressed="${isFavorite ? "true" : "false"}"
+                    data-bazaar-row-id="${row.id}"
+                  >
+                    ♥
+                  </button>
+                </div>
               </header>
               <div
                 class="bazaar-sub-row bazaar-card-summary-toggle"
@@ -4907,6 +4963,16 @@ function renderBazaarPrices() {
       saveBazaarFavoriteState();
       renderBazaarPrices();
       renderFavoritesPage();
+    });
+  });
+
+  bazaarListWrap.querySelectorAll("[data-memo-bazaar-key]").forEach((button) => {
+    button.addEventListener("click", (event) => {
+      event.stopPropagation();
+      const materialKey = String(button.dataset.memoBazaarKey || "");
+      const row = getBazaarRowByMaterialKey(materialKey);
+      if (!row) return;
+      addMemoEntry(createBazaarMemoEntry(row));
     });
   });
 
@@ -5690,7 +5756,17 @@ function openBazaarDetailModal(materialKey) {
       : `<p class="bazaar-detail-modal-chart-empty">表示できる履歴がありません。</p>`;
 
   bazaarDetailModalBody.innerHTML = `
-    <h3 class="bazaar-detail-modal-title">${row.materialName}</h3>
+    <div class="memo-target-header bazaar-detail-modal-header">
+      <h3 class="bazaar-detail-modal-title">${row.materialName}</h3>
+      <button
+        type="button"
+        class="memo-add-button bazaar-memo-add-button"
+        data-memo-bazaar-key="${row.materialKey}"
+        aria-label="${row.materialName}をメモに追加"
+      >
+        ＋メモ
+      </button>
+    </div>
     <p class="bazaar-detail-modal-updated-at">更新: ${updatedAtText}</p>
     <p class="bazaar-detail-modal-previous">前日価格: ${formatBazaarPriceWithUnit(row.previousDayPrice)}</p>
     ${chartHtml}
@@ -6808,6 +6884,20 @@ if (bazaarDetailModalOverlay) {
     if (event.target === bazaarDetailModalOverlay) {
       closeBazaarDetailModal();
     }
+  });
+}
+
+if (bazaarDetailModalBody) {
+  bazaarDetailModalBody.addEventListener("click", (event) => {
+    const target = event.target;
+    if (!(target instanceof Element)) return;
+    const memoButton = target.closest("[data-memo-bazaar-key]");
+    if (!memoButton || !bazaarDetailModalBody.contains(memoButton)) return;
+    const materialKey = String(memoButton.dataset.memoBazaarKey || "");
+    const row = getBazaarRowByMaterialKey(materialKey);
+    if (!row) return;
+    event.stopPropagation();
+    addMemoEntry(createBazaarMemoEntry(row));
   });
 }
 
@@ -9044,6 +9134,22 @@ if (memoDockButton) {
   });
 }
 
+if (historyBackButton) {
+  historyBackButton.addEventListener("click", () => {
+    if (window.history.length > 1) {
+      window.history.back();
+      return;
+    }
+    switchToHomeMode();
+  });
+}
+
+if (profitMemoAddButton) {
+  profitMemoAddButton.addEventListener("click", () => {
+    addMemoEntry(createCraftAssistMemoEntry());
+  });
+}
+
 if (memoPanelCloseButton) {
   memoPanelCloseButton.addEventListener("click", () => {
     closeMemoPanel();
@@ -9268,3 +9374,4 @@ async function initialize() {
 }
 
 initialize();
+
