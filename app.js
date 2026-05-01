@@ -8459,8 +8459,6 @@ function renderRecipeTable() {
             <p class="recipe-material-count-line">
               <span>必要 <strong>${row.quantity}</strong></span>
               <span>/</span>
-              <span>制作 <strong>${productionCount}</strong></span>
-              <span>/</span>
               <span>合計 <strong>${totalRequired}</strong></span>
             </p>
             <div class="recipe-material-price-row">
@@ -8593,16 +8591,32 @@ function renderToolSectionVisibility() {
 }
 
 function renderSearchFieldVisibility() {
+  const hasSelectedEquipment = Boolean(getSelectedEquipment());
+
   if (equipmentSearchField && equipmentSearchToggleButton) {
-    equipmentSearchField.hidden = !isEquipmentSearchExpanded;
-    equipmentSearchToggleButton.setAttribute("aria-expanded", isEquipmentSearchExpanded ? "true" : "false");
-    equipmentSearchToggleButton.textContent = isEquipmentSearchExpanded ? "－ 装備名検索を閉じる" : "＋ 装備名で検索";
+    if (hasSelectedEquipment) {
+      equipmentSearchField.hidden = true;
+      equipmentSearchToggleButton.hidden = true;
+      equipmentSearchToggleButton.setAttribute("aria-expanded", "false");
+    } else {
+      equipmentSearchToggleButton.hidden = false;
+      equipmentSearchField.hidden = !isEquipmentSearchExpanded;
+      equipmentSearchToggleButton.setAttribute("aria-expanded", isEquipmentSearchExpanded ? "true" : "false");
+      equipmentSearchToggleButton.textContent = isEquipmentSearchExpanded ? "－ 装備名検索を閉じる" : "＋ 装備名で検索";
+    }
   }
 
   if (materialSearchField && materialSearchToggleButton) {
-    materialSearchField.hidden = !isMaterialSearchExpanded;
-    materialSearchToggleButton.setAttribute("aria-expanded", isMaterialSearchExpanded ? "true" : "false");
-    materialSearchToggleButton.textContent = isMaterialSearchExpanded ? "－ 素材検索を閉じる" : "＋ 素材で検索";
+    if (hasSelectedEquipment) {
+      materialSearchField.hidden = true;
+      materialSearchToggleButton.hidden = true;
+      materialSearchToggleButton.setAttribute("aria-expanded", "false");
+    } else {
+      materialSearchToggleButton.hidden = false;
+      materialSearchField.hidden = !isMaterialSearchExpanded;
+      materialSearchToggleButton.setAttribute("aria-expanded", isMaterialSearchExpanded ? "true" : "false");
+      materialSearchToggleButton.textContent = isMaterialSearchExpanded ? "－ 素材検索を閉じる" : "＋ 素材で検索";
+    }
   }
 }
 

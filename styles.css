@@ -3490,6 +3490,77 @@ button {
   justify-content: flex-end;
 }
 
+@media (max-width: 699px) {
+  .recipe-cards-mobile {
+    gap: 5px;
+  }
+
+  .recipe-material-card {
+    padding: 6px 7px;
+    border-radius: 9px;
+  }
+
+  .recipe-material-name {
+    margin-bottom: 3px;
+    font-size: 0.88rem;
+    line-height: 1.15;
+  }
+
+  .recipe-material-count-line {
+    margin-bottom: 0;
+    gap: 4px;
+    font-size: 0.72rem;
+    line-height: 1.15;
+  }
+
+  .recipe-material-count-line strong {
+    font-size: 0.88rem;
+  }
+
+  .recipe-material-price-row {
+    margin-top: 3px;
+    gap: 5px;
+    align-items: end;
+  }
+
+  .material-price-input-mobile {
+    width: min(100%, 108px);
+    min-height: 32px;
+    font-size: 0.92rem;
+  }
+
+  .recipe-material-price-prefix {
+    left: 10px;
+    font-size: 0.67rem;
+  }
+
+  .material-price-input-mobile--with-prefix {
+    padding-left: 42px;
+  }
+
+  .recipe-material-subtotal {
+    gap: 0;
+  }
+
+  .recipe-material-subtotal span {
+    font-size: 0.66rem;
+  }
+
+  .recipe-material-subtotal strong {
+    font-size: 0.9rem;
+  }
+
+  .recipe-material-market-link-wrap {
+    margin-top: 4px;
+  }
+
+  .recipe-market-link-button {
+    padding: 5px 8px;
+    font-size: 0.72rem;
+    min-height: 28px;
+  }
+}
+
 .orb-controls {
   display: grid;
   gap: 10px;
