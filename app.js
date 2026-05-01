@@ -1083,6 +1083,7 @@ let monsterDetailEntryByName = new Map();
 let mapMasterByName = new Map();
 let selectedMonsterInfoType = "";
 let monsterInfoSearchKeyword = "";
+let selectedMonsterInfoSort = "default";
 let activeMonsterInfoId = "";
 let keepMonsterInfoTypeCleared = false;
 let activeArmorSetDetailId = "";
@@ -1213,6 +1214,7 @@ const equipmentDbMonsterSearchInput = getRequiredElementById("equipmentDbMonster
 const equipmentDbClearFiltersButton = getRequiredElementById("equipmentDbClearFiltersButton");
 const monsterInfoSearchInput = getRequiredElementById("monsterInfoSearchInput");
 const monsterInfoTypeFilterSelect = getRequiredElementById("monsterInfoTypeFilterSelect");
+const monsterInfoSortSelect = getRequiredElementById("monsterInfoSortSelect");
 const monsterInfoClearFiltersButton = getRequiredElementById("monsterInfoClearFiltersButton");
 const monsterInfoListWrap = getRequiredElementById("monsterInfoListWrap");
 const monsterInfoModalOverlay = getRequiredElementById("monsterInfoModalOverlay");
@@ -3647,6 +3649,43 @@ function getFilteredMonsterDetailEntries() {
   });
 }
 
+function getMonsterInfoSortPrice(itemName) {
+  const normalizedItemName = normalizeMaterialNameKey(itemName);
+  if (normalizedItemName === "" || normalizedItemName === "-") return 0;
+  const matchedRow = bazaarRowByMaterialName.get(normalizedItemName);
+  if (!matchedRow || !isMonitoringByComment(matchedRow.comment)) return 0;
+  const price = getPreferredBazaarUnitPrice(matchedRow);
+  return Number.isFinite(price) ? price : 0;
+}
+
+function getMonsterExpValue(entry) {
+  const raw = String(entry?.exp || "").replace(/,/g, "").trim();
+  const parsed = Number(raw);
+  return Number.isFinite(parsed) ? parsed : 0;
+}
+
+function getSortedMonsterDetailEntries(entries) {
+  const list = Array.isArray(entries) ? entries : [];
+  if (selectedMonsterInfoSort === "default") return list;
+  const sorted = [...list];
+  sorted.sort((a, b) => {
+    if (selectedMonsterInfoSort === "exp_desc") {
+      return getMonsterExpValue(b) - getMonsterExpValue(a);
+    }
+    if (selectedMonsterInfoSort === "exp_asc") {
+      return getMonsterExpValue(a) - getMonsterExpValue(b);
+    }
+    if (selectedMonsterInfoSort === "normal_drop_price_desc") {
+      return getMonsterInfoSortPrice(b?.normalDrop) - getMonsterInfoSortPrice(a?.normalDrop);
+    }
+    if (selectedMonsterInfoSort === "rare_drop_price_desc") {
+      return getMonsterInfoSortPrice(b?.rareDrop) - getMonsterInfoSortPrice(a?.rareDrop);
+    }
+    return 0;
+  });
+  return sorted;
+}
+
 function getDefaultMonsterInfoType() {
   const detectedTypes = Array.from(new Set(monsterDetailEntries.map((entry) => entry.type).filter(Boolean)));
   const priorityTypes = MONSTER_TYPE_ORDER.filter((type) => detectedTypes.includes(type));
@@ -3662,13 +3701,15 @@ function updateMonsterInfoClearButtonVisibility() {
   const hasActiveSearch = String(monsterInfoSearchKeyword || "").trim() !== "";
   const defaultType = getDefaultMonsterInfoType();
   const hasActiveType = String(selectedMonsterInfoType || "") !== "" && String(selectedMonsterInfoType || "") !== defaultType;
-  monsterInfoClearFiltersButton.hidden = !(hasActiveSearch || hasActiveType);
+  const hasActiveSort = selectedMonsterInfoSort !== "default";
+  monsterInfoClearFiltersButton.hidden = !(hasActiveSearch || hasActiveType || hasActiveSort);
 }
 
 function clearMonsterInfoFilters() {
   closeMonsterInfoModal();
   monsterInfoSearchKeyword = "";
   selectedMonsterInfoType = "";
+  selectedMonsterInfoSort = "default";
   activeMonsterInfoId = "";
   keepMonsterInfoTypeCleared = true;
   navigateByAppParams({ tab: "monster-info", monsterSearch: "", equipmentId: "", materialKey: "" });
@@ -3677,6 +3718,9 @@ function clearMonsterInfoFilters() {
 
 function renderMonsterInfoCards() {
   if (!monsterInfoListWrap || !monsterInfoTypeFilterSelect) return;
+  if (monsterInfoSortSelect && monsterInfoSortSelect.value !== selectedMonsterInfoSort) {
+    monsterInfoSortSelect.value = selectedMonsterInfoSort;
+  }
   if (isMonsterInfoDataLoading && !hasLoadedMonsterInfoData) {
     monsterInfoListWrap.innerHTML = `<p class="card">読み込み中です。しばらくお待ちください。</p>`;
     return;
@@ -3697,7 +3741,7 @@ function renderMonsterInfoCards() {
   }
   monsterInfoTypeFilterSelect.innerHTML = `<option value="">すべて</option>${types.map((type) => `<option value="${escapeHtml(type)}" ${selectedMonsterInfoType === type ? "selected" : ""}>${escapeHtml(type)}</option>`).join("")}`;
   updateMonsterInfoClearButtonVisibility();
-  const filtered = getFilteredMonsterDetailEntries();
+  const filtered = getSortedMonsterDetailEntries(getFilteredMonsterDetailEntries());
   monsterInfoListWrap.innerHTML = `<div class="monster-info-grid">${filtered.map((entry) => {
     const firstHabitat = entry.habitats[0] || "-";
     const remain = Math.max(entry.habitats.length - 1, 0);
@@ -7100,6 +7144,12 @@ if (monsterInfoTypeFilterSelect) {
   monsterInfoTypeFilterSelect.addEventListener("change", () => {
     selectedMonsterInfoType = monsterInfoTypeFilterSelect.value;
     keepMonsterInfoTypeCleared = selectedMonsterInfoType === "";
+    renderMonsterInfoCards();
+  });
+}
+if (monsterInfoSortSelect) {
+  monsterInfoSortSelect.addEventListener("change", () => {
+    selectedMonsterInfoSort = String(monsterInfoSortSelect.value || "default");
     renderMonsterInfoCards();
   });
 }
