@@ -818,6 +818,24 @@
       </section>
     </div>
 
+    <section id="memoDock" class="memo-dock" aria-label="メモ帳">
+      <button id="memoDockButton" class="memo-dock-button" type="button" aria-expanded="false" aria-controls="memoPanel">
+        メモ
+      </button>
+      <div id="memoPanel" class="memo-panel" role="dialog" aria-label="メモ帳" hidden>
+        <div id="memoPanelHandle" class="memo-panel-handle" aria-hidden="true"></div>
+        <header class="memo-panel-header">
+          <h2>メモ帳</h2>
+          <div class="memo-panel-actions">
+            <button id="memoClearAllButton" class="memo-clear-all-button" type="button">全削除</button>
+            <button id="memoPanelCloseButton" class="memo-panel-close-button" type="button" aria-label="閉じる">×</button>
+          </div>
+        </header>
+        <p id="memoPanelStatus" class="memo-panel-status" aria-live="polite"></p>
+        <div id="memoListWrap" class="memo-list-wrap"></div>
+      </div>
+    </section>
+
     <div id="bazaarDetailModalOverlay" class="bazaar-detail-modal-overlay" hidden>
       <section
         id="bazaarDetailModalDialog"

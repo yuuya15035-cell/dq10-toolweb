@@ -25,6 +25,7 @@ const OFFICIAL_PRESENT_CODE_URL = "https://hiroba.dqx.jp/sc/campaignCode/itemcod
 const BAZAAR_FAVORITES_STORAGE_KEY = "dq10_toolweb_bazaar_favorites_v1";
 const RECIPE_FAVORITES_STORAGE_KEY = "dq10_toolweb_recipe_favorites_v1";
 const HOME_FEATURES_STORAGE_KEY = "dq10_toolweb_home_features_v1";
+const MEMO_STORAGE_KEY = "dq10_toolweb_memos_v1";
 const RECIPE_FAVORITE_CATEGORY_VALUE = "__favorites__";
 const HOME_FEATURE_DEFINITIONS = [
   { id: "bazaar", tabId: "bazaar", title: "バザー情報", icon: "💰" },
@@ -903,6 +904,31 @@ function saveData() {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
 }
 
+function loadMemoEntries() {
+  const raw = localStorage.getItem(MEMO_STORAGE_KEY);
+  if (!raw) return [];
+  try {
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed?.items) ? parsed.items : [];
+  } catch {
+    return [];
+  }
+}
+
+function saveMemoEntries() {
+  if (!memoEntries.length) {
+    localStorage.removeItem(MEMO_STORAGE_KEY);
+    return;
+  }
+  localStorage.setItem(
+    MEMO_STORAGE_KEY,
+    JSON.stringify({
+      version: 1,
+      items: memoEntries,
+    })
+  );
+}
+
 // CSVデータをベースに、既存のローカル保存データ（価格や手数料）を重ねます。
 function mergeWithStoredData(csvData, storedData) {
   if (!storedData) return csvData;
@@ -975,6 +1001,9 @@ let bazaarPriceHistoryByMaterialKey = new Map();
 let selectedBazaarChartRangeDays = DEFAULT_BAZAAR_CHART_RANGE_DAYS;
 let activeBazaarDetailModalKey = "";
 let bazaarDetailModalSwipeState = null;
+let memoEntries = [];
+let memoPanelSwipeState = null;
+const expandedMemoIds = new Set();
 let activeFavoriteMaterialModalKey = "";
 let presentCodes = [];
 let fieldFarmingMonsters = [];
@@ -1226,6 +1255,13 @@ const adminExportContentButton = getRequiredElementById("adminExportContentButto
 const adminExportUpdatesButton = getRequiredElementById("adminExportUpdatesButton");
 const adminLockButton = getRequiredElementById("adminLockButton");
 const adminFabMessage = getRequiredElementById("adminFabMessage");
+const memoDockButton = getRequiredElementById("memoDockButton");
+const memoPanel = getRequiredElementById("memoPanel");
+const memoPanelHandle = getRequiredElementById("memoPanelHandle");
+const memoPanelCloseButton = getRequiredElementById("memoPanelCloseButton");
+const memoClearAllButton = getRequiredElementById("memoClearAllButton");
+const memoPanelStatus = getRequiredElementById("memoPanelStatus");
+const memoListWrap = getRequiredElementById("memoListWrap");
 const bazaarAdminCategorySelect = getRequiredElementById("bazaarAdminCategorySelect");
 const bazaarAdminRefreshButton = getRequiredElementById("bazaarAdminRefreshButton");
 const bazaarAdminUpdateCategoryButton = getRequiredElementById("bazaarAdminUpdateCategoryButton");
@@ -1271,6 +1307,108 @@ function escapeHtml(text) {
     .replaceAll(">", "&gt;")
     .replaceAll('"', "&quot;")
     .replaceAll("'", "&#39;");
+}
+
+function normalizeMemoValue(value) {
+  return String(value || "").trim();
+}
+
+function formatMemoList(values) {
+  const items = Array.isArray(values) ? values.map(normalizeMemoValue).filter((value) => value !== "" && value !== "-") : [];
+  return items.length ? items.join(" / ") : "なし";
+}
+
+function formatMemoLines(lines) {
+  return lines
+    .map((line) => ({
+      label: normalizeMemoValue(line.label),
+      value: Array.isArray(line.value) ? formatMemoList(line.value) : normalizeMemoValue(line.value),
+    }))
+    .filter((line) => line.label !== "" && line.value !== "" && line.value !== "-")
+    .map((line) => `${line.label}: ${line.value}`);
+}
+
+function createMemoEntry(type, name, lines) {
+  const normalizedType = normalizeMemoValue(type);
+  const normalizedName = normalizeMemoValue(name);
+  if (normalizedType === "" || normalizedName === "" || normalizedName === "-") return null;
+  return {
+    id: `${normalizedType}:${normalizedName}`,
+    type: normalizedType,
+    name: normalizedName,
+    lines: formatMemoLines(lines),
+    createdAt: new Date().toISOString(),
+  };
+}
+
+function setMemoStatus(message) {
+  if (!memoPanelStatus) return;
+  memoPanelStatus.textContent = message || "";
+}
+
+function openMemoPanel(message = "") {
+  if (!memoPanel) return;
+  memoPanel.hidden = false;
+  memoPanel.classList.add("is-open");
+  memoDockButton?.setAttribute("aria-expanded", "true");
+  setMemoStatus(message);
+  renderMemoList();
+}
+
+function closeMemoPanel() {
+  if (!memoPanel) return;
+  memoPanel.classList.remove("is-open", "is-swipe-dragging");
+  memoPanel.style.transform = "";
+  memoDockButton?.setAttribute("aria-expanded", "false");
+  window.setTimeout(() => {
+    if (!memoPanel.classList.contains("is-open")) memoPanel.hidden = true;
+  }, 180);
+}
+
+function addMemoEntry(entry) {
+  if (!entry) return;
+  if (memoEntries.some((memo) => memo.id === entry.id)) {
+    openMemoPanel("既に追加済みです");
+    return;
+  }
+  memoEntries = [entry, ...memoEntries];
+  saveMemoEntries();
+  openMemoPanel("メモに追加しました");
+}
+
+function renderMemoList() {
+  if (!memoListWrap) return;
+  if (!memoEntries.length) {
+    memoListWrap.innerHTML = `<p class="memo-empty">メモはまだありません</p>`;
+    if (memoClearAllButton) memoClearAllButton.disabled = true;
+    return;
+  }
+  if (memoClearAllButton) memoClearAllButton.disabled = false;
+  memoListWrap.innerHTML = memoEntries
+    .map((memo) => {
+      const isExpanded = expandedMemoIds.has(memo.id);
+      const visibleLines = isExpanded ? memo.lines : memo.lines.slice(0, 3);
+      const remainingCount = Math.max(memo.lines.length - visibleLines.length, 0);
+      return `<article class="memo-card">
+        <header class="memo-card-header">
+          <div>
+            <p class="memo-card-type">${escapeHtml(memo.type)}</p>
+            <h3>${escapeHtml(memo.name)}</h3>
+          </div>
+          <button type="button" class="memo-delete-button" data-memo-delete-id="${escapeHtml(memo.id)}">削除</button>
+        </header>
+        <div class="memo-card-body">
+          ${visibleLines.map((line) => `<p>${escapeHtml(line)}</p>`).join("")}
+          ${remainingCount > 0 ? `<p class="memo-card-more">ほか${remainingCount}件</p>` : ""}
+        </div>
+        ${
+          memo.lines.length > 3
+            ? `<button type="button" class="memo-detail-button" data-memo-toggle-id="${escapeHtml(memo.id)}">${isExpanded ? "閉じる" : "詳細"}</button>`
+            : ""
+        }
+      </article>`;
+    })
+    .join("");
 }
 
 function formatBazaarPrice(value) {
@@ -2630,7 +2768,10 @@ function buildArmorSetDetailModalHtml(entry) {
           .join("")}</div>`
       : `<p class="equipment-db-trait-empty">白宝箱ドロップなし</p>`;
 
-  return `<h3>${escapeHtml(entry?.equipmentName || "-")}</h3>
+  return `<div class="memo-target-header">
+      <h3>${escapeHtml(entry?.equipmentName || "-")}</h3>
+      <button type="button" class="memo-add-button" data-memo-armor-set-id="${escapeHtml(entry?.id || "")}">＋メモ</button>
+    </div>
     <p><span class="monster-type">防具セット</span></p>
     <div class="equipment-db-detail-section equipment-db-detail-section-first">
       <p class="equipment-db-traits-title">基本情報</p>
@@ -3654,6 +3795,76 @@ function buildEquipmentDbStatsHtml(entry) {
   return stats;
 }
 
+function getEquipmentDbStatsMemoLines(entry) {
+  const statDefinitions = [
+    { key: "attack", label: "攻撃力", isRate: false },
+    { key: "attackMagic", label: "攻撃魔力", isRate: false },
+    { key: "healMagic", label: "回復魔力", isRate: false },
+    { key: "defense", label: "守備力", isRate: false },
+    { key: "shieldGuardRate", label: "盾ガード率", isRate: true },
+    { key: "hp", label: "HP", isRate: false },
+    { key: "mp", label: "MP", isRate: false },
+    { key: "speed", label: "すばやさ", isRate: false },
+    { key: "dex", label: "きようさ", isRate: false },
+    { key: "fashionable", label: "おしゃれさ", isRate: false },
+    { key: "weight", label: "おもさ", isRate: false },
+  ];
+  return statDefinitions
+    .map((definition) => {
+      const value = entry?.[definition.key];
+      if (!Number.isFinite(value) || Number(value) === 0) return "";
+      const displayValue = definition.isRate ? formatEquipmentDbGuardRate(value) : value;
+      return `${definition.label} ${displayValue}`;
+    })
+    .filter(Boolean);
+}
+
+function createMonsterMemoEntry(entry) {
+  return createMemoEntry("モンスター", entry?.name, [
+    { label: "通常ドロップ", value: entry?.normalDrop },
+    { label: "レアドロップ", value: entry?.rareDrop },
+    { label: "白宝箱", value: entry?.whiteBoxList },
+    { label: "宝珠", value: entry?.orbList },
+    { label: "生息地", value: entry?.habitats },
+  ]);
+}
+
+function createOrbMemoEntry(row) {
+  return createMemoEntry("宝珠", row?.orbName, [
+    { label: "属性", value: normalizeOrbCategoryName(row?.orbCategory) || row?.orbCategory },
+    { label: "効果", value: row?.effect },
+    { label: "ドロップモンスター", value: row?.monsterNames },
+  ]);
+}
+
+function createEquipmentMemoEntry(entry) {
+  const stats = getEquipmentDbStatsMemoLines(entry);
+  const traits = getMeaningfulEquipmentTraits(entry);
+  return createMemoEntry("装備", entry?.equipmentName, [
+    { label: "装備ジャンル", value: entry?.equipmentType },
+    { label: "装備レベル", value: Number.isFinite(entry?.equipmentLevel) ? `Lv${entry.equipmentLevel}` : "" },
+    { label: "主要ステータス", value: stats },
+    { label: "特性", value: traits },
+    { label: "白宝箱ドロップモンスター", value: entry?.whiteBoxMonsterNames },
+  ]);
+}
+
+function createArmorSetMemoEntry(entry) {
+  const parts = getArmorSetPartsWithEstimatedCost(entry?.equipmentName || "");
+  const stats = getEquipmentDbStatsMemoLines(entry);
+  const traits = getMeaningfulEquipmentTraits(entry);
+  const whiteBoxMonsterNames = Array.isArray(entry?.whiteBoxArmorDropsBySlot)
+    ? entry.whiteBoxArmorDropsBySlot.flatMap((slotEntry) => slotEntry.items.flatMap((item) => item.monsterNames || []))
+    : [];
+  return createMemoEntry("防具セット", entry?.equipmentName, [
+    { label: "装備レベル", value: Number.isFinite(entry?.equipmentLevel) ? `Lv${entry.equipmentLevel}` : "" },
+    { label: "各部位", value: parts.map((part) => `${part.part}: ${part.name}`) },
+    { label: "上昇能力値", value: stats },
+    { label: "セット効果/特性", value: traits },
+    { label: "白宝箱ドロップモンスター", value: Array.from(new Set(whiteBoxMonsterNames)) },
+  ]);
+}
+
 function buildEquipmentDbCollapsedTraitSummaryHtml(entry) {
   const traits = getMeaningfulEquipmentTraits(entry);
   if (traits.length === 0) return `<p class="equipment-db-trait-empty equipment-db-trait-empty-collapsed">セット効果なし</p>`;
@@ -3855,6 +4066,7 @@ function renderEquipmentDbCards() {
                       <p class="equipment-db-material-cost">推定原価: ${estimatedCostText}</p>
                     </div>`}
                     <div class="equipment-db-card-traits ${isExpanded ? "is-open" : ""}" ${isExpanded ? "" : "hidden"}>
+                      ${!isArmorSet ? `<button type="button" class="memo-add-button equipment-db-memo-button" data-memo-equipment-id="${escapeHtml(entry.id)}">＋メモ</button>` : ""}
                       ${armorSetTypeMetaHtml}
                       ${armorStatsHtml}
                       ${armorSetPartsHtml}
@@ -4820,6 +5032,7 @@ function renderOrbCards() {
                       <h3 class="orb-card-name">${row.orbName}</h3>
                       <p class="orb-card-effect">${row.effect || "-"}</p>
                     </button>
+                    <button type="button" class="memo-add-button orb-memo-button" data-memo-orb-id="${escapeHtml(row.id)}">＋メモ</button>
                     <div class="orb-card-monsters ${isExpanded ? "is-open" : ""}" ${isExpanded ? "" : "hidden"}>
                       <p class="orb-monster-title">ドロップモンスター</p>
                       ${monsterListHtml}
@@ -4845,6 +5058,14 @@ function renderOrbCards() {
       const clickedOrbId = String(button.dataset.orbId || "");
       expandedOrbId = expandedOrbId === clickedOrbId ? "" : clickedOrbId;
       renderOrbCards();
+    });
+  });
+  orbListWrap.querySelectorAll("[data-memo-orb-id]").forEach((button) => {
+    button.addEventListener("click", (event) => {
+      event.preventDefault();
+      event.stopPropagation();
+      const orb = (orbEntries || []).find((row) => String(row.id || "") === String(button.dataset.memoOrbId || ""));
+      addMemoEntry(createOrbMemoEntry(orb));
     });
   });
   orbListWrap.querySelectorAll("[data-orb-monster-name]").forEach((button) => {
@@ -6612,6 +6833,14 @@ if (monsterInfoModalBody) {
   monsterInfoModalBody.addEventListener("click", (event) => {
     const target = event.target;
     if (!(target instanceof Element)) return;
+    const memoButton = target.closest("[data-memo-monster-id]");
+    if (memoButton && monsterInfoModalBody.contains(memoButton)) {
+      event.preventDefault();
+      event.stopPropagation();
+      const entry = monsterDetailEntries.find((item) => String(item.id || "") === String(memoButton.dataset.memoMonsterId || ""));
+      addMemoEntry(createMonsterMemoEntry(entry));
+      return;
+    }
     const orbButton = target.closest("[data-monster-orb-name]");
     if (orbButton && monsterInfoModalBody.contains(orbButton)) {
       event.preventDefault();
@@ -6672,7 +6901,11 @@ if (monsterInfoListWrap) {
       return `<li><strong>${escapeHtml(name)}</strong><br>${version}${area ? ` / ${area}` : ""}</li>`;
     }).join("");
     const chips = (values) => values.length ? values.map((v) => `<span class="monster-info-chip">${escapeHtml(v)}</span>`).join("") : "なし";
-    monsterInfoModalBody.innerHTML = `<h3>${escapeHtml(entry.name)}</h3><p><span class="monster-type" data-type="${escapeHtml(entry.type)}">${escapeHtml(entry.type)}</span></p>
+    monsterInfoModalBody.innerHTML = `<div class="memo-target-header">
+        <h3>${escapeHtml(entry.name)}</h3>
+        <button type="button" class="memo-add-button" data-memo-monster-id="${escapeHtml(entry.id)}">＋メモ</button>
+      </div>
+      <p><span class="monster-type" data-type="${escapeHtml(entry.type)}">${escapeHtml(entry.type)}</span></p>
       <p>経験値：${escapeHtml(entry.exp)} / ゴールド：${escapeHtml(entry.gold)}</p>
       <div class="monster-drop-normal">${buildMonsterDropHtml("通常ドロップ", entry.normalDrop, { modal: true })}</div>
       <div class="monster-drop-rare">${buildMonsterDropHtml("レアドロップ", entry.rareDrop, { modal: true })}</div>
@@ -8666,6 +8899,15 @@ if (equipmentDbListWrap) {
     const target = event.target;
     if (!(target instanceof Element)) return;
 
+    const memoButton = target.closest("[data-memo-equipment-id]");
+    if (memoButton && equipmentDbListWrap.contains(memoButton)) {
+      event.preventDefault();
+      event.stopPropagation();
+      const entry = findEquipmentDbEntryById(String(memoButton.dataset.memoEquipmentId || ""));
+      addMemoEntry(createEquipmentMemoEntry(entry));
+      return;
+    }
+
     const monsterButton = target.closest("[data-equipment-db-monster-name]");
     if (monsterButton && equipmentDbListWrap.contains(monsterButton)) {
       event.preventDefault();
@@ -8692,6 +8934,7 @@ if (equipmentDbListWrap) {
     if (event.key !== "Enter" && event.key !== " ") return;
     const target = event.target;
     if (!(target instanceof Element)) return;
+    if (target.closest("[data-memo-equipment-id]")) return;
     if (target.closest("[data-equipment-db-monster-name]")) return;
     if (target.closest("[data-equipment-db-open-profit]")) return;
     const cardToggle = target.closest("[data-equipment-db-id]");
@@ -8705,6 +8948,14 @@ if (armorSetDetailModalBody) {
   armorSetDetailModalBody.addEventListener("click", (event) => {
     const target = event.target;
     if (!(target instanceof Element)) return;
+    const memoButton = target.closest("[data-memo-armor-set-id]");
+    if (memoButton && armorSetDetailModalBody.contains(memoButton)) {
+      event.preventDefault();
+      event.stopPropagation();
+      const entry = findEquipmentDbEntryById(String(memoButton.dataset.memoArmorSetId || ""));
+      addMemoEntry(createArmorSetMemoEntry(entry));
+      return;
+    }
     const monsterButton = target.closest("[data-equipment-db-monster-name]");
     if (monsterButton && armorSetDetailModalBody.contains(monsterButton)) {
       event.preventDefault();
@@ -8745,6 +8996,88 @@ if (toolSiteSearchToggleButton) {
       toolSiteSearchInput?.focus({ preventScroll: true });
       renderSiteSearchCandidates();
     }
+  });
+}
+
+if (memoDockButton) {
+  memoDockButton.addEventListener("click", () => {
+    if (memoPanel?.classList.contains("is-open")) {
+      closeMemoPanel();
+    } else {
+      openMemoPanel();
+    }
+  });
+}
+
+if (memoPanelCloseButton) {
+  memoPanelCloseButton.addEventListener("click", () => {
+    closeMemoPanel();
+  });
+}
+
+if (memoClearAllButton) {
+  memoClearAllButton.addEventListener("click", () => {
+    if (!memoEntries.length) return;
+    if (!window.confirm("メモをすべて削除しますか？")) return;
+    memoEntries = [];
+    expandedMemoIds.clear();
+    saveMemoEntries();
+    setMemoStatus("メモをすべて削除しました");
+    renderMemoList();
+  });
+}
+
+if (memoListWrap) {
+  memoListWrap.addEventListener("click", (event) => {
+    const target = event.target;
+    if (!(target instanceof Element)) return;
+    const toggleButton = target.closest("[data-memo-toggle-id]");
+    if (toggleButton && memoListWrap.contains(toggleButton)) {
+      const memoId = String(toggleButton.dataset.memoToggleId || "");
+      if (expandedMemoIds.has(memoId)) {
+        expandedMemoIds.delete(memoId);
+      } else {
+        expandedMemoIds.add(memoId);
+      }
+      renderMemoList();
+      return;
+    }
+    const deleteButton = target.closest("[data-memo-delete-id]");
+    if (deleteButton && memoListWrap.contains(deleteButton)) {
+      const memoId = String(deleteButton.dataset.memoDeleteId || "");
+      memoEntries = memoEntries.filter((memo) => memo.id !== memoId);
+      expandedMemoIds.delete(memoId);
+      saveMemoEntries();
+      setMemoStatus("メモを削除しました");
+      renderMemoList();
+    }
+  });
+}
+
+if (memoPanelHandle && memoPanel) {
+  memoPanelHandle.addEventListener("pointerdown", (event) => {
+    memoPanelSwipeState = { startY: event.clientY, currentY: event.clientY };
+    memoPanel.classList.add("is-swipe-dragging");
+    memoPanelHandle.setPointerCapture?.(event.pointerId);
+  });
+  memoPanelHandle.addEventListener("pointermove", (event) => {
+    if (!memoPanelSwipeState) return;
+    memoPanelSwipeState.currentY = event.clientY;
+    const deltaY = Math.max(0, event.clientY - memoPanelSwipeState.startY);
+    memoPanel.style.transform = `translateY(${deltaY}px)`;
+  });
+  memoPanelHandle.addEventListener("pointerup", () => {
+    if (!memoPanelSwipeState) return;
+    const deltaY = Math.max(0, memoPanelSwipeState.currentY - memoPanelSwipeState.startY);
+    memoPanelSwipeState = null;
+    memoPanel.classList.remove("is-swipe-dragging");
+    memoPanel.style.transform = "";
+    if (deltaY > 80) closeMemoPanel();
+  });
+  memoPanelHandle.addEventListener("pointercancel", () => {
+    memoPanelSwipeState = null;
+    memoPanel.classList.remove("is-swipe-dragging");
+    memoPanel.style.transform = "";
   });
 }
 
@@ -8795,6 +9128,8 @@ async function initialize() {
   renderContentEditorPanel();
   setContentEditModeEnabled(false);
   setAdminModeEnabled(isAdminModeEnabled);
+  memoEntries = loadMemoEntries();
+  renderMemoList();
 
   try {
     topUpdates = await loadTopUpdates();
