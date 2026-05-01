@@ -3814,6 +3814,16 @@ button {
   border-radius: 10px;
   background: #fffdf8;
   padding: 9px;
+  cursor: pointer;
+  transition: background 140ms ease-out, border-color 140ms ease-out, box-shadow 140ms ease-out;
+}
+
+.memo-card:hover,
+.memo-card:focus-visible {
+  background: #fff8ee;
+  border-color: #c9a978;
+  box-shadow: 0 4px 12px rgba(52, 33, 17, 0.1);
+  outline: none;
 }
 
 .memo-card-header {

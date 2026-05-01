@@ -1412,7 +1412,7 @@ function renderMemoList() {
       const isExpanded = expandedMemoIds.has(memo.id);
       const visibleLines = isExpanded ? memo.lines : memo.lines.slice(0, 3);
       const remainingCount = Math.max(memo.lines.length - visibleLines.length, 0);
-      return `<article class="memo-card">
+      return `<article class="memo-card" role="button" tabindex="0" data-memo-card-id="${escapeHtml(memo.id)}" aria-expanded="${isExpanded ? "true" : "false"}">
         <header class="memo-card-header">
           <div>
             <p class="memo-card-type">${escapeHtml(memo.type)}</p>
@@ -1432,6 +1432,16 @@ function renderMemoList() {
       </article>`;
     })
     .join("");
+}
+
+function toggleMemoExpanded(memoId) {
+  if (!memoId) return;
+  if (expandedMemoIds.has(memoId)) {
+    expandedMemoIds.delete(memoId);
+  } else {
+    expandedMemoIds.add(memoId);
+  }
+  renderMemoList();
 }
 
 function formatBazaarPrice(value) {
@@ -9056,17 +9066,6 @@ if (memoListWrap) {
   memoListWrap.addEventListener("click", (event) => {
     const target = event.target;
     if (!(target instanceof Element)) return;
-    const toggleButton = target.closest("[data-memo-toggle-id]");
-    if (toggleButton && memoListWrap.contains(toggleButton)) {
-      const memoId = String(toggleButton.dataset.memoToggleId || "");
-      if (expandedMemoIds.has(memoId)) {
-        expandedMemoIds.delete(memoId);
-      } else {
-        expandedMemoIds.add(memoId);
-      }
-      renderMemoList();
-      return;
-    }
     const deleteButton = target.closest("[data-memo-delete-id]");
     if (deleteButton && memoListWrap.contains(deleteButton)) {
       const memoId = String(deleteButton.dataset.memoDeleteId || "");
@@ -9075,7 +9074,28 @@ if (memoListWrap) {
       saveMemoEntries();
       setMemoStatus("メモを削除しました");
       renderMemoList();
+      return;
     }
+    const toggleButton = target.closest("[data-memo-toggle-id]");
+    if (toggleButton && memoListWrap.contains(toggleButton)) {
+      toggleMemoExpanded(String(toggleButton.dataset.memoToggleId || ""));
+      return;
+    }
+    const memoCard = target.closest("[data-memo-card-id]");
+    if (memoCard && memoListWrap.contains(memoCard)) {
+      toggleMemoExpanded(String(memoCard.dataset.memoCardId || ""));
+    }
+  });
+
+  memoListWrap.addEventListener("keydown", (event) => {
+    if (event.key !== "Enter" && event.key !== " ") return;
+    const target = event.target;
+    if (!(target instanceof Element)) return;
+    if (target.closest("[data-memo-delete-id]") || target.closest("[data-memo-toggle-id]")) return;
+    const memoCard = target.closest("[data-memo-card-id]");
+    if (!memoCard || !memoListWrap.contains(memoCard)) return;
+    event.preventDefault();
+    toggleMemoExpanded(String(memoCard.dataset.memoCardId || ""));
   });
 }
 
