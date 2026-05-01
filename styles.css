@@ -3692,6 +3692,11 @@ button {
   box-shadow: 0 8px 18px rgba(35, 22, 10, 0.2);
 }
 
+body.memo-panel-open {
+  overflow: hidden;
+  overscroll-behavior: none;
+}
+
 .memo-toast {
   position: absolute;
   right: 0;
@@ -3713,6 +3718,13 @@ button {
 .memo-toast.is-visible {
   opacity: 1;
   transform: translateY(0);
+}
+
+.memo-panel-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(35, 24, 14, 0.38);
+  pointer-events: auto;
 }
 
 .memo-panel {

@@ -1259,6 +1259,7 @@ const adminFabMessage = getRequiredElementById("adminFabMessage");
 const historyBackButton = getRequiredElementById("historyBackButton");
 const memoDockButton = getRequiredElementById("memoDockButton");
 const memoToast = getRequiredElementById("memoToast");
+const memoPanelBackdrop = getRequiredElementById("memoPanelBackdrop");
 const memoPanel = getRequiredElementById("memoPanel");
 const memoPanelHandle = getRequiredElementById("memoPanelHandle");
 const memoPanelHeader = memoPanel?.querySelector(".memo-panel-header");
@@ -1365,8 +1366,10 @@ function showMemoToast(message) {
 
 function openMemoPanel(message = "") {
   if (!memoPanel) return;
+  memoPanelBackdrop && (memoPanelBackdrop.hidden = false);
   memoPanel.hidden = false;
   memoPanel.classList.add("is-open");
+  document.body.classList.add("memo-panel-open");
   memoDockButton?.setAttribute("aria-expanded", "true");
   setMemoStatus(message);
   renderMemoList();
@@ -1376,9 +1379,11 @@ function closeMemoPanel() {
   if (!memoPanel) return;
   memoPanel.classList.remove("is-open", "is-swipe-dragging");
   memoPanel.style.transform = "";
+  document.body.classList.remove("memo-panel-open");
   memoDockButton?.setAttribute("aria-expanded", "false");
   window.setTimeout(() => {
     if (!memoPanel.classList.contains("is-open")) memoPanel.hidden = true;
+    if (!memoPanel.classList.contains("is-open") && memoPanelBackdrop) memoPanelBackdrop.hidden = true;
   }, 180);
 }
 
@@ -9219,26 +9224,56 @@ if (memoListWrap) {
 
 function startMemoPanelSwipe(event) {
   if (!memoPanel) return;
-  if (event.target instanceof Element && event.target.closest("button")) return;
-  memoPanelSwipeState = { startY: event.clientY, currentY: event.clientY };
+  if (memoPanelSwipeState) return;
+  if (event.pointerType && event.pointerType !== "touch") return;
+  if (event.target instanceof Element) {
+    if (event.target.closest("button, a, input, select, textarea, label")) return;
+    const listWrap = event.target.closest(".memo-list-wrap");
+    if (listWrap instanceof HTMLElement && listWrap.scrollTop > 0) return;
+  }
+  memoPanelSwipeState = {
+    pointerId: event.pointerId,
+    startY: event.clientY,
+    currentY: event.clientY,
+    startTime: Date.now(),
+    isDragging: false,
+  };
   memoPanel.classList.add("is-swipe-dragging");
   event.currentTarget?.setPointerCapture?.(event.pointerId);
 }
 
 function moveMemoPanelSwipe(event) {
   if (!memoPanel || !memoPanelSwipeState) return;
+  if (memoPanelSwipeState.pointerId !== undefined && event.pointerId !== memoPanelSwipeState.pointerId) return;
   memoPanelSwipeState.currentY = event.clientY;
   const deltaY = Math.max(0, event.clientY - memoPanelSwipeState.startY);
+  if (deltaY <= 0) return;
+  memoPanelSwipeState.isDragging = true;
+  if (event.pointerType === "touch") event.preventDefault();
   memoPanel.style.transform = `translateY(${deltaY}px)`;
 }
 
-function endMemoPanelSwipe() {
+function endMemoPanelSwipe(event) {
   if (!memoPanel || !memoPanelSwipeState) return;
+  if (event?.pointerId !== undefined && memoPanelSwipeState.pointerId !== undefined && event.pointerId !== memoPanelSwipeState.pointerId) {
+    return;
+  }
   const deltaY = Math.max(0, memoPanelSwipeState.currentY - memoPanelSwipeState.startY);
+  const elapsed = Math.max(Date.now() - memoPanelSwipeState.startTime, 1);
+  const velocity = deltaY / elapsed;
   memoPanelSwipeState = null;
   memoPanel.classList.remove("is-swipe-dragging");
   memoPanel.style.transform = "";
-  if (deltaY > 56) closeMemoPanel();
+  if (deltaY >= 50 || (deltaY >= 18 && velocity >= 0.45)) {
+    closeMemoPanel();
+  }
+}
+
+function cancelMemoPanelSwipe() {
+  if (!memoPanel) return;
+  memoPanelSwipeState = null;
+  memoPanel.classList.remove("is-swipe-dragging");
+  memoPanel.style.transform = "";
 }
 
 if (memoPanelHandle && memoPanel) {
@@ -9248,13 +9283,11 @@ if (memoPanelHandle && memoPanel) {
   memoPanelHandle.addEventListener("pointermove", (event) => {
     moveMemoPanelSwipe(event);
   });
-  memoPanelHandle.addEventListener("pointerup", () => {
-    endMemoPanelSwipe();
+  memoPanelHandle.addEventListener("pointerup", (event) => {
+    endMemoPanelSwipe(event);
   });
   memoPanelHandle.addEventListener("pointercancel", () => {
-    memoPanelSwipeState = null;
-    memoPanel.classList.remove("is-swipe-dragging");
-    memoPanel.style.transform = "";
+    cancelMemoPanelSwipe();
   });
 }
 
@@ -9265,13 +9298,32 @@ if (memoPanelHeader && memoPanel) {
   memoPanelHeader.addEventListener("pointermove", (event) => {
     moveMemoPanelSwipe(event);
   });
-  memoPanelHeader.addEventListener("pointerup", () => {
-    endMemoPanelSwipe();
+  memoPanelHeader.addEventListener("pointerup", (event) => {
+    endMemoPanelSwipe(event);
   });
   memoPanelHeader.addEventListener("pointercancel", () => {
-    memoPanelSwipeState = null;
-    memoPanel.classList.remove("is-swipe-dragging");
-    memoPanel.style.transform = "";
+    cancelMemoPanelSwipe();
+  });
+}
+
+if (memoPanel) {
+  memoPanel.addEventListener("pointerdown", (event) => {
+    startMemoPanelSwipe(event);
+  });
+  memoPanel.addEventListener("pointermove", (event) => {
+    moveMemoPanelSwipe(event);
+  });
+  memoPanel.addEventListener("pointerup", (event) => {
+    endMemoPanelSwipe(event);
+  });
+  memoPanel.addEventListener("pointercancel", () => {
+    cancelMemoPanelSwipe();
+  });
+}
+
+if (memoPanelBackdrop) {
+  memoPanelBackdrop.addEventListener("click", () => {
+    closeMemoPanel();
   });
 }
 
