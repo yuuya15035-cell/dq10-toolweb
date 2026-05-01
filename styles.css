@@ -2970,6 +2970,7 @@ button {
   }
 
   .bazaar-card {
+    position: relative;
     padding: 7px 8px 6px;
     border-radius: 10px;
   }
@@ -2999,6 +3000,24 @@ button {
   .bazaar-card-header h3 {
     font-size: 0.84rem;
     line-height: 1.2;
+  }
+
+  .bazaar-card-header-actions {
+    position: static;
+  }
+
+  .bazaar-memo-add-button {
+    position: absolute;
+    right: 8px;
+    bottom: 8px;
+    min-height: 28px;
+    padding: 4px 8px;
+    font-size: 0.72rem;
+    z-index: 1;
+  }
+
+  .bazaar-card {
+    padding-bottom: 40px;
   }
 
   .bazaar-category {
@@ -4482,6 +4501,7 @@ body.memo-panel-open {
 }
 
 .orb-card {
+  position: relative;
   padding: 0;
   overflow: hidden;
   border-color: #d6c5ad;
@@ -4493,9 +4513,19 @@ body.memo-panel-open {
   text-align: left;
   border: 0;
   background: transparent;
-  padding: 12px;
+  padding: 12px 72px 12px 12px;
   cursor: pointer;
   color: #3f2f22;
+}
+
+.orb-memo-button {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  z-index: 1;
+  min-height: 30px;
+  padding: 4px 8px;
+  font-size: 0.74rem;
 }
 
 .orb-card-category {
