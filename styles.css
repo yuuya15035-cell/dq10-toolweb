@@ -811,6 +811,16 @@ body.is-modal-open {
 .monster-info-nav-link:hover {
   background: #f3e7d7;
 }
+.equipment-db-monster-link-list {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 3px;
+}
+.equipment-db-monster-link {
+  min-height: 28px;
+  line-height: 1.2;
+}
 .monster-info-habitat-list { padding-left: 1.1rem; margin: 0; }
 
 @media (max-width: 640px) {

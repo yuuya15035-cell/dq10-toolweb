@@ -2622,7 +2622,7 @@ function buildArmorSetDetailModalHtml(entry) {
             <p class="equipment-db-armor-drop-slot-title">${escapeHtml(slotEntry.slot)}</p>
             <ul class="equipment-db-traits-list">
               ${slotEntry.items
-                .map((item) => `<li><span class="equipment-db-armor-item-name">${escapeHtml(item.itemName)}</span><br>${escapeHtml(item.monsterNames.join(" / "))}</li>`)
+                .map((item) => `<li><span class="equipment-db-armor-item-name">${escapeHtml(item.itemName)}</span><br>${buildEquipmentDbMonsterLinksHtml(item.monsterNames)}</li>`)
                 .join("")}
             </ul>
           </section>`
@@ -2961,7 +2961,7 @@ function getBazaarPriceInfoByMaterialName(materialName) {
   }
   const price = getPreferredBazaarUnitPrice(matchedRow);
   return {
-    priceText: Number.isFinite(price) ? `${formatGold(price)}G` : "",
+    priceText: Number.isFinite(price) ? formatGold(price).replace(/\s*G$/, "G") : "",
     hasDisplayPrice: Number.isFinite(price),
   };
 }
@@ -3822,7 +3822,7 @@ function renderEquipmentDbCards() {
                               ${slotEntry.items
                                 .map(
                                   (item) =>
-                                    `<li><span class="equipment-db-armor-item-name">${item.itemName}</span><br>${item.monsterNames.join(" / ")}</li>`
+                                    `<li><span class="equipment-db-armor-item-name">${escapeHtml(item.itemName)}</span><br>${buildEquipmentDbMonsterLinksHtml(item.monsterNames)}</li>`
                                 )
                                 .join("")}
                             </ul>
@@ -3832,7 +3832,7 @@ function renderEquipmentDbCards() {
                     : `<p class="equipment-db-trait-empty">白宝箱ドロップなし</p>`;
                 const weaponWhiteBoxDropHtml =
                   entry.whiteBoxHasDrop && entry.whiteBoxMonsterNames.length > 0
-                    ? `<ul class="equipment-db-traits-list">${entry.whiteBoxMonsterNames.map((monsterName) => `<li>${monsterName}</li>`).join("")}</ul>`
+                    ? `<ul class="equipment-db-traits-list">${entry.whiteBoxMonsterNames.map((monsterName) => `<li>${buildEquipmentDbMonsterLinkHtml(monsterName)}</li>`).join("")}</ul>`
                     : `<p class="equipment-db-trait-empty">白宝箱ドロップなし</p>`;
                 const profitEquipmentId = resolveProfitEquipmentIdFromParams({
                   equipmentName: entry?.equipmentName,
@@ -7459,6 +7459,20 @@ function buildMonsterOrbLinksHtml(values) {
     .join("");
 }
 
+function buildEquipmentDbMonsterLinkHtml(monsterName) {
+  const normalizedName = String(monsterName || "").trim();
+  if (normalizedName === "" || normalizedName === "-") return "";
+  return `<button type="button" class="monster-info-chip monster-info-nav-link equipment-db-monster-link" data-equipment-db-monster-name="${escapeHtml(normalizedName)}">${escapeHtml(normalizedName)}</button>`;
+}
+
+function buildEquipmentDbMonsterLinksHtml(monsterNames) {
+  const items = Array.isArray(monsterNames)
+    ? monsterNames.map((name) => buildEquipmentDbMonsterLinkHtml(name)).filter((html) => html !== "")
+    : [];
+  if (items.length === 0) return "";
+  return `<span class="equipment-db-monster-link-list">${items.join("")}</span>`;
+}
+
 function buildOrbMonsterLinksHtml(monsterNames) {
   const names = Array.isArray(monsterNames) ? monsterNames.filter((name) => String(name || "").trim() !== "" && String(name || "").trim() !== "-") : [];
   if (names.length === 0) return `<p class="orb-monster-empty">ドロップモンスター情報なし</p>`;
@@ -7496,6 +7510,11 @@ async function openMonsterInfoFromOrb(monsterName) {
   navigateByAppParams({ tab: "monster-info", monsterSearch: normalizedMonsterName, equipmentId: "", materialKey: "" });
   renderMonsterInfoCards();
   document.getElementById("monster-info")?.scrollIntoView({ block: "start", behavior: "smooth" });
+}
+
+async function openMonsterInfoFromEquipmentDbMonster(monsterName) {
+  closeArmorSetDetailModal();
+  await openMonsterInfoFromOrb(monsterName);
 }
 
 function renderProfitArmorSetAssist() {
@@ -8647,6 +8666,14 @@ if (equipmentDbListWrap) {
     const target = event.target;
     if (!(target instanceof Element)) return;
 
+    const monsterButton = target.closest("[data-equipment-db-monster-name]");
+    if (monsterButton && equipmentDbListWrap.contains(monsterButton)) {
+      event.preventDefault();
+      event.stopPropagation();
+      void openMonsterInfoFromEquipmentDbMonster(String(monsterButton.dataset.equipmentDbMonsterName || ""));
+      return;
+    }
+
     const profitButton = target.closest("[data-equipment-db-open-profit]");
     if (profitButton && equipmentDbListWrap.contains(profitButton)) {
       event.preventDefault();
@@ -8665,6 +8692,7 @@ if (equipmentDbListWrap) {
     if (event.key !== "Enter" && event.key !== " ") return;
     const target = event.target;
     if (!(target instanceof Element)) return;
+    if (target.closest("[data-equipment-db-monster-name]")) return;
     if (target.closest("[data-equipment-db-open-profit]")) return;
     const cardToggle = target.closest("[data-equipment-db-id]");
     if (!cardToggle || !equipmentDbListWrap.contains(cardToggle)) return;
@@ -8677,6 +8705,13 @@ if (armorSetDetailModalBody) {
   armorSetDetailModalBody.addEventListener("click", (event) => {
     const target = event.target;
     if (!(target instanceof Element)) return;
+    const monsterButton = target.closest("[data-equipment-db-monster-name]");
+    if (monsterButton && armorSetDetailModalBody.contains(monsterButton)) {
+      event.preventDefault();
+      event.stopPropagation();
+      void openMonsterInfoFromEquipmentDbMonster(String(monsterButton.dataset.equipmentDbMonsterName || ""));
+      return;
+    }
     const button = target.closest("[data-armor-part-open-profit]");
     if (!button || !armorSetDetailModalBody.contains(button)) return;
     event.preventDefault();
