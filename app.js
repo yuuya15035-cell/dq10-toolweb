@@ -996,6 +996,9 @@ let homeFeatureIdSet = new Set(homeFeatureIds);
 let activeTabId = "profit";
 let appMode = "home";
 let pendingBazaarFocusMaterialKey = "";
+let bazaarRowById = new Map();
+let bazaarRowByMaterialKey = new Map();
+let bazaarRowByMaterialName = new Map();
 let bazaarPriceHistoryByMaterialKey = new Map();
 let selectedBazaarChartRangeDays = DEFAULT_BAZAAR_CHART_RANGE_DAYS;
 let activeBazaarDetailModalKey = "";
@@ -1008,17 +1011,23 @@ let activeFavoriteMaterialModalKey = "";
 let presentCodes = [];
 let fieldFarmingMonsters = [];
 let orbEntries = [];
+let orbEntryById = new Map();
+let orbEntryByName = new Map();
 let selectedOrbCategory = "";
 let orbSearchKeyword = "";
 let expandedOrbId = "";
 let keepOrbCategoryCleared = false;
 let whiteBoxEntries = [];
+let whiteBoxEntryByItemName = new Map();
 let selectedWhiteBoxType = "weapon";
 let selectedWhiteBoxSlot = "";
 let selectedWhiteBoxSort = "level_desc";
 let whiteBoxKeyword = "";
 let expandedWhiteBoxItemId = "";
 let equipmentDbEntries = [];
+let equipmentDbEntryById = new Map();
+let equipmentDbEntryByName = new Map();
+let equipmentDbWeaponEntryByName = new Map();
 let selectedEquipmentDbGroup = "weapon";
 let selectedEquipmentDbSort = "level_desc";
 let selectedEquipmentDbType = "";
@@ -1069,6 +1078,8 @@ let whiteBoxDataLoadingPromise = null;
 let equipmentDbDataLoadingPromise = null;
 let monsterInfoDataLoadingPromise = null;
 let monsterDetailEntries = [];
+let monsterDetailEntryById = new Map();
+let monsterDetailEntryByName = new Map();
 let mapMasterByName = new Map();
 let selectedMonsterInfoType = "";
 let monsterInfoSearchKeyword = "";
@@ -3126,7 +3137,7 @@ function syncMaterialPricesWithBazaar(materials, bazaarRows) {
 function getOfficialBazaarUrlByMaterialName(materialName) {
   const normalizedMaterialName = normalizeMaterialNameKey(materialName);
   if (normalizedMaterialName !== "") {
-    const matchedRow = bazaarPrices.find((row) => normalizeMaterialNameKey(row?.materialName) === normalizedMaterialName);
+    const matchedRow = bazaarRowByMaterialName.get(normalizedMaterialName);
     if (matchedRow?.officialUrl) {
       return matchedRow.officialUrl;
     }
@@ -3139,7 +3150,7 @@ function getBazaarPriceInfoByMaterialName(materialName) {
   if (normalizedMaterialName === "" || normalizedMaterialName === "-") {
     return { priceText: "", hasDisplayPrice: false };
   }
-  const matchedRow = bazaarPrices.find((row) => normalizeMaterialNameKey(row?.materialName) === normalizedMaterialName);
+  const matchedRow = bazaarRowByMaterialName.get(normalizedMaterialName);
   if (!matchedRow || !isMonitoringByComment(matchedRow.comment)) {
     return { priceText: "", hasDisplayPrice: false };
   }
@@ -3148,6 +3159,65 @@ function getBazaarPriceInfoByMaterialName(materialName) {
     priceText: Number.isFinite(price) ? formatGold(price).replace(/\s*G$/, "G") : "",
     hasDisplayPrice: Number.isFinite(price),
   };
+}
+
+function rebuildBazaarLookupMaps() {
+  bazaarRowById = new Map();
+  bazaarRowByMaterialKey = new Map();
+  bazaarRowByMaterialName = new Map();
+  (bazaarPrices || []).forEach((row) => {
+    const id = String(row?.id || "");
+    const materialKey = String(row?.materialKey || "");
+    const materialName = normalizeMaterialNameKey(row?.materialName);
+    if (id !== "") bazaarRowById.set(id, row);
+    if (materialKey !== "") bazaarRowByMaterialKey.set(materialKey, row);
+    if (materialName !== "") bazaarRowByMaterialName.set(materialName, row);
+  });
+}
+
+function rebuildOrbLookupMaps() {
+  orbEntryById = new Map();
+  orbEntryByName = new Map();
+  (orbEntries || []).forEach((entry) => {
+    const id = String(entry?.id || "");
+    const name = String(entry?.orbName || "").trim();
+    if (id !== "") orbEntryById.set(id, entry);
+    if (name !== "") orbEntryByName.set(name, entry);
+  });
+}
+
+function rebuildEquipmentDbLookupMaps() {
+  equipmentDbEntryById = new Map();
+  equipmentDbEntryByName = new Map();
+  equipmentDbWeaponEntryByName = new Map();
+  (equipmentDbEntries || []).forEach((entry) => {
+    const id = String(entry?.id || "");
+    const name = String(entry?.equipmentName || "").trim();
+    if (id !== "") equipmentDbEntryById.set(id, entry);
+    if (name !== "") equipmentDbEntryByName.set(name, entry);
+    if (name !== "" && String(entry?.equipmentGroup || "") === "weapon") {
+      equipmentDbWeaponEntryByName.set(name, entry);
+    }
+  });
+}
+
+function rebuildWhiteBoxLookupMaps() {
+  whiteBoxEntryByItemName = new Map();
+  (whiteBoxEntries || []).forEach((entry) => {
+    const name = String(entry?.itemName || "").trim();
+    if (name !== "") whiteBoxEntryByItemName.set(name, entry);
+  });
+}
+
+function rebuildMonsterInfoLookupMaps() {
+  monsterDetailEntryById = new Map();
+  monsterDetailEntryByName = new Map();
+  (monsterDetailEntries || []).forEach((entry) => {
+    const id = String(entry?.id || "");
+    const name = String(entry?.name || "").trim();
+    if (id !== "") monsterDetailEntryById.set(id, entry);
+    if (name !== "") monsterDetailEntryByName.set(name, entry);
+  });
 }
 
 function buildMonsterDropHtml(label, itemName, options = {}) {
@@ -3219,6 +3289,7 @@ async function ensureBazaarPricesLoaded() {
   bazaarLoadingPromise = (async () => {
     try {
       bazaarPrices = await loadBazaarPricesCsv();
+      rebuildBazaarLookupMaps();
       hasLoadedBazaarPrices = true;
       bazaarLoadError = false;
       if (!hasSyncedMaterialPricesWithBazaar) {
@@ -3230,6 +3301,7 @@ async function ensureBazaarPricesLoaded() {
     } catch (error) {
       console.error(`bazaar_prices.csv の読み込みに失敗しました: path=${BAZAAR_CSV_PATH}`, error);
       bazaarPrices = [];
+      rebuildBazaarLookupMaps();
       bazaarLoadError = true;
     } finally {
       isBazaarLoading = false;
@@ -3291,11 +3363,13 @@ async function ensureOrbDataLoaded() {
   orbDataLoadingPromise = (async () => {
     try {
       orbEntries = await loadOrbDataCsv();
+      rebuildOrbLookupMaps();
       hasLoadedOrbData = true;
       orbLoadError = false;
     } catch (error) {
       console.error(`orb_data.csv の読み込みに失敗しました: path=${ORB_DATA_CSV_PATH}`, error);
       orbEntries = [];
+      rebuildOrbLookupMaps();
       orbLoadError = true;
     } finally {
       isOrbDataLoading = false;
@@ -3311,11 +3385,13 @@ async function ensureWhiteBoxDataLoaded() {
   whiteBoxDataLoadingPromise = (async () => {
     try {
       whiteBoxEntries = await loadWhiteBoxCsv();
+      rebuildWhiteBoxLookupMaps();
       hasLoadedWhiteBoxData = true;
       whiteBoxLoadError = false;
     } catch (error) {
       console.error(`white_box.csv の読み込みに失敗しました: path=${WHITE_BOX_CSV_PATH}`, error);
       whiteBoxEntries = [];
+      rebuildWhiteBoxLookupMaps();
       whiteBoxLoadError = true;
     } finally {
       isWhiteBoxDataLoading = false;
@@ -3334,21 +3410,25 @@ async function ensureEquipmentDbDataLoaded() {
       if (!hasLoadedWhiteBoxData) {
         try {
           whiteBoxEntries = await loadWhiteBoxCsv();
+          rebuildWhiteBoxLookupMaps();
           hasLoadedWhiteBoxData = true;
       whiteBoxLoadError = false;
         } catch (whiteBoxError) {
           console.error(`white_box.csv の読み込みに失敗しました: path=${WHITE_BOX_CSV_PATH}`, whiteBoxError);
           whiteBoxEntries = [];
+      rebuildWhiteBoxLookupMaps();
       whiteBoxLoadError = true;
         }
       }
       const whiteBoxSummaryByName = buildWhiteBoxSummaryByItemName(whiteBoxEntries);
       equipmentDbEntries = attachWhiteBoxDropsToEquipmentEntries(loadedEquipmentDbEntries, whiteBoxSummaryByName);
+      rebuildEquipmentDbLookupMaps();
       hasLoadedEquipmentDbData = true;
       equipmentDbLoadError = false;
     } catch (error) {
       console.error(`equipment_data.csv の読み込みに失敗しました: path=${EQUIPMENT_DB_CSV_PATH}`, error);
       equipmentDbEntries = [];
+      rebuildEquipmentDbLookupMaps();
       equipmentDbLoadError = true;
     } finally {
       isEquipmentDbDataLoading = false;
@@ -3484,6 +3564,7 @@ async function ensureMonsterInfoDataLoaded() {
   monsterInfoDataLoadingPromise = (async () => {
     try {
       monsterDetailEntries = await loadMonsterDetailDataCsv();
+      rebuildMonsterInfoLookupMaps();
       hasLoadedMonsterInfoData = true;
       monsterInfoLoadError = false;
       try {
@@ -3495,6 +3576,7 @@ async function ensureMonsterInfoDataLoaded() {
     } catch (error) {
       console.error(`monster_detail_data.csv の読み込みに失敗しました: path=${MONSTER_DETAIL_DATA_CSV_PATH}`, error);
       monsterDetailEntries = [];
+      rebuildMonsterInfoLookupMaps();
       mapMasterByName = new Map();
       monsterInfoLoadError = true;
     } finally {
@@ -3968,7 +4050,7 @@ function buildEquipmentDbCollapsedTraitSummaryHtml(entry) {
 
 function findEquipmentDbEntryById(entryId) {
   const normalizedEntryId = String(entryId || "");
-  return (Array.isArray(equipmentDbEntries) ? equipmentDbEntries : []).find((entry) => String(entry?.id || "") === normalizedEntryId);
+  return equipmentDbEntryById.get(normalizedEntryId) || null;
 }
 
 function openArmorSetDetailModal(entry) {
@@ -4962,7 +5044,7 @@ function renderBazaarPrices() {
   bazaarListWrap.querySelectorAll("[data-bazaar-row-id]").forEach((button) => {
     button.addEventListener("click", () => {
       const rowId = String(button.dataset.bazaarRowId || "");
-      const row = bazaarPrices.find((item) => item.id === rowId);
+      const row = bazaarRowById.get(rowId);
       if (!row?.materialKey) return;
 
       if (bazaarFavoriteMaterialKeys.has(row.materialKey)) {
@@ -5174,7 +5256,7 @@ function renderOrbCards() {
     button.addEventListener("click", (event) => {
       event.preventDefault();
       event.stopPropagation();
-      const orb = (orbEntries || []).find((row) => String(row.id || "") === String(button.dataset.memoOrbId || ""));
+      const orb = orbEntryById.get(String(button.dataset.memoOrbId || ""));
       addMemoEntry(createOrbMemoEntry(orb));
     });
   });
@@ -5725,7 +5807,7 @@ function renderSiteSearchCandidates() {
 function getBazaarRowByMaterialKey(materialKey) {
   const normalizedKey = String(materialKey || "").trim();
   if (normalizedKey === "") return null;
-  return bazaarPrices.find((row) => row?.materialKey === normalizedKey) || null;
+  return bazaarRowByMaterialKey.get(normalizedKey) || null;
 }
 
 function syncBodyModalOpenState() {
@@ -6971,7 +7053,7 @@ if (monsterInfoModalBody) {
     if (memoButton && monsterInfoModalBody.contains(memoButton)) {
       event.preventDefault();
       event.stopPropagation();
-      const entry = monsterDetailEntries.find((item) => String(item.id || "") === String(memoButton.dataset.memoMonsterId || ""));
+      const entry = monsterDetailEntryById.get(String(memoButton.dataset.memoMonsterId || ""));
       addMemoEntry(createMonsterMemoEntry(entry));
       closeMonsterInfoModal();
       return;
@@ -7027,14 +7109,14 @@ if (monsterInfoListWrap) {
     if (memoButton && monsterInfoListWrap.contains(memoButton)) {
       event.preventDefault();
       event.stopPropagation();
-      const entry = monsterDetailEntries.find((item) => String(item.id || "") === String(memoButton.dataset.memoMonsterId || ""));
+      const entry = monsterDetailEntryById.get(String(memoButton.dataset.memoMonsterId || ""));
       addMemoEntry(createMonsterMemoEntry(entry));
       return;
     }
     const button = event.target.closest("[data-monster-info-id]");
     if (!(button instanceof HTMLElement)) return;
     const targetId = String(button.dataset.monsterInfoId || "");
-    const entry = monsterDetailEntries.find((item) => item.id === targetId);
+    const entry = monsterDetailEntryById.get(targetId);
     if (!entry || !monsterInfoModalOverlay || !monsterInfoModalBody || activeTabId !== "monster-info") return;
     activeMonsterInfoId = targetId;
     const habitatsHtml = entry.habitats.map((name) => {
@@ -7782,27 +7864,23 @@ function getEquipmentDbGroupForWhiteBoxItem(itemName) {
   const normalizedName = String(itemName || "").trim();
   if (normalizedName === "") return "weapon";
 
-  const matchedEquipment = (equipmentDbEntries || []).find(
-    (entry) =>
-      String(entry?.equipmentName || "").trim() === normalizedName ||
-      String(entry?.equipmentName || "").includes(normalizedName)
-  );
+  const matchedEquipment =
+    equipmentDbEntryByName.get(normalizedName) ||
+    (equipmentDbEntries || []).find((entry) => String(entry?.equipmentName || "").includes(normalizedName));
   if (matchedEquipment) {
     return String(matchedEquipment.equipmentGroup || "weapon") === "armor" ? "armor" : "weapon";
   }
 
-  const matchedWhiteBox = (whiteBoxEntries || []).find((entry) => String(entry?.itemName || "").trim() === normalizedName);
+  const matchedWhiteBox = whiteBoxEntryByItemName.get(normalizedName);
   return getWhiteBoxTypeBySlot(matchedWhiteBox?.itemSlot) === "armor" ? "armor" : "weapon";
 }
 
 function getEquipmentDbTypeForWhiteBoxItem(itemName, equipmentGroup) {
   if (equipmentGroup === "armor") return "";
   const normalizedName = String(itemName || "").trim();
-  const matchedEquipment = (equipmentDbEntries || []).find(
-    (entry) => String(entry?.equipmentGroup || "") === "weapon" && String(entry?.equipmentName || "").trim() === normalizedName
-  );
+  const matchedEquipment = equipmentDbWeaponEntryByName.get(normalizedName);
   if (matchedEquipment?.equipmentType) return String(matchedEquipment.equipmentType || "").trim();
-  const matchedWhiteBox = (whiteBoxEntries || []).find((entry) => String(entry?.itemName || "").trim() === normalizedName);
+  const matchedWhiteBox = whiteBoxEntryByItemName.get(normalizedName);
   return String(matchedWhiteBox?.itemSlot || "").trim();
 }
 
@@ -7876,7 +7954,7 @@ async function openOrbFromMonsterInfo(orbName) {
   if (normalizedOrbName === "" || normalizedOrbName === "-") return;
   closeMonsterInfoModal();
   await ensureOrbDataLoaded();
-  const matchedOrb = (orbEntries || []).find((entry) => String(entry?.orbName || "").trim() === normalizedOrbName);
+  const matchedOrb = orbEntryByName.get(normalizedOrbName);
   selectedOrbCategory = matchedOrb ? normalizeOrbCategoryName(matchedOrb.orbCategory) : "";
   orbSearchKeyword = normalizedOrbName;
   expandedOrbId = matchedOrb?.id || "";
@@ -7890,7 +7968,7 @@ async function openMonsterInfoFromOrb(monsterName) {
   const normalizedMonsterName = String(monsterName || "").trim();
   if (normalizedMonsterName === "" || normalizedMonsterName === "-") return;
   await ensureMonsterInfoDataLoaded();
-  const matchedMonster = (monsterDetailEntries || []).find((entry) => String(entry?.name || "").trim() === normalizedMonsterName);
+  const matchedMonster = monsterDetailEntryByName.get(normalizedMonsterName);
   selectedMonsterInfoType = matchedMonster?.type || "";
   monsterInfoSearchKeyword = normalizedMonsterName;
   switchTab("monster-info");
