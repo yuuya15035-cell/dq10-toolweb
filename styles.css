@@ -329,6 +329,27 @@ body.is-modal-open {
   background: rgba(255, 249, 240, 0.9);
 }
 
+.assist-search-candidate-wrap {
+  margin-top: 6px;
+  display: grid;
+  gap: 6px;
+  max-height: min(48vh, 360px);
+  overflow: auto;
+  overscroll-behavior: contain;
+}
+
+.assist-search-candidate-wrap[hidden] {
+  display: none !important;
+}
+
+.assist-search-candidate-item {
+  min-height: 48px;
+}
+
+.assist-search-empty {
+  margin-top: 0;
+}
+
 .tool-site-search-dock {
   position: fixed;
   top: 12px;

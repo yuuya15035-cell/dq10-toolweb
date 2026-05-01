@@ -941,6 +941,7 @@ let isAdminModeEnabled = localStorage.getItem(ADMIN_MODE_STORAGE_KEY) === "1";
 let selectedEquipmentId = "";
 // 装備検索キーワード（利益計算画面の装備プルダウン用）
 let equipmentSearchKeyword = "";
+let isEquipmentSearchCandidateListOpen = false;
 let materialSearchKeyword = "";
 // 利益計算画面の絞り込み条件（未選択なら全件）
 let selectedCraftsman = "";
@@ -1105,6 +1106,7 @@ const craftIdealValueWrap = getRequiredElementById("craftIdealValueWrap");
 const equipmentSearchToggleButton = getRequiredElementById("equipmentSearchToggleButton");
 const equipmentSearchField = getRequiredElementById("equipmentSearchField");
 const equipmentSearchInput = getRequiredElementById("equipmentSearchInput");
+const equipmentSearchCandidateWrap = getRequiredElementById("equipmentSearchCandidateWrap");
 const materialSearchToggleButton = getRequiredElementById("materialSearchToggleButton");
 const materialSearchField = getRequiredElementById("materialSearchField");
 const materialSearchInput = getRequiredElementById("materialSearchInput");
@@ -6961,6 +6963,11 @@ document.addEventListener("keydown", (event) => {
       closeArmorSetDetailModal();
       return;
     }
+    if (isEquipmentSearchCandidateListOpen) {
+      isEquipmentSearchCandidateListOpen = false;
+      renderEquipmentSearchCandidates();
+      return;
+    }
     if (adminFabPanel && !adminFabPanel.hidden) {
       toggleAdminFabPanel();
       return;
@@ -7022,6 +7029,75 @@ function renderEquipmentSelectors() {
   recipeEquipmentSelect.value = selectedEquipmentId || state.equipments[0]?.id || "";
   renderSelectedEquipmentTypeMeta();
   renderRecipeFavoriteAction();
+}
+
+function getEquipmentSearchCandidates() {
+  if (equipmentSearchKeyword.trim() === "") return [];
+  return getFilteredEquipmentContext().filteredEquipments.slice(0, 15);
+}
+
+function renderEquipmentSearchCandidates() {
+  if (!equipmentSearchCandidateWrap) return;
+  const shouldShow =
+    isEquipmentSearchExpanded &&
+    isEquipmentSearchCandidateListOpen &&
+    equipmentSearchKeyword.trim() !== "";
+
+  if (!shouldShow) {
+    equipmentSearchCandidateWrap.hidden = true;
+    equipmentSearchCandidateWrap.innerHTML = "";
+    return;
+  }
+
+  const candidates = getEquipmentSearchCandidates();
+  equipmentSearchCandidateWrap.hidden = false;
+
+  if (candidates.length === 0) {
+    equipmentSearchCandidateWrap.innerHTML = `<p class="site-search-empty assist-search-empty">該当する装備がありません。</p>`;
+    return;
+  }
+
+  equipmentSearchCandidateWrap.innerHTML = candidates
+    .map((equipment) => {
+      const roundedMaterialCost = getRoundedEquipmentMaterialCost(equipment.id);
+      const costText = roundedMaterialCost.toLocaleString("ja-JP");
+      return `
+        <button type="button" class="site-search-result-item assist-search-candidate-item" data-equipment-search-candidate-id="${escapeHtml(equipment.id)}">
+          <p class="site-search-result-main">${escapeHtml(equipment.name)}</p>
+          <p class="site-search-result-meta">
+            <span class="site-search-chip site-search-chip-type">レシピ</span>
+            <span class="site-search-chip">職人アシスト</span>
+            ${equipment.category ? `<span class="site-search-chip">${escapeHtml(equipment.category)}</span>` : ""}
+            <span class="site-search-chip">原価：${costText} G</span>
+          </p>
+        </button>
+      `;
+    })
+    .join("");
+}
+
+function applyProfitEquipmentSelection(equipmentId, options = {}) {
+  const normalizedEquipmentId = String(equipmentId || "");
+  selectedEquipmentId = normalizedEquipmentId;
+  clearProfitArmorSetContext();
+  if (activeTabId === "profit") {
+    navigateByAppParams({ tab: "profit", equipmentId: selectedEquipmentId, materialKey: "" });
+  }
+  const eq = getSelectedEquipment();
+  const salePrices = getSalePricesForEquipment(eq);
+  if (salePriceStar0Input) salePriceStar0Input.value = salePrices.star0;
+  if (salePriceStar1Input) salePriceStar1Input.value = salePrices.star1;
+  if (salePriceStar2Input) salePriceStar2Input.value = salePrices.star2;
+  if (salePriceStar3Input) salePriceStar3Input.value = salePrices.star3;
+  renderRecipeTable();
+  renderCraftIdealValue();
+  renderToolSection();
+  calcAndRenderSummary();
+  renderEquipmentSelectors();
+  if (options.closeCandidates) {
+    isEquipmentSearchCandidateListOpen = false;
+    renderEquipmentSearchCandidates();
+  }
 }
 
 function renderProfitArmorSetAssist() {
@@ -7722,6 +7798,7 @@ function rerenderAll() {
   renderProfitArmorSetAssist();
   renderFilterSelectors();
   renderEquipmentSelectors();
+  renderEquipmentSearchCandidates();
   renderMaterialSelector();
 
   const eq = getSelectedEquipment();
@@ -7752,22 +7829,7 @@ function rerenderAll() {
 // --- イベント定義 ---
 if (equipmentSelect) {
   equipmentSelect.addEventListener("change", (e) => {
-    selectedEquipmentId = e.target.value;
-    clearProfitArmorSetContext();
-    if (activeTabId === "profit") {
-      navigateByAppParams({ tab: "profit", equipmentId: selectedEquipmentId, materialKey: "" });
-    }
-    const eq = getSelectedEquipment();
-    const salePrices = getSalePricesForEquipment(eq);
-    if (salePriceStar0Input) salePriceStar0Input.value = salePrices.star0;
-    if (salePriceStar1Input) salePriceStar1Input.value = salePrices.star1;
-    if (salePriceStar2Input) salePriceStar2Input.value = salePrices.star2;
-    if (salePriceStar3Input) salePriceStar3Input.value = salePrices.star3;
-    renderRecipeTable();
-    renderCraftIdealValue();
-    renderToolSection();
-    calcAndRenderSummary();
-    renderEquipmentSelectors();
+    applyProfitEquipmentSelection(e.target.value, { closeCandidates: true });
   });
 }
 
@@ -7794,6 +7856,7 @@ if (equipmentSearchToggleButton) {
     isEquipmentSearchExpanded = !isEquipmentSearchExpanded;
     if (!isEquipmentSearchExpanded) {
       equipmentSearchKeyword = "";
+      isEquipmentSearchCandidateListOpen = false;
       if (equipmentSearchInput) equipmentSearchInput.value = "";
       rerenderAll();
     }
@@ -7828,7 +7891,35 @@ if (toolPurchasePriceInput) {
 if (equipmentSearchInput) {
   equipmentSearchInput.addEventListener("input", (e) => {
     equipmentSearchKeyword = e.target.value.trim();
+    isEquipmentSearchCandidateListOpen = equipmentSearchKeyword !== "";
     rerenderAll();
+  });
+  equipmentSearchInput.addEventListener("focus", () => {
+    if (equipmentSearchKeyword !== "") {
+      isEquipmentSearchCandidateListOpen = true;
+      renderEquipmentSearchCandidates();
+    }
+  });
+  equipmentSearchInput.addEventListener("keydown", (event) => {
+    if (event.key !== "Escape") return;
+    isEquipmentSearchCandidateListOpen = false;
+    renderEquipmentSearchCandidates();
+  });
+}
+
+if (equipmentSearchCandidateWrap) {
+  equipmentSearchCandidateWrap.addEventListener("click", (event) => {
+    const target = event.target;
+    if (!(target instanceof Element)) return;
+    const button = target.closest("[data-equipment-search-candidate-id]");
+    if (!button || !equipmentSearchCandidateWrap.contains(button)) return;
+    event.preventDefault();
+    const equipmentId = String(button.dataset.equipmentSearchCandidateId || "");
+    const equipment = state.equipments.find((entry) => entry.id === equipmentId);
+    if (!equipment) return;
+    equipmentSearchKeyword = String(equipment.name || "");
+    if (equipmentSearchInput) equipmentSearchInput.value = equipmentSearchKeyword;
+    applyProfitEquipmentSelection(equipmentId, { closeCandidates: true });
   });
 }
 
@@ -8172,6 +8263,11 @@ if (toolSiteSearchToggleButton) {
 document.addEventListener("click", (event) => {
   const target = event.target;
   if (!(target instanceof Node)) return;
+  const isInsideEquipmentSearch = Boolean(equipmentSearchField?.contains(target) || equipmentSearchCandidateWrap?.contains(target));
+  if (!isInsideEquipmentSearch && isEquipmentSearchCandidateListOpen) {
+    isEquipmentSearchCandidateListOpen = false;
+    renderEquipmentSearchCandidates();
+  }
   const isInsideToolSearch = Boolean(
     toolSiteSearchDock?.contains(target) || toolSiteSearchResultWrap?.contains(target) || toolSiteSearchInput?.contains(target)
   );
