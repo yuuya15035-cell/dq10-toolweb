@@ -982,6 +982,7 @@ let orbEntries = [];
 let selectedOrbCategory = "";
 let orbSearchKeyword = "";
 let expandedOrbId = "";
+let keepOrbCategoryCleared = false;
 let whiteBoxEntries = [];
 let selectedWhiteBoxType = "weapon";
 let selectedWhiteBoxSlot = "";
@@ -1043,6 +1044,7 @@ let mapMasterByName = new Map();
 let selectedMonsterInfoType = "";
 let monsterInfoSearchKeyword = "";
 let activeMonsterInfoId = "";
+let keepMonsterInfoTypeCleared = false;
 let activeArmorSetDetailId = "";
 let bazaarLoadingPromise = null;
 let bazaarHistoryLoadingPromise = null;
@@ -1151,6 +1153,7 @@ const fieldFarmingListWrap = getRequiredElementById("fieldFarmingListWrap");
 const orbListWrap = getRequiredElementById("orbListWrap");
 const orbSearchInput = getRequiredElementById("orbSearchInput");
 const orbCategoryFilterWrap = getRequiredElementById("orbCategoryFilterWrap");
+const orbClearFiltersButton = getRequiredElementById("orbClearFiltersButton");
 const whiteBoxListWrap = getRequiredElementById("whiteBoxListWrap");
 const whiteBoxSortSelect = getRequiredElementById("whiteBoxSortSelect");
 const whiteBoxSlotFilterSelect = getRequiredElementById("whiteBoxSlotFilterSelect");
@@ -1166,8 +1169,10 @@ const equipmentDbNameSearchInput = getRequiredElementById("equipmentDbNameSearch
 const equipmentDbMonsterSearchToggleButton = getRequiredElementById("equipmentDbMonsterSearchToggleButton");
 const equipmentDbMonsterSearchField = getRequiredElementById("equipmentDbMonsterSearchField");
 const equipmentDbMonsterSearchInput = getRequiredElementById("equipmentDbMonsterSearchInput");
+const equipmentDbClearFiltersButton = getRequiredElementById("equipmentDbClearFiltersButton");
 const monsterInfoSearchInput = getRequiredElementById("monsterInfoSearchInput");
 const monsterInfoTypeFilterSelect = getRequiredElementById("monsterInfoTypeFilterSelect");
+const monsterInfoClearFiltersButton = getRequiredElementById("monsterInfoClearFiltersButton");
 const monsterInfoListWrap = getRequiredElementById("monsterInfoListWrap");
 const monsterInfoModalOverlay = getRequiredElementById("monsterInfoModalOverlay");
 const monsterInfoModalDialog = getRequiredElementById("monsterInfoModalDialog");
@@ -3371,6 +3376,34 @@ function getFilteredMonsterDetailEntries() {
   });
 }
 
+function getDefaultMonsterInfoType() {
+  const detectedTypes = Array.from(new Set(monsterDetailEntries.map((entry) => entry.type).filter(Boolean)));
+  const priorityTypes = MONSTER_TYPE_ORDER.filter((type) => detectedTypes.includes(type));
+  const trailingTypes = detectedTypes
+    .filter((type) => !MONSTER_TYPE_ORDER.includes(type))
+    .sort((a, b) => a.localeCompare(b, "ja"));
+  const types = [...priorityTypes, ...trailingTypes];
+  return types.includes("スライム系") ? "スライム系" : types[0] || "";
+}
+
+function updateMonsterInfoClearButtonVisibility() {
+  if (!monsterInfoClearFiltersButton) return;
+  const hasActiveSearch = String(monsterInfoSearchKeyword || "").trim() !== "";
+  const defaultType = getDefaultMonsterInfoType();
+  const hasActiveType = String(selectedMonsterInfoType || "") !== "" && String(selectedMonsterInfoType || "") !== defaultType;
+  monsterInfoClearFiltersButton.hidden = !(hasActiveSearch || hasActiveType);
+}
+
+function clearMonsterInfoFilters() {
+  closeMonsterInfoModal();
+  monsterInfoSearchKeyword = "";
+  selectedMonsterInfoType = "";
+  activeMonsterInfoId = "";
+  keepMonsterInfoTypeCleared = true;
+  navigateByAppParams({ tab: "monster-info", monsterSearch: "", equipmentId: "", materialKey: "" });
+  renderMonsterInfoCards();
+}
+
 function renderMonsterInfoCards() {
   if (!monsterInfoListWrap || !monsterInfoTypeFilterSelect) return;
   if (isMonsterInfoDataLoading && !hasLoadedMonsterInfoData) {
@@ -3388,10 +3421,11 @@ function renderMonsterInfoCards() {
     .sort((a, b) => a.localeCompare(b, "ja"));
   const types = [...priorityTypes, ...trailingTypes];
   if (selectedMonsterInfoType && !types.includes(selectedMonsterInfoType)) selectedMonsterInfoType = "";
-  if (selectedMonsterInfoType === "" && String(monsterInfoSearchKeyword || "").trim() === "") {
-    selectedMonsterInfoType = types.includes("スライム系") ? "スライム系" : types[0] || "";
+  if (!keepMonsterInfoTypeCleared && selectedMonsterInfoType === "" && String(monsterInfoSearchKeyword || "").trim() === "") {
+    selectedMonsterInfoType = getDefaultMonsterInfoType();
   }
   monsterInfoTypeFilterSelect.innerHTML = `<option value="">すべて</option>${types.map((type) => `<option value="${escapeHtml(type)}" ${selectedMonsterInfoType === type ? "selected" : ""}>${escapeHtml(type)}</option>`).join("")}`;
+  updateMonsterInfoClearButtonVisibility();
   const filtered = getFilteredMonsterDetailEntries();
   monsterInfoListWrap.innerHTML = `<div class="monster-info-grid">${filtered.map((entry) => {
     const firstHabitat = entry.habitats[0] || "-";
@@ -3523,6 +3557,50 @@ function compareEquipmentDbEntries(a, b) {
   const idDiff = (a?.equipmentIdNumber || Number.MAX_SAFE_INTEGER) - (b?.equipmentIdNumber || Number.MAX_SAFE_INTEGER);
   if (idDiff !== 0) return idDiff;
   return String(a?.equipmentName || "").localeCompare(String(b?.equipmentName || ""), "ja");
+}
+
+function getEquipmentDbAvailableTypes(group = selectedEquipmentDbGroup) {
+  return Array.from(
+    new Set(
+      (equipmentDbEntries || [])
+        .filter((entry) => String(entry.equipmentGroup || "weapon") === group)
+        .map((entry) => String(entry.equipmentType || "").trim())
+        .filter((type) => type !== "")
+    )
+  ).sort((a, b) => a.localeCompare(b, "ja"));
+}
+
+function getDefaultEquipmentDbType(group = selectedEquipmentDbGroup) {
+  if (group === "armor") return "";
+  const types = getEquipmentDbAvailableTypes(group);
+  return types.find((type) => isOneHandSwordCategory(type)) || "";
+}
+
+function updateEquipmentDbClearButtonVisibility() {
+  if (!equipmentDbClearFiltersButton) return;
+  const hasNameSearch = String(equipmentDbNameKeyword || "").trim() !== "";
+  const hasMonsterSearch = String(equipmentDbMonsterKeyword || "").trim() !== "";
+  const hasSortFilter = selectedEquipmentDbSort !== "level_desc";
+  const hasTypeFilter = String(selectedEquipmentDbType || "") !== getDefaultEquipmentDbType(selectedEquipmentDbGroup);
+  equipmentDbClearFiltersButton.hidden = !(hasNameSearch || hasMonsterSearch || hasSortFilter || hasTypeFilter);
+}
+
+function clearEquipmentDbFilters() {
+  closeArmorSetDetailModal();
+  selectedEquipmentDbSort = "level_desc";
+  selectedEquipmentDbType = "";
+  equipmentDbNameKeyword = "";
+  equipmentDbMonsterKeyword = "";
+  expandedEquipmentDbId = "";
+  navigateByAppParams({
+    tab: "equipment-db",
+    equipmentId: "",
+    materialKey: "",
+    orbSearch: "",
+    monsterSearch: "",
+    equipmentDbGroup: selectedEquipmentDbGroup,
+  });
+  renderEquipmentDbCards();
 }
 
 function getFilteredEquipmentDbEntries() {
@@ -3660,22 +3738,13 @@ function renderEquipmentDbCards() {
   }
 
   const isArmorGroup = selectedEquipmentDbGroup === "armor";
-  const types = isArmorGroup
-    ? []
-    : Array.from(
-        new Set(
-          equipmentDbEntries
-            .filter((entry) => String(entry.equipmentGroup || "weapon") === selectedEquipmentDbGroup)
-            .map((entry) => String(entry.equipmentType || "").trim())
-            .filter((type) => type !== "")
-        )
-      ).sort((a, b) => a.localeCompare(b, "ja"));
+  const types = isArmorGroup ? [] : getEquipmentDbAvailableTypes(selectedEquipmentDbGroup);
 
   if (isArmorGroup || (selectedEquipmentDbType !== "" && !types.includes(selectedEquipmentDbType))) {
     selectedEquipmentDbType = "";
   }
   if (!isArmorGroup && selectedEquipmentDbType === "") {
-    selectedEquipmentDbType = types.find((type) => isOneHandSwordCategory(type)) || "";
+    selectedEquipmentDbType = getDefaultEquipmentDbType(selectedEquipmentDbGroup);
   }
   if (equipmentDbTypeFilterField) {
     equipmentDbTypeFilterField.hidden = isArmorGroup;
@@ -3689,6 +3758,7 @@ function renderEquipmentDbCards() {
         .join("")}
     `;
   }
+  updateEquipmentDbClearButtonVisibility();
 
   const filteredEntries = getFilteredEquipmentDbEntries();
   equipmentDbListWrap.innerHTML = `
@@ -4668,6 +4738,30 @@ function getOrbFilteredRows() {
   });
 }
 
+function getDefaultOrbCategory() {
+  const categories = ["炎", "水", "風", "光", "闇"].filter((category) =>
+    (orbEntries || []).some((row) => normalizeOrbCategoryName(row.orbCategory) === category)
+  );
+  return categories.includes("炎") ? "炎" : categories[0] || "";
+}
+
+function updateOrbClearButtonVisibility() {
+  if (!orbClearFiltersButton) return;
+  const hasActiveSearch = String(orbSearchKeyword || "").trim() !== "";
+  const defaultCategory = getDefaultOrbCategory();
+  const hasActiveCategory = String(selectedOrbCategory || "") !== "" && String(selectedOrbCategory || "") !== defaultCategory;
+  orbClearFiltersButton.hidden = !(hasActiveSearch || hasActiveCategory);
+}
+
+function clearOrbFilters() {
+  orbSearchKeyword = "";
+  selectedOrbCategory = "";
+  expandedOrbId = "";
+  keepOrbCategoryCleared = true;
+  navigateByAppParams({ tab: "orbs", orbSearch: "", equipmentId: "", materialKey: "" });
+  renderOrbCards();
+}
+
 function renderOrbCards() {
   if (!orbListWrap || !orbCategoryFilterWrap) return;
   if (orbSearchInput && orbSearchInput.value !== orbSearchKeyword) {
@@ -4688,9 +4782,10 @@ function renderOrbCards() {
   const categories = ["炎", "水", "風", "光", "闇"].filter((category) =>
     orbEntries.some((row) => normalizeOrbCategoryName(row.orbCategory) === category)
   );
-  if (selectedOrbCategory === "" && String(orbSearchKeyword || "").trim() === "") {
-    selectedOrbCategory = categories.includes("炎") ? "炎" : categories[0] || "";
+  if (!keepOrbCategoryCleared && selectedOrbCategory === "" && String(orbSearchKeyword || "").trim() === "") {
+    selectedOrbCategory = getDefaultOrbCategory();
   }
+  updateOrbClearButtonVisibility();
   orbCategoryFilterWrap.innerHTML = `
     <button type="button" class="orb-category-button ${selectedOrbCategory === "" ? "is-active" : ""}" data-orb-category="">すべて</button>
     ${categories
@@ -4735,6 +4830,7 @@ function renderOrbCards() {
   orbCategoryFilterWrap.querySelectorAll("[data-orb-category]").forEach((button) => {
     button.addEventListener("click", () => {
       selectedOrbCategory = String(button.dataset.orbCategory || "");
+      keepOrbCategoryCleared = selectedOrbCategory === "";
       renderOrbCards();
     });
   });
@@ -6538,12 +6634,21 @@ if (armorSetDetailModalCloseButton) {
 if (monsterInfoSearchInput) {
   monsterInfoSearchInput.addEventListener("input", () => {
     monsterInfoSearchKeyword = monsterInfoSearchInput.value;
+    if (String(monsterInfoSearchKeyword || "").trim() !== "") {
+      keepMonsterInfoTypeCleared = false;
+    }
     renderMonsterInfoCards();
+  });
+}
+if (monsterInfoClearFiltersButton) {
+  monsterInfoClearFiltersButton.addEventListener("click", () => {
+    clearMonsterInfoFilters();
   });
 }
 if (monsterInfoTypeFilterSelect) {
   monsterInfoTypeFilterSelect.addEventListener("change", () => {
     selectedMonsterInfoType = monsterInfoTypeFilterSelect.value;
+    keepMonsterInfoTypeCleared = selectedMonsterInfoType === "";
     renderMonsterInfoCards();
   });
 }
@@ -8441,7 +8546,15 @@ if (fieldFarmingSortSelect) {
 if (orbSearchInput) {
   orbSearchInput.addEventListener("input", (event) => {
     orbSearchKeyword = String(event.target.value || "");
+    if (String(orbSearchKeyword || "").trim() !== "") {
+      keepOrbCategoryCleared = false;
+    }
     renderOrbCards();
+  });
+}
+if (orbClearFiltersButton) {
+  orbClearFiltersButton.addEventListener("click", () => {
+    clearOrbFilters();
   });
 }
 
@@ -8516,6 +8629,11 @@ if (equipmentDbMonsterSearchInput) {
   equipmentDbMonsterSearchInput.addEventListener("input", (event) => {
     equipmentDbMonsterKeyword = String(event.target.value || "").trim();
     renderEquipmentDbCards();
+  });
+}
+if (equipmentDbClearFiltersButton) {
+  equipmentDbClearFiltersButton.addEventListener("click", () => {
+    clearEquipmentDbFilters();
   });
 }
 

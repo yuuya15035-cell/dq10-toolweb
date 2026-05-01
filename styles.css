@@ -1326,6 +1326,28 @@ button {
   line-height: 1.35;
 }
 
+.filter-reset-wrap {
+  margin-top: 8px;
+}
+
+.filter-reset-button {
+  width: 100%;
+  min-height: 40px;
+  background: linear-gradient(180deg, #f2e3c9 0%, #e2c69f 100%);
+  border: 1px solid #b48a60;
+  color: #5b3f2a;
+  font-weight: 700;
+}
+
+.filter-reset-button[hidden] {
+  display: none !important;
+}
+
+.filter-reset-button:hover,
+.filter-reset-button:focus-visible {
+  background: linear-gradient(180deg, #f7ead4 0%, #e8cfab 100%);
+}
+
 .material-header-actions {
   display: flex;
   align-items: flex-end;

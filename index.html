@@ -378,6 +378,9 @@
             <input id="orbSearchInput" type="search" placeholder="例: 炎 / 攻撃時 / キラーマシン" autocomplete="off" />
           </label>
           <div id="orbCategoryFilterWrap" class="orb-category-filter" aria-label="宝珠カテゴリ絞り込み"></div>
+          <div class="filter-reset-wrap">
+            <button id="orbClearFiltersButton" class="filter-reset-button" type="button" hidden>✕ 絞り込み解除</button>
+          </div>
         </div>
         <div id="orbListWrap"></div>
       </section>
@@ -489,6 +492,9 @@
             <span>モンスター名検索（部分一致）</span>
             <input id="equipmentDbMonsterSearchInput" type="search" placeholder="例: キラーマシン" autocomplete="off" />
           </label>
+          <div class="filter-reset-wrap">
+            <button id="equipmentDbClearFiltersButton" class="filter-reset-button" type="button" hidden>✕ 絞り込み解除</button>
+          </div>
         </div>
         <div id="equipmentDbListWrap"></div>
       </section>
@@ -504,6 +510,9 @@
             <span>モンスター種別</span>
             <select id="monsterInfoTypeFilterSelect"></select>
           </label>
+          <div class="filter-reset-wrap">
+            <button id="monsterInfoClearFiltersButton" class="filter-reset-button" type="button" hidden>✕ 絞り込み解除</button>
+          </div>
         </div>
         <div id="monsterInfoListWrap"></div>
       </section>
