@@ -20,7 +20,6 @@ const MAP_MASTER_CSV_PATH = "./data/map_master.csv";
 const UPDATES_JSON_PATH = "./data/updates.json";
 const UI_SETTINGS_JSON_PATH = "./data/ui-settings.json";
 const CONTENT_JSON_PATH = "./data/content.json";
-const OFFICIAL_BAZAAR_TOP_URL = "https://dqx-souba.game-blog.app/";
 const OFFICIAL_PRESENT_CODE_URL = "https://hiroba.dqx.jp/sc/campaignCode/itemcode/";
 const BAZAAR_FAVORITES_STORAGE_KEY = "dq10_toolweb_bazaar_favorites_v1";
 const RECIPE_FAVORITES_STORAGE_KEY = "dq10_toolweb_recipe_favorites_v1";
@@ -1702,7 +1701,11 @@ function parseOfficialUrl(value) {
   if (normalized === "") return "";
   try {
     const parsed = new URL(normalized);
+    const hostname = String(parsed.hostname || "").toLowerCase();
     if (parsed.protocol === "http:" || parsed.protocol === "https:") {
+      if (hostname === "dqx-souba.game-blog.app" || hostname.endsWith(".dqx-souba.game-blog.app")) {
+        return "";
+      }
       return parsed.toString();
     }
     return "";
@@ -3123,7 +3126,7 @@ function getOfficialBazaarUrlByMaterialName(materialName) {
       return matchedRow.officialUrl;
     }
   }
-  return OFFICIAL_BAZAAR_TOP_URL;
+  return "";
 }
 
 function getBazaarPriceInfoByMaterialName(materialName) {
@@ -8230,6 +8233,7 @@ function renderRecipeTable() {
     .map((row) => {
       const material = state.materials.find((m) => m.id === row.materialId);
       const marketUrl = getOfficialBazaarUrlByMaterialName(material?.name);
+      const hasMarketUrl = marketUrl !== "";
       const price = getEffectiveMaterialPrice(row.materialId);
       const safePrice = Number.isFinite(price) ? price : 0;
       const totalRequired = row.quantity * productionCount;
@@ -8254,14 +8258,18 @@ function renderRecipeTable() {
             </td>
             <td>${formatGold(subtotal)}</td>
             <td class="recipe-market-link-cell">
-              <a
-                class="market-link-button recipe-market-link-button"
-                href="${marketUrl}"
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                相場確認
-              </a>
+              ${
+                hasMarketUrl
+                  ? `<a
+                      class="market-link-button recipe-market-link-button"
+                      href="${marketUrl}"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      相場確認
+                    </a>`
+                  : ""
+              }
             </td>
           </tr>
         `,
@@ -8294,14 +8302,18 @@ function renderRecipeTable() {
               </p>
             </div>
             <div class="recipe-material-market-link-wrap">
-              <a
-                class="market-link-button recipe-market-link-button"
-                href="${marketUrl}"
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                相場確認
-              </a>
+              ${
+                hasMarketUrl
+                  ? `<a
+                      class="market-link-button recipe-market-link-button"
+                      href="${marketUrl}"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      相場確認
+                    </a>`
+                  : ""
+              }
             </div>
           </article>
         `,
