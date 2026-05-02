@@ -4570,6 +4570,14 @@ body.memo-panel-open {
   transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease, box-shadow 0.15s ease;
 }
 
+.mobile-bottom-nav-item[data-bottom-nav-action="back"] {
+  display: none;
+}
+
+.mobile-bottom-nav.has-back-slot .mobile-bottom-nav-item[data-bottom-nav-action="back"] {
+  display: inline-flex;
+}
+
 .mobile-bottom-nav-item::before {
   content: "";
   position: absolute;
