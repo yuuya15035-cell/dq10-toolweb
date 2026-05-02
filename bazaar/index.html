@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>DQ10 バザー価格一覧 | dq10toolweb</title>
+  <meta name="description" content="DQ10素材のバザー価格一覧を開きます。">
+  <link rel="canonical" href="./">
+  <meta http-equiv="refresh" content="0; url=../?tab=bazaar">
+  <style>
+    body { margin: 0; min-height: 100vh; display: grid; place-items: center; font-family: sans-serif; background: #f7efe3; color: #4b3624; }
+    a { color: #7b4a22; font-weight: 700; }
+  </style>
+  <script>
+    (function () {
+      var target = new URL("../", window.location.href);
+      var params = new URLSearchParams(window.location.search);
+      params.set("tab", "bazaar");
+      target.search = params.toString();
+      target.hash = window.location.hash;
+      window.location.replace(target.toString());
+    }());
+  </script>
+</head>
+<body>
+  <main>
+    <p>バザー価格一覧を開いています。</p>
+    <p><a href="../?tab=bazaar">開かない場合はこちら</a></p>
+  </main>
+</body>
+</html>
