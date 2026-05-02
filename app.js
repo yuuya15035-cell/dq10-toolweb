@@ -1315,6 +1315,7 @@ const totalProfitStar3ValueEl = getRequiredElementById("totalProfitStar3Value");
 const totalFeeValueEl = getRequiredElementById("totalFeeValue");
 const averageNetSalesValueEl = getRequiredElementById("averageNetSalesValue");
 const totalProfitValueEl = getRequiredElementById("totalProfitValue");
+const profitResetButton = getRequiredElementById("profitResetButton");
 
 const materialForm = getRequiredElementById("materialForm");
 const equipmentForm = getRequiredElementById("equipmentForm");
@@ -8455,7 +8456,21 @@ function renderRecipeTable() {
         `,
         card: `
           <article class="recipe-material-card">
-            <h4 class="recipe-material-name">${material?.name ?? "(削除済み素材)"}</h4>
+            <div class="recipe-material-header">
+              <h4 class="recipe-material-name">${material?.name ?? "(削除済み素材)"}</h4>
+              ${
+                hasMarketUrl
+                  ? `<a
+                      class="market-link-button recipe-market-link-button recipe-market-link-button-mobile"
+                      href="${marketUrl}"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      相場確認
+                    </a>`
+                  : ""
+              }
+            </div>
             <p class="recipe-material-count-line">
               <span>必要 <strong>${row.quantity}</strong></span>
               <span>/</span>
@@ -8478,20 +8493,6 @@ function renderRecipeTable() {
                 <span>小計</span>
                 <strong>${formatGold(subtotal)}</strong>
               </p>
-            </div>
-            <div class="recipe-material-market-link-wrap">
-              ${
-                hasMarketUrl
-                  ? `<a
-                      class="market-link-button recipe-market-link-button"
-                      href="${marketUrl}"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                    >
-                      相場確認
-                    </a>`
-                  : ""
-              }
             </div>
           </article>
         `,
@@ -8618,6 +8619,62 @@ function renderSearchFieldVisibility() {
       materialSearchToggleButton.textContent = isMaterialSearchExpanded ? "－ 素材検索を閉じる" : "＋ 素材で検索";
     }
   }
+}
+
+function resetProfitAssistState() {
+  const currentEquipment = getSelectedEquipment();
+  const currentToolId = selectedToolId;
+
+  if (currentEquipment) {
+    currentEquipment.salePrices = normalizeSalePrices(null, 0);
+  }
+  if (currentToolId) {
+    setToolPurchasePrice(currentToolId, 0);
+  }
+
+  temporaryMaterialPrices.clear();
+  clearProfitArmorSetContext();
+  selectedEquipmentId = "";
+  selectedCraftsman = "";
+  selectedCategory = "";
+  selectedToolId = "";
+  isToolCostIncluded = false;
+  isEquipmentSearchExpanded = false;
+  isMaterialSearchExpanded = false;
+  isEquipmentSearchCandidateListOpen = false;
+  isMaterialSearchCandidateListOpen = false;
+  equipmentSearchKeyword = "";
+  materialSearchKeyword = "";
+
+  if (equipmentSearchInput) equipmentSearchInput.value = "";
+  if (materialSearchInput) materialSearchInput.value = "";
+  if (productionCountInput) productionCountInput.value = "1";
+  if (salePriceStar0Input) salePriceStar0Input.value = "0";
+  if (salePriceStar1Input) salePriceStar1Input.value = "0";
+  if (salePriceStar2Input) salePriceStar2Input.value = "0";
+  if (salePriceStar3Input) salePriceStar3Input.value = "0";
+  if (countStar0Input) countStar0Input.value = "0";
+  if (countStar1Input) countStar1Input.value = "0";
+  if (countStar2Input) countStar2Input.value = "0";
+  if (countStar3Input) countStar3Input.value = "0";
+  if (toolPurchasePriceInput) toolPurchasePriceInput.value = "";
+
+  navigateByAppParams(
+    {
+      tab: "profit",
+      equipmentId: "",
+      materialKey: "",
+      profitEntryType: "",
+      profitArmorSetName: "",
+      profitArmorPart: "",
+      profitEquipmentName: "",
+      profitEquipmentType: "",
+    },
+    { replace: true }
+  );
+  saveData();
+  rerenderAll();
+  document.getElementById("profit")?.scrollIntoView({ block: "start", behavior: "smooth" });
 }
 
 function applyProfitColor(element, value) {
@@ -9013,6 +9070,12 @@ if (categoryFilterSelect) {
     calcAndRenderSummary();
   });
 });
+
+if (profitResetButton) {
+  profitResetButton.addEventListener("click", () => {
+    resetProfitAssistState();
+  });
+}
 
 if (productionCountInput) {
   productionCountInput.addEventListener("input", () => {

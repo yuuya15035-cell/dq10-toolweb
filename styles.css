@@ -1399,6 +1399,14 @@ button {
   flex-wrap: wrap;
 }
 
+.profit-reset-actions {
+  margin-top: 10px;
+}
+
+.profit-reset-button {
+  width: 100%;
+}
+
 
 .recipe-total-cost {
   display: flex;
@@ -3395,11 +3403,19 @@ button {
   background: #fffdf9;
 }
 
+.recipe-material-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 6px;
+}
+
 .recipe-material-name {
   margin: 0 0 4px;
   font-size: 0.98rem;
   line-height: 1.2;
   font-weight: 700;
+  min-width: 0;
 }
 
 .recipe-material-count-line {
@@ -3500,8 +3516,13 @@ button {
     border-radius: 9px;
   }
 
+  .recipe-material-header {
+    gap: 5px;
+    margin-bottom: 2px;
+  }
+
   .recipe-material-name {
-    margin-bottom: 3px;
+    margin-bottom: 0;
     font-size: 0.88rem;
     line-height: 1.15;
   }
@@ -3558,6 +3579,22 @@ button {
     padding: 5px 8px;
     font-size: 0.72rem;
     min-height: 28px;
+  }
+
+  .recipe-market-link-button-mobile {
+    align-self: flex-start;
+    padding: 3px 7px;
+    min-height: 24px;
+    font-size: 0.68rem;
+    flex: 0 0 auto;
+  }
+
+  .profit-reset-actions {
+    margin-top: 8px;
+  }
+
+  .profit-reset-button {
+    min-height: 42px;
   }
 }
 
