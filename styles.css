@@ -1713,11 +1713,50 @@ button {
   gap: 6px;
 }
 
+.bazaar-paused-toggle {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  border: 1px solid #bdb1a4;
+  border-radius: 10px;
+  background: rgba(255, 250, 243, 0.78);
+  color: #55483d;
+  padding: 8px 10px;
+  font-size: 0.86rem;
+  font-weight: 700;
+  text-align: left;
+}
+
+.bazaar-paused-toggle-icon {
+  flex: 0 0 auto;
+  font-size: 1rem;
+  line-height: 1;
+}
+
 .bazaar-control-wrap {
   margin-bottom: 8px;
   display: grid;
   grid-template-columns: minmax(0, 1fr);
   gap: 8px;
+}
+
+.bazaar-page-note {
+  margin-bottom: 8px;
+  padding: 9px 10px;
+  background: rgba(247, 239, 228, 0.9);
+}
+
+.bazaar-page-note p {
+  margin: 0;
+  color: #644d39;
+  font-size: 0.8rem;
+  line-height: 1.45;
+}
+
+.bazaar-page-note p + p {
+  margin-top: 4px;
 }
 
 .bazaar-category-field {
@@ -3100,6 +3139,12 @@ button {
     font-size: 0.86rem;
   }
 
+  .bazaar-paused-toggle {
+    padding: 7px 8px;
+    font-size: 0.76rem;
+    min-height: 40px;
+  }
+
   .bazaar-paused-note {
     margin-bottom: 6px;
     font-size: 0.68rem;
@@ -3110,6 +3155,16 @@ button {
     padding-bottom: 6px;
     margin-bottom: 6px;
     gap: 6px;
+  }
+
+  .bazaar-page-note {
+    margin-bottom: 6px;
+    padding: 7px 8px;
+  }
+
+  .bazaar-page-note p {
+    font-size: 0.7rem;
+    line-height: 1.4;
   }
 
   .bazaar-category-field span,

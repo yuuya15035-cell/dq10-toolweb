@@ -1008,6 +1008,7 @@ let selectedBazaarChartRangeDays = DEFAULT_BAZAAR_CHART_RANGE_DAYS;
 let activeBazaarDetailModalKey = "";
 let bazaarDetailModalSwipeState = null;
 let bazaarDetailMonthByMaterialKey = new Map();
+let isBazaarPausedSectionExpanded = false;
 let memoEntries = [];
 let memoEntryIdSet = new Set();
 let memoPanelSwipeState = null;
@@ -4830,8 +4831,7 @@ function getVisibleBazaarRows() {
       ? categoryFilteredRows
       : categoryFilteredRows.filter((row) => normalizeBazaarSearchText(row.materialName).includes(normalizedKeyword));
   const favoriteFilteredRows = showBazaarFavoritesOnly ? keywordFilteredRows.filter((row) => isBazaarFavoriteRow(row)) : keywordFilteredRows;
-  const monitoringFilteredRows = showBazaarMonitoringOnly ? favoriteFilteredRows.filter((row) => isMonitoringByComment(row.comment)) : favoriteFilteredRows;
-  return getSortedBazaarRows(monitoringFilteredRows, selectedBazaarCategory, selectedBazaarSort);
+  return getSortedBazaarRows(favoriteFilteredRows, selectedBazaarCategory, selectedBazaarSort);
 }
 
 function renderBazaarPrices() {
@@ -5006,6 +5006,10 @@ function renderBazaarPrices() {
     `;
   };
   bazaarListWrap.innerHTML = `
+    <div class="bazaar-page-note card">
+      <p>価格更新中の素材のみ表示しています。更新停止中の商品は下部の「現在価格更新停止中リスト」にまとめています。</p>
+      <p>すべて公式サイトを確認して手入力しているため、価格更新対象は絞っています。</p>
+    </div>
     <div class="bazaar-control-wrap">
       <label class="field bazaar-category-field">
         <span>ジャンル切り替え</span>
@@ -5078,10 +5082,6 @@ function renderBazaarPrices() {
           <input id="bazaarFavoritesOnlyToggle" type="checkbox" ${showBazaarFavoritesOnly ? "checked" : ""} />
           <span>お気に入りのみ表示</span>
         </label>
-        <label class="field inline-field bazaar-monitoring-filter-field">
-          <input id="bazaarMonitoringOnlyToggle" type="checkbox" ${showBazaarMonitoringOnly ? "checked" : ""} />
-          <span>監視中のみ表示</span>
-        </label>
       </div>
     </div>
     ${
@@ -5101,9 +5101,17 @@ function renderBazaarPrices() {
               pausedRows.length > 0
                 ? `
                   <section class="bazaar-paused-section">
-                    <h3 class="bazaar-paused-heading">価格更新停止中</h3>
+                    <button
+                      type="button"
+                      class="bazaar-paused-toggle"
+                      aria-expanded="${isBazaarPausedSectionExpanded ? "true" : "false"}"
+                      aria-controls="bazaarPausedList"
+                    >
+                      <span>現在価格更新停止中リスト（${pausedRows.length}件）</span>
+                      <span class="bazaar-paused-toggle-icon" aria-hidden="true">${isBazaarPausedSectionExpanded ? "−" : "+"}</span>
+                    </button>
                     <p class="bazaar-paused-note">※価格固定・店売り・一時停止中など、通常の相場更新対象外の商品です。</p>
-                    <div class="bazaar-list bazaar-list-paused">
+                    <div id="bazaarPausedList" class="bazaar-list bazaar-list-paused" ${isBazaarPausedSectionExpanded ? "" : "hidden"}>
                       ${pausedRows.map((row) => buildBazaarCardHtml(row)).join("")}
                     </div>
                   </section>
@@ -5142,11 +5150,10 @@ function renderBazaarPrices() {
     });
   }
 
-  const bazaarMonitoringOnlyToggle = bazaarListWrap.querySelector("#bazaarMonitoringOnlyToggle");
-  if (bazaarMonitoringOnlyToggle) {
-    bazaarMonitoringOnlyToggle.checked = showBazaarMonitoringOnly;
-    bazaarMonitoringOnlyToggle.addEventListener("change", (event) => {
-      showBazaarMonitoringOnly = Boolean(event.target.checked);
+  const bazaarPausedToggle = bazaarListWrap.querySelector(".bazaar-paused-toggle");
+  if (bazaarPausedToggle) {
+    bazaarPausedToggle.addEventListener("click", () => {
+      isBazaarPausedSectionExpanded = !isBazaarPausedSectionExpanded;
       renderBazaarPrices();
     });
   }
