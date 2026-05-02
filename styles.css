@@ -671,6 +671,19 @@ body.is-modal-open {
   color: #111;
   margin: 0;
   padding-bottom: 40px;
+  border: 1px solid var(--monster-card-border, rgba(150, 118, 82, 0.22));
+  background: linear-gradient(180deg, var(--monster-card-bg, #fffdfa) 0%, #fff 100%);
+  box-shadow: inset 0 4px 0 var(--monster-card-accent, rgba(201, 174, 139, 0.22));
+}
+.monster-info-card::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 12px;
+  bottom: 12px;
+  width: 4px;
+  border-radius: 999px;
+  background: var(--monster-card-accent, rgba(201, 174, 139, 0.22));
 }
 
 .monster-info-card-toggle {
@@ -713,9 +726,10 @@ body.is-modal-open {
   display: inline-block;
   padding: 1px 7px;
   border-radius: 999px;
-  background: #f2ece5;
+  background: var(--monster-chip-bg, #f2ece5);
+  border: 1px solid var(--monster-chip-border, rgba(120, 95, 62, 0.18));
   font-size: 0.72rem;
-  color: #111;
+  color: var(--monster-chip-color, #111);
 }
 .monster-type-with-icon {
   display: inline-flex;
@@ -730,6 +744,175 @@ body.is-modal-open {
 }
 .monster-type-text {
   line-height: 1.1;
+}
+.monster-type[data-type="スライム系"] {
+  background: #d8f0ff;
+  border-color: rgba(69, 153, 204, 0.36);
+  color: #185677;
+}
+.monster-type[data-type="水系"] {
+  background: #d3e7ff;
+  border-color: rgba(54, 106, 183, 0.36);
+  color: #1b4f95;
+}
+.monster-type[data-type="植物系"] {
+  background: #dcf3df;
+  border-color: rgba(88, 161, 104, 0.32);
+  color: #2f6e3c;
+}
+.monster-type[data-type="虫系"] {
+  background: #e9f3ba;
+  border-color: rgba(117, 145, 23, 0.34);
+  color: #4c5f10;
+}
+.monster-type[data-type="あくま系"] {
+  background: #eadbff;
+  border-color: rgba(131, 86, 179, 0.32);
+  color: #5b358b;
+}
+.monster-type[data-type="エレメント系"] {
+  background: #dcf4ed;
+  border-color: rgba(87, 163, 143, 0.32);
+  color: #276d62;
+}
+.monster-type[data-type="けもの系"] {
+  background: #ffe7ce;
+  border-color: rgba(183, 127, 59, 0.34);
+  color: #86501e;
+}
+.monster-type[data-type="ゾンビ系"] {
+  background: #e6ddd5;
+  border-color: rgba(122, 96, 77, 0.34);
+  color: #5d4739;
+}
+.monster-type[data-type="ドラゴン系"] {
+  background: #ffdcd5;
+  border-color: rgba(194, 93, 74, 0.34);
+  color: #8d3326;
+}
+.monster-type[data-type="マシン系"] {
+  background: #dde6ec;
+  border-color: rgba(100, 121, 138, 0.34);
+  color: #435766;
+}
+.monster-type[data-type="物質系"] {
+  background: #e7e7e7;
+  border-color: rgba(120, 120, 120, 0.34);
+  color: #4c4c4c;
+}
+.monster-type[data-type="怪人系"] {
+  background: #f1dde1;
+  border-color: rgba(157, 97, 111, 0.34);
+  color: #7a4050;
+}
+.monster-type[data-type="鳥系"] {
+  background: #e5f3ff;
+  border-color: rgba(110, 159, 197, 0.34);
+  color: #355f84;
+}
+.monster-info-card-theme-slime {
+  --monster-card-bg: #ecf8ff;
+  --monster-card-accent: #66bde9;
+  --monster-card-border: rgba(102, 189, 233, 0.34);
+  --monster-chip-bg: #d8f0ff;
+  --monster-chip-border: rgba(69, 153, 204, 0.36);
+  --monster-chip-color: #185677;
+}
+.monster-info-card-theme-water {
+  --monster-card-bg: #e4f1ff;
+  --monster-card-accent: #4b88d9;
+  --monster-card-border: rgba(75, 136, 217, 0.32);
+  --monster-chip-bg: #d3e7ff;
+  --monster-chip-border: rgba(54, 106, 183, 0.36);
+  --monster-chip-color: #1b4f95;
+}
+.monster-info-card-theme-plant {
+  --monster-card-bg: #edf9ef;
+  --monster-card-accent: #68b979;
+  --monster-card-border: rgba(104, 185, 121, 0.3);
+  --monster-chip-bg: #dcf3df;
+  --monster-chip-border: rgba(88, 161, 104, 0.32);
+  --monster-chip-color: #2f6e3c;
+}
+.monster-info-card-theme-bug {
+  --monster-card-bg: #f4f9de;
+  --monster-card-accent: #84a81f;
+  --monster-card-border: rgba(132, 168, 31, 0.34);
+  --monster-chip-bg: #e9f3ba;
+  --monster-chip-border: rgba(117, 145, 23, 0.34);
+  --monster-chip-color: #4c5f10;
+}
+.monster-info-card-theme-demon {
+  --monster-card-bg: #f6eeff;
+  --monster-card-accent: #9a72c8;
+  --monster-card-border: rgba(154, 114, 200, 0.3);
+  --monster-chip-bg: #eadbff;
+  --monster-chip-border: rgba(131, 86, 179, 0.32);
+  --monster-chip-color: #5b358b;
+}
+.monster-info-card-theme-element {
+  --monster-card-bg: #eef9f6;
+  --monster-card-accent: #6ebda7;
+  --monster-card-border: rgba(110, 189, 167, 0.3);
+  --monster-chip-bg: #dcf4ed;
+  --monster-chip-border: rgba(87, 163, 143, 0.32);
+  --monster-chip-color: #276d62;
+}
+.monster-info-card-theme-beast {
+  --monster-card-bg: #fff3e6;
+  --monster-card-accent: #d39a59;
+  --monster-card-border: rgba(211, 154, 89, 0.32);
+  --monster-chip-bg: #ffe7ce;
+  --monster-chip-border: rgba(183, 127, 59, 0.34);
+  --monster-chip-color: #86501e;
+}
+.monster-info-card-theme-undead {
+  --monster-card-bg: #f2ede8;
+  --monster-card-accent: #8d7661;
+  --monster-card-border: rgba(141, 118, 97, 0.32);
+  --monster-chip-bg: #e6ddd5;
+  --monster-chip-border: rgba(122, 96, 77, 0.34);
+  --monster-chip-color: #5d4739;
+}
+.monster-info-card-theme-dragon {
+  --monster-card-bg: #fff0eb;
+  --monster-card-accent: #de7a68;
+  --monster-card-border: rgba(222, 122, 104, 0.32);
+  --monster-chip-bg: #ffdcd5;
+  --monster-chip-border: rgba(194, 93, 74, 0.34);
+  --monster-chip-color: #8d3326;
+}
+.monster-info-card-theme-machine {
+  --monster-card-bg: #edf2f5;
+  --monster-card-accent: #748ca0;
+  --monster-card-border: rgba(116, 140, 160, 0.32);
+  --monster-chip-bg: #dde6ec;
+  --monster-chip-border: rgba(100, 121, 138, 0.34);
+  --monster-chip-color: #435766;
+}
+.monster-info-card-theme-material {
+  --monster-card-bg: #f3f3f3;
+  --monster-card-accent: #909090;
+  --monster-card-border: rgba(144, 144, 144, 0.3);
+  --monster-chip-bg: #e7e7e7;
+  --monster-chip-border: rgba(120, 120, 120, 0.34);
+  --monster-chip-color: #4c4c4c;
+}
+.monster-info-card-theme-humanoid {
+  --monster-card-bg: #faf0f1;
+  --monster-card-accent: #b77b87;
+  --monster-card-border: rgba(183, 123, 135, 0.3);
+  --monster-chip-bg: #f1dde1;
+  --monster-chip-border: rgba(157, 97, 111, 0.34);
+  --monster-chip-color: #7a4050;
+}
+.monster-info-card-theme-bird {
+  --monster-card-bg: #f4faff;
+  --monster-card-accent: #86b8de;
+  --monster-card-border: rgba(134, 184, 222, 0.3);
+  --monster-chip-bg: #e5f3ff;
+  --monster-chip-border: rgba(110, 159, 197, 0.34);
+  --monster-chip-color: #355f84;
 }
 .monster-drop-normal { color: #111; }
 .monster-drop-rare { color: #2d6a4f; }
@@ -814,6 +997,9 @@ body.is-modal-open {
 .monster-info-modal h3,
 .monster-info-modal strong {
   color: #111;
+}
+.monster-info-modal-type {
+  margin: 0 0 8px;
 }
 .monster-info-modal-close { position: sticky; top: 0; margin-left: auto; display: block; }
 .monster-info-chip-list { display: flex; flex-wrap: wrap; gap: 6px; }

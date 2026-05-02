@@ -3617,6 +3617,36 @@ function normalizeMonsterTypeLabel(type) {
   return trimmed;
 }
 
+function getMonsterTypeThemeClass(type) {
+  const label = normalizeMonsterTypeLabel(type);
+  const themeMap = {
+    "スライム系": "slime",
+    "あくま系": "demon",
+    "エレメント系": "element",
+    "けもの系": "beast",
+    "ゾンビ系": "undead",
+    "ドラゴン系": "dragon",
+    "マシン系": "machine",
+    "物質系": "material",
+    "怪人系": "humanoid",
+    "植物系": "plant",
+    "水系": "water",
+    "虫系": "bug",
+    "鳥系": "bird",
+  };
+  return themeMap[label] || "default";
+}
+
+function formatMonsterHabitatVersion(value) {
+  const normalized = String(value || "").trim();
+  if (normalized === "") return "ver未設定";
+  const compact = normalized.replace(/\s+/g, "");
+  if (/^ver/i.test(compact)) {
+    return compact.replace(/^ver+/i, "ver");
+  }
+  return `ver${compact}`;
+}
+
 function buildMonsterTypeLabelHtml(type) {
   const label = normalizeMonsterTypeLabel(type) || "不明";
   const iconPath = MONSTER_TYPE_ICON_MAP[label];
@@ -3624,7 +3654,7 @@ function buildMonsterTypeLabelHtml(type) {
     return `<span class="monster-type" data-type="${escapeHtml(label)}">${escapeHtml(label)}</span>`;
   }
   return `<span class="monster-type monster-type-with-icon" data-type="${escapeHtml(label)}">
-    <img src="${escapeHtml(iconPath)}" alt="${escapeHtml(label)}" class="monster-type-icon" loading="lazy" decoding="async" fetchpriority="low" onerror="this.style.display='none'" />
+    <img src="${escapeHtml(resolveProjectScopedResourceUrl(iconPath))}" alt="${escapeHtml(label)}" class="monster-type-icon" loading="lazy" decoding="async" fetchpriority="low" onerror="this.style.display='none'" />
     <span class="monster-type-text">${escapeHtml(label)}</span>
   </span>`;
 }
@@ -3870,7 +3900,8 @@ function renderMonsterInfoCards() {
   monsterInfoListWrap.innerHTML = `<div class="monster-info-grid">${filtered.map((entry) => {
     const firstHabitat = entry.habitats[0] || "-";
     const remain = Math.max(entry.habitats.length - 1, 0);
-    return `<article class="card monster-info-card">
+    const monsterThemeClass = getMonsterTypeThemeClass(entry.type);
+    return `<article class="card monster-info-card monster-info-card-theme-${monsterThemeClass}" data-monster-type="${escapeHtml(normalizeMonsterTypeLabel(entry.type))}">
       <div class="monster-info-card-toggle" role="button" tabindex="0" data-monster-info-id="${escapeHtml(entry.id)}" aria-label="${escapeHtml(entry.name)}の詳細を開く">
         <div class="monster-info-title-area">
           <h3 class="monster-info-name">${escapeHtml(entry.name)}</h3>
@@ -7562,16 +7593,15 @@ if (monsterInfoListWrap) {
     activeMonsterInfoId = targetId;
     const habitatsHtml = entry.habitats.map((name) => {
       const meta = mapMasterByName.get(name);
-      const version = meta?.version ? `ver${escapeHtml(meta.version)}` : "ver未設定";
+      const version = formatMonsterHabitatVersion(meta?.version);
       const area = meta?.areaGroup ? escapeHtml(meta.areaGroup) : "";
-      return `<li><strong>${escapeHtml(name)}</strong><br>${version}${area ? ` / ${area}` : ""}</li>`;
+      return `<li><strong>${escapeHtml(name)}</strong><br>${escapeHtml(version)}${area ? ` / ${area}` : ""}</li>`;
     }).join("");
-    const chips = (values) => values.length ? values.map((v) => `<span class="monster-info-chip">${escapeHtml(v)}</span>`).join("") : "なし";
     monsterInfoModalBody.innerHTML = `<div class="memo-target-header">
         <h3>${escapeHtml(entry.name)}</h3>
         <button type="button" class="memo-add-button" data-memo-monster-id="${escapeHtml(entry.id)}">＋メモ</button>
       </div>
-      <p><span class="monster-type" data-type="${escapeHtml(entry.type)}">${escapeHtml(entry.type)}</span></p>
+      <p class="monster-info-modal-type monster-info-modal-type-${escapeHtml(getMonsterTypeThemeClass(entry.type))}">${buildMonsterTypeLabelHtml(entry.type)}</p>
       <p>経験値：${escapeHtml(entry.exp)} / ゴールド：${escapeHtml(entry.gold)}</p>
       <div class="monster-drop-normal">${buildMonsterDropHtml("通常ドロップ", entry.normalDrop, { modal: true })}</div>
       <div class="monster-drop-rare">${buildMonsterDropHtml("レアドロップ", entry.rareDrop, { modal: true })}</div>
