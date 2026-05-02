@@ -1073,6 +1073,7 @@ let selectedBazaarCategory = "";
 let selectedBazaarSort = "standard";
 let bazaarSearchText = "";
 let selectedBazaarMaterialName = "";
+let selectedBazaarPausedCategory = "";
 let isBazaarSearchComposing = false;
 let shouldRefocusBazaarSearchInput = false;
 let showBazaarFavoritesOnly = false;
@@ -1964,28 +1965,45 @@ function normalizeBazaarAdminNumberText(value) {
   return digits === "" ? "" : String(Number(digits));
 }
 
+const BAZAAR_PAUSED_COMMENT_KEYWORDS = Object.freeze([
+  "固定価格",
+  "現在固定",
+  "店売り価格固定",
+  "店売り",
+  "価格固定",
+  "更新停止",
+  "価格更新停止中",
+  "自動更新対象外",
+]);
+
 function normalizeBazaarCommentText(comment) {
   return String(comment ?? "").trim();
 }
 
+function normalizeBazaarCommentForMatch(comment) {
+  return normalizeBazaarCommentText(comment)
+    .normalize("NFKC")
+    .replace(/[ 　\t\r\n]+/g, "")
+    .replace(/[・･、,，。.\-‐‑‒–—―_＿/／\\|｜:：;；()[\]{}「」『』【】'"`"]/g, "");
+}
+
+function hasBazaarPausedComment(comment) {
+  const normalizedText = normalizeBazaarCommentForMatch(comment);
+  if (normalizedText === "") return false;
+  return BAZAAR_PAUSED_COMMENT_KEYWORDS.some((keyword) => normalizeBazaarCommentForMatch(keyword) !== "" && normalizedText.includes(normalizeBazaarCommentForMatch(keyword)));
+}
+
 function isExcludedByComment(comment) {
-  const text = normalizeBazaarCommentText(comment);
-  return text.includes("固定価格") || text.includes("現在固定") || text.includes("店売り価格固定") || text.includes("除外");
+  const normalizedText = normalizeBazaarCommentForMatch(comment);
+  return hasBazaarPausedComment(comment) || normalizedText.includes(normalizeBazaarCommentForMatch("除外"));
 }
 
 function isMonitoringByComment(comment) {
-  return normalizeBazaarCommentText(comment) === "";
+  return !hasBazaarPausedComment(comment) && normalizeBazaarCommentText(comment) === "";
 }
 
 function isBazaarPausedByComment(comment) {
-  const text = normalizeBazaarCommentText(comment);
-  return (
-    text.includes("価格更新停止中") ||
-    text.includes("更新停止") ||
-    text.includes("価格固定") ||
-    text.includes("店売り価格固定") ||
-    text.includes("現在固定")
-  );
+  return hasBazaarPausedComment(comment);
 }
 
 function buildBazaarAdminCsvModel(lines) {
@@ -4967,6 +4985,19 @@ function getVisibleBazaarRows() {
   return getSortedBazaarRows(favoriteFilteredRows, selectedBazaarCategory, selectedBazaarSort);
 }
 
+function getVisibleBazaarPausedRows() {
+  const normalizedKeyword = normalizeBazaarSearchText(bazaarSearchText);
+  const keywordFilteredRows =
+    normalizedKeyword === ""
+      ? bazaarPrices
+      : bazaarPrices.filter((row) => normalizeBazaarSearchText(row.materialName).includes(normalizedKeyword));
+  const favoriteFilteredRows = showBazaarFavoritesOnly ? keywordFilteredRows.filter((row) => isBazaarFavoriteRow(row)) : keywordFilteredRows;
+  const pausedRows = favoriteFilteredRows.filter((row) => isBazaarPausedByComment(row.comment));
+  const categoryFilteredRows =
+    selectedBazaarPausedCategory === "" ? pausedRows : pausedRows.filter((row) => row.itemCategory === selectedBazaarPausedCategory);
+  return getSortedBazaarRows(categoryFilteredRows, selectedBazaarPausedCategory, "standard");
+}
+
 function renderBazaarPrices() {
   if (!bazaarListWrap) return;
   if (isBazaarLoading && !hasLoadedBazaarPrices) {
@@ -5002,7 +5033,28 @@ function renderBazaarPrices() {
 
   const visibleRows = getVisibleBazaarRows();
   const activeRows = visibleRows.filter((row) => !isBazaarPausedByComment(row.comment));
-  const pausedRows = visibleRows.filter((row) => isBazaarPausedByComment(row.comment));
+  const pausedCategorySet = new Set(
+    bazaarPrices
+      .filter((row) => isBazaarPausedByComment(row.comment))
+      .map((row) => String(row.itemCategory || "").trim())
+      .filter((category) => category !== "")
+  );
+  const pausedCategories = Array.from(pausedCategorySet).sort((a, b) => {
+    const priorityDiff = getBazaarCategoryPriority(a) - getBazaarCategoryPriority(b);
+    if (priorityDiff !== 0) return priorityDiff;
+    return a.localeCompare(b, "ja");
+  });
+  if (selectedBazaarPausedCategory !== "" && !pausedCategorySet.has(selectedBazaarPausedCategory)) {
+    selectedBazaarPausedCategory = "";
+  }
+  const pausedRows = getVisibleBazaarPausedRows();
+  const pausedRowsTotalCount = bazaarPrices.filter((row) => {
+    if (!isBazaarPausedByComment(row.comment)) return false;
+    const normalizedKeyword = normalizeBazaarSearchText(bazaarSearchText);
+    if (normalizedKeyword !== "" && !normalizeBazaarSearchText(row.materialName).includes(normalizedKeyword)) return false;
+    if (showBazaarFavoritesOnly && !isBazaarFavoriteRow(row)) return false;
+    return true;
+  }).length;
   const searchText = String(bazaarSearchText || "");
   const trimmedSearchText = searchText.trim();
   const searchCandidates = getBazaarSearchCandidates(trimmedSearchText);
@@ -5241,12 +5293,39 @@ function renderBazaarPrices() {
                       aria-expanded="${isBazaarPausedSectionExpanded ? "true" : "false"}"
                       aria-controls="bazaarPausedList"
                     >
-                      <span>現在価格更新停止中リスト（${pausedRows.length}件）</span>
+                      <span>現在価格更新停止中リスト（${pausedRowsTotalCount}件）</span>
                       <span class="bazaar-paused-toggle-icon" aria-hidden="true">${isBazaarPausedSectionExpanded ? "−" : "+"}</span>
                     </button>
                     <p class="bazaar-paused-note">※価格固定・店売り・一時停止中など、通常の相場更新対象外の商品です。</p>
+                    ${
+                      isBazaarPausedSectionExpanded
+                        ? `
+                          <div class="bazaar-paused-controls">
+                            <label class="field bazaar-paused-category-field">
+                              <span>停止中リスト種類</span>
+                              <select id="bazaarPausedCategorySelect" aria-label="停止中リストの種類">
+                                <option value="">すべて</option>
+                                ${pausedCategories
+                                  .map(
+                                    (category) => `
+                                      <option value="${category}" ${selectedBazaarPausedCategory === category ? "selected" : ""}>${category}</option>
+                                    `
+                                  )
+                                  .join("")}
+                              </select>
+                            </label>
+                          </div>
+                        `
+                        : ""
+                    }
                     <div id="bazaarPausedList" class="bazaar-list bazaar-list-paused" ${isBazaarPausedSectionExpanded ? "" : "hidden"}>
-                      ${pausedRows.map((row) => buildBazaarCardHtml(row)).join("")}
+                      ${
+                        isBazaarPausedSectionExpanded
+                          ? pausedRows.length > 0
+                            ? pausedRows.map((row) => buildBazaarCardHtml(row)).join("")
+                            : `<p class="bazaar-paused-empty">条件に一致する停止中商品がありません。</p>`
+                          : ""
+                      }
                     </div>
                   </section>
                 `
@@ -5288,6 +5367,15 @@ function renderBazaarPrices() {
   if (bazaarPausedToggle) {
     bazaarPausedToggle.addEventListener("click", () => {
       isBazaarPausedSectionExpanded = !isBazaarPausedSectionExpanded;
+      renderBazaarPrices();
+    });
+  }
+
+  const bazaarPausedCategorySelect = bazaarListWrap.querySelector("#bazaarPausedCategorySelect");
+  if (bazaarPausedCategorySelect) {
+    bazaarPausedCategorySelect.value = selectedBazaarPausedCategory;
+    bazaarPausedCategorySelect.addEventListener("change", (event) => {
+      selectedBazaarPausedCategory = String(event.target.value || "");
       renderBazaarPrices();
     });
   }

@@ -1895,6 +1895,20 @@ button {
   color: #6c6157;
 }
 
+.bazaar-paused-controls {
+  margin: 0 0 8px;
+}
+
+.bazaar-paused-category-field {
+  max-width: 220px;
+}
+
+.bazaar-paused-empty {
+  margin: 0;
+  color: #5d5248;
+  font-size: 0.82rem;
+}
+
 .bazaar-list-paused {
   gap: 6px;
 }
@@ -3345,6 +3359,14 @@ button {
     margin-bottom: 6px;
     font-size: 0.68rem;
     line-height: 1.35;
+  }
+
+  .bazaar-paused-category-field {
+    max-width: 100%;
+  }
+
+  .bazaar-paused-empty {
+    font-size: 0.74rem;
   }
 
   .bazaar-control-wrap {
