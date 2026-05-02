@@ -5400,6 +5400,119 @@ body.memo-panel-open {
   min-height: 52px;
 }
 
+.admin-checklist-panel {
+  margin-top: 10px;
+  display: grid;
+  gap: 10px;
+}
+
+.admin-checklist-header {
+  align-items: start;
+}
+
+.admin-checklist-note {
+  margin: 4px 0 0;
+}
+
+.admin-checklist-wrap {
+  display: grid;
+  gap: 10px;
+}
+
+.admin-checklist-group {
+  border: 1px solid #d6c2ab;
+  border-radius: 12px;
+  background: #fffaf4;
+  padding: 10px;
+  display: grid;
+  gap: 10px;
+}
+
+.admin-checklist-group-header {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 8px;
+  align-items: start;
+}
+
+.admin-checklist-group-header h4 {
+  margin: 0;
+  font-size: 1rem;
+}
+
+.admin-checklist-period {
+  margin: 4px 0 0;
+  font-size: 0.78rem;
+  color: #6f5741;
+}
+
+.admin-checklist-group-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+.admin-checklist-progress {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 56px;
+  min-height: 34px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: #f3e5d2;
+  color: #5b3d24;
+  font-weight: 700;
+  font-size: 0.84rem;
+}
+
+.admin-checklist-reset-button {
+  min-height: 38px;
+  padding: 8px 12px;
+  font-size: 0.82rem;
+}
+
+.admin-checklist-items {
+  display: grid;
+  gap: 8px;
+}
+
+.admin-checklist-item {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 10px;
+  align-items: start;
+  padding: 10px;
+  border: 1px solid #e2d3c1;
+  border-radius: 10px;
+  background: #fffdf9;
+}
+
+.admin-checklist-item input {
+  width: 20px;
+  height: 20px;
+  margin-top: 2px;
+}
+
+.admin-checklist-item-body {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+
+.admin-checklist-item-label {
+  font-weight: 700;
+  color: #4a311f;
+}
+
+.admin-checklist-item-memo {
+  font-size: 0.8rem;
+  line-height: 1.5;
+  color: #6c5540;
+}
+
 @media (min-width: 900px) {
   .equipment-type-icon {
     width: 18px;
@@ -5462,6 +5575,35 @@ body.memo-panel-open {
 
   .app {
     padding-bottom: 14px;
+  }
+}
+
+@media (max-width: 699px) {
+  .admin-checklist-group {
+    padding: 9px;
+  }
+
+  .admin-checklist-group-header {
+    flex-direction: column;
+  }
+
+  .admin-checklist-group-actions {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .admin-checklist-reset-button {
+    min-height: 40px;
+    padding: 8px 10px;
+  }
+
+  .admin-checklist-item {
+    padding: 9px;
+    gap: 8px;
+  }
+
+  .admin-checklist-item-memo {
+    font-size: 0.77rem;
   }
 }
 

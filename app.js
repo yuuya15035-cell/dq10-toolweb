@@ -25,6 +25,7 @@ const BAZAAR_FAVORITES_STORAGE_KEY = "dq10_toolweb_bazaar_favorites_v1";
 const RECIPE_FAVORITES_STORAGE_KEY = "dq10_toolweb_recipe_favorites_v1";
 const HOME_FEATURES_STORAGE_KEY = "dq10_toolweb_home_features_v1";
 const MEMO_STORAGE_KEY = "dq10_toolweb_memos_v1";
+const ADMIN_CHECKLIST_STORAGE_KEY = "dq10_toolweb_admin_checklist_v1";
 const RECIPE_FAVORITE_CATEGORY_VALUE = "__favorites__";
 const HOME_FEATURE_DEFINITIONS = [
   { id: "bazaar", tabId: "bazaar", title: "バザー情報", icon: "💰" },
@@ -91,6 +92,207 @@ const TOOL_SCROLL_OFFSETS = Object.freeze({
   quickAccessVisibleMax: 88,
   targetTopGap: 14,
 });
+const ADMIN_CHECKLIST_GROUPS = Object.freeze([
+  {
+    id: "daily-ops",
+    title: "毎日更新リスト",
+    resetLabel: "今日分をリセット",
+    periodType: "daily",
+    items: [
+      {
+        id: "bazaar-update",
+        label: "バザー価格更新",
+        memo: "/admin-bazaar/ を開き、公式ページの価格を確認して更新する",
+      },
+      {
+        id: "bazaar-download",
+        label: "更新CSVダウンロード",
+        memo: "更新後に「更新CSVをダウンロード」を押して bazaar_prices.csv を保存する",
+      },
+      {
+        id: "bazaar-history-save",
+        label: "履歴CSV保存",
+        memo: "価格更新後に履歴保存を行い、bazaar_prices_history.csv を保存する",
+      },
+      {
+        id: "bazaar-list-check",
+        label: "バザー価格一覧の表示確認",
+        memo: "/bazaar/ を開き、価格・前日比・更新日時が表示されるか確認する",
+      },
+      {
+        id: "bazaar-graph-check",
+        label: "バザーグラフ確認",
+        memo: "素材カードのグラフをタップし、月別グラフが開くか確認する",
+      },
+      {
+        id: "bazaar-paused-check",
+        label: "価格更新停止中リスト確認",
+        memo: "バザー下部の停止中リストを開き、固定価格商品が混ざっていないか確認する",
+      },
+      {
+        id: "present-expire-check",
+        label: "プレゼントのじゅもん期限確認",
+        memo: "期限切れがあれば非表示・削除・期限切れ扱いにする",
+      },
+      {
+        id: "field-farming-price-check",
+        label: "フィールド狩り価格確認",
+        memo: "ドロップ品価格が大きくズレていないか確認する",
+      },
+      {
+        id: "official-news-check",
+        label: "公式お知らせ確認",
+        memo: "DQ10公式のお知らせ・アップデート情報を確認する",
+      },
+      {
+        id: "bug-report-check",
+        label: "不具合・要望確認",
+        memo: "Xや知り合いからの報告があればメモする",
+      },
+    ],
+  },
+  {
+    id: "daily-display",
+    title: "毎日表示チェックリスト",
+    resetLabel: "今日分をリセット",
+    periodType: "daily",
+    items: [
+      { id: "home", label: "ホーム", memo: "トップが表示され、主要カードが押せるか確認する" },
+      {
+        id: "craft",
+        label: "職人アシスト",
+        memo: "装備を1つ選び、素材・原価・利益計算が表示されるか確認する",
+      },
+      {
+        id: "bazaar",
+        label: "バザー価格",
+        memo: "素材カード、公式相場リンク、グラフが表示されるか確認する",
+      },
+      {
+        id: "favorites",
+        label: "お気に入り",
+        memo: "登録済み項目が残っているか、リンクで移動できるか確認する",
+      },
+      {
+        id: "field-farming",
+        label: "フィールド狩り",
+        memo: "魔因細胞向けモンスターが表示されるか確認する",
+      },
+      {
+        id: "present-codes",
+        label: "プレゼントのじゅもん",
+        memo: "じゅもん一覧と公式リンクが動くか確認する",
+      },
+      {
+        id: "monster",
+        label: "モンスター情報",
+        memo: "/monster/ を開き、カード・モーダル・検索が動くか確認する",
+      },
+      {
+        id: "equipment",
+        label: "装備情報",
+        memo: "/equipment/ を開き、ジャンル切替・検索・カード表示を確認する",
+      },
+      {
+        id: "orb",
+        label: "宝珠",
+        memo: "/orb/ を開き、カテゴリ切替・カード表示を確認する",
+      },
+      {
+        id: "memo",
+        label: "メモ",
+        memo: "メモボタンを押し、保存済みメモが開けるか確認する",
+      },
+      {
+        id: "search",
+        label: "検索",
+        memo: "右上検索で1件検索し、該当ページへ移動できるか確認する",
+      },
+      {
+        id: "nav-back",
+        label: "戻る/下部ナビ",
+        memo: "Web表示で下部ナビが1行、PWA表示で戻るが必要時だけ出るか確認する",
+      },
+      {
+        id: "mobile-check",
+        label: "スマホ表示",
+        memo: "iPhone等で主要ページを開き、崩れや重さがないか確認する",
+      },
+    ],
+  },
+  {
+    id: "weekly",
+    title: "週1チェックリスト",
+    resetLabel: "今週分をリセット",
+    periodType: "weekly",
+    items: [
+      { id: "csv-backup", label: "CSVバックアップ", memo: "data内のCSVをバックアップ保存する" },
+      {
+        id: "present-weekly-cleanup",
+        label: "プレゼントのじゅもん期限切れ整理",
+        memo: "期限切れ・間近のものを整理する",
+      },
+      {
+        id: "bazaar-monitoring-review",
+        label: "バザー監視対象見直し",
+        memo: "更新対象に追加/除外すべき素材がないか確認する",
+      },
+      {
+        id: "paused-review",
+        label: "更新停止中リスト見直し",
+        memo: "固定価格・店売り商品が正しく停止中に入っているか確認する",
+      },
+      {
+        id: "entry-url-review",
+        label: "入口URL確認",
+        memo: "/bazaar/ /craft/ /monster/ /equipment/ /orb/ が開くか確認する",
+      },
+      {
+        id: "weekly-official-review",
+        label: "公式アップデート情報確認",
+        memo: "新素材・新装備・新モンスター追加がないか確認する",
+      },
+    ],
+  },
+  {
+    id: "monthly",
+    title: "月1チェックリスト",
+    resetLabel: "今月分をリセット",
+    periodType: "monthly",
+    items: [
+      {
+        id: "monthly-graph",
+        label: "月別グラフ確認",
+        memo: "月初に前月・今月のグラフが正しく切り替わるか確認する",
+      },
+      {
+        id: "monthly-history",
+        label: "月初履歴データ確認",
+        memo: "bazaar_prices_history.csv に新しい月のデータが保存されているか確認する",
+      },
+      {
+        id: "history-policy",
+        label: "古いデータ整理方針確認",
+        memo: "履歴CSVが重くなっていないか確認する",
+      },
+      {
+        id: "seo-entry-review",
+        label: "SEO入口ページ確認",
+        memo: "主要入口URLとタイトル表示を確認する",
+      },
+      {
+        id: "moneymaking-ideas",
+        label: "金策項目追加候補確認",
+        memo: "フィールド狩り以外に追加する金策候補をメモする",
+      },
+      {
+        id: "request-backlog",
+        label: "不具合・要望の棚卸し",
+        memo: "溜まった要望を分類し、対応する/保留するを決める",
+      },
+    ],
+  },
+]);
 const ADMIN_MODE_STORAGE_KEY = "dq10_toolweb_admin_mode_v1";
 const ADMIN_PIN = "1010";
 const CONTENT_DEFINITIONS = [
@@ -1015,6 +1217,138 @@ function saveMemoEntries() {
   );
 }
 
+function getChecklistPeriodToken(periodType, date = new Date()) {
+  const year = date.getFullYear();
+  const month = `${date.getMonth() + 1}`.padStart(2, "0");
+  const day = `${date.getDate()}`.padStart(2, "0");
+  if (periodType === "daily") {
+    return `${year}-${month}-${day}`;
+  }
+  if (periodType === "monthly") {
+    return `${year}-${month}`;
+  }
+  const normalizedDate = new Date(date);
+  normalizedDate.setHours(0, 0, 0, 0);
+  const weekday = normalizedDate.getDay() || 7;
+  normalizedDate.setDate(normalizedDate.getDate() + 4 - weekday);
+  const weekYear = normalizedDate.getFullYear();
+  const yearStart = new Date(weekYear, 0, 1);
+  const weekNumber = Math.ceil((((normalizedDate - yearStart) / 86400000) + 1) / 7);
+  return `${weekYear}-W${String(weekNumber).padStart(2, "0")}`;
+}
+
+function getChecklistPeriodLabel(group, token) {
+  if (!token) return "";
+  if (group.periodType === "daily") return `対象日: ${token}`;
+  if (group.periodType === "monthly") return `対象月: ${token}`;
+  return `対象週: ${token}`;
+}
+
+function saveAdminChecklistState() {
+  try {
+    localStorage.setItem(ADMIN_CHECKLIST_STORAGE_KEY, JSON.stringify(adminChecklistState));
+  } catch (error) {
+    console.warn("運用チェックリストの保存に失敗しました", error);
+  }
+}
+
+function setAdminChecklistStatus(message) {
+  if (!adminChecklistStatus) return;
+  adminChecklistStatus.textContent = message || "";
+}
+
+function loadAdminChecklistState() {
+  try {
+    const raw = localStorage.getItem(ADMIN_CHECKLIST_STORAGE_KEY);
+    const parsed = raw ? JSON.parse(raw) : {};
+    adminChecklistState = parsed && typeof parsed === "object" ? parsed : {};
+  } catch (error) {
+    console.warn("運用チェックリストの読込に失敗しました", error);
+    adminChecklistState = {};
+  }
+}
+
+function ensureAdminChecklistGroupState(groupId) {
+  const group = ADMIN_CHECKLIST_GROUPS.find((entry) => entry.id === groupId);
+  if (!group) return null;
+  const token = getChecklistPeriodToken(group.periodType);
+  const current = adminChecklistState[groupId];
+  if (!current || typeof current !== "object") {
+    adminChecklistState[groupId] = { token, checked: {} };
+    return adminChecklistState[groupId];
+  }
+  if (!current.checked || typeof current.checked !== "object") {
+    current.checked = {};
+  }
+  if (typeof current.token !== "string" || current.token === "") {
+    current.token = token;
+  }
+  return current;
+}
+
+function resetAdminChecklistGroup(groupId) {
+  const group = ADMIN_CHECKLIST_GROUPS.find((entry) => entry.id === groupId);
+  if (!group) return;
+  adminChecklistState[groupId] = {
+    token: getChecklistPeriodToken(group.periodType),
+    checked: {},
+  };
+  saveAdminChecklistState();
+  renderAdminChecklist();
+  setAdminChecklistStatus(`${group.title} をリセットしました。`);
+}
+
+function toggleAdminChecklistItem(groupId, itemId, checked) {
+  const groupState = ensureAdminChecklistGroupState(groupId);
+  if (!groupState) return;
+  groupState.checked[itemId] = Boolean(checked);
+  saveAdminChecklistState();
+}
+
+function renderAdminChecklist() {
+  if (!adminChecklistWrap) return;
+  const html = ADMIN_CHECKLIST_GROUPS.map((group) => {
+    const groupState = ensureAdminChecklistGroupState(group.id);
+    const token = groupState?.token || getChecklistPeriodToken(group.periodType);
+    const checkedCount = group.items.filter((item) => Boolean(groupState?.checked?.[item.id])).length;
+    return `<section class="admin-checklist-group">
+      <div class="admin-checklist-group-header">
+        <div>
+          <h4>${escapeHtml(group.title)}</h4>
+          <p class="admin-checklist-period">${escapeHtml(getChecklistPeriodLabel(group, token))}</p>
+        </div>
+        <div class="admin-checklist-group-actions">
+          <span class="admin-checklist-progress">${checkedCount}/${group.items.length}</span>
+          <button type="button" class="admin-checklist-reset-button" data-admin-checklist-reset="${escapeHtml(group.id)}">${escapeHtml(
+            group.resetLabel
+          )}</button>
+        </div>
+      </div>
+      <div class="admin-checklist-items">
+        ${group.items
+          .map((item) => {
+            const inputId = `admin-checklist-${group.id}-${item.id}`;
+            return `<label class="admin-checklist-item" for="${escapeHtml(inputId)}">
+              <input
+                id="${escapeHtml(inputId)}"
+                type="checkbox"
+                data-admin-checklist-group="${escapeHtml(group.id)}"
+                data-admin-checklist-item="${escapeHtml(item.id)}"
+                ${groupState?.checked?.[item.id] ? "checked" : ""}
+              />
+              <span class="admin-checklist-item-body">
+                <span class="admin-checklist-item-label">${escapeHtml(item.label)}</span>
+                <span class="admin-checklist-item-memo">※ やり方: ${escapeHtml(item.memo)}</span>
+              </span>
+            </label>`;
+          })
+          .join("")}
+      </div>
+    </section>`;
+  }).join("");
+  adminChecklistWrap.innerHTML = html;
+}
+
 function rebuildMemoEntryIdSet() {
   memoEntryIdSet = new Set((memoEntries || []).map((memo) => String(memo?.id || "")).filter((id) => id !== ""));
 }
@@ -1198,6 +1532,7 @@ let bazaarAdminAutoOpenNextUrlAfterUpdate = false;
 let bazaarAdminAutoScrollNextRowAfterUpdate = true;
 const bazaarAdminAutoAdvanceDelayMs = 400;
 let bazaarAdminAutoUpdateTimerByRowId = new Map();
+let adminChecklistState = {};
 let craftIdealValuesLoadingPromise = null;
 let selectedFieldFarmingSort = "normal_desc";
 let activeFieldFarmingMapModalRowId = "";
@@ -1387,6 +1722,8 @@ const bazaarAdminUpdateAllButton = getRequiredElementById("bazaarAdminUpdateAllB
 const bazaarAdminDownloadButton = getRequiredElementById("bazaarAdminDownloadButton");
 const bazaarAdminMessage = getRequiredElementById("bazaarAdminMessage");
 const bazaarAdminListWrap = getRequiredElementById("bazaarAdminListWrap");
+const adminChecklistWrap = getRequiredElementById("adminChecklistWrap");
+const adminChecklistStatus = getRequiredElementById("adminChecklistStatus");
 
 const perCraftToolCostEl = getRequiredElementById("perCraftToolCost");
 const totalMaterialCostEl = getRequiredElementById("totalMaterialCost");
@@ -2200,6 +2537,7 @@ function getBazaarAdminNoNextRowMessage() {
 
 function renderBazaarAdminPanel() {
   if (!bazaarAdminListWrap || !bazaarAdminCategorySelect) return;
+  renderAdminChecklist();
   if (!bazaarAdminCsvModel) {
     bazaarAdminListWrap.innerHTML = "<p>管理CSVを読み込めていません。</p>";
     updateBazaarAdminActionButtons();
@@ -9972,6 +10310,27 @@ if (memoDockButton) {
   });
 }
 
+if (adminChecklistWrap) {
+  adminChecklistWrap.addEventListener("change", (event) => {
+    const target = event.target;
+    if (!(target instanceof HTMLInputElement)) return;
+    const groupId = String(target.dataset.adminChecklistGroup || "");
+    const itemId = String(target.dataset.adminChecklistItem || "");
+    if (!groupId || !itemId) return;
+    toggleAdminChecklistItem(groupId, itemId, target.checked);
+    renderAdminChecklist();
+    setAdminChecklistStatus("チェック状態を保存しました。");
+  });
+
+  adminChecklistWrap.addEventListener("click", (event) => {
+    const target = event.target;
+    if (!(target instanceof HTMLElement)) return;
+    const resetButton = target.closest("[data-admin-checklist-reset]");
+    if (!(resetButton instanceof HTMLElement)) return;
+    resetAdminChecklistGroup(String(resetButton.dataset.adminChecklistReset || ""));
+  });
+}
+
 if (historyBackButton) {
   historyBackButton.addEventListener("click", () => {
     handleHistoryBackNavigation();
@@ -10194,9 +10553,11 @@ async function initialize() {
   renderContentEditorPanel();
   setContentEditModeEnabled(false);
   setAdminModeEnabled(isAdminModeEnabled);
+  loadAdminChecklistState();
   memoEntries = loadMemoEntries();
   rebuildMemoEntryIdSet();
   renderMemoList();
+  renderAdminChecklist();
 
   try {
     topUpdates = await loadTopUpdates();
