@@ -591,6 +591,7 @@
 
       <section id="bazaar-admin" class="tab-content" aria-label="バザー価格更新管理画面">
         <h2>バザー価格更新（管理）</h2>
+        <div class="bazaar-admin-layout">
         <div class="card bazaar-admin-panel">
           <p class="helper-text">
             ※ comment に「固定価格」「現在固定」「店売り価格固定」を含む素材は自動更新対象から除外します。更新は手動補助型です。公式ページを開いて出品情報テキストを貼り付けてから「この行を更新」を押してください。
@@ -614,7 +615,7 @@
           <p id="bazaarAdminMessage" class="helper-text" aria-live="polite"></p>
           <div id="bazaarAdminListWrap" class="bazaar-admin-list-wrap"></div>
         </div>
-        <section class="card admin-checklist-panel" aria-labelledby="adminChecklistHeading">
+        <aside class="card admin-checklist-panel" aria-labelledby="adminChecklistHeading">
           <div class="card-header-inline admin-checklist-header">
             <div>
               <h3 id="adminChecklistHeading">運用チェックリスト</h3>
@@ -625,7 +626,8 @@
           </div>
           <p id="adminChecklistStatus" class="helper-text" aria-live="polite"></p>
           <div id="adminChecklistWrap" class="admin-checklist-wrap"></div>
-        </section>
+        </aside>
+        </div>
       </section>
 
       <section id="favorites" class="tab-content" aria-label="お気に入り一覧画面">

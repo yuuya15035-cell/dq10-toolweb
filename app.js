@@ -1244,6 +1244,26 @@ function getChecklistPeriodLabel(group, token) {
   return `対象週: ${token}`;
 }
 
+function formatChecklistDateLabel(date) {
+  const year = date.getFullYear();
+  const month = date.getMonth() + 1;
+  const day = date.getDate();
+  return `${year}/${month}/${day}`;
+}
+
+function getChecklistDeadlineLabel(group, date = new Date()) {
+  if (group.periodType === "daily") {
+    return `※${formatChecklistDateLabel(date)}中チェック`;
+  }
+  if (group.periodType === "monthly") {
+    return `※${date.getFullYear()}/${date.getMonth() + 1}月中チェック`;
+  }
+  const deadline = new Date(date);
+  const daysUntilSunday = (7 - deadline.getDay()) % 7 || 7;
+  deadline.setDate(deadline.getDate() + daysUntilSunday);
+  return `※${formatChecklistDateLabel(deadline)}中チェック`;
+}
+
 function saveAdminChecklistState() {
   try {
     localStorage.setItem(ADMIN_CHECKLIST_STORAGE_KEY, JSON.stringify(adminChecklistState));
@@ -1274,14 +1294,21 @@ function ensureAdminChecklistGroupState(groupId) {
   const token = getChecklistPeriodToken(group.periodType);
   const current = adminChecklistState[groupId];
   if (!current || typeof current !== "object") {
-    adminChecklistState[groupId] = { token, checked: {} };
+    adminChecklistState[groupId] = { token, checked: {}, isOpen: false };
     return adminChecklistState[groupId];
   }
   if (!current.checked || typeof current.checked !== "object") {
     current.checked = {};
   }
+  if (typeof current.isOpen !== "boolean") {
+    current.isOpen = false;
+  }
   if (typeof current.token !== "string" || current.token === "") {
     current.token = token;
+  } else if (current.token !== token) {
+    current.token = token;
+    current.checked = {};
+    current.isOpen = false;
   }
   return current;
 }
@@ -1292,6 +1319,7 @@ function resetAdminChecklistGroup(groupId) {
   adminChecklistState[groupId] = {
     token: getChecklistPeriodToken(group.periodType),
     checked: {},
+    isOpen: false,
   };
   saveAdminChecklistState();
   renderAdminChecklist();
@@ -1305,26 +1333,46 @@ function toggleAdminChecklistItem(groupId, itemId, checked) {
   saveAdminChecklistState();
 }
 
+function toggleAdminChecklistGroup(groupId) {
+  const groupState = ensureAdminChecklistGroupState(groupId);
+  if (!groupState) return;
+  groupState.isOpen = !groupState.isOpen;
+  saveAdminChecklistState();
+}
+
 function renderAdminChecklist() {
   if (!adminChecklistWrap) return;
   const html = ADMIN_CHECKLIST_GROUPS.map((group) => {
     const groupState = ensureAdminChecklistGroupState(group.id);
+    const isOpen = Boolean(groupState?.isOpen);
     const token = groupState?.token || getChecklistPeriodToken(group.periodType);
     const checkedCount = group.items.filter((item) => Boolean(groupState?.checked?.[item.id])).length;
+    const isComplete = checkedCount === group.items.length;
+    const statusLabel = isComplete ? "チェック済み" : getChecklistDeadlineLabel(group);
     return `<section class="admin-checklist-group">
       <div class="admin-checklist-group-header">
-        <div>
+        <button
+          type="button"
+          class="admin-checklist-toggle-button"
+          data-admin-checklist-toggle="${escapeHtml(group.id)}"
+          aria-expanded="${isOpen ? "true" : "false"}"
+        >
+          <div class="admin-checklist-toggle-copy">
           <h4>${escapeHtml(group.title)}</h4>
           <p class="admin-checklist-period">${escapeHtml(getChecklistPeriodLabel(group, token))}</p>
-        </div>
+          </div>
+          <div class="admin-checklist-toggle-summary">
+            <span class="admin-checklist-deadline ${isComplete ? "is-complete" : ""}">${escapeHtml(statusLabel)}</span>
+            <span class="admin-checklist-progress">${checkedCount}/${group.items.length}</span>
+          </div>
+        </button>
         <div class="admin-checklist-group-actions">
-          <span class="admin-checklist-progress">${checkedCount}/${group.items.length}</span>
           <button type="button" class="admin-checklist-reset-button" data-admin-checklist-reset="${escapeHtml(group.id)}">${escapeHtml(
             group.resetLabel
           )}</button>
         </div>
       </div>
-      <div class="admin-checklist-items">
+      <div class="admin-checklist-items" ${isOpen ? "" : "hidden"}>
         ${group.items
           .map((item) => {
             const inputId = `admin-checklist-${group.id}-${item.id}`;
@@ -10325,6 +10373,12 @@ if (adminChecklistWrap) {
   adminChecklistWrap.addEventListener("click", (event) => {
     const target = event.target;
     if (!(target instanceof HTMLElement)) return;
+    const toggleButton = target.closest("[data-admin-checklist-toggle]");
+    if (toggleButton instanceof HTMLElement) {
+      toggleAdminChecklistGroup(String(toggleButton.dataset.adminChecklistToggle || ""));
+      renderAdminChecklist();
+      return;
+    }
     const resetButton = target.closest("[data-admin-checklist-reset]");
     if (!(resetButton instanceof HTMLElement)) return;
     resetAdminChecklistGroup(String(resetButton.dataset.adminChecklistReset || ""));

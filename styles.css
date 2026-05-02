@@ -5265,6 +5265,11 @@ body.memo-panel-open {
   background: #f6efe8;
 }
 
+.bazaar-admin-layout {
+  display: grid;
+  gap: 12px;
+}
+
 .bazaar-admin-panel {
   display: grid;
   gap: 10px;
@@ -5401,9 +5406,9 @@ body.memo-panel-open {
 }
 
 .admin-checklist-panel {
-  margin-top: 10px;
   display: grid;
   gap: 10px;
+  align-self: start;
 }
 
 .admin-checklist-header {
@@ -5441,10 +5446,53 @@ body.memo-panel-open {
   font-size: 1rem;
 }
 
+.admin-checklist-toggle-button {
+  width: 100%;
+  border: 0;
+  padding: 0;
+  background: transparent;
+  display: flex;
+  align-items: start;
+  justify-content: space-between;
+  gap: 10px;
+  text-align: left;
+  color: inherit;
+}
+
+.admin-checklist-toggle-copy {
+  min-width: 0;
+}
+
+.admin-checklist-toggle-summary {
+  display: grid;
+  gap: 6px;
+  justify-items: end;
+  flex-shrink: 0;
+}
+
 .admin-checklist-period {
   margin: 4px 0 0;
   font-size: 0.78rem;
   color: #6f5741;
+}
+
+.admin-checklist-deadline {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 28px;
+  padding: 4px 8px;
+  border-radius: 999px;
+  background: #f6ecdf;
+  color: #664830;
+  font-size: 0.74rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.admin-checklist-deadline.is-complete {
+  background: #e3f1e2;
+  color: #2f6b39;
 }
 
 .admin-checklist-group-actions {
@@ -5452,6 +5500,7 @@ body.memo-panel-open {
   flex-wrap: wrap;
   gap: 8px;
   align-items: center;
+  justify-content: flex-end;
 }
 
 .admin-checklist-progress {
@@ -5477,6 +5526,10 @@ body.memo-panel-open {
 .admin-checklist-items {
   display: grid;
   gap: 8px;
+}
+
+.admin-checklist-items[hidden] {
+  display: none;
 }
 
 .admin-checklist-item {
@@ -5514,6 +5567,18 @@ body.memo-panel-open {
 }
 
 @media (min-width: 900px) {
+  .bazaar-admin-layout {
+    grid-template-columns: minmax(0, 1fr) 320px;
+    align-items: start;
+  }
+
+  .admin-checklist-panel {
+    position: sticky;
+    top: 84px;
+    max-height: calc(100vh - 96px);
+    overflow: auto;
+  }
+
   .equipment-type-icon {
     width: 18px;
     height: 18px;
@@ -5579,12 +5644,25 @@ body.memo-panel-open {
 }
 
 @media (max-width: 699px) {
+  .bazaar-admin-layout {
+    gap: 10px;
+  }
+
   .admin-checklist-group {
     padding: 9px;
   }
 
   .admin-checklist-group-header {
     flex-direction: column;
+  }
+
+  .admin-checklist-toggle-button {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .admin-checklist-toggle-summary {
+    justify-items: start;
   }
 
   .admin-checklist-group-actions {
