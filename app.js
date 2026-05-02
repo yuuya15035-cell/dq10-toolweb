@@ -1126,6 +1126,7 @@ let equipmentDbWeaponEntryByName = new Map();
 let selectedEquipmentDbGroup = "weapon";
 let selectedEquipmentDbSort = "level_desc";
 let selectedEquipmentDbType = "";
+let isEquipmentDbTypeExplicitAll = false;
 let equipmentDbNameKeyword = "";
 let equipmentDbMonsterKeyword = "";
 let expandedEquipmentDbId = "";
@@ -4074,7 +4075,7 @@ function updateEquipmentDbClearButtonVisibility() {
   const hasNameSearch = String(equipmentDbNameKeyword || "").trim() !== "";
   const hasMonsterSearch = String(equipmentDbMonsterKeyword || "").trim() !== "";
   const hasSortFilter = selectedEquipmentDbSort !== "level_desc";
-  const hasTypeFilter = String(selectedEquipmentDbType || "") !== getDefaultEquipmentDbType(selectedEquipmentDbGroup);
+  const hasTypeFilter = isEquipmentDbTypeExplicitAll || String(selectedEquipmentDbType || "") !== getDefaultEquipmentDbType(selectedEquipmentDbGroup);
   equipmentDbClearFiltersButton.hidden = !(hasNameSearch || hasMonsterSearch || hasSortFilter || hasTypeFilter);
 }
 
@@ -4083,6 +4084,7 @@ function clearEquipmentDbFilters() {
   selectedEquipmentDbGroup = "weapon";
   selectedEquipmentDbSort = "level_desc";
   selectedEquipmentDbType = "";
+  isEquipmentDbTypeExplicitAll = false;
   equipmentDbNameKeyword = "";
   equipmentDbMonsterKeyword = "";
   expandedEquipmentDbId = "";
@@ -4101,10 +4103,10 @@ function clearEquipmentDbFilters() {
 function getFilteredEquipmentDbEntries() {
   const normalizedKeyword = String(equipmentDbNameKeyword || "").trim().toLowerCase();
   const normalizedMonsterKeyword = String(equipmentDbMonsterKeyword || "").trim().toLowerCase();
-  const shouldBypassTypeFilter = normalizedKeyword !== "";
+  const hasCrossSearch = normalizedKeyword !== "" || normalizedMonsterKeyword !== "";
   return (equipmentDbEntries || [])
-    .filter((entry) => String(entry.equipmentGroup || "weapon") === selectedEquipmentDbGroup)
-    .filter((entry) => (shouldBypassTypeFilter || selectedEquipmentDbType === "" ? true : String(entry.equipmentType || "") === selectedEquipmentDbType))
+    .filter((entry) => (hasCrossSearch ? true : String(entry.equipmentGroup || "weapon") === selectedEquipmentDbGroup))
+    .filter((entry) => (hasCrossSearch || selectedEquipmentDbType === "" ? true : String(entry.equipmentType || "") === selectedEquipmentDbType))
     .filter((entry) => {
       if (normalizedKeyword === "") return true;
       const equipmentName = String(entry.equipmentName || "").toLowerCase();
@@ -4119,6 +4121,17 @@ function getFilteredEquipmentDbEntries() {
       );
     })
     .sort(compareEquipmentDbEntries);
+}
+
+function resetEquipmentDbTypeToDefaultIfNeeded() {
+  if (selectedEquipmentDbGroup === "armor") {
+    selectedEquipmentDbType = "";
+    isEquipmentDbTypeExplicitAll = false;
+    return;
+  }
+  if (selectedEquipmentDbType === "" && !isEquipmentDbTypeExplicitAll) {
+    selectedEquipmentDbType = getDefaultEquipmentDbType(selectedEquipmentDbGroup);
+  }
 }
 
 function buildEquipmentDbStatsHtml(entry) {
@@ -4352,10 +4365,9 @@ function renderEquipmentDbCards() {
 
   if (isArmorGroup || (selectedEquipmentDbType !== "" && !types.includes(selectedEquipmentDbType))) {
     selectedEquipmentDbType = "";
+    isEquipmentDbTypeExplicitAll = false;
   }
-  if (!isArmorGroup && selectedEquipmentDbType === "") {
-    selectedEquipmentDbType = getDefaultEquipmentDbType(selectedEquipmentDbGroup);
-  }
+  resetEquipmentDbTypeToDefaultIfNeeded();
   if (equipmentDbTypeFilterField) {
     equipmentDbTypeFilterField.hidden = isArmorGroup;
   }
@@ -6091,6 +6103,7 @@ function applySiteSearchNavigation(entry) {
   if (entry.tabId === "equipment-db") {
     selectedEquipmentDbGroup = String(entry.equipmentGroup || "weapon") === "armor" ? "armor" : "weapon";
     selectedEquipmentDbType = "";
+    isEquipmentDbTypeExplicitAll = false;
     expandedEquipmentDbId = "";
     equipmentDbNameKeyword = keyword;
     switchTab("equipment-db");
@@ -7392,7 +7405,6 @@ function applyAppRouteFromUrl() {
   const equipmentSearchParam = String(params.get("equipmentSearch") || "").trim();
   if (equipmentSearchParam) {
     equipmentDbNameKeyword = equipmentSearchParam;
-    selectedEquipmentDbType = "";
   } else if (tab === "equipment-db") {
     equipmentDbNameKeyword = "";
   }
@@ -9814,6 +9826,7 @@ if (equipmentDbSortSelect) {
 if (equipmentDbTypeFilterSelect) {
   equipmentDbTypeFilterSelect.addEventListener("change", (event) => {
     selectedEquipmentDbType = String(event.target.value || "");
+    isEquipmentDbTypeExplicitAll = selectedEquipmentDbType === "";
     renderEquipmentDbCards();
   });
 }
@@ -9821,9 +9834,6 @@ if (equipmentDbTypeFilterSelect) {
 if (equipmentDbNameSearchInput) {
   equipmentDbNameSearchInput.addEventListener("input", (event) => {
     equipmentDbNameKeyword = String(event.target.value || "");
-    if (equipmentDbNameKeyword.trim() !== "") {
-      selectedEquipmentDbType = "";
-    }
     renderEquipmentDbCards();
   });
 }
@@ -10155,6 +10165,7 @@ equipmentDbGroupTabButtons.forEach((button) => {
     const nextGroup = String(button.dataset.equipmentDbGroup || "weapon");
     selectedEquipmentDbGroup = nextGroup === "armor" ? "armor" : "weapon";
     selectedEquipmentDbType = "";
+    isEquipmentDbTypeExplicitAll = false;
     expandedEquipmentDbId = "";
     navigateByAppParams({ equipmentDbGroup: selectedEquipmentDbGroup });
     renderEquipmentDbCards();
