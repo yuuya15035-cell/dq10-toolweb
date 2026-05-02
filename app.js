@@ -53,6 +53,14 @@ const ENTRY_ROUTE_SEGMENT_TO_TAB = Object.freeze({
   favorites: "favorites",
   whitebox: "equipment-db",
 });
+const LEGACY_QUERY_TAB_ALIASES = Object.freeze({
+  craft: "profit",
+  monster: "monster-info",
+  equipment: "equipment-db",
+  orb: "orbs",
+  whitebox: "equipment-db",
+  "white-boxes": "equipment-db",
+});
 const ENTRY_ROUTE_TAB_TO_SEGMENT = new Map();
 Object.entries(ENTRY_ROUTE_SEGMENT_TO_TAB).forEach(([segment, tab]) => {
   if (!ENTRY_ROUTE_TAB_TO_SEGMENT.has(tab)) {
@@ -266,14 +274,7 @@ function resolveProjectScopedAssetUrl(path) {
   if (/^(?:[a-z]+:)?\/\//i.test(path) || path.startsWith("data:") || path.startsWith("blob:")) {
     return path;
   }
-  if (!path.startsWith("/")) return path;
-
-  const projectBasePath = getProjectBasePath();
-
-  if (!projectBasePath || path.startsWith(`${projectBasePath}/`)) {
-    return path;
-  }
-  return `${projectBasePath}${path}`;
+  return resolveProjectScopedResourceUrl(path);
 }
 
 function getNormalizedPathname(pathname = window.location.pathname || "/") {
@@ -292,6 +293,24 @@ function getProjectBasePath(pathname = window.location.pathname || "/") {
 
 function getProjectRootPath(pathname = window.location.pathname || "/") {
   return `${getProjectBasePath(pathname)}/`;
+}
+
+function resolveProjectScopedResourceUrl(path) {
+  if (!path) return "";
+  if (/^(?:[a-z]+:)?\/\//i.test(path) || path.startsWith("data:") || path.startsWith("blob:")) {
+    return path;
+  }
+
+  const projectBasePath = getProjectBasePath();
+  if (path.startsWith("/")) {
+    if (!projectBasePath || path.startsWith(`${projectBasePath}/`)) {
+      return path;
+    }
+    return `${projectBasePath}${path}`;
+  }
+
+  const sanitizedPath = String(path).replace(/^\.\//, "");
+  return `${getProjectRootPath()}${sanitizedPath}`;
 }
 
 function getEntryRouteContext(pathname = window.location.pathname || "/") {
@@ -322,6 +341,9 @@ function resolveRouteTabFromLocation() {
   const queryTab = String(params.get("tab") || "").trim();
   if (TAB_IDS.has(queryTab)) {
     return queryTab;
+  }
+  if (Object.prototype.hasOwnProperty.call(LEGACY_QUERY_TAB_ALIASES, queryTab)) {
+    return LEGACY_QUERY_TAB_ALIASES[queryTab];
   }
   return String(getEntryRouteContext()?.tab || "");
 }
@@ -484,10 +506,11 @@ function parseEquipmentLevel(value) {
 }
 
 async function fetchCsvLines(path) {
-  const response = await fetch(path);
+  const resolvedPath = resolveProjectScopedResourceUrl(path);
+  const response = await fetch(resolvedPath);
   if (!response.ok) {
-    console.error(`[CSV] fetch failed: path=${path}, status=${response.status}`);
-    throw new Error(`CSVの読み込みに失敗しました: ${path} (${response.status})`);
+    console.error(`[CSV] fetch failed: path=${resolvedPath}, original=${path}, status=${response.status}`);
+    throw new Error(`CSVの読み込みに失敗しました: ${resolvedPath} (${response.status})`);
   }
   const bytes = new Uint8Array(await response.arrayBuffer());
   const csvText = decodeCsvText(path, bytes);
@@ -719,9 +742,10 @@ async function loadCraftIdealValuesCsv() {
 }
 
 async function loadTopUpdates() {
-  const response = await fetch(UPDATES_JSON_PATH, { cache: "no-store" });
+  const resolvedPath = resolveProjectScopedResourceUrl(UPDATES_JSON_PATH);
+  const response = await fetch(resolvedPath, { cache: "no-store" });
   if (!response.ok) {
-    throw new Error(`updates.json の読み込みに失敗しました: ${response.status}`);
+    throw new Error(`updates.json の読み込みに失敗しました: ${resolvedPath} (${response.status})`);
   }
   const parsed = await response.json();
   if (!Array.isArray(parsed)) return [];
@@ -3745,7 +3769,7 @@ function prefetchDataForTab(tabId) {
 function getFilteredMonsterDetailEntries() {
   const keyword = normalizeSearchKeyword(monsterInfoSearchKeyword);
   return monsterDetailEntries.filter((entry) => {
-    if (selectedMonsterInfoType && entry.type !== selectedMonsterInfoType) return false;
+    if (!keyword && selectedMonsterInfoType && entry.type !== selectedMonsterInfoType) return false;
     if (!keyword) return true;
     return entry.searchText.includes(keyword);
   });
@@ -3812,8 +3836,8 @@ function clearMonsterInfoFilters() {
   selectedMonsterInfoType = "";
   selectedMonsterInfoSort = "exp_asc";
   activeMonsterInfoId = "";
-  keepMonsterInfoTypeCleared = true;
-  navigateByAppParams({ tab: "monster-info", monsterSearch: "", equipmentId: "", materialKey: "" });
+  keepMonsterInfoTypeCleared = false;
+  navigateByFeatureRoute({ tab: "monster-info", monsterSearch: "", equipmentId: "", materialKey: "" });
   renderMonsterInfoCards();
 }
 
@@ -4006,15 +4030,17 @@ function updateEquipmentDbClearButtonVisibility() {
 
 function clearEquipmentDbFilters() {
   closeArmorSetDetailModal();
+  selectedEquipmentDbGroup = "weapon";
   selectedEquipmentDbSort = "level_desc";
   selectedEquipmentDbType = "";
   equipmentDbNameKeyword = "";
   equipmentDbMonsterKeyword = "";
   expandedEquipmentDbId = "";
-  navigateByAppParams({
+  navigateByFeatureRoute({
     tab: "equipment-db",
     equipmentId: "",
     materialKey: "",
+    equipmentSearch: "",
     orbSearch: "",
     monsterSearch: "",
     equipmentDbGroup: selectedEquipmentDbGroup,
@@ -4025,9 +4051,10 @@ function clearEquipmentDbFilters() {
 function getFilteredEquipmentDbEntries() {
   const normalizedKeyword = String(equipmentDbNameKeyword || "").trim().toLowerCase();
   const normalizedMonsterKeyword = String(equipmentDbMonsterKeyword || "").trim().toLowerCase();
+  const shouldBypassTypeFilter = normalizedKeyword !== "";
   return (equipmentDbEntries || [])
     .filter((entry) => String(entry.equipmentGroup || "weapon") === selectedEquipmentDbGroup)
-    .filter((entry) => (selectedEquipmentDbType === "" ? true : String(entry.equipmentType || "") === selectedEquipmentDbType))
+    .filter((entry) => (shouldBypassTypeFilter || selectedEquipmentDbType === "" ? true : String(entry.equipmentType || "") === selectedEquipmentDbType))
     .filter((entry) => {
       if (normalizedKeyword === "") return true;
       const equipmentName = String(entry.equipmentName || "").toLowerCase();
@@ -5376,7 +5403,7 @@ function formatPresentCodeReward(rewardText) {
 function getOrbFilteredRows() {
   const normalizedKeyword = String(orbSearchKeyword || "").trim().toLowerCase();
   return (orbEntries || []).filter((row) => {
-    if (selectedOrbCategory !== "" && normalizeOrbCategoryName(row.orbCategory) !== selectedOrbCategory) return false;
+    if (normalizedKeyword === "" && selectedOrbCategory !== "" && normalizeOrbCategoryName(row.orbCategory) !== selectedOrbCategory) return false;
     if (normalizedKeyword === "") return true;
     return [row.orbName, row.effect, row.monsterNames.join(" ")]
       .join(" ")
@@ -5404,8 +5431,8 @@ function clearOrbFilters() {
   orbSearchKeyword = "";
   selectedOrbCategory = "";
   expandedOrbId = "";
-  keepOrbCategoryCleared = true;
-  navigateByAppParams({ tab: "orbs", orbSearch: "", equipmentId: "", materialKey: "" });
+  keepOrbCategoryCleared = false;
+  navigateByFeatureRoute({ tab: "orbs", orbSearch: "", equipmentId: "", materialKey: "" });
   renderOrbCards();
 }
 
@@ -6688,7 +6715,8 @@ function normalizeUiSettings(rawSettings) {
 
 async function loadUiSettings() {
   try {
-    const response = await fetch(UI_SETTINGS_JSON_PATH, { cache: "no-store" });
+    const resolvedPath = resolveProjectScopedResourceUrl(UI_SETTINGS_JSON_PATH);
+    const response = await fetch(resolvedPath, { cache: "no-store" });
     if (!response.ok) throw new Error(`status=${response.status}`);
     const json = await response.json();
     uiSettings = normalizeUiSettings(json);
@@ -6802,7 +6830,8 @@ function normalizeContent(rawContent) {
 
 async function loadContentData() {
   try {
-    const response = await fetch(CONTENT_JSON_PATH, { cache: "no-store" });
+    const resolvedPath = resolveProjectScopedResourceUrl(CONTENT_JSON_PATH);
+    const response = await fetch(resolvedPath, { cache: "no-store" });
     if (!response.ok) throw new Error(`status=${response.status}`);
     const json = await response.json();
     const normalized = normalizeContent(json);
@@ -7089,9 +7118,11 @@ function buildAppQueryParams(nextValues = {}) {
   if (tab) params.set("tab", tab);
   if (nextValues.equipmentId) params.set("equipmentId", nextValues.equipmentId);
   if (nextValues.materialKey) params.set("materialKey", nextValues.materialKey);
+  if (nextValues.itemSearch) params.set("itemSearch", nextValues.itemSearch);
+  if (nextValues.equipmentSearch) params.set("equipmentSearch", nextValues.equipmentSearch);
   if (nextValues.orbSearch) params.set("orbSearch", nextValues.orbSearch);
   if (nextValues.monsterSearch) params.set("monsterSearch", nextValues.monsterSearch);
-  if (nextValues.equipmentDbGroup === "armor" || nextValues.equipmentDbGroup === "weapon") {
+  if (nextValues.equipmentDbGroup === "armor") {
     params.set("equipmentDbGroup", nextValues.equipmentDbGroup);
   }
   if (nextValues.profitEquipmentName) params.set("profitEquipmentName", nextValues.profitEquipmentName);
@@ -7186,16 +7217,45 @@ function applyAppRouteFromUrl() {
   const equipmentDbGroupParam = String(params.get("equipmentDbGroup") || "").trim();
   if (equipmentDbGroupParam === "armor" || equipmentDbGroupParam === "weapon") {
     selectedEquipmentDbGroup = equipmentDbGroupParam;
+  } else if (tab === "equipment-db") {
+    selectedEquipmentDbGroup = "weapon";
+    selectedEquipmentDbSort = "level_desc";
+    equipmentDbMonsterKeyword = "";
+    expandedEquipmentDbId = "";
+  }
+  const equipmentSearchParam = String(params.get("equipmentSearch") || "").trim();
+  if (equipmentSearchParam) {
+    equipmentDbNameKeyword = equipmentSearchParam;
+    selectedEquipmentDbType = "";
+  } else if (tab === "equipment-db") {
+    equipmentDbNameKeyword = "";
+  }
+  const itemSearchParam = String(params.get("itemSearch") || "").trim();
+  if (itemSearchParam) {
+    bazaarSearchText = itemSearchParam;
+    selectedBazaarMaterialName = itemSearchParam;
+  } else if (tab === "bazaar") {
+    bazaarSearchText = "";
+    selectedBazaarMaterialName = "";
   }
   const orbSearchParam = String(params.get("orbSearch") || "").trim();
   if (orbSearchParam) {
     orbSearchKeyword = orbSearchParam;
     selectedOrbCategory = "";
+  } else if (tab === "orbs") {
+    orbSearchKeyword = "";
+    selectedOrbCategory = "";
+    expandedOrbId = "";
   }
   const monsterSearchParam = String(params.get("monsterSearch") || "").trim();
   if (monsterSearchParam) {
     monsterInfoSearchKeyword = monsterSearchParam;
     selectedMonsterInfoType = "";
+  } else if (tab === "monster-info") {
+    monsterInfoSearchKeyword = "";
+    selectedMonsterInfoType = "";
+    selectedMonsterInfoSort = "exp_asc";
+    activeMonsterInfoId = "";
   }
 
   pendingBazaarFocusMaterialKey = String(params.get("materialKey") || "").trim();
@@ -7460,6 +7520,7 @@ if (monsterInfoSearchInput) {
   monsterInfoSearchInput.addEventListener("input", () => {
     monsterInfoSearchKeyword = monsterInfoSearchInput.value;
     if (String(monsterInfoSearchKeyword || "").trim() !== "") {
+      selectedMonsterInfoType = "";
       keepMonsterInfoTypeCleared = false;
     }
     renderMonsterInfoCards();
@@ -9513,6 +9574,7 @@ if (orbSearchInput) {
   orbSearchInput.addEventListener("input", (event) => {
     orbSearchKeyword = String(event.target.value || "");
     if (String(orbSearchKeyword || "").trim() !== "") {
+      selectedOrbCategory = "";
       keepOrbCategoryCleared = false;
     }
     renderOrbCards();
@@ -9587,6 +9649,9 @@ if (equipmentDbTypeFilterSelect) {
 if (equipmentDbNameSearchInput) {
   equipmentDbNameSearchInput.addEventListener("input", (event) => {
     equipmentDbNameKeyword = String(event.target.value || "");
+    if (equipmentDbNameKeyword.trim() !== "") {
+      selectedEquipmentDbType = "";
+    }
     renderEquipmentDbCards();
   });
 }
@@ -9992,6 +10057,8 @@ async function initialize() {
       tab: appMode === "tool" ? activeTabId : "",
       equipmentId: activeTabId === "profit" ? selectedEquipmentId : "",
       materialKey: activeTabId === "bazaar" ? pendingBazaarFocusMaterialKey : "",
+      itemSearch: activeTabId === "bazaar" ? bazaarSearchText : "",
+      equipmentSearch: activeTabId === "equipment-db" ? equipmentDbNameKeyword : "",
       orbSearch: activeTabId === "orbs" ? orbSearchKeyword : "",
       monsterSearch: activeTabId === "monster-info" ? monsterInfoSearchKeyword : "",
       equipmentDbGroup: activeTabId === "equipment-db" ? selectedEquipmentDbGroup : "",
