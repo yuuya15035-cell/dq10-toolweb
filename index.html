@@ -778,6 +778,10 @@
     </main>
 
     <nav class="mobile-bottom-nav" aria-label="下部ナビゲーション">
+      <button type="button" class="mobile-bottom-nav-item" data-bottom-nav-action="back" aria-label="戻る" hidden>
+        <span class="mobile-bottom-nav-icon" aria-hidden="true">←</span>
+        <span class="mobile-bottom-nav-label">戻る</span>
+      </button>
       <button type="button" class="mobile-bottom-nav-item" data-bottom-nav-action="home" aria-label="ホーム">
         <span class="mobile-bottom-nav-icon" aria-hidden="true">⌂</span>
         <span class="mobile-bottom-nav-label">ホーム</span>
@@ -815,7 +819,7 @@
       </div>
     </footer>
 
-    <div id="adminFab" class="admin-fab-wrap">
+    <div id="adminFab" class="admin-fab-wrap" hidden aria-hidden="true">
       <button id="adminFabToggleButton" class="admin-fab-button" type="button" aria-expanded="false" aria-controls="adminFabPanel">
         管理者メニュー
       </button>

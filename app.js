@@ -52,6 +52,7 @@ const ENTRY_ROUTE_SEGMENT_TO_TAB = Object.freeze({
   orb: "orbs",
   favorites: "favorites",
   whitebox: "equipment-db",
+  "admin-bazaar": "bazaar-admin",
 });
 const LEGACY_QUERY_TAB_ALIASES = Object.freeze({
   craft: "profit",
@@ -7001,6 +7002,51 @@ function setAdminModeEnabled(enabled) {
   if (adminPinGate) adminPinGate.hidden = enabled;
 }
 
+function isStandaloneDisplayMode() {
+  return (
+    (typeof window.matchMedia === "function" && window.matchMedia("(display-mode: standalone)").matches) ||
+    window.navigator.standalone === true
+  );
+}
+
+function isDirectBazaarAdminRoute() {
+  return String(getEntryRouteContext()?.routeSegment || "") === "admin-bazaar";
+}
+
+function canAccessAdminTab(tabId) {
+  if (tabId === "bazaar-admin") {
+    return isAdminModeEnabled || isDirectBazaarAdminRoute();
+  }
+  if (tabId === "ui-settings" || tabId === "content-editor" || tabId === "updates-editor") {
+    return isAdminModeEnabled;
+  }
+  return true;
+}
+
+function shouldUseBottomNavBackButton() {
+  return window.innerWidth < 700 && isStandaloneDisplayMode() && appMode !== "home";
+}
+
+function updateHistoryBackButtonVisibility() {
+  const bottomNavBackButton = mobileBottomNav?.querySelector('[data-bottom-nav-action="back"]');
+  const useBottomNavBackButton = shouldUseBottomNavBackButton();
+  if (historyBackButton) {
+    historyBackButton.hidden = useBottomNavBackButton;
+  }
+  if (bottomNavBackButton) {
+    bottomNavBackButton.hidden = !useBottomNavBackButton;
+  }
+  mobileBottomNav?.classList.toggle("has-back-slot", useBottomNavBackButton);
+}
+
+function handleHistoryBackNavigation() {
+  if (window.history.length > 1) {
+    window.history.back();
+    return;
+  }
+  switchToHomeMode();
+}
+
 function toggleAdminFabPanel() {
   if (!adminFabPanel || !adminFabToggleButton) return;
   const nextOpen = adminFabPanel.hidden;
@@ -7041,6 +7087,7 @@ function applyAppMode() {
   if (isHomeMode) {
     setMobileBottomNavHidden(false);
   }
+  updateHistoryBackButtonVisibility();
 }
 
 function clampNumber(value, min, max) {
@@ -7090,7 +7137,7 @@ function switchTab(target) {
       migratedTarget === "content-editor" ||
       migratedTarget === "updates-editor" ||
       migratedTarget === "bazaar-admin") &&
-    !isAdminModeEnabled
+    !canAccessAdminTab(migratedTarget)
       ? "profit"
       : migratedTarget;
   if (activeTabId === "favorites" && normalizedTarget !== "favorites") {
@@ -7319,6 +7366,7 @@ function updateMobileBottomNavState() {
       item.removeAttribute("aria-current");
     }
   });
+  updateHistoryBackButtonVisibility();
 }
 
 let lastScrollY = window.scrollY;
@@ -7656,6 +7704,11 @@ if (homeModeButton) {
 mobileBottomNavItems.forEach((item) => {
   item.addEventListener("click", () => {
     const action = String(item.dataset.bottomNavAction || "");
+    if (action === "back") {
+      handleHistoryBackNavigation();
+      setMenuOpen(false);
+      return;
+    }
     if (action === "home") {
       switchToHomeMode();
       setMenuOpen(false);
@@ -7677,6 +7730,7 @@ window.addEventListener("scroll", handleMobileBottomNavScroll, { passive: true }
 window.addEventListener("resize", () => {
   lastScrollY = window.scrollY;
   setMobileBottomNavHidden(false);
+  updateHistoryBackButtonVisibility();
 });
 
 if (uiSettingsControlList) {
@@ -9816,11 +9870,7 @@ if (memoDockButton) {
 
 if (historyBackButton) {
   historyBackButton.addEventListener("click", () => {
-    if (window.history.length > 1) {
-      window.history.back();
-      return;
-    }
-    switchToHomeMode();
+    handleHistoryBackNavigation();
   });
 }
 

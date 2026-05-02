@@ -4233,12 +4233,17 @@ button {
 }
 
 .history-back-button {
+  position: fixed;
+  left: 10px;
+  right: auto;
+  bottom: calc(var(--mobile-bottom-nav-height) + 16px + env(safe-area-inset-bottom));
   border: 1px solid #b7926d;
   border-radius: 999px;
   background: #fff5df;
   color: #5a3d25;
   font-weight: 800;
   box-shadow: 0 8px 18px rgba(35, 22, 10, 0.16);
+  z-index: 1250;
 }
 
 .memo-dock-button {
@@ -4505,6 +4510,10 @@ body.memo-panel-open {
   -webkit-backdrop-filter: blur(6px);
   box-shadow: 0 -2px 8px rgba(61, 39, 24, 0.12);
   transition: transform 0.2s ease, opacity 0.2s ease;
+}
+
+.mobile-bottom-nav.has-back-slot {
+  grid-template-columns: repeat(6, minmax(0, 1fr));
 }
 
 .mobile-bottom-nav.is-disabled {
@@ -5382,6 +5391,11 @@ body.memo-panel-open {
     right: 18px;
   }
 
+  .history-back-button {
+    left: 18px;
+    bottom: 18px;
+  }
+
   .memo-panel {
     bottom: 18px;
     right: 18px;
@@ -5430,10 +5444,6 @@ body.memo-panel-open {
 }
 
 @media (max-width: 640px) {
-  .admin-fab-wrap {
-    bottom: calc(var(--mobile-bottom-nav-height) + 16px + env(safe-area-inset-bottom));
-  }
-
   .history-back-button,
   .memo-dock-button {
     min-height: 44px;
