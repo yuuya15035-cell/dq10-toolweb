@@ -3601,6 +3601,10 @@ async function ensureMonsterInfoDataLoaded() {
 }
 
 function prefetchDataForTab(tabId) {
+  if (tabId === "profit") {
+    void ensureBazaarPricesLoaded();
+    return;
+  }
   if (tabId === "present-codes") {
     void ensurePresentCodesLoaded();
     return;
@@ -7918,6 +7922,7 @@ function applyProfitEquipmentSelection(equipmentId, options = {}) {
   const normalizedEquipmentId = String(equipmentId || "");
   selectedEquipmentId = normalizedEquipmentId;
   clearProfitArmorSetContext();
+  void ensureBazaarPricesLoaded();
   if (activeTabId === "profit") {
     navigateByAppParams({ tab: "profit", equipmentId: selectedEquipmentId, materialKey: "" });
   }
@@ -8592,32 +8597,18 @@ function renderToolSectionVisibility() {
 }
 
 function renderSearchFieldVisibility() {
-  const hasSelectedEquipment = Boolean(getSelectedEquipment());
-
   if (equipmentSearchField && equipmentSearchToggleButton) {
-    if (hasSelectedEquipment) {
-      equipmentSearchField.hidden = true;
-      equipmentSearchToggleButton.hidden = true;
-      equipmentSearchToggleButton.setAttribute("aria-expanded", "false");
-    } else {
-      equipmentSearchToggleButton.hidden = false;
-      equipmentSearchField.hidden = !isEquipmentSearchExpanded;
-      equipmentSearchToggleButton.setAttribute("aria-expanded", isEquipmentSearchExpanded ? "true" : "false");
-      equipmentSearchToggleButton.textContent = isEquipmentSearchExpanded ? "－ 装備名検索を閉じる" : "＋ 装備名で検索";
-    }
+    equipmentSearchToggleButton.hidden = false;
+    equipmentSearchField.hidden = !isEquipmentSearchExpanded;
+    equipmentSearchToggleButton.setAttribute("aria-expanded", isEquipmentSearchExpanded ? "true" : "false");
+    equipmentSearchToggleButton.textContent = isEquipmentSearchExpanded ? "－ 装備名検索を閉じる" : "＋ 装備名で検索";
   }
 
   if (materialSearchField && materialSearchToggleButton) {
-    if (hasSelectedEquipment) {
-      materialSearchField.hidden = true;
-      materialSearchToggleButton.hidden = true;
-      materialSearchToggleButton.setAttribute("aria-expanded", "false");
-    } else {
-      materialSearchToggleButton.hidden = false;
-      materialSearchField.hidden = !isMaterialSearchExpanded;
-      materialSearchToggleButton.setAttribute("aria-expanded", isMaterialSearchExpanded ? "true" : "false");
-      materialSearchToggleButton.textContent = isMaterialSearchExpanded ? "－ 素材検索を閉じる" : "＋ 素材で検索";
-    }
+    materialSearchToggleButton.hidden = false;
+    materialSearchField.hidden = !isMaterialSearchExpanded;
+    materialSearchToggleButton.setAttribute("aria-expanded", isMaterialSearchExpanded ? "true" : "false");
+    materialSearchToggleButton.textContent = isMaterialSearchExpanded ? "－ 素材検索を閉じる" : "＋ 素材で検索";
   }
 }
 
