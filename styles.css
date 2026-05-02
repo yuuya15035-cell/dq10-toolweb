@@ -1688,6 +1688,31 @@ button {
   grid-template-columns: 1fr;
 }
 
+.bazaar-paused-section {
+  margin-top: 10px;
+  padding: 10px 10px 8px;
+  border: 1px solid #cbc0b3;
+  border-radius: 12px;
+  background: linear-gradient(180deg, #f2efea 0%, #e6e0d7 100%);
+}
+
+.bazaar-paused-heading {
+  margin: 0 0 4px;
+  font-size: 0.94rem;
+  color: #554b42;
+}
+
+.bazaar-paused-note {
+  margin: 0 0 8px;
+  font-size: 0.74rem;
+  line-height: 1.4;
+  color: #6c6157;
+}
+
+.bazaar-list-paused {
+  gap: 6px;
+}
+
 .bazaar-control-wrap {
   margin-bottom: 8px;
   display: grid;
@@ -1812,6 +1837,12 @@ button {
 .bazaar-card.is-focused {
   border-color: #8a623d;
   box-shadow: 0 0 0 2px rgba(138, 98, 61, 0.22);
+}
+
+.bazaar-card.is-paused {
+  border-color: #b7ada1;
+  background: linear-gradient(180deg, #f1ede7 0%, #e4ddd4 100%);
+  box-shadow: 0 3px 9px rgba(68, 45, 24, 0.08);
 }
 
 .bazaar-card-header {
@@ -2089,6 +2120,10 @@ button {
   fill: rgba(106, 79, 57, 0.86);
   font-weight: 500;
   dominant-baseline: middle;
+  paint-order: stroke fill;
+  stroke: rgba(255, 250, 242, 0.92);
+  stroke-width: 2.4px;
+  stroke-linejoin: round;
 }
 
 .bazaar-mini-chart-axis-label {
@@ -2671,6 +2706,7 @@ button {
   position: absolute;
   top: 8px;
   right: 8px;
+  z-index: 3;
   width: 34px;
   height: 34px;
   border-radius: 999px;
@@ -3052,6 +3088,22 @@ button {
   .bazaar-list {
     gap: 6px;
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .bazaar-paused-section {
+    margin-top: 8px;
+    padding: 8px 8px 7px;
+    border-radius: 10px;
+  }
+
+  .bazaar-paused-heading {
+    font-size: 0.86rem;
+  }
+
+  .bazaar-paused-note {
+    margin-bottom: 6px;
+    font-size: 0.68rem;
+    line-height: 1.35;
   }
 
   .bazaar-control-wrap {

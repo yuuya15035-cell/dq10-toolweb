@@ -1877,6 +1877,17 @@ function isMonitoringByComment(comment) {
   return normalizeBazaarCommentText(comment) === "";
 }
 
+function isBazaarPausedByComment(comment) {
+  const text = normalizeBazaarCommentText(comment);
+  return (
+    text.includes("価格更新停止中") ||
+    text.includes("更新停止") ||
+    text.includes("価格固定") ||
+    text.includes("店売り価格固定") ||
+    text.includes("現在固定")
+  );
+}
+
 function buildBazaarAdminCsvModel(lines) {
   if (!Array.isArray(lines) || lines.length === 0) {
     throw new Error("bazaar_prices.csv が空です");
@@ -4676,7 +4687,7 @@ function buildBazaarSparklineSvg(history, options = {}) {
     ? yAxisLabels
         .map(({ price, className }) => {
           const y = yForPrice(price);
-          return `<text x="${paddingLeft + 2}" y="${y.toFixed(2)}" class="bazaar-mini-chart-axis-label ${className}">${formatBazaarPrice(price)} G</text>`;
+          return `<text x="${Math.max(paddingLeft - 4, 8)}" y="${y.toFixed(2)}" text-anchor="end" class="bazaar-mini-chart-axis-label ${className}">${formatBazaarPrice(price)} G</text>`;
         })
         .join("")
     : "";
@@ -4857,10 +4868,143 @@ function renderBazaarPrices() {
   }
 
   const visibleRows = getVisibleBazaarRows();
+  const activeRows = visibleRows.filter((row) => !isBazaarPausedByComment(row.comment));
+  const pausedRows = visibleRows.filter((row) => isBazaarPausedByComment(row.comment));
   const searchText = String(bazaarSearchText || "");
   const trimmedSearchText = searchText.trim();
   const searchCandidates = getBazaarSearchCandidates(trimmedSearchText);
   const showSearchCandidates = trimmedSearchText !== "";
+  const buildBazaarCardHtml = (row) => {
+    const todayPriceHtml = formatBazaarPriceWithUnit(row.displayPrice);
+    const changeRate = getBazaarRowChangeRate(row);
+    const changePresentation = getBazaarChangePresentation(changeRate);
+    const priceVisualTone = getBazaarPriceVisualTone(row);
+    const priceVisualToneClass = `is-${priceVisualTone}`;
+    const priceStatusBadgeLabel = getBazaarPriceStatusBadgeLabel(priceVisualTone);
+    const isFavorite = isBazaarFavoriteRow(row);
+    const hasOfficialUrl = row.officialUrl !== "";
+    const history = getBazaarHistoryForRange(row.materialKey, selectedBazaarChartRangeDays);
+    const hasHistory = history.length > 0;
+    const sparklineSvgDesktop = hasHistory
+      ? buildBazaarSparklineSvg(history, {
+          includeYAxisLabels: true,
+          paddingLeft: 52,
+          xAxisLabelCount: 3,
+        })
+      : "";
+    const priceStatusBadgeHtml =
+      priceStatusBadgeLabel !== ""
+        ? `<p class="bazaar-price-status-badge ${priceVisualToneClass}">${priceStatusBadgeLabel}</p>`
+        : "";
+    const updatedAtText = formatBazaarUpdatedAt(row.updatedAt);
+    const changeArrowHtml = changePresentation.isComputable
+      ? `<span class="bazaar-change-arrow ${changePresentation.toneClass}" aria-hidden="true">${changePresentation.arrow}</span>`
+      : "";
+    const pausedCardClass = isBazaarPausedByComment(row.comment) ? " is-paused" : "";
+
+    return `
+      <article class="bazaar-card${pausedCardClass} ${pendingBazaarFocusMaterialKey !== "" && row.materialKey === pendingBazaarFocusMaterialKey ? "is-focused" : ""}" data-bazaar-material-key="${row.materialKey}">
+        <header class="bazaar-card-header">
+          <div class="bazaar-card-title-group">
+            <h3>
+              <button
+                type="button"
+                class="bazaar-material-name-button"
+                data-bazaar-detail-open-key="${row.materialKey}"
+              >${row.materialName}</button>
+            </h3>
+          </div>
+          <div class="bazaar-card-header-actions">
+            <button
+              type="button"
+              class="memo-add-button bazaar-card-memo-button"
+              data-memo-bazaar-key="${row.materialKey}"
+              aria-label="${row.materialName}をメモに追加"
+            >
+              ＋メモ
+            </button>
+            <button
+              type="button"
+              class="bazaar-favorite-button ${isFavorite ? "is-active" : ""}"
+              aria-label="${row.materialName}をお気に入り${isFavorite ? "解除" : "登録"}"
+              aria-pressed="${isFavorite ? "true" : "false"}"
+              data-bazaar-row-id="${row.id}"
+            >
+              ♥
+            </button>
+          </div>
+        </header>
+        <div
+          class="bazaar-sub-row bazaar-card-summary-toggle"
+          aria-label="ジャンル"
+          data-bazaar-detail-open-key="${row.materialKey}"
+          role="button"
+          tabindex="0"
+        >
+          <p class="bazaar-category">${buildBazaarCategoryLabelHtml(row.itemCategory)}</p>
+        </div>
+        ${
+          hasOfficialUrl
+            ? `<div class="bazaar-quick-actions">
+                <a
+                  class="bazaar-official-link-button bazaar-official-link-button-compact"
+                  href="${row.officialUrl}"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  aria-label="${row.materialName}の公式相場サイトを新しいタブで開く"
+                >
+                  公式相場
+                </a>
+              </div>`
+            : ""
+        }
+        <div
+          class="bazaar-main bazaar-card-summary-toggle"
+          data-bazaar-detail-open-key="${row.materialKey}"
+          role="button"
+          tabindex="0"
+        >
+          <div class="bazaar-primary">
+            <p class="bazaar-today-price ${priceVisualToneClass}">${todayPriceHtml}</p>
+            ${priceStatusBadgeHtml}
+            <p class="bazaar-change-rate">前日比: <span class="bazaar-change-value ${changePresentation.toneClass}">${changePresentation.text}</span>${changeArrowHtml}</p>
+            ${
+              hasOfficialUrl
+                ? `<a
+                    class="bazaar-official-link-button bazaar-official-link-button-desktop"
+                    href="${row.officialUrl}"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    aria-label="${row.materialName}の公式相場サイトを新しいタブで開く"
+                    data-bazaar-official-link="true"
+                  >
+                    公式相場
+                  </a>`
+                : ""
+            }
+          </div>
+          <div class="bazaar-mini-chart-wrap" aria-label="${row.materialName}の価格推移（直近${selectedBazaarChartRangeDays}日）">
+            ${
+              hasHistory
+                ? `
+                  <div class="bazaar-mini-chart-plot">
+                    <div class="bazaar-mini-chart-canvas">
+                      ${sparklineSvgDesktop}
+                    </div>
+                  </div>
+                  <p class="bazaar-mini-chart-meta">${history.length}件 / 直近${selectedBazaarChartRangeDays}日</p>
+                `
+                : `<p class="bazaar-mini-chart-empty">履歴なし</p>`
+            }
+          </div>
+        </div>
+        <div class="bazaar-footer-row">
+          <p class="bazaar-updated-at">更新: ${updatedAtText}</p>
+          <p class="bazaar-previous-price">前日: ${formatBazaarPriceWithUnit(row.previousDayPrice)}</p>
+        </div>
+      </article>
+    `;
+  };
   bazaarListWrap.innerHTML = `
     <div class="bazaar-control-wrap">
       <label class="field bazaar-category-field">
@@ -4940,9 +5084,8 @@ function renderBazaarPrices() {
         </label>
       </div>
     </div>
-    <div class="bazaar-list">
-      ${
-        visibleRows.length === 0
+    ${
+      visibleRows.length === 0
           ? `<p>${
               showBazaarMonitoringOnly
                 ? "条件に一致するデータが見つかりませんでした。検索条件を変えてお試しください。"
@@ -4950,140 +5093,25 @@ function renderBazaarPrices() {
                   ? "条件に一致するデータが見つかりませんでした。検索条件を変えてお試しください。"
                   : "条件に一致するデータが見つかりませんでした。検索条件を変えてお試しください。"
             }</p>`
-          : visibleRows
-              .map((row) => {
-          const todayPriceHtml = formatBazaarPriceWithUnit(row.displayPrice);
-          const changeRate = getBazaarRowChangeRate(row);
-          const changePresentation = getBazaarChangePresentation(changeRate);
-          const priceVisualTone = getBazaarPriceVisualTone(row);
-          const priceVisualToneClass = `is-${priceVisualTone}`;
-          const priceStatusBadgeLabel = getBazaarPriceStatusBadgeLabel(priceVisualTone);
-          const isFavorite = isBazaarFavoriteRow(row);
-          const hasOfficialUrl = row.officialUrl !== "";
-          const history = getBazaarHistoryForRange(row.materialKey, selectedBazaarChartRangeDays);
-          const hasHistory = history.length > 0;
-          const sparklineSvgDesktop = hasHistory
-            ? buildBazaarSparklineSvg(history, {
-                includeYAxisLabels: true,
-                paddingLeft: 48,
-                xAxisLabelCount: 3,
-              })
-            : "";
-          const priceStatusBadgeHtml =
-            priceStatusBadgeLabel !== ""
-              ? `<p class="bazaar-price-status-badge ${priceVisualToneClass}">${priceStatusBadgeLabel}</p>`
-              : "";
-          const updatedAtText = formatBazaarUpdatedAt(row.updatedAt);
-          const changeArrowHtml = changePresentation.isComputable
-            ? `<span class="bazaar-change-arrow ${changePresentation.toneClass}" aria-hidden="true">${changePresentation.arrow}</span>`
-            : "";
-
-          return `
-            <article class="bazaar-card ${pendingBazaarFocusMaterialKey !== "" && row.materialKey === pendingBazaarFocusMaterialKey ? "is-focused" : ""}" data-bazaar-material-key="${row.materialKey}">
-              <header class="bazaar-card-header">
-                <div class="bazaar-card-title-group">
-                  <h3>
-                    <button
-                      type="button"
-                      class="bazaar-material-name-button"
-                      data-bazaar-detail-open-key="${row.materialKey}"
-                    >${row.materialName}</button>
-                  </h3>
-                </div>
-                <div class="bazaar-card-header-actions">
-                  <button
-                    type="button"
-                    class="memo-add-button bazaar-card-memo-button"
-                    data-memo-bazaar-key="${row.materialKey}"
-                    aria-label="${row.materialName}をメモに追加"
-                  >
-                    ＋メモ
-                  </button>
-                  <button
-                    type="button"
-                    class="bazaar-favorite-button ${isFavorite ? "is-active" : ""}"
-                    aria-label="${row.materialName}をお気に入り${isFavorite ? "解除" : "登録"}"
-                    aria-pressed="${isFavorite ? "true" : "false"}"
-                    data-bazaar-row-id="${row.id}"
-                  >
-                    ♥
-                  </button>
-                </div>
-              </header>
-              <div
-                class="bazaar-sub-row bazaar-card-summary-toggle"
-                aria-label="ジャンル"
-                data-bazaar-detail-open-key="${row.materialKey}"
-                role="button"
-                tabindex="0"
-              >
-                <p class="bazaar-category">${buildBazaarCategoryLabelHtml(row.itemCategory)}</p>
-              </div>
-              ${
-                hasOfficialUrl
-                  ? `<div class="bazaar-quick-actions">
-                      <a
-                        class="bazaar-official-link-button bazaar-official-link-button-compact"
-                        href="${row.officialUrl}"
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        aria-label="${row.materialName}の公式相場サイトを新しいタブで開く"
-                      >
-                        公式相場
-                      </a>
-                    </div>`
-                  : ""
-              }
-              <div
-                class="bazaar-main bazaar-card-summary-toggle"
-                data-bazaar-detail-open-key="${row.materialKey}"
-                role="button"
-                tabindex="0"
-              >
-                <div class="bazaar-primary">
-                  <p class="bazaar-today-price ${priceVisualToneClass}">${todayPriceHtml}</p>
-                  ${priceStatusBadgeHtml}
-                  <p class="bazaar-change-rate">前日比: <span class="bazaar-change-value ${changePresentation.toneClass}">${changePresentation.text}</span>${changeArrowHtml}</p>
-                  ${
-                    hasOfficialUrl
-                      ? `<a
-                          class="bazaar-official-link-button bazaar-official-link-button-desktop"
-                          href="${row.officialUrl}"
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          aria-label="${row.materialName}の公式相場サイトを新しいタブで開く"
-                          data-bazaar-official-link="true"
-                        >
-                          公式相場
-                        </a>`
-                      : ""
-                  }
-                </div>
-                <div class="bazaar-mini-chart-wrap" aria-label="${row.materialName}の価格推移（直近${selectedBazaarChartRangeDays}日）">
-                  ${
-                    hasHistory
-                      ? `
-                        <div class="bazaar-mini-chart-plot">
-                          <div class="bazaar-mini-chart-canvas">
-                            ${sparklineSvgDesktop}
-                          </div>
-                        </div>
-                        <p class="bazaar-mini-chart-meta">${history.length}件 / 直近${selectedBazaarChartRangeDays}日</p>
-                      `
-                      : `<p class="bazaar-mini-chart-empty">履歴なし</p>`
-                  }
-                </div>
-              </div>
-              <div class="bazaar-footer-row">
-                <p class="bazaar-updated-at">更新: ${updatedAtText}</p>
-                <p class="bazaar-previous-price">前日: ${formatBazaarPriceWithUnit(row.previousDayPrice)}</p>
-              </div>
-            </article>
-          `;
-              })
-              .join("")
+          : `
+            <div class="bazaar-list">
+              ${activeRows.map((row) => buildBazaarCardHtml(row)).join("")}
+            </div>
+            ${
+              pausedRows.length > 0
+                ? `
+                  <section class="bazaar-paused-section">
+                    <h3 class="bazaar-paused-heading">価格更新停止中</h3>
+                    <p class="bazaar-paused-note">※価格固定・店売り・一時停止中など、通常の相場更新対象外の商品です。</p>
+                    <div class="bazaar-list bazaar-list-paused">
+                      ${pausedRows.map((row) => buildBazaarCardHtml(row)).join("")}
+                    </div>
+                  </section>
+                `
+                : ""
+            }
+          `
       }
-    </div>
   `;
 
   const bazaarCategorySelect = bazaarListWrap.querySelector("#bazaarCategorySelect");
@@ -6021,6 +6049,7 @@ function openBazaarDetailModal(materialKey) {
           width: 320,
           height: 176,
           includeYAxisLabels: true,
+          paddingLeft: 58,
           xAxisLabelCount: 2,
           yAxisTickCount: 4,
           pointRadius: 2,
@@ -7191,6 +7220,17 @@ if (bazaarDetailModalBody) {
   bazaarDetailModalBody.addEventListener("click", (event) => {
     const target = event.target;
     if (!(target instanceof Element)) return;
+    const closeButton = target.closest(".bazaar-detail-modal-close");
+    if (closeButton && bazaarDetailModalDialog?.contains(closeButton)) {
+      event.preventDefault();
+      event.stopPropagation();
+      closeBazaarDetailModal();
+      return;
+    }
+  });
+  bazaarDetailModalBody.addEventListener("click", (event) => {
+    const target = event.target;
+    if (!(target instanceof Element)) return;
     const memoButton = target.closest("[data-memo-bazaar-key]");
     if (!memoButton || !bazaarDetailModalBody.contains(memoButton)) return;
     const materialKey = String(memoButton.dataset.memoBazaarKey || "");
@@ -7239,6 +7279,17 @@ if (favoriteMaterialModalCloseButton) {
 
 if (bazaarDetailModalCloseButton) {
   bazaarDetailModalCloseButton.addEventListener("click", () => {
+    closeBazaarDetailModal();
+  });
+}
+
+if (bazaarDetailModalDialog) {
+  bazaarDetailModalDialog.addEventListener("click", (event) => {
+    const target = event.target;
+    if (!(target instanceof Element)) return;
+    if (!target.closest(".bazaar-detail-modal-close")) return;
+    event.preventDefault();
+    event.stopPropagation();
     closeBazaarDetailModal();
   });
 }
