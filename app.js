@@ -5825,7 +5825,7 @@ function openRecipeFromFavorite(equipmentId) {
   clearProfitArmorSetContext();
   if (!selectProfitEquipment(equipmentId)) return;
   switchTab("profit");
-  navigateByAppParams({ tab: "profit", equipmentId, materialKey: "" });
+  navigateByFeatureRoute({ tab: "profit", equipmentId, materialKey: "" });
   rerenderAll();
   document.getElementById("profit")?.scrollIntoView({ block: "start", behavior: "smooth" });
 }
@@ -5836,7 +5836,7 @@ function openProfitFromEquipmentId(equipmentId) {
   if (!selectProfitEquipment(equipmentId)) return;
   closeArmorSetDetailModal();
   switchTab("profit");
-  navigateByAppParams({ tab: "profit", equipmentId, materialKey: "" });
+  navigateByFeatureRoute({ tab: "profit", equipmentId, materialKey: "" });
   rerenderAll();
   document.getElementById("profit")?.scrollIntoView({ block: "start", behavior: "smooth" });
 }
@@ -5849,7 +5849,7 @@ function openProfitFromEquipmentDb(entry) {
   if (isArmorSet) {
     pendingProfitArmorSetContext = buildProfitArmorSetContext(normalizedName);
     switchTab("profit");
-    navigateByAppParams({
+    navigateByFeatureRoute({
       tab: "profit",
       equipmentId: "",
       materialKey: "",
@@ -5877,7 +5877,7 @@ function openProfitFromEquipmentDb(entry) {
     selectProfitEquipment(payload.equipmentId);
   }
   switchTab("profit");
-  navigateByAppParams({
+  navigateByFeatureRoute({
     tab: "profit",
     equipmentId: payload.equipmentId,
     materialKey: "",
@@ -5895,7 +5895,7 @@ function openBazaarFromFavorite(materialKey) {
   pendingBazaarFocusMaterialKey = materialKey || "";
   bazaarSearchText = "";
   selectedBazaarMaterialName = "";
-  navigateByAppParams({ tab: "bazaar", equipmentId: "", materialKey: materialKey || "" });
+  navigateByFeatureRoute({ tab: "bazaar", equipmentId: "", materialKey: materialKey || "" });
   renderBazaarPrices();
   document.getElementById("bazaar")?.scrollIntoView({ block: "start", behavior: "smooth" });
 }
@@ -5947,7 +5947,7 @@ function applySiteSearchNavigation(entry) {
     expandedEquipmentDbId = "";
     equipmentDbNameKeyword = keyword;
     switchTab("equipment-db");
-    navigateByAppParams({ tab: "equipment-db", equipmentId: "", materialKey: "", equipmentDbGroup: selectedEquipmentDbGroup });
+    navigateByFeatureRoute({ tab: "equipment-db", equipmentId: "", materialKey: "", equipmentDbGroup: selectedEquipmentDbGroup });
     renderEquipmentDbCards();
     resetSearchUi();
     document.getElementById("equipment-db")?.scrollIntoView({ block: "start", behavior: "smooth" });
@@ -5958,7 +5958,7 @@ function applySiteSearchNavigation(entry) {
     bazaarSearchText = keyword;
     selectedBazaarMaterialName = keyword;
     pendingBazaarFocusMaterialKey = String(entry.materialKey || "");
-    navigateByAppParams({
+    navigateByFeatureRoute({
       tab: "bazaar",
       equipmentId: "",
       materialKey: pendingBazaarFocusMaterialKey,
@@ -7108,14 +7108,14 @@ function buildAppQueryParams(nextValues = {}) {
 }
 
 function navigateByAppParams(nextValues = {}, options = {}) {
-  const { replace = false } = options;
+  const { replace = false, preferEntryRoutePath = false } = options;
   const params = buildAppQueryParams(nextValues);
   const currentParams = new URLSearchParams(window.location.search);
   const tab = String(params.get("tab") || "").trim();
-  const preferEntryRoutePath = Boolean(getEntryRouteContext()) && !currentParams.has("tab");
+  const useEntryRoutePath = preferEntryRoutePath || (Boolean(getEntryRouteContext()) && !currentParams.has("tab"));
   let pathname = getProjectRootPath();
 
-  if (tab && preferEntryRoutePath) {
+  if (tab && useEntryRoutePath) {
     const routeSegment = ENTRY_ROUTE_TAB_TO_SEGMENT.get(tab);
     if (routeSegment) {
       pathname = `${getProjectBasePath()}/${routeSegment}/`;
@@ -7132,6 +7132,17 @@ function navigateByAppParams(nextValues = {}, options = {}) {
   } else {
     window.history.pushState({}, "", nextUrl);
   }
+}
+
+function navigateByFeatureRoute(nextValues = {}, options = {}) {
+  const tab = String(nextValues.tab || "").trim();
+  navigateByAppParams(nextValues, {
+    ...options,
+    preferEntryRoutePath:
+      Object.prototype.hasOwnProperty.call(options, "preferEntryRoutePath")
+        ? options.preferEntryRoutePath
+        : ENTRY_ROUTE_TAB_TO_SEGMENT.has(tab),
+  });
 }
 
 function applyAppRouteFromUrl() {
@@ -7262,7 +7273,7 @@ function handleMobileBottomNavScroll() {
 function scrollToBlock(blockId) {
   if (!blockId) return;
   switchTab(blockId);
-  navigateByAppParams({
+  navigateByFeatureRoute({
     tab: blockId,
     equipmentId: blockId === "profit" ? selectedEquipmentId : "",
     materialKey: "",
@@ -8263,7 +8274,7 @@ async function openEquipmentDbFromMonsterWhiteBox(itemName) {
   equipmentDbNameKeyword = normalizedName;
   isEquipmentDbNameSearchOpen = true;
   switchTab("equipment-db");
-  navigateByAppParams({ tab: "equipment-db", equipmentId: "", materialKey: "", equipmentDbGroup: selectedEquipmentDbGroup });
+  navigateByFeatureRoute({ tab: "equipment-db", equipmentId: "", materialKey: "", equipmentDbGroup: selectedEquipmentDbGroup });
   renderEquipmentDbCards();
   document.getElementById("equipment-db")?.scrollIntoView({ block: "start", behavior: "smooth" });
 }
@@ -8325,7 +8336,7 @@ async function openOrbFromMonsterInfo(orbName) {
   orbSearchKeyword = normalizedOrbName;
   expandedOrbId = matchedOrb?.id || "";
   switchTab("orbs");
-  navigateByAppParams({ tab: "orbs", orbSearch: normalizedOrbName, equipmentId: "", materialKey: "" });
+  navigateByFeatureRoute({ tab: "orbs", orbSearch: normalizedOrbName, equipmentId: "", materialKey: "" });
   renderOrbCards();
   document.getElementById("orbs")?.scrollIntoView({ block: "start", behavior: "smooth" });
 }
@@ -8338,7 +8349,7 @@ async function openMonsterInfoFromOrb(monsterName) {
   selectedMonsterInfoType = matchedMonster?.type || "";
   monsterInfoSearchKeyword = normalizedMonsterName;
   switchTab("monster-info");
-  navigateByAppParams({ tab: "monster-info", monsterSearch: normalizedMonsterName, equipmentId: "", materialKey: "" });
+  navigateByFeatureRoute({ tab: "monster-info", monsterSearch: normalizedMonsterName, equipmentId: "", materialKey: "" });
   renderMonsterInfoCards();
   document.getElementById("monster-info")?.scrollIntoView({ block: "start", behavior: "smooth" });
 }
