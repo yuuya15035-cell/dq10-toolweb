@@ -1488,6 +1488,18 @@ function formatBazaarPriceWithUnit(value) {
   return text === "-" ? "-" : `${text} G`;
 }
 
+function formatBazaarChartPrice(value) {
+  if (value === null || value === undefined || String(value).trim() === "") return "-";
+  const parsed = Number(value);
+  if (!Number.isFinite(parsed)) return "-";
+  return Math.ceil(parsed).toLocaleString("ja-JP");
+}
+
+function formatBazaarChartPriceWithUnit(value) {
+  const text = formatBazaarChartPrice(value);
+  return text === "-" ? "-" : `${text} G`;
+}
+
 function normalizeSearchKeyword(value) {
   return String(value || "").trim().toLowerCase();
 }
@@ -4688,7 +4700,7 @@ function buildBazaarSparklineSvg(history, options = {}) {
     ? yAxisLabels
         .map(({ price, className }) => {
           const y = yForPrice(price);
-          return `<text x="${Math.max(paddingLeft - 4, 8)}" y="${y.toFixed(2)}" text-anchor="end" class="bazaar-mini-chart-axis-label ${className}">${formatBazaarPrice(price)} G</text>`;
+          return `<text x="${Math.max(paddingLeft - 4, 8)}" y="${y.toFixed(2)}" text-anchor="end" class="bazaar-mini-chart-axis-label ${className}">${formatBazaarChartPrice(price)} G</text>`;
         })
         .join("")
     : "";
@@ -5007,6 +5019,7 @@ function renderBazaarPrices() {
   };
   bazaarListWrap.innerHTML = `
     <div class="bazaar-page-note card">
+      <p class="bazaar-page-note-highlight">グラフをタップすると詳細確認できます。</p>
       <p>価格更新中の素材のみ表示しています。更新停止中の商品は下部の「現在価格更新停止中リスト」にまとめています。</p>
       <p>すべて公式サイトを確認して手入力しているため、価格更新対象は絞っています。</p>
     </div>
@@ -6038,9 +6051,9 @@ function openBazaarDetailModal(materialKey) {
     historySummary.count > 0
       ? `
         <div class="bazaar-detail-month-summary" aria-label="月別集計">
-          <p><span>平均</span><strong>${formatGold(historySummary.average)}</strong></p>
-          <p><span>最高</span><strong>${formatGold(historySummary.max)}</strong></p>
-          <p><span>最安</span><strong>${formatGold(historySummary.min)}</strong></p>
+          <p><span>平均</span><strong>${formatBazaarChartPriceWithUnit(historySummary.average)}</strong></p>
+          <p><span>最高</span><strong>${formatBazaarChartPriceWithUnit(historySummary.max)}</strong></p>
+          <p><span>最安</span><strong>${formatBazaarChartPriceWithUnit(historySummary.min)}</strong></p>
           <p><span>前月平均比</span><strong>${
             Number.isFinite(averageDiffRate)
               ? `${averageDiffRate >= 0 ? "+" : ""}${averageDiffRate.toFixed(1)}%`
@@ -6085,7 +6098,7 @@ function openBazaarDetailModal(materialKey) {
     <p class="bazaar-detail-modal-period">${
       selectedMonthKey ? `${formatBazaarHistoryMonthLabel(selectedMonthKey)}` : "対象月なし"
     }（${history.length}件）${
-      Number.isFinite(previousMonthAverage) ? ` / 破線: 前月平均 ${formatGold(previousMonthAverage)}` : ""
+      Number.isFinite(previousMonthAverage) ? ` / 破線: 前月平均 ${formatBazaarChartPriceWithUnit(previousMonthAverage)}` : ""
     }</p>
     <p class="bazaar-detail-modal-latest">最新価格: <strong>${formatBazaarPriceWithUnit(row.displayPrice)}</strong></p>
     ${

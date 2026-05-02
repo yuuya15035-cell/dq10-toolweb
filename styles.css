@@ -1759,6 +1759,16 @@ button {
   margin-top: 4px;
 }
 
+.bazaar-page-note-highlight {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 8px;
+  border-radius: 999px;
+  background: rgba(181, 135, 69, 0.14);
+  color: #6a4318;
+  font-weight: 800;
+}
+
 .bazaar-category-field {
   margin-bottom: 0;
 }
@@ -3165,6 +3175,10 @@ button {
   .bazaar-page-note p {
     font-size: 0.7rem;
     line-height: 1.4;
+  }
+
+  .bazaar-page-note-highlight {
+    padding: 2px 7px;
   }
 
   .bazaar-category-field span,
