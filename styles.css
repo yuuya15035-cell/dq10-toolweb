@@ -4184,6 +4184,11 @@ button {
   justify-items: start;
 }
 
+#adminFab,
+#adminFab[hidden] {
+  display: none !important;
+}
+
 .admin-fab-button {
   min-height: 34px;
   padding: 6px 10px;
