@@ -2078,6 +2078,12 @@ button {
   stroke: rgba(112, 84, 58, 0.15);
 }
 
+.bazaar-mini-chart-reference-line {
+  stroke: rgba(68, 89, 129, 0.55);
+  stroke-width: 1.1;
+  stroke-dasharray: 4 3;
+}
+
 .bazaar-mini-chart-axis-label,
 .bazaar-mini-chart-axis-date {
   fill: rgba(106, 79, 57, 0.86);
@@ -2727,6 +2733,45 @@ button {
   font-size: 9px;
 }
 
+.bazaar-detail-month-control {
+  margin: 0 0 8px;
+}
+
+.bazaar-detail-month-field {
+  margin: 0;
+}
+
+.bazaar-detail-month-field span {
+  font-size: 0.78rem;
+}
+
+.bazaar-detail-month-summary {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px;
+  margin: 0 0 8px;
+}
+
+.bazaar-detail-month-summary p {
+  margin: 0;
+  border: 1px solid #d7c0a2;
+  border-radius: 8px;
+  background: rgba(255, 251, 243, 0.78);
+  padding: 6px 8px;
+  display: grid;
+  gap: 2px;
+}
+
+.bazaar-detail-month-summary span {
+  font-size: 0.72rem;
+  color: #725841;
+}
+
+.bazaar-detail-month-summary strong {
+  font-size: 0.9rem;
+  color: #442c1b;
+}
+
 .bazaar-detail-modal-link {
   display: inline-flex;
   margin-top: 2px;
@@ -3209,6 +3254,22 @@ button {
   .bazaar-detail-modal-chart .bazaar-mini-chart-axis-label,
   .bazaar-detail-modal-chart .bazaar-mini-chart-axis-date {
     font-size: 9.6px;
+  }
+
+  .bazaar-detail-month-summary {
+    gap: 5px;
+  }
+
+  .bazaar-detail-month-summary p {
+    padding: 5px 6px;
+  }
+
+  .bazaar-detail-month-summary span {
+    font-size: 0.68rem;
+  }
+
+  .bazaar-detail-month-summary strong {
+    font-size: 0.84rem;
   }
 }
 

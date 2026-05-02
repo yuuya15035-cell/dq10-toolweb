@@ -1007,6 +1007,7 @@ let bazaarPriceHistoryByMaterialKey = new Map();
 let selectedBazaarChartRangeDays = DEFAULT_BAZAAR_CHART_RANGE_DAYS;
 let activeBazaarDetailModalKey = "";
 let bazaarDetailModalSwipeState = null;
+let bazaarDetailMonthByMaterialKey = new Map();
 let memoEntries = [];
 let memoEntryIdSet = new Set();
 let memoPanelSwipeState = null;
@@ -4531,6 +4532,62 @@ function getBazaarHistoryForRange(materialKey, rangeDays = DEFAULT_BAZAAR_CHART_
   return history.filter((point) => point.timestamp >= rangeStartTimestamp);
 }
 
+function getBazaarHistoryMonthKeys(materialKey) {
+  const history = bazaarPriceHistoryByMaterialKey.get(materialKey) || [];
+  const monthKeys = new Set();
+  history.forEach((point) => {
+    const dateText = String(point?.date || "");
+    if (/^\d{4}-\d{2}-\d{2}$/.test(dateText)) {
+      monthKeys.add(dateText.slice(0, 7));
+    }
+  });
+  return Array.from(monthKeys).sort((a, b) => a.localeCompare(b, "ja"));
+}
+
+function getLatestBazaarHistoryMonthKey(materialKey) {
+  const monthKeys = getBazaarHistoryMonthKeys(materialKey);
+  return monthKeys.length > 0 ? monthKeys[monthKeys.length - 1] : "";
+}
+
+function getBazaarHistoryForMonth(materialKey, monthKey) {
+  const normalizedMonthKey = String(monthKey || "").trim();
+  const history = bazaarPriceHistoryByMaterialKey.get(materialKey) || [];
+  if (normalizedMonthKey === "") return history;
+  return history.filter((point) => String(point?.date || "").startsWith(`${normalizedMonthKey}-`));
+}
+
+function formatBazaarHistoryMonthLabel(monthKey) {
+  const normalized = String(monthKey || "").trim();
+  if (!/^\d{4}-\d{2}$/.test(normalized)) return "-";
+  const [year, month] = normalized.split("-");
+  return `${year}年${Number(month)}月`;
+}
+
+function shiftBazaarHistoryMonthKey(monthKey, diff) {
+  const normalized = String(monthKey || "").trim();
+  if (!/^\d{4}-\d{2}$/.test(normalized)) return "";
+  const [yearText, monthText] = normalized.split("-");
+  const year = Number(yearText);
+  const month = Number(monthText);
+  if (!Number.isFinite(year) || !Number.isFinite(month)) return "";
+  const shifted = new Date(year, month - 1 + diff, 1);
+  return `${shifted.getFullYear()}-${String(shifted.getMonth() + 1).padStart(2, "0")}`;
+}
+
+function getBazaarHistorySummary(history) {
+  const prices = Array.isArray(history) ? history.map((point) => Number(point?.price)).filter((price) => Number.isFinite(price)) : [];
+  if (prices.length === 0) {
+    return { count: 0, average: null, min: null, max: null };
+  }
+  const total = prices.reduce((sum, price) => sum + price, 0);
+  return {
+    count: prices.length,
+    average: total / prices.length,
+    min: Math.min(...prices),
+    max: Math.max(...prices),
+  };
+}
+
 function formatBazaarChartDateLabel(timestamp) {
   const parsed = new Date(timestamp);
   if (Number.isNaN(parsed.getTime())) return "-";
@@ -4551,6 +4608,8 @@ function buildBazaarSparklineSvg(history, options = {}) {
   const includeYAxisLabels = options.includeYAxisLabels !== false;
   const xAxisLabelCount = Math.max(1, Number(options.xAxisLabelCount) || 3);
   const yAxisTickCount = Math.max(2, Math.min(3, Number(options.yAxisTickCount) || 3));
+  const referencePrice = Number(options.referencePrice);
+  const hasReferencePrice = Number.isFinite(referencePrice);
   const points = Array.isArray(history)
     ? history
         .map((item) => ({
@@ -4562,6 +4621,7 @@ function buildBazaarSparklineSvg(history, options = {}) {
   if (points.length === 0) return "";
 
   const prices = points.map((point) => point.price);
+  if (hasReferencePrice) prices.push(referencePrice);
   const minPrice = Math.min(...prices);
   const maxPrice = Math.max(...prices);
   const middlePrice = (maxPrice + minPrice) / 2;
@@ -4590,6 +4650,15 @@ function buildBazaarSparklineSvg(history, options = {}) {
   const latestCoord = coords[coords.length - 1];
   const latestPointDot = latestCoord
     ? `<circle cx="${latestCoord.x.toFixed(2)}" cy="${latestCoord.y.toFixed(2)}" r="${latestPointRadius}" class="bazaar-mini-chart-latest-point"></circle>`
+    : "";
+  const referenceLineHtml = hasReferencePrice
+    ? `<line
+        x1="${paddingLeft}"
+        y1="${yForPrice(referencePrice).toFixed(2)}"
+        x2="${width - paddingRight}"
+        y2="${yForPrice(referencePrice).toFixed(2)}"
+        class="bazaar-mini-chart-reference-line"
+      ></line>`
     : "";
 
   const yAxisLabels =
@@ -4643,6 +4712,7 @@ function buildBazaarSparklineSvg(history, options = {}) {
       <line x1="${paddingLeft}" y1="${topGridY}" x2="${width - paddingRight}" y2="${topGridY}" class="bazaar-mini-chart-grid-line is-edge"></line>
       <line x1="${paddingLeft}" y1="${middleGridY}" x2="${width - paddingRight}" y2="${middleGridY}" class="bazaar-mini-chart-grid-line"></line>
       <line x1="${paddingLeft}" y1="${bottomGridY}" x2="${width - paddingRight}" y2="${bottomGridY}" class="bazaar-mini-chart-grid-line is-edge"></line>
+      ${referenceLineHtml}
       <polyline points="${areaPoints}" class="bazaar-mini-chart-area" style="fill:${areaFill};"></polyline>
       <polyline points="${polylinePoints}" class="bazaar-mini-chart-line" style="stroke:${chartStroke};"></polyline>
       ${pointDots}
@@ -5890,8 +5960,60 @@ function openBazaarDetailModal(materialKey) {
   const row = getBazaarRowByMaterialKey(materialKey);
   if (!row) return;
 
-  const history = getBazaarHistoryForRange(row.materialKey, selectedBazaarChartRangeDays);
+  const monthOptions = getBazaarHistoryMonthKeys(row.materialKey);
+  const latestMonthKey = monthOptions.length > 0 ? monthOptions[monthOptions.length - 1] : "";
+  const requestedMonthKey = String(bazaarDetailMonthByMaterialKey.get(row.materialKey) || "").trim();
+  const selectedMonthKey = monthOptions.includes(requestedMonthKey) ? requestedMonthKey : latestMonthKey;
+  if (selectedMonthKey) {
+    bazaarDetailMonthByMaterialKey.set(row.materialKey, selectedMonthKey);
+  } else {
+    bazaarDetailMonthByMaterialKey.delete(row.materialKey);
+  }
+
+  const history = selectedMonthKey ? getBazaarHistoryForMonth(row.materialKey, selectedMonthKey) : [];
+  const historySummary = getBazaarHistorySummary(history);
+  const previousMonthKey = selectedMonthKey ? shiftBazaarHistoryMonthKey(selectedMonthKey, -1) : "";
+  const previousMonthHistory = previousMonthKey ? getBazaarHistoryForMonth(row.materialKey, previousMonthKey) : [];
+  const previousMonthSummary = getBazaarHistorySummary(previousMonthHistory);
+  const previousMonthAverage = previousMonthSummary.average;
+  const averageDiffRate =
+    Number.isFinite(historySummary.average) && Number.isFinite(previousMonthAverage) && previousMonthAverage !== 0
+      ? ((historySummary.average - previousMonthAverage) / previousMonthAverage) * 100
+      : null;
   const updatedAtText = formatBazaarUpdatedAt(row.updatedAt);
+  const monthSelectHtml =
+    monthOptions.length > 0
+      ? `
+        <div class="bazaar-detail-month-control">
+          <label class="field bazaar-detail-month-field" for="bazaarDetailMonthSelect">
+            <span>確認月</span>
+            <select id="bazaarDetailMonthSelect" data-bazaar-history-month-select="${row.materialKey}">
+              ${monthOptions
+                .map(
+                  (monthKey) =>
+                    `<option value="${monthKey}"${monthKey === selectedMonthKey ? " selected" : ""}>${formatBazaarHistoryMonthLabel(monthKey)}</option>`
+                )
+                .join("")}
+            </select>
+          </label>
+        </div>
+      `
+      : "";
+  const summaryHtml =
+    historySummary.count > 0
+      ? `
+        <div class="bazaar-detail-month-summary" aria-label="月別集計">
+          <p><span>平均</span><strong>${formatGold(historySummary.average)}</strong></p>
+          <p><span>最高</span><strong>${formatGold(historySummary.max)}</strong></p>
+          <p><span>最安</span><strong>${formatGold(historySummary.min)}</strong></p>
+          <p><span>前月平均比</span><strong>${
+            Number.isFinite(averageDiffRate)
+              ? `${averageDiffRate >= 0 ? "+" : ""}${averageDiffRate.toFixed(1)}%`
+              : "-"
+          }</strong></p>
+        </div>
+      `
+      : "";
   const chartHtml =
     history.length > 0
       ? `
@@ -5902,6 +6024,7 @@ function openBazaarDetailModal(materialKey) {
           xAxisLabelCount: 2,
           yAxisTickCount: 4,
           pointRadius: 2,
+          referencePrice: previousMonthAverage,
         })}</div>
       `
       : `<p class="bazaar-detail-modal-chart-empty">表示できる履歴がありません。</p>`;
@@ -5920,8 +6043,14 @@ function openBazaarDetailModal(materialKey) {
     </div>
     <p class="bazaar-detail-modal-updated-at">更新: ${updatedAtText}</p>
     <p class="bazaar-detail-modal-previous">前日価格: ${formatBazaarPriceWithUnit(row.previousDayPrice)}</p>
+    ${monthSelectHtml}
+    ${summaryHtml}
     ${chartHtml}
-    <p class="bazaar-detail-modal-period">表示期間: 直近${selectedBazaarChartRangeDays}日（${history.length}件）</p>
+    <p class="bazaar-detail-modal-period">${
+      selectedMonthKey ? `${formatBazaarHistoryMonthLabel(selectedMonthKey)}` : "対象月なし"
+    }（${history.length}件）${
+      Number.isFinite(previousMonthAverage) ? ` / 破線: 前月平均 ${formatGold(previousMonthAverage)}` : ""
+    }</p>
     <p class="bazaar-detail-modal-latest">最新価格: <strong>${formatBazaarPriceWithUnit(row.displayPrice)}</strong></p>
     ${
       row.officialUrl
@@ -7069,6 +7198,14 @@ if (bazaarDetailModalBody) {
     if (!row) return;
     event.stopPropagation();
     addMemoEntry(createBazaarMemoEntry(row));
+  });
+  bazaarDetailModalBody.addEventListener("change", (event) => {
+    const target = event.target;
+    if (!(target instanceof HTMLSelectElement)) return;
+    const materialKey = String(target.dataset.bazaarHistoryMonthSelect || "");
+    if (materialKey === "") return;
+    bazaarDetailMonthByMaterialKey.set(materialKey, String(target.value || "").trim());
+    openBazaarDetailModal(materialKey);
   });
 }
 
