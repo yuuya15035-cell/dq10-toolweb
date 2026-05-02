@@ -4615,6 +4615,27 @@ body.memo-panel-open {
   text-align: center;
 }
 
+@media (max-width: 420px) {
+  .mobile-bottom-nav {
+    gap: 2px;
+    padding: 4px 4px calc(4px + env(safe-area-inset-bottom));
+  }
+
+  .mobile-bottom-nav-item {
+    min-height: 46px;
+    gap: 2px;
+    padding: 3px 1px;
+  }
+
+  .mobile-bottom-nav-icon {
+    font-size: 0.95rem;
+  }
+
+  .mobile-bottom-nav-label {
+    font-size: 0.61rem;
+  }
+}
+
 .whitebox-card {
   padding: 0;
   overflow: hidden;

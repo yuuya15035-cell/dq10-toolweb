@@ -7128,11 +7128,17 @@ function shouldUseBottomNavBackButton() {
   return window.innerWidth < 700 && isStandaloneDisplayMode() && appMode !== "home";
 }
 
+function shouldShowFloatingHistoryBackButton() {
+  if (!isStandaloneDisplayMode()) return false;
+  return !shouldUseBottomNavBackButton();
+}
+
 function updateHistoryBackButtonVisibility() {
   const bottomNavBackButton = mobileBottomNav?.querySelector('[data-bottom-nav-action="back"]');
   const useBottomNavBackButton = shouldUseBottomNavBackButton();
+  const showFloatingHistoryBackButton = shouldShowFloatingHistoryBackButton();
   if (historyBackButton) {
-    historyBackButton.hidden = useBottomNavBackButton;
+    historyBackButton.hidden = !showFloatingHistoryBackButton;
   }
   if (bottomNavBackButton) {
     bottomNavBackButton.hidden = !useBottomNavBackButton;
