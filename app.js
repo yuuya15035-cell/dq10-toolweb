@@ -44,6 +44,21 @@ const SITE_SEARCH_MATCH_RANK = Object.freeze({
   prefix: 1,
   partial: 2,
 });
+const ENTRY_ROUTE_SEGMENT_TO_TAB = Object.freeze({
+  bazaar: "bazaar",
+  craft: "profit",
+  monster: "monster-info",
+  equipment: "equipment-db",
+  orb: "orbs",
+  favorites: "favorites",
+  whitebox: "equipment-db",
+});
+const ENTRY_ROUTE_TAB_TO_SEGMENT = new Map();
+Object.entries(ENTRY_ROUTE_SEGMENT_TO_TAB).forEach(([segment, tab]) => {
+  if (!ENTRY_ROUTE_TAB_TO_SEGMENT.has(tab)) {
+    ENTRY_ROUTE_TAB_TO_SEGMENT.set(tab, segment);
+  }
+});
 const TAB_IDS = new Set([
   "profit",
   "present-codes",
@@ -253,15 +268,62 @@ function resolveProjectScopedAssetUrl(path) {
   }
   if (!path.startsWith("/")) return path;
 
-  const pathname = window.location.pathname || "/";
-  const normalizedPathname = pathname.endsWith(".html") ? pathname.replace(/[^/]*$/, "/") : pathname;
-  const projectSegment = normalizedPathname.split("/").filter(Boolean)[0];
-  const projectBasePath = projectSegment ? `/${projectSegment}` : "";
+  const projectBasePath = getProjectBasePath();
 
   if (!projectBasePath || path.startsWith(`${projectBasePath}/`)) {
     return path;
   }
   return `${projectBasePath}${path}`;
+}
+
+function getNormalizedPathname(pathname = window.location.pathname || "/") {
+  return pathname.endsWith(".html") ? pathname.replace(/[^/]*$/, "/") : pathname;
+}
+
+function getPathSegments(pathname = window.location.pathname || "/") {
+  return getNormalizedPathname(pathname).split("/").filter(Boolean);
+}
+
+function getProjectBasePath(pathname = window.location.pathname || "/") {
+  const segments = getPathSegments(pathname);
+  if (segments.length === 0) return "";
+  return Object.prototype.hasOwnProperty.call(ENTRY_ROUTE_SEGMENT_TO_TAB, segments[0]) ? "" : `/${segments[0]}`;
+}
+
+function getProjectRootPath(pathname = window.location.pathname || "/") {
+  return `${getProjectBasePath(pathname)}/`;
+}
+
+function getEntryRouteContext(pathname = window.location.pathname || "/") {
+  const segments = getPathSegments(pathname);
+  if (segments.length === 0) return null;
+
+  let routeSegment = "";
+  let projectBasePath = "";
+  if (Object.prototype.hasOwnProperty.call(ENTRY_ROUTE_SEGMENT_TO_TAB, segments[0])) {
+    routeSegment = segments[0];
+  } else if (segments.length > 1 && Object.prototype.hasOwnProperty.call(ENTRY_ROUTE_SEGMENT_TO_TAB, segments[1])) {
+    projectBasePath = `/${segments[0]}`;
+    routeSegment = segments[1];
+  } else {
+    return null;
+  }
+
+  return {
+    tab: ENTRY_ROUTE_SEGMENT_TO_TAB[routeSegment],
+    routeSegment,
+    projectBasePath,
+    pathname: `${projectBasePath}/${routeSegment}/`,
+  };
+}
+
+function resolveRouteTabFromLocation() {
+  const params = new URLSearchParams(window.location.search);
+  const queryTab = String(params.get("tab") || "").trim();
+  if (TAB_IDS.has(queryTab)) {
+    return queryTab;
+  }
+  return String(getEntryRouteContext()?.tab || "");
 }
 
 function getEquipmentTypeIconPath(typeName) {
@@ -7048,8 +7110,23 @@ function buildAppQueryParams(nextValues = {}) {
 function navigateByAppParams(nextValues = {}, options = {}) {
   const { replace = false } = options;
   const params = buildAppQueryParams(nextValues);
+  const currentParams = new URLSearchParams(window.location.search);
+  const tab = String(params.get("tab") || "").trim();
+  const preferEntryRoutePath = Boolean(getEntryRouteContext()) && !currentParams.has("tab");
+  let pathname = getProjectRootPath();
+
+  if (tab && preferEntryRoutePath) {
+    const routeSegment = ENTRY_ROUTE_TAB_TO_SEGMENT.get(tab);
+    if (routeSegment) {
+      pathname = `${getProjectBasePath()}/${routeSegment}/`;
+      params.delete("tab");
+    }
+  } else if (!tab) {
+    params.delete("tab");
+  }
+
   const query = params.toString();
-  const nextUrl = `${window.location.pathname}${query ? `?${query}` : ""}${window.location.hash}`;
+  const nextUrl = `${pathname}${query ? `?${query}` : ""}${window.location.hash}`;
   if (replace) {
     window.history.replaceState({}, "", nextUrl);
   } else {
@@ -7059,7 +7136,7 @@ function navigateByAppParams(nextValues = {}, options = {}) {
 
 function applyAppRouteFromUrl() {
   const params = new URLSearchParams(window.location.search);
-  const tab = params.get("tab");
+  const tab = resolveRouteTabFromLocation();
   if (TAB_IDS.has(tab)) {
     switchTab(tab);
   } else {
