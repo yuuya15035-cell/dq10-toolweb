@@ -31,9 +31,9 @@ const HOME_FEATURE_DEFINITIONS = [
   { id: "profit", tabId: "profit", title: "職人アシスト", icon: "🛠️" },
   { id: "favorites", tabId: "favorites", title: "お気に入り", icon: "📌" },
   { id: "present-codes", tabId: "present-codes", title: "プレゼント", icon: "🎁" },
-  { id: "orbs", tabId: "orbs", title: "宝珠", icon: "💎" },
-    { id: "equipment-db", tabId: "equipment-db", title: "装備データ", icon: "🛡️" },
   { id: "monster-info", tabId: "monster-info", title: "モンスター情報", icon: "👾" },
+  { id: "equipment-db", tabId: "equipment-db", title: "装備データ", icon: "🛡️" },
+  { id: "orbs", tabId: "orbs", title: "宝珠", icon: "💎" },
   { id: "field-farming", tabId: "field-farming", title: "フィールド狩り", icon: "⚔️" },
 ];
 const DEFAULT_HOME_FEATURE_IDS = Object.freeze(["profit", "bazaar", "favorites", "equipment-db"]);
