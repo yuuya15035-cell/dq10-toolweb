@@ -10444,43 +10444,108 @@ function renderRecipeFavoriteAction() {
   if (!recipeFavoriteActionWrap) return;
 
   const equipment = getSelectedEquipment();
+  const showProfitResetButton = hasActiveProfitSelectionFilters();
   if (!equipment) {
     recipeFavoriteActionWrap.innerHTML = `
       <div class="recipe-favorite-action">
         <button type="button" class="recipe-favorite-toggle-button" disabled>☆ お気に入り</button>
+        ${
+          showProfitResetButton
+            ? `<button type="button" class="filter-reset-button recipe-filter-reset-button" data-reset-profit-selection="true">× 絞り込み解除</button>`
+            : ""
+        }
         <p class="helper-text">装備を選択すると、お気に入り登録できます。</p>
       </div>
     `;
-    return;
+  } else {
+    const isFavorite = isRecipeFavorite(equipment);
+    recipeFavoriteActionWrap.innerHTML = `
+      <div class="recipe-favorite-action">
+        <button
+          type="button"
+          class="recipe-favorite-toggle-button ${isFavorite ? "is-active" : ""}"
+          data-toggle-selected-recipe-favorite="true"
+          aria-label="${equipment.name}をお気に入り${isFavorite ? "解除" : "登録"}"
+        >
+          ${isFavorite ? "★ お気に入り中" : "☆ お気に入り"}
+        </button>
+        ${
+          showProfitResetButton
+            ? `<button type="button" class="filter-reset-button recipe-filter-reset-button" data-reset-profit-selection="true">× 絞り込み解除</button>`
+            : ""
+        }
+      </div>
+    `;
   }
 
-  const isFavorite = isRecipeFavorite(equipment);
-  recipeFavoriteActionWrap.innerHTML = `
-    <div class="recipe-favorite-action">
-      <button
-        type="button"
-        class="recipe-favorite-toggle-button ${isFavorite ? "is-active" : ""}"
-        data-toggle-selected-recipe-favorite="true"
-        aria-label="${equipment.name}をお気に入り${isFavorite ? "解除" : "登録"}"
-      >
-        ${isFavorite ? "★ お気に入り中" : "☆ お気に入り"}
-      </button>
-    </div>
-  `;
-
   const toggleButton = recipeFavoriteActionWrap.querySelector("[data-toggle-selected-recipe-favorite]");
-  if (!toggleButton) return;
-  toggleButton.addEventListener("click", () => {
-    const favoriteKey = getRecipeFavoriteKey(equipment);
-    if (!favoriteKey) return;
-    if (recipeFavoriteKeys.has(favoriteKey)) {
-      recipeFavoriteKeys.delete(favoriteKey);
-    } else {
-      recipeFavoriteKeys.add(favoriteKey);
-    }
-    saveRecipeFavoriteState();
-    rerenderAll();
-  });
+  if (toggleButton && equipment) {
+    toggleButton.addEventListener("click", () => {
+      const favoriteKey = getRecipeFavoriteKey(equipment);
+      if (!favoriteKey) return;
+      if (recipeFavoriteKeys.has(favoriteKey)) {
+        recipeFavoriteKeys.delete(favoriteKey);
+      } else {
+        recipeFavoriteKeys.add(favoriteKey);
+      }
+      saveRecipeFavoriteState();
+      rerenderAll();
+    });
+  }
+
+  const resetButton = recipeFavoriteActionWrap.querySelector("[data-reset-profit-selection]");
+  if (resetButton) {
+    resetButton.addEventListener("click", () => {
+      resetProfitSelectionFilters();
+    });
+  }
+}
+
+function hasActiveProfitSelectionFilters() {
+  return (
+    String(selectedCraftsman || "").trim() !== "" ||
+    String(selectedCategory || "").trim() !== "" ||
+    String(selectedEquipmentId || "").trim() !== "" ||
+    String(equipmentSearchKeyword || "").trim() !== "" ||
+    String(materialSearchKeyword || "").trim() !== "" ||
+    isEquipmentSearchExpanded ||
+    isMaterialSearchExpanded ||
+    isEquipmentSearchCandidateListOpen ||
+    isMaterialSearchCandidateListOpen ||
+    String(window.location.search || "").includes("equipment=")
+  );
+}
+
+function resetProfitSelectionFilters() {
+  clearProfitArmorSetContext();
+  selectedCraftsman = "";
+  selectedCategory = "";
+  selectedEquipmentId = "";
+  equipmentSearchKeyword = "";
+  materialSearchKeyword = "";
+  isEquipmentSearchExpanded = false;
+  isMaterialSearchExpanded = false;
+  isEquipmentSearchCandidateListOpen = false;
+  isMaterialSearchCandidateListOpen = false;
+
+  if (equipmentSearchInput) equipmentSearchInput.value = "";
+  if (materialSearchInput) materialSearchInput.value = "";
+
+  navigateByFeatureRoute(
+    {
+      tab: "profit",
+      equipmentId: "",
+      materialKey: "",
+      profitEntryType: "",
+      profitArmorSetName: "",
+      profitArmorPart: "",
+      profitEquipmentName: "",
+      profitEquipmentType: "",
+      equipment: "",
+    },
+    { replace: true }
+  );
+  rerenderAll();
 }
 
 function getSalePricesForEquipment(equipment) {

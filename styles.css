@@ -2640,6 +2640,10 @@ button {
 .recipe-favorite-action {
   margin-top: -2px;
   margin-bottom: 8px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
 }
 
 .recipe-favorite-toggle-button {
@@ -2663,6 +2667,14 @@ button {
 
 .recipe-favorite-toggle-button:disabled {
   opacity: 0.6;
+}
+
+.recipe-filter-reset-button {
+  width: auto;
+  min-height: 38px;
+  padding: 7px 12px;
+  font-size: 0.84rem;
+  white-space: nowrap;
 }
 
 .craft-ideal-value-wrap[hidden] {
@@ -3629,6 +3641,12 @@ button {
   .recipe-favorite-toggle-button {
     min-height: 38px;
     font-size: 0.84rem;
+    padding: 7px 10px;
+  }
+
+  .recipe-filter-reset-button {
+    min-height: 38px;
+    font-size: 0.82rem;
     padding: 7px 10px;
   }
 
