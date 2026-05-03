@@ -4728,7 +4728,6 @@ body.memo-panel-open {
 
 .monster-info-card-memo-button,
 .equipment-db-memo-button,
-.orb-memo-button,
 .bazaar-card-memo-button {
   position: absolute;
   right: 8px;
@@ -5349,15 +5348,21 @@ body.memo-panel-open {
   text-align: left;
   border: 0;
   background: transparent;
-  padding: 12px 12px 42px;
+  padding: 12px 72px 12px 12px;
   cursor: pointer;
   color: #3f2f22;
 }
 
 .orb-memo-button {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  bottom: auto;
   min-height: 30px;
   padding: 4px 8px;
   font-size: 0.74rem;
+  margin: 0;
+  z-index: 2;
 }
 
 .orb-card-category {
@@ -5950,10 +5955,18 @@ body.memo-panel-open {
 
   .monster-info-card-memo-button,
   .equipment-db-memo-button,
-  .orb-memo-button,
   .bazaar-card-memo-button {
     right: 7px;
     bottom: 7px;
+    min-height: 26px;
+    padding: 3px 7px;
+    font-size: 0.68rem;
+  }
+
+  .orb-memo-button {
+    top: 7px;
+    right: 7px;
+    bottom: auto;
     min-height: 26px;
     padding: 3px 7px;
     font-size: 0.68rem;

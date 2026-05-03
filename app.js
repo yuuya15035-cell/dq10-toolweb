@@ -5134,6 +5134,7 @@ function openArmorSetDetailModal(entry) {
 function activateEquipmentDbCard(entryId) {
   const targetEntry = findEquipmentDbEntryById(entryId);
   if (!targetEntry) return;
+  navigateByFeatureRoute({ tab: "equipment-db", equipmentSearch: String(targetEntry.equipmentName || "").trim(), equipmentId: "", materialKey: "" });
   if (isArmorSetEntry(targetEntry)) {
     openArmorSetDetailModal(targetEntry);
     return;
@@ -6301,6 +6302,7 @@ function renderBazaarPrices() {
       selectedBazaarMaterialName = String(button.textContent || "").trim();
       bazaarSearchText = selectedBazaarMaterialName;
       shouldRefocusBazaarSearchInput = true;
+      syncBazaarItemUrl(selectedBazaarMaterialName);
       renderBazaarPrices();
     });
   });
@@ -6512,7 +6514,11 @@ function renderOrbCards() {
   orbListWrap.querySelectorAll("[data-orb-id]").forEach((button) => {
     button.addEventListener("click", () => {
       const clickedOrbId = String(button.dataset.orbId || "");
+      const targetOrb = orbEntryById.get(clickedOrbId);
       expandedOrbId = expandedOrbId === clickedOrbId ? "" : clickedOrbId;
+      if (targetOrb?.orbName) {
+        navigateByFeatureRoute({ tab: "orbs", orbSearch: String(targetOrb.orbName || "").trim(), equipmentId: "", materialKey: "" });
+      }
       renderOrbCards();
     });
   });
@@ -6842,7 +6848,7 @@ function openProfitArmorSetPart(setName, part) {
 
   clearProfitArmorSetContext();
   selectProfitEquipment(resolvedEquipmentId);
-  navigateByAppParams({ tab: "profit", equipmentId: resolvedEquipmentId, materialKey: "" });
+  syncProfitEquipmentUrl(resolvedEquipmentId);
   rerenderAll();
 }
 
@@ -6851,7 +6857,7 @@ function openRecipeFromFavorite(equipmentId) {
   clearProfitArmorSetContext();
   if (!selectProfitEquipment(equipmentId)) return;
   switchTab("profit");
-  navigateByFeatureRoute({ tab: "profit", equipmentId, materialKey: "" });
+  syncProfitEquipmentUrl(equipmentId);
   rerenderAll();
   document.getElementById("profit")?.scrollIntoView({ block: "start", behavior: "smooth" });
 }
@@ -6862,7 +6868,7 @@ function openProfitFromEquipmentId(equipmentId) {
   if (!selectProfitEquipment(equipmentId)) return;
   closeArmorSetDetailModal();
   switchTab("profit");
-  navigateByFeatureRoute({ tab: "profit", equipmentId, materialKey: "" });
+  syncProfitEquipmentUrl(equipmentId);
   rerenderAll();
   document.getElementById("profit")?.scrollIntoView({ block: "start", behavior: "smooth" });
 }
@@ -6903,15 +6909,19 @@ function openProfitFromEquipmentDb(entry) {
     selectProfitEquipment(payload.equipmentId);
   }
   switchTab("profit");
-  navigateByFeatureRoute({
-    tab: "profit",
-    equipmentId: payload.equipmentId,
-    materialKey: "",
-    profitEntryType: PROFIT_EQUIPMENT_NAVIGATION_TYPES.weapon,
-    profitEquipmentName: payload.equipmentName,
-    profitEquipmentType: payload.equipmentType,
-    profitEquipmentGroup: payload.equipmentGroup,
-  });
+  if (payload.equipmentId) {
+    syncProfitEquipmentUrl(payload.equipmentId);
+  } else {
+    navigateByFeatureRoute({
+      tab: "profit",
+      equipmentId: payload.equipmentId,
+      materialKey: "",
+      profitEntryType: PROFIT_EQUIPMENT_NAVIGATION_TYPES.weapon,
+      profitEquipmentName: payload.equipmentName,
+      profitEquipmentType: payload.equipmentType,
+      profitEquipmentGroup: payload.equipmentGroup,
+    });
+  }
   rerenderAll();
   document.getElementById("profit")?.scrollIntoView({ block: "start", behavior: "smooth" });
 }
@@ -6974,7 +6984,7 @@ function applySiteSearchNavigation(entry) {
     expandedEquipmentDbId = "";
     equipmentDbNameKeyword = keyword;
     switchTab("equipment-db");
-    navigateByFeatureRoute({ tab: "equipment-db", equipmentId: "", materialKey: "", equipmentDbGroup: selectedEquipmentDbGroup });
+    navigateByFeatureRoute({ tab: "equipment-db", equipmentSearch: keyword, equipmentId: "", materialKey: "" });
     renderEquipmentDbCards();
     resetSearchUi();
     document.getElementById("equipment-db")?.scrollIntoView({ block: "start", behavior: "smooth" });
@@ -6985,11 +6995,7 @@ function applySiteSearchNavigation(entry) {
     bazaarSearchText = keyword;
     selectedBazaarMaterialName = keyword;
     pendingBazaarFocusMaterialKey = String(entry.materialKey || "");
-    navigateByFeatureRoute({
-      tab: "bazaar",
-      equipmentId: "",
-      materialKey: pendingBazaarFocusMaterialKey,
-    });
+    syncBazaarItemUrl(keyword);
     renderBazaarPrices();
     resetSearchUi();
     document.getElementById("bazaar")?.scrollIntoView({ block: "start", behavior: "smooth" });
@@ -7096,6 +7102,7 @@ function openBazaarDetailModal(materialKey) {
   if (!bazaarDetailModalOverlay || !bazaarDetailModalBody) return;
   const row = getBazaarRowByMaterialKey(materialKey);
   if (!row) return;
+  syncBazaarItemUrl(row.materialName);
 
   const monthOptions = getBazaarHistoryMonthKeys(row.materialKey);
   const latestMonthKey = monthOptions.length > 0 ? monthOptions[monthOptions.length - 1] : "";
@@ -8230,6 +8237,59 @@ function navigateByFeatureRoute(nextValues = {}, options = {}) {
   });
 }
 
+function navigateByDirectFeatureQuery(tab, queryKey, queryValue, options = {}) {
+  const normalizedTab = String(tab || "").trim();
+  const normalizedKey = String(queryKey || "").trim();
+  const normalizedValue = String(queryValue || "").trim();
+  const { replace = false } = options;
+  const params = new URLSearchParams();
+  let pathname = getProjectRootPath();
+
+  if (normalizedKey && normalizedValue) {
+    params.set(normalizedKey, normalizedValue);
+  }
+
+  if (normalizedTab) {
+    const routeSegment = ENTRY_ROUTE_TAB_TO_SEGMENT.get(normalizedTab);
+    if (routeSegment) {
+      pathname = `${getProjectBasePath()}/${routeSegment}/`;
+    } else {
+      params.set("tab", normalizedTab);
+    }
+  }
+
+  const query = params.toString();
+  const nextUrl = `${pathname}${query ? `?${query}` : ""}${window.location.hash}`;
+  const currentUrl = `${window.location.pathname}${window.location.search}${window.location.hash}`;
+  if (nextUrl === currentUrl) return;
+
+  if (replace) {
+    window.history.replaceState({}, "", nextUrl);
+  } else {
+    window.history.pushState({}, "", nextUrl);
+  }
+}
+
+function syncProfitEquipmentUrl(equipmentId, options = {}) {
+  const normalizedEquipmentId = String(equipmentId || "").trim();
+  const equipment = state.equipments.find((entry) => String(entry?.id || "") === normalizedEquipmentId);
+  const equipmentName = String(equipment?.name || "").trim();
+  if (equipmentName) {
+    navigateByDirectFeatureQuery("profit", "equipment", equipmentName, options);
+    return;
+  }
+  navigateByFeatureRoute({ tab: "profit", equipmentId: normalizedEquipmentId, materialKey: "" }, options);
+}
+
+function syncBazaarItemUrl(materialName, options = {}) {
+  const normalizedName = String(materialName || "").trim();
+  if (normalizedName) {
+    navigateByDirectFeatureQuery("bazaar", "item", normalizedName, options);
+    return;
+  }
+  navigateByFeatureRoute({ tab: "bazaar", equipmentId: "", materialKey: "" }, options);
+}
+
 function hasDirectDataQueryParams(params = new URLSearchParams(window.location.search)) {
   return params.has("equipment") || params.has("item") || params.has("name");
 }
@@ -8623,6 +8683,7 @@ if (monsterInfoListWrap) {
     const targetId = String(button.dataset.monsterInfoId || "");
     const entry = monsterDetailEntryById.get(targetId);
     if (!entry || !monsterInfoModalOverlay || !monsterInfoModalBody || activeTabId !== "monster-info") return;
+    navigateByFeatureRoute({ tab: "monster-info", monsterSearch: String(entry.name || "").trim(), equipmentId: "", materialKey: "" });
     activeMonsterInfoId = targetId;
     const habitatsHtml = entry.habitats.map((name) => {
       const meta = mapMasterByName.get(name);
@@ -9167,6 +9228,9 @@ document.addEventListener("keydown", (event) => {
 });
 
 window.addEventListener("popstate", () => {
+  closeBazaarDetailModal();
+  closeMonsterInfoModal();
+  closeArmorSetDetailModal();
   applyAppRouteFromUrl();
   rerenderActiveTabOnly();
 });
@@ -9350,7 +9414,7 @@ function applyProfitEquipmentSelection(equipmentId, options = {}) {
   clearProfitArmorSetContext();
   void ensureBazaarPricesLoaded();
   if (activeTabId === "profit") {
-    navigateByAppParams({ tab: "profit", equipmentId: selectedEquipmentId, materialKey: "" });
+    syncProfitEquipmentUrl(selectedEquipmentId);
   }
   const eq = getSelectedEquipment();
   syncSalePriceInputs({ force: true });
@@ -9404,7 +9468,7 @@ async function openEquipmentDbFromMonsterWhiteBox(itemName) {
   equipmentDbNameKeyword = normalizedName;
   isEquipmentDbNameSearchOpen = true;
   switchTab("equipment-db");
-  navigateByFeatureRoute({ tab: "equipment-db", equipmentId: "", materialKey: "", equipmentDbGroup: selectedEquipmentDbGroup });
+  navigateByFeatureRoute({ tab: "equipment-db", equipmentSearch: normalizedName, equipmentId: "", materialKey: "" });
   renderEquipmentDbCards();
   document.getElementById("equipment-db")?.scrollIntoView({ block: "start", behavior: "smooth" });
 }
