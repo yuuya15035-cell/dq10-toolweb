@@ -10237,9 +10237,12 @@ function renderSelectedEquipmentTypeMeta() {
 
   const equipment = getSelectedEquipment();
   const typeLabel = String(equipment?.category || "").trim();
-  const typeIconPath = getEquipmentTypeIconPath(typeLabel);
+  const equipmentDbEntry = resolveProfitEquipmentDetailEntry(equipment);
+  const typeIconPath =
+    getEquipmentTypeIconPath(typeLabel) ||
+    getEquipmentTypeIconPath(equipmentDbEntry?.equipmentType);
 
-  if (!equipment || !typeLabel || !typeIconPath) {
+  if (!equipment || !typeLabel) {
     selectedEquipmentTypeMeta.innerHTML = "";
     selectedEquipmentTypeMeta.hidden = true;
     return;
@@ -10251,13 +10254,12 @@ function renderSelectedEquipmentTypeMeta() {
     });
   }
 
-  const equipmentDbEntry = resolveProfitEquipmentDetailEntry(equipment);
   const performanceHtml = buildProfitEquipmentPerformanceHtml(equipment, equipmentDbEntry);
 
   selectedEquipmentTypeMeta.innerHTML = `
     <div class="selected-equipment-summary">
       <span class="equipment-type-meta selected-equipment-type-chip">
-        <img src="${resolveProjectScopedAssetUrl(typeIconPath)}" alt="" class="equipment-type-icon" loading="lazy" decoding="async">
+        ${typeIconPath ? `<img src="${resolveProjectScopedAssetUrl(typeIconPath)}" alt="" class="equipment-type-icon" loading="lazy" decoding="async">` : ""}
         <span>種別: ${typeLabel}</span>
       </span>
       ${performanceHtml}
@@ -10303,7 +10305,8 @@ function buildProfitEquipmentPerformanceHtml(equipment, entry) {
   if (isArmor) {
     // 防具は主要ステータスではなくセット効果だけを簡易表示する
   } else if (isShield) {
-    // 盾は特性だけを簡易表示する
+    pushStat("守備力", entry?.defense);
+    pushStat("盾ガード率", entry?.shieldGuardRate, (raw) => formatEquipmentDbGuardRate(raw));
   } else {
     pushStat("攻撃力", entry?.attack);
   }
