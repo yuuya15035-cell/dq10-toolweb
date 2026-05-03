@@ -495,6 +495,15 @@ body.is-modal-open {
   font-size: 0.71rem;
 }
 
+.top-quick-access-note-memo {
+  margin-top: -2px;
+  padding: 7px 9px;
+  border: 1px solid rgba(184, 148, 112, 0.7);
+  border-radius: 10px;
+  background: rgba(255, 250, 242, 0.82);
+  color: #5a3c27;
+}
+
 .top-tool-card {
   display: grid;
   gap: 4px;
@@ -4769,6 +4778,41 @@ button {
   box-shadow: 0 8px 18px rgba(35, 22, 10, 0.2);
 }
 
+.memo-dock-hint {
+  position: absolute;
+  right: 0;
+  bottom: 54px;
+  width: min(230px, calc(100vw - 34px));
+  padding: 9px 12px 9px 10px;
+  border: 1px solid #d3b38a;
+  border-radius: 12px;
+  background: rgba(255, 248, 236, 0.98);
+  color: #5a3c27;
+  box-shadow: 0 10px 24px rgba(35, 22, 10, 0.18);
+}
+
+.memo-dock-hint p {
+  margin: 0;
+  padding-right: 18px;
+  font-size: 0.76rem;
+  line-height: 1.45;
+}
+
+.memo-dock-hint-close {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  width: 24px;
+  min-height: 24px;
+  padding: 0;
+  border: 1px solid #ccb089;
+  border-radius: 999px;
+  background: #fffaf0;
+  color: #5a3c27;
+  font-size: 0.88rem;
+  line-height: 1;
+}
+
 body.memo-panel-open {
   overflow: hidden;
   overscroll-behavior: none;
@@ -4823,6 +4867,25 @@ body.memo-panel-open {
   transform: translateY(calc(100% + 90px));
   opacity: 0;
   transition: transform 180ms ease-out, opacity 180ms ease-out;
+}
+
+@media (max-width: 640px) {
+  .top-quick-access-note-memo {
+    padding: 6px 8px;
+    font-size: 0.72rem;
+    line-height: 1.4;
+  }
+
+  .memo-dock-hint {
+    right: 2px;
+    bottom: 52px;
+    width: min(220px, calc(100vw - 28px));
+    padding: 8px 10px;
+  }
+
+  .memo-dock-hint p {
+    font-size: 0.72rem;
+  }
 }
 
 .memo-panel.is-open {

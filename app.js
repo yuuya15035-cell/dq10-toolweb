@@ -26,6 +26,7 @@ const BAZAAR_FAVORITES_STORAGE_KEY = "dq10_toolweb_bazaar_favorites_v1";
 const RECIPE_FAVORITES_STORAGE_KEY = "dq10_toolweb_recipe_favorites_v1";
 const HOME_FEATURES_STORAGE_KEY = "dq10_toolweb_home_features_v1";
 const MEMO_STORAGE_KEY = "dq10_toolweb_memos_v1";
+const MEMO_HINT_STORAGE_KEY = "dq10_toolweb_memo_hint_dismissed_v1";
 const ADMIN_CHECKLIST_STORAGE_KEY = "dq10_toolweb_admin_checklist_v1";
 const ROUTINE_TASKS_STORAGE_KEY = "dq10_toolweb_routine_tasks_v1";
 const RECIPE_FAVORITE_CATEGORY_VALUE = "__favorites__";
@@ -1240,6 +1241,46 @@ function saveMemoEntries() {
   );
 }
 
+function loadMemoHintDismissedState() {
+  try {
+    return localStorage.getItem(MEMO_HINT_STORAGE_KEY) === "1";
+  } catch {
+    return false;
+  }
+}
+
+function saveMemoHintDismissedState() {
+  try {
+    if (isMemoHintDismissed) {
+      localStorage.setItem(MEMO_HINT_STORAGE_KEY, "1");
+    } else {
+      localStorage.removeItem(MEMO_HINT_STORAGE_KEY);
+    }
+  } catch {
+    // no-op
+  }
+}
+
+function dismissMemoDockHint() {
+  isMemoHintDismissed = true;
+  saveMemoHintDismissedState();
+  if (memoDockHint) memoDockHint.hidden = true;
+}
+
+function updateMemoDockHintVisibility() {
+  if (!memoDockHint) return;
+  memoDockHint.hidden = isMemoHintDismissed;
+}
+
+function decorateMemoAddButtons(root = document) {
+  if (!root?.querySelectorAll) return;
+  root.querySelectorAll(".memo-add-button").forEach((button) => {
+    if (!(button instanceof HTMLElement)) return;
+    button.setAttribute("title", "この項目をメモに追加");
+    button.setAttribute("aria-label", "この項目をメモに追加");
+  });
+}
+
 function loadRoutineTaskState() {
   const raw = localStorage.getItem(ROUTINE_TASKS_STORAGE_KEY);
   if (!raw) return {};
@@ -1681,6 +1722,7 @@ let memoEntryIdSet = new Set();
 let memoPanelSwipeState = null;
 const expandedMemoIds = new Set();
 let memoToastTimer = null;
+let isMemoHintDismissed = false;
 let activeFavoriteMaterialModalKey = "";
 let presentCodes = [];
 let fieldFarmingMonsters = [];
@@ -1969,6 +2011,8 @@ const adminLockButton = getRequiredElementById("adminLockButton");
 const adminFabMessage = getRequiredElementById("adminFabMessage");
 const historyBackButton = getRequiredElementById("historyBackButton");
 const memoDockButton = getRequiredElementById("memoDockButton");
+const memoDockHint = getRequiredElementById("memoDockHint");
+const memoDockHintCloseButton = getRequiredElementById("memoDockHintCloseButton");
 const memoToast = getRequiredElementById("memoToast");
 const memoPanelBackdrop = getRequiredElementById("memoPanelBackdrop");
 const memoPanel = getRequiredElementById("memoPanel");
@@ -2078,8 +2122,14 @@ function showMemoToast(message) {
   }, 1600);
 }
 
+function showMemoDockHintIfNeeded() {
+  if (!memoDockHint || isMemoHintDismissed) return;
+  memoDockHint.hidden = false;
+}
+
 function openMemoPanel(message = "") {
   if (!memoPanel) return;
+  if (!isMemoHintDismissed) dismissMemoDockHint();
   memoPanelBackdrop && (memoPanelBackdrop.hidden = false);
   memoPanel.hidden = false;
   memoPanel.classList.add("is-open");
@@ -2153,6 +2203,7 @@ function renderMemoList() {
       </article>`;
     })
     .join("");
+  decorateMemoAddButtons(memoListWrap);
 }
 
 function toggleMemoExpanded(memoId) {
@@ -4866,6 +4917,7 @@ function renderMonsterInfoCards() {
       openMonsterInfoDetailModal(targetEntry);
     }
   }
+  decorateMemoAddButtons(monsterInfoListWrap);
   updateDocumentMetadata();
 }
 
@@ -5239,6 +5291,7 @@ function openArmorSetDetailModal(entry) {
   if (!entry || !armorSetDetailModalOverlay || !armorSetDetailModalBody) return;
   activeArmorSetDetailId = String(entry.id || "");
   armorSetDetailModalBody.innerHTML = buildArmorSetDetailModalHtml(entry);
+  decorateMemoAddButtons(armorSetDetailModalBody);
   armorSetDetailModalOverlay.hidden = false;
   armorSetDetailModalDialog.scrollTop = 0;
   armorSetDetailModalBody.scrollTop = 0;
@@ -5272,6 +5325,7 @@ function openMonsterInfoDetailModal(entry) {
       <div><p>白宝箱</p><div class="monster-info-chip-list">${buildMonsterWhiteBoxLinksHtml(entry.whiteBoxList)}</div></div>
       <div><p>宝珠 / オーブ</p><div class="monster-info-chip-list">${buildMonsterOrbLinksHtml(entry.orbList)}</div></div>
       <div><p>生息地</p><ul class="monster-info-habitat-list">${habitatsHtml || "<li>なし</li>"}</ul></div>`;
+  decorateMemoAddButtons(monsterInfoModalBody);
   monsterInfoModalOverlay.hidden = false;
   monsterInfoModalDialog.scrollTop = 0;
   monsterInfoModalBody.scrollTop = 0;
@@ -5501,6 +5555,7 @@ function renderEquipmentDbCards() {
     }
   }
 
+  decorateMemoAddButtons(equipmentDbListWrap);
   updateDocumentMetadata();
 }
 
@@ -6544,6 +6599,7 @@ function renderBazaarPrices() {
     });
   });
 
+  decorateMemoAddButtons(bazaarListWrap);
   bazaarListWrap.querySelectorAll("[data-memo-bazaar-key]").forEach((button) => {
     button.addEventListener("click", (event) => {
       event.stopPropagation();
@@ -6750,6 +6806,7 @@ function renderOrbCards() {
       renderOrbCards();
     });
   });
+  decorateMemoAddButtons(orbListWrap);
   orbListWrap.querySelectorAll("[data-memo-orb-id]").forEach((button) => {
     button.addEventListener("click", (event) => {
       event.preventDefault();
@@ -7600,6 +7657,7 @@ async function openBazaarDetailModal(materialKey) {
       ${relatedMonstersHtml}
     </section>
   `;
+  decorateMemoAddButtons(bazaarDetailModalBody);
 
   activeBazaarDetailModalKey = row.materialKey;
   bazaarDetailModalOverlay.hidden = false;
@@ -11178,6 +11236,7 @@ function rerenderAll() {
   if (activeTabId === "equipment-db") renderEquipmentDbCards();
   if (activeTabId === "monster-info") renderMonsterInfoCards();
   renderSiteSearchCandidates();
+  decorateMemoAddButtons(document);
   updateDocumentMetadata();
 }
 
@@ -11758,6 +11817,12 @@ if (memoDockButton) {
   });
 }
 
+if (memoDockHintCloseButton) {
+  memoDockHintCloseButton.addEventListener("click", () => {
+    dismissMemoDockHint();
+  });
+}
+
 if (adminChecklistWrap) {
   adminChecklistWrap.addEventListener("change", (event) => {
     const target = event.target;
@@ -12050,9 +12115,12 @@ async function initialize() {
   setAdminModeEnabled(isAdminModeEnabled);
   loadAdminChecklistState();
   memoEntries = loadMemoEntries();
+  isMemoHintDismissed = loadMemoHintDismissedState();
   routineTaskCheckedTokens = loadRoutineTaskState();
   rebuildMemoEntryIdSet();
   renderMemoList();
+  updateMemoDockHintVisibility();
+  decorateMemoAddButtons(document);
   renderAdminChecklist();
 
   try {
@@ -12116,6 +12184,7 @@ async function initialize() {
   }
   saveData();
   rerenderAll();
+  showMemoDockHintIfNeeded();
   prefetchDataForTab(activeTabId);
 }
 
