@@ -1091,12 +1091,12 @@ body.is-modal-open {
   }
 
   .routine-progress-text,
-  .routine-incomplete-toggle {
+  .routine-task-reset-timing {
     font-size: 0.84rem;
   }
 
   .routine-task-card {
-    padding: 10px;
+    padding: 8px 9px;
   }
 
   .routine-task-card-header {
@@ -4060,8 +4060,8 @@ button {
 
 .routine-controls {
   display: grid;
-  gap: 10px;
-  margin-bottom: 12px;
+  gap: 8px;
+  margin-bottom: 10px;
 }
 
 .routine-type-tabs {
@@ -4107,18 +4107,15 @@ button {
   min-height: 38px;
 }
 
-.routine-incomplete-toggle {
-  margin-bottom: 0;
-}
-
 .routine-card-list {
   display: grid;
-  gap: 10px;
+  gap: 6px;
 }
 
 .routine-task-card {
   border-color: #d7c5ae;
   background: #fffaf5;
+  padding: 9px 10px;
 }
 
 .routine-task-card.is-complete {
@@ -4137,7 +4134,7 @@ button {
   justify-content: space-between;
   align-items: flex-start;
   gap: 12px;
-  margin-bottom: 10px;
+  margin-bottom: 0;
 }
 
 .routine-task-title-wrap {
@@ -4181,11 +4178,18 @@ button {
   white-space: nowrap;
 }
 
+.routine-task-reset-timing {
+  margin: 4px 0 0;
+  color: #6a523f;
+  font-size: 0.76rem;
+  line-height: 1.35;
+}
+
 .routine-task-summary {
   display: flex;
   flex-wrap: wrap;
-  gap: 4px 10px;
-  margin: 6px 0 0;
+  gap: 3px 9px;
+  margin: 4px 0 0;
   color: #5a4635;
   font-size: 0.84rem;
   line-height: 1.4;

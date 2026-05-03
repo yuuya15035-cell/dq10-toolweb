@@ -1691,7 +1691,6 @@ let expandedEquipmentDbId = "";
 let presentCodesKeyword = "";
 let fieldFarmingKeyword = "";
 let selectedRoutineType = "daily";
-let showRoutineIncompleteOnly = false;
 let routineTaskCheckedTokens = {};
 let siteSearchKeyword = "";
 let isSiteSearchDataLoading = false;
@@ -1862,7 +1861,6 @@ const routineTypeTabButtons = Array.from(document.querySelectorAll("[data-routin
 const routineProgressText = getRequiredElementById("routineProgressText");
 const routineCheckAllButton = getRequiredElementById("routineCheckAllButton");
 const routineClearAllButton = getRequiredElementById("routineClearAllButton");
-const routineIncompleteOnlyToggle = getRequiredElementById("routineIncompleteOnlyToggle");
 const routineListWrap = getRequiredElementById("routineListWrap");
 const orbListWrap = getRequiredElementById("orbListWrap");
 const orbSearchInput = getRequiredElementById("orbSearchInput");
@@ -4259,7 +4257,7 @@ function formatRoutineResetRuleLabel(rule) {
   const { hour, minute } = parseRoutineResetTime(normalized);
   const timeLabel = formatRoutineResetTimeLabel(hour, minute);
   if (normalized.startsWith("daily")) {
-    return `毎日 ${timeLabel}`;
+    return `毎日 ${timeLabel} 更新`;
   }
   if (normalized.startsWith("weekly_")) {
     const weeklyBase = normalized.replace(/(am|pm)?\d{1,2}(?::?\d{2})?$/i, "").replace(/_+$/, "");
@@ -4273,7 +4271,7 @@ function formatRoutineResetRuleLabel(rule) {
       fri: "金曜",
       sat: "土曜",
     };
-    return `毎週${dayMap[dayToken] || "日曜"} ${timeLabel}`;
+    return `毎週${dayMap[dayToken] || "日曜"} ${timeLabel} 更新`;
   }
   if (normalized.startsWith("monthly_")) {
     const monthlyBase = normalized.replace(/(am|pm)?\d{1,2}(?::?\d{2})?$/i, "").replace(/_+$/, "");
@@ -4284,10 +4282,20 @@ function formatRoutineResetRuleLabel(rule) {
       .filter((value) => Number.isFinite(value) && value > 0)
       .sort((a, b) => a - b);
     if (dayNumbers.length > 0) {
-      return `毎月${dayNumbers.join("日・")}日 ${timeLabel}`;
+      return `毎月${dayNumbers.join("日・")}日 ${timeLabel} 更新`;
     }
   }
   return raw;
+}
+
+function formatRoutineVersionLabel(value) {
+  const normalized = String(value || "").trim();
+  if (!normalized) return "ver-";
+  const compact = normalized.replace(/\s+/g, "");
+  if (/^ver/i.test(compact)) {
+    return compact.replace(/^ver+/i, "ver");
+  }
+  return `ver${compact}`;
 }
 
 function formatRoutineToolAvailableLabel(value) {
@@ -4316,9 +4324,6 @@ function updateRoutineTypeTabState() {
 
 function renderRoutineTasks() {
   updateRoutineTypeTabState();
-  if (routineIncompleteOnlyToggle) {
-    routineIncompleteOnlyToggle.checked = showRoutineIncompleteOnly;
-  }
   const currentTypeLabel = getRoutineTypeLabel(selectedRoutineType);
   const currentTasks = getRoutineTasksByType(selectedRoutineType);
   const completedCount = currentTasks.filter((task) => isRoutineTaskChecked(task)).length;
@@ -4338,12 +4343,10 @@ function renderRoutineTasks() {
     return;
   }
 
-  const visibleTasks = showRoutineIncompleteOnly ? currentTasks.filter((task) => !isRoutineTaskChecked(task)) : currentTasks;
+  const visibleTasks = currentTasks;
   if (visibleTasks.length === 0) {
     routineListWrap.innerHTML = `<div class="card routine-status-card">${
-      currentTasks.length === 0
-        ? `${currentTypeLabel}の項目はまだありません。`
-        : `${currentTypeLabel}はすべて完了しています。`
+      `${currentTypeLabel}の項目はまだありません。`
     }</div>`;
     return;
   }
@@ -4354,21 +4357,23 @@ function renderRoutineTasks() {
         .map((task) => {
           const checked = isRoutineTaskChecked(task);
           const checkLabel = checked ? "完了済み" : "未完了";
-          const startVersion = task.startVersion || "-";
+          const startVersion = formatRoutineVersionLabel(task.startVersion);
           const comment = task.comment || "-";
           const estimatedTime = task.estimatedTime || "-";
           const reward = task.reward || "-";
           const howTo = task.howTo || "-";
           const toolAvailableLabel = formatRoutineToolAvailableLabel(task.toolAvailable);
+          const resetTimingLabel = formatRoutineResetRuleLabel(task.resetRule);
           return `
             <article class="card routine-task-card${checked ? " is-complete" : ""}">
               <div class="routine-task-card-header">
                 <div class="routine-task-title-wrap">
                   <div class="routine-task-title-line">
                     <h3 class="routine-task-title">${escapeHtml(task.title)}</h3>
-                    <span class="routine-task-version">(ver${escapeHtml(startVersion)})</span>
+                    <span class="routine-task-version">(${escapeHtml(startVersion)})</span>
                     ${toolAvailableLabel === "対応" ? '<span class="routine-task-tool-badge">ツール</span>' : ""}
                   </div>
+                  <p class="routine-task-reset-timing">${escapeHtml(resetTimingLabel)}</p>
                   <p class="routine-task-summary">
                     <span class="routine-task-summary-item">${escapeHtml(howTo)}</span>
                     <span class="routine-task-summary-item">${escapeHtml(reward)}</span>
@@ -11011,13 +11016,6 @@ routineTypeTabButtons.forEach((button) => {
     renderRoutineTasks();
   });
 });
-
-if (routineIncompleteOnlyToggle) {
-  routineIncompleteOnlyToggle.addEventListener("change", (event) => {
-    showRoutineIncompleteOnly = Boolean(event.target instanceof HTMLInputElement && event.target.checked);
-    renderRoutineTasks();
-  });
-}
 
 if (routineCheckAllButton) {
   routineCheckAllButton.addEventListener("click", () => {
