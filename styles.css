@@ -2035,6 +2035,13 @@ button {
   margin-bottom: 0;
 }
 
+.bazaar-search-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
 .bazaar-search-field span {
   font-size: 0.82rem;
   color: #6e553e;
@@ -2044,12 +2051,24 @@ button {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
   gap: 6px;
+  flex: 1 1 280px;
 }
 
 .bazaar-search-input-wrap input {
   width: 100%;
   min-height: 42px;
   background: #fff;
+}
+
+.bazaar-favorite-filter-inline {
+  flex: 0 0 auto;
+  margin: 0;
+  align-self: center;
+  min-height: 42px;
+  padding: 8px 12px;
+  border-radius: 12px;
+  background: rgba(255, 250, 245, 0.96);
+  border: 1px solid #dcc7ad;
 }
 
 .bazaar-search-clear-button {
@@ -3719,25 +3738,16 @@ button {
   .bazaar-search-field {
     grid-column: 1 / -1;
   }
-
-  .bazaar-filter-toggle-row {
-    grid-column: 1 / -1;
-  }
 }
 
 @media (min-width: 920px) {
   .bazaar-control-wrap {
-    grid-template-columns: repeat(4, minmax(0, 1fr));
+    grid-template-columns: minmax(150px, 0.9fr) minmax(180px, 1fr) minmax(380px, 1.8fr);
     align-items: start;
   }
 
   .bazaar-search-field {
     grid-column: auto;
-  }
-
-  .bazaar-filter-toggle-row {
-    grid-column: span 2;
-    justify-content: flex-start;
   }
 }
 

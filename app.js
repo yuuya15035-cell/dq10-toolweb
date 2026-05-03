@@ -64,6 +64,7 @@ const SITE_SEARCH_MATCH_RANK = Object.freeze({
 const ENTRY_ROUTE_SEGMENT_TO_TAB = Object.freeze({
   bazaar: "bazaar",
   craft: "profit",
+  "field-farming": "field-farming",
   routine: "routine",
   "present-codes": "present-codes",
   monster: "monster-info",
@@ -75,6 +76,7 @@ const ENTRY_ROUTE_SEGMENT_TO_TAB = Object.freeze({
 });
 const LEGACY_QUERY_TAB_ALIASES = Object.freeze({
   craft: "profit",
+  "field-farming": "field-farming",
   routine: "routine",
   "present-codes": "present-codes",
   monster: "monster-info",
@@ -6118,25 +6120,31 @@ function renderBazaarPrices() {
       </label>
       <label class="field bazaar-search-field">
         <span>素材検索</span>
-        <div class="bazaar-search-input-wrap">
-          <input
-            id="bazaarSearchInput"
-            type="search"
-            placeholder="素材名で検索"
-            aria-label="素材名で検索"
-            autocomplete="off"
-            autocapitalize="off"
-            spellcheck="false"
-          />
-          <button
-            id="bazaarSearchClearButton"
-            type="button"
-            class="bazaar-search-clear-button"
-            aria-label="素材検索をクリア"
-            ${trimmedSearchText === "" ? "disabled" : ""}
-          >
-            ×
-          </button>
+        <div class="bazaar-search-toolbar">
+          <div class="bazaar-search-input-wrap">
+            <input
+              id="bazaarSearchInput"
+              type="search"
+              placeholder="素材名で検索"
+              aria-label="素材名で検索"
+              autocomplete="off"
+              autocapitalize="off"
+              spellcheck="false"
+            />
+            <button
+              id="bazaarSearchClearButton"
+              type="button"
+              class="bazaar-search-clear-button"
+              aria-label="素材検索をクリア"
+              ${trimmedSearchText === "" ? "disabled" : ""}
+            >
+              ×
+            </button>
+          </div>
+          <label class="field inline-field bazaar-favorite-filter-field bazaar-favorite-filter-inline">
+            <input id="bazaarFavoritesOnlyToggle" type="checkbox" ${showBazaarFavoritesOnly ? "checked" : ""} />
+            <span>お気に入りのみ表示</span>
+          </label>
         </div>
         ${
           showSearchCandidates
@@ -6159,12 +6167,6 @@ function renderBazaarPrices() {
             : ""
         }
       </label>
-      <div class="bazaar-filter-toggle-row">
-        <label class="field inline-field bazaar-favorite-filter-field">
-          <input id="bazaarFavoritesOnlyToggle" type="checkbox" ${showBazaarFavoritesOnly ? "checked" : ""} />
-          <span>お気に入りのみ表示</span>
-        </label>
-      </div>
     </div>
     ${
       visibleRows.length === 0
@@ -7022,7 +7024,7 @@ function applySiteSearchNavigation(entry) {
   if (entry.tabId === "field-farming") {
     fieldFarmingKeyword = keyword;
     switchTab("field-farming");
-    navigateByAppParams({ tab: "field-farming", equipmentId: "", materialKey: "" });
+    navigateByFeatureRoute({ tab: "field-farming", equipmentId: "", materialKey: "" });
     renderFieldFarmingRanking();
     resetSearchUi();
     document.getElementById("field-farming")?.scrollIntoView({ block: "start", behavior: "smooth" });
