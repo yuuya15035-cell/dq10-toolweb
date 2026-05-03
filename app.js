@@ -1663,6 +1663,7 @@ let activeTabId = "profit";
 let appMode = "home";
 let pendingBazaarFocusMaterialKey = "";
 let pendingBazaarFocusMaterialName = "";
+let pendingBazaarAutoOpenMaterialKey = "";
 let bazaarRowById = new Map();
 let bazaarRowByMaterialKey = new Map();
 let bazaarRowByMaterialName = new Map();
@@ -6000,6 +6001,7 @@ function renderBazaarPrices() {
     const focusRow = findBazaarRowByDirectName(pendingBazaarFocusMaterialName);
     if (focusRow?.materialKey) {
       pendingBazaarFocusMaterialKey = String(focusRow.materialKey || "");
+      pendingBazaarAutoOpenMaterialKey = String(focusRow.materialKey || "");
       if (isBazaarPausedByComment(focusRow.comment)) {
         isBazaarPausedSectionExpanded = true;
         selectedBazaarPausedCategory = "";
@@ -6487,6 +6489,14 @@ function renderBazaarPrices() {
       focusTarget.scrollIntoView({ block: "center", behavior: "smooth" });
     }
     pendingBazaarFocusMaterialKey = "";
+  }
+  if (pendingBazaarAutoOpenMaterialKey !== "") {
+    const materialKeyToOpen = String(pendingBazaarAutoOpenMaterialKey || "").trim();
+    pendingBazaarAutoOpenMaterialKey = "";
+    if (materialKeyToOpen !== "" && activeBazaarDetailModalKey !== materialKeyToOpen) {
+      void openBazaarDetailModal(materialKeyToOpen);
+      return;
+    }
   }
   updateDocumentMetadata();
 }
@@ -7341,10 +7351,13 @@ function openBazaarPageForItem(itemName) {
   if (normalizedName === "" || normalizedName === "-" || normalizedName === "なし") return;
   closeMonsterInfoModal();
   switchTab("bazaar");
+  selectedBazaarCategory = "";
+  showBazaarFavoritesOnly = false;
   bazaarSearchText = normalizedName;
   selectedBazaarMaterialName = normalizedName;
+  pendingBazaarFocusMaterialName = normalizedName;
   syncBazaarItemUrl(normalizedName);
-  renderBazaarList();
+  renderBazaarPrices();
   document.getElementById("bazaar")?.scrollIntoView({ block: "start", behavior: "smooth" });
 }
 
@@ -8811,12 +8824,19 @@ function applyAppRouteFromUrl() {
   const directItemParam = String(tab === "bazaar" ? params.get("item") || "" : "").trim();
   const itemSearchParam = String(params.get("itemSearch") || directItemParam).trim();
   if (itemSearchParam) {
+    selectedBazaarCategory = "";
+    showBazaarFavoritesOnly = false;
     bazaarSearchText = itemSearchParam;
     selectedBazaarMaterialName = itemSearchParam;
-    if (directItemParam) pendingBazaarFocusMaterialName = directItemParam;
+    if (directItemParam) {
+      pendingBazaarFocusMaterialName = directItemParam;
+      pendingBazaarAutoOpenMaterialKey = "";
+    }
   } else if (tab === "bazaar") {
     bazaarSearchText = "";
     selectedBazaarMaterialName = "";
+    pendingBazaarFocusMaterialName = "";
+    pendingBazaarAutoOpenMaterialKey = "";
   }
   const orbSearchParam = String(params.get("orbSearch") || "").trim();
   if (orbSearchParam) {
