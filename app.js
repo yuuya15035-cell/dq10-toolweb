@@ -10288,6 +10288,7 @@ function buildProfitEquipmentPerformanceHtml(equipment, entry) {
   if (!entry) return "";
   const normalizedCategory = normalizeArmorPartCategory(equipment?.category);
   const isArmor = normalizedCategory !== "";
+  const isShield = String(equipment?.category || "").trim() === "盾";
   const stats = [];
   const pushStat = (label, value, formatter = (raw) => String(raw)) => {
     if (!Number.isFinite(value) || Number(value) === 0) return;
@@ -10295,18 +10296,11 @@ function buildProfitEquipmentPerformanceHtml(equipment, entry) {
   };
 
   if (isArmor) {
-    pushStat("部位", 1, () => normalizedCategory);
-    pushStat("守備力", entry?.defense);
-    pushStat("HP", entry?.hp);
-    pushStat("MP", entry?.mp);
-    pushStat("攻撃魔力", entry?.attackMagic);
-    pushStat("回復魔力", entry?.healMagic);
+    // 防具は主要ステータスではなくセット効果だけを簡易表示する
+  } else if (isShield) {
+    // 盾は特性だけを簡易表示する
   } else {
     pushStat("攻撃力", entry?.attack);
-    pushStat("攻撃魔力", entry?.attackMagic);
-    pushStat("回復魔力", entry?.healMagic);
-    pushStat("守備力", entry?.defense);
-    pushStat("盾ガード率", entry?.shieldGuardRate, (raw) => formatEquipmentDbGuardRate(raw));
   }
 
   const traits = getMeaningfulEquipmentTraits(entry).slice(0, 4);

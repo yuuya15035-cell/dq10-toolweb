@@ -5245,6 +5245,23 @@ body.memo-panel-open {
   margin-top: 2px;
 }
 
+@media (min-width: 700px) {
+  .selected-equipment-summary {
+    grid-template-columns: auto minmax(0, 1fr);
+    align-items: start;
+    gap: 10px;
+  }
+
+  .selected-equipment-type-chip {
+    align-self: start;
+    white-space: nowrap;
+  }
+
+  .profit-equipment-performance {
+    min-width: 0;
+  }
+}
+
 .whitebox-card.whitebox-card-type-armor .whitebox-card-meta {
   color: #dde3ee;
 }
