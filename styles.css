@@ -1088,6 +1088,11 @@ body.is-modal-open {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
+  .routine-reset-description {
+    font-size: 0.74rem;
+    line-height: 1.45;
+  }
+
   .routine-action-row button {
     min-height: 36px;
     font-size: 0.8rem;
@@ -4127,6 +4132,11 @@ button {
 
 .routine-toolbar {
   display: grid;
+  gap: 10px;
+}
+
+.routine-toolbar-main {
+  display: grid;
   gap: 8px;
 }
 
@@ -4134,6 +4144,18 @@ button {
   margin: 0;
   color: #4d3827;
   font-weight: 700;
+}
+
+.routine-reset-description {
+  margin: 0;
+  color: #6b5240;
+  font-size: 0.8rem;
+  line-height: 1.5;
+}
+
+.routine-reset-description-note {
+  display: inline;
+  color: #7b6048;
 }
 
 .routine-action-row {
@@ -4144,6 +4166,18 @@ button {
 
 .routine-action-row button {
   min-height: 38px;
+}
+
+@media (min-width: 860px) {
+  .routine-toolbar {
+    grid-template-columns: minmax(0, 1fr) minmax(260px, 420px);
+    align-items: end;
+    column-gap: 16px;
+  }
+
+  .routine-reset-description {
+    align-self: end;
+  }
 }
 
 .routine-card-list {

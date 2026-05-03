@@ -1881,6 +1881,7 @@ const routineTypeTabButtons = Array.from(document.querySelectorAll("[data-routin
 const routineProgressText = getRequiredElementById("routineProgressText");
 const routineCheckAllButton = getRequiredElementById("routineCheckAllButton");
 const routineClearAllButton = getRequiredElementById("routineClearAllButton");
+const routineResetDescription = getRequiredElementById("routineResetDescription");
 const routineListWrap = getRequiredElementById("routineListWrap");
 const orbListWrap = getRequiredElementById("orbListWrap");
 const orbSearchInput = getRequiredElementById("orbSearchInput");
@@ -4266,6 +4267,16 @@ function getRoutineTypeLabel(type) {
   return "日課";
 }
 
+function getRoutineResetDescriptionHtml(type) {
+  if (type === "weekly") {
+    return "週課は毎週日曜 6:00 にチェック状態を自動リセットします。";
+  }
+  if (type === "monthly") {
+    return '月課は毎月1日 6:00 にチェック状態を自動リセットします。<span class="routine-reset-description-note">※一部コンテンツは更新日が異なる場合があります。</span>';
+  }
+  return "日課は毎日 6:00 にチェック状態を自動リセットします。";
+}
+
 function formatRoutineResetTimeLabel(hour, minute) {
   return `${hour}:${String(minute).padStart(2, "0")}`;
 }
@@ -4349,6 +4360,9 @@ function renderRoutineTasks() {
   const completedCount = currentTasks.filter((task) => isRoutineTaskChecked(task)).length;
   if (routineProgressText) {
     routineProgressText.textContent = `${currentTypeLabel} ${completedCount}/${currentTasks.length} 完了`;
+  }
+  if (routineResetDescription) {
+    routineResetDescription.innerHTML = getRoutineResetDescriptionHtml(selectedRoutineType);
   }
   if (routineCheckAllButton) routineCheckAllButton.disabled = currentTasks.length === 0;
   if (routineClearAllButton) routineClearAllButton.disabled = currentTasks.length === 0;
