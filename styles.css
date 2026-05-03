@@ -953,6 +953,9 @@ body.is-modal-open {
   border-radius: 10px;
   background: #fff9f0;
 }
+.monster-drop-action-row {
+  margin-top: 6px;
+}
 .monster-drop-title {
   margin: 0 0 4px;
   font-weight: 700;
@@ -3196,6 +3199,32 @@ button {
   gap: 8px;
 }
 
+.bazaar-detail-related-list-compact {
+  gap: 10px;
+}
+
+.bazaar-detail-related-group {
+  display: grid;
+  gap: 6px;
+}
+
+.bazaar-detail-related-group-title,
+.bazaar-detail-related-count {
+  margin: 0;
+  font-size: 0.82rem;
+  color: #6b5039;
+}
+
+.bazaar-detail-related-chip-list {
+  gap: 5px;
+}
+
+.bazaar-detail-related-chip {
+  border: 1px solid #d0b695;
+  color: #5b3b23;
+  cursor: pointer;
+}
+
 .bazaar-detail-related-item {
   padding: 8px 10px;
   border: 1px solid #ddc6a9;
@@ -3234,6 +3263,7 @@ button {
 .bazaar-detail-related-link {
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   min-height: 32px;
   padding: 6px 10px;
   border-radius: 999px;
@@ -3243,10 +3273,23 @@ button {
   font-size: 0.8rem;
   font-weight: 700;
   text-decoration: none;
+  cursor: pointer;
 }
 
 .bazaar-detail-related-link:hover {
   background: #eed8ba;
+}
+
+.bazaar-detail-related-toggle {
+  justify-self: start;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: #7a5330;
+  font-size: 0.8rem;
+  font-weight: 700;
+  text-decoration: underline;
+  cursor: pointer;
 }
 
 .favorite-material-modal-overlay {
@@ -3784,9 +3827,21 @@ button {
     gap: 5px;
   }
 
+  .bazaar-detail-related-chip-list {
+    gap: 4px;
+  }
+
+  .bazaar-detail-related-chip {
+    font-size: 0.76rem;
+  }
+
   .bazaar-detail-related-link {
     min-height: 30px;
     padding: 5px 9px;
+    font-size: 0.78rem;
+  }
+
+  .bazaar-detail-related-toggle {
     font-size: 0.78rem;
   }
 }

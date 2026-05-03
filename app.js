@@ -1671,6 +1671,8 @@ let selectedBazaarChartRangeDays = DEFAULT_BAZAAR_CHART_RANGE_DAYS;
 let activeBazaarDetailModalKey = "";
 let bazaarDetailModalSwipeState = null;
 let bazaarDetailMonthByMaterialKey = new Map();
+let bazaarRelatedRecipeExpandStateByMaterialKey = new Map();
+let bazaarRelatedMonsterExpandStateByKey = new Map();
 let isBazaarPausedSectionExpanded = false;
 let memoEntries = [];
 let memoEntryIdSet = new Set();
@@ -4020,6 +4022,11 @@ function buildMonsterDropHtml(label, itemName, options = {}) {
   const normalizedItemName = String(itemName || "-").trim() || "-";
   const priceInfo = getBazaarPriceInfoByMaterialName(normalizedItemName);
   const priceHtml = priceInfo.hasDisplayPrice ? `<span class="monster-drop-price">${escapeHtml(priceInfo.priceText)}</span>` : "";
+  const canOpenBazaar = normalizedItemName !== "" && normalizedItemName !== "-" && normalizedItemName !== "なし" && normalizedItemName !== "未登録";
+  const bazaarLinkHtml =
+    modal && canOpenBazaar
+      ? `<button type="button" class="monster-info-chip monster-info-nav-link monster-drop-bazaar-link" data-monster-drop-bazaar-item="${escapeHtml(normalizedItemName)}">バザー情報</button>`
+      : "";
   if (modal) {
     return `<div class="monster-drop-detail">
       <p class="monster-drop-title">${escapeHtml(label)}</p>
@@ -4027,6 +4034,7 @@ function buildMonsterDropHtml(label, itemName, options = {}) {
         <span class="monster-drop-item-name">${escapeHtml(normalizedItemName)}</span>
         ${priceHtml}
       </p>
+      ${bazaarLinkHtml ? `<div class="monster-drop-action-row">${bazaarLinkHtml}</div>` : ""}
     </div>`;
   }
   return `<p class="monster-drop-row">
@@ -7189,7 +7197,7 @@ function closeBazaarDetailModal() {
   syncBodyModalOpenState();
 }
 
-function getBazaarRelatedRecipeEntries(materialName, limit = 10) {
+function getBazaarRelatedRecipeEntries(materialName) {
   const normalizedName = String(materialName || "").trim();
   if (normalizedName === "") return { items: [], total: 0 };
   const matchedMaterial = state.materials.find((material) => String(material?.name || "").trim() === normalizedName);
@@ -7218,12 +7226,20 @@ function getBazaarRelatedRecipeEntries(materialName, limit = 10) {
     return a.equipmentName.localeCompare(b.equipmentName, "ja");
   });
 
-  return { items: items.slice(0, limit), total: items.length };
+  return { items, total: items.length };
 }
 
-function getBazaarRelatedMonsterEntries(materialName, limit = 10) {
+function getBazaarRelatedMonsterEntries(materialName) {
   const normalizedName = String(materialName || "").trim();
-  if (normalizedName === "") return { items: [], total: 0 };
+  if (normalizedName === "") {
+    return {
+      normalItems: [],
+      rareItems: [],
+      normalTotal: 0,
+      rareTotal: 0,
+      total: 0,
+    };
+  }
 
   const normalMatches = [];
   const rareMatches = [];
@@ -7238,60 +7254,98 @@ function getBazaarRelatedMonsterEntries(materialName, limit = 10) {
     }
   });
 
-  const items = [...normalMatches, ...rareMatches].sort((a, b) => a.monsterName.localeCompare(b.monsterName, "ja"));
-  return { items: items.slice(0, limit), total: items.length };
+  normalMatches.sort((a, b) => a.monsterName.localeCompare(b.monsterName, "ja"));
+  rareMatches.sort((a, b) => a.monsterName.localeCompare(b.monsterName, "ja"));
+  return {
+    normalItems: normalMatches,
+    rareItems: rareMatches,
+    normalTotal: normalMatches.length,
+    rareTotal: rareMatches.length,
+    total: normalMatches.length + rareMatches.length,
+  };
 }
 
-function buildBazaarRelatedRecipesHtml(materialName) {
+function buildBazaarRelatedToggleHtml(toggleKey, isExpanded, remainCount) {
+  if (remainCount <= 0) return "";
+  return `<button type="button" class="bazaar-detail-related-toggle" data-bazaar-related-toggle="${escapeHtml(toggleKey)}">${isExpanded ? "閉じる" : `すべて表示（ほか${remainCount}件）`}</button>`;
+}
+
+function buildBazaarRelatedMonsterChipHtml(monsterName) {
+  return `<button type="button" class="monster-info-chip bazaar-detail-related-chip" data-bazaar-related-monster-name="${escapeHtml(monsterName)}">${escapeHtml(monsterName)}</button>`;
+}
+
+function buildBazaarRelatedMonsterGroupHtml(materialKey, groupKey, label, items) {
+  if (!Array.isArray(items) || items.length === 0) return "";
+  const visibleLimit = 5;
+  const toggleKey = `${materialKey}:${groupKey}`;
+  const isExpanded = bazaarRelatedMonsterExpandStateByKey.get(toggleKey) === true;
+  const visibleItems = isExpanded ? items : items.slice(0, visibleLimit);
+  const remainCount = Math.max(items.length - visibleItems.length, 0);
+  return `
+    <section class="bazaar-detail-related-group">
+      <p class="bazaar-detail-related-group-title">${escapeHtml(label)}：${items.length}体</p>
+      <div class="monster-info-chip-list bazaar-detail-related-chip-list">
+        ${visibleItems.map((item) => buildBazaarRelatedMonsterChipHtml(item.monsterName)).join("")}
+      </div>
+      ${buildBazaarRelatedToggleHtml(toggleKey, isExpanded, remainCount)}
+    </section>
+  `;
+}
+
+function buildBazaarRelatedRecipesHtml(materialKey, materialName) {
   const { items, total } = getBazaarRelatedRecipeEntries(materialName);
-  if (items.length === 0) {
+  if (total === 0) {
     return `<p class="bazaar-detail-related-empty">この素材を使うレシピは登録されていません。</p>`;
   }
-  const remainCount = Math.max(total - items.length, 0);
+  const toggleKey = `${materialKey}:recipes`;
+  const isExpanded = bazaarRelatedRecipeExpandStateByMaterialKey.get(toggleKey) === true;
+  const visibleLimit = 5;
+  const visibleItems = isExpanded ? items : items.slice(0, visibleLimit);
+  const remainCount = Math.max(total - visibleItems.length, 0);
   return `
     <div class="bazaar-detail-related-list">
-      ${items
+      <p class="bazaar-detail-related-count">${total}件</p>
+      ${visibleItems
         .map(
           (item) => `
             <article class="bazaar-detail-related-item">
               <p class="bazaar-detail-related-name">${escapeHtml(item.equipmentName)}</p>
               <div class="bazaar-detail-related-links">
-                <a class="bazaar-detail-related-link" href="${escapeHtml(getEquipmentUrl(item.equipmentName))}">装備情報</a>
-                <a class="bazaar-detail-related-link" href="${escapeHtml(getCraftUrl(item.equipmentName))}">職人アシスト</a>
+                <button type="button" class="bazaar-detail-related-link" data-bazaar-related-equipment-name="${escapeHtml(item.equipmentName)}">装備情報</button>
+                <button type="button" class="bazaar-detail-related-link" data-bazaar-related-craft-name="${escapeHtml(item.equipmentName)}">職人アシスト</button>
               </div>
             </article>
           `
         )
         .join("")}
-      ${remainCount > 0 ? `<p class="bazaar-detail-related-more">ほか${remainCount}件</p>` : ""}
+      ${buildBazaarRelatedToggleHtml(toggleKey, isExpanded, remainCount)}
     </div>
   `;
 }
 
-function buildBazaarRelatedMonstersHtml(materialName) {
-  const { items, total } = getBazaarRelatedMonsterEntries(materialName);
-  if (items.length === 0) {
+function buildBazaarRelatedMonstersHtml(materialKey, materialName) {
+  const { normalItems, rareItems, total } = getBazaarRelatedMonsterEntries(materialName);
+  if (total === 0) {
     return `<p class="bazaar-detail-related-empty">この素材を落とすモンスターは登録されていません。</p>`;
   }
-  const remainCount = Math.max(total - items.length, 0);
   return `
-    <div class="bazaar-detail-related-list">
-      ${items
-        .map(
-          (item) => `
-            <article class="bazaar-detail-related-item">
-              <p class="bazaar-detail-related-name">${escapeHtml(item.monsterName)}</p>
-              <p class="bazaar-detail-related-note">${escapeHtml(item.dropType)}</p>
-              <div class="bazaar-detail-related-links">
-                <a class="bazaar-detail-related-link" href="${escapeHtml(getMonsterUrl(item.monsterName))}">モンスター情報</a>
-              </div>
-            </article>
-          `
-        )
-        .join("")}
-      ${remainCount > 0 ? `<p class="bazaar-detail-related-more">ほか${remainCount}件</p>` : ""}
+    <div class="bazaar-detail-related-list bazaar-detail-related-list-compact">
+      ${buildBazaarRelatedMonsterGroupHtml(materialKey, "normal", "通常ドロップ", normalItems)}
+      ${buildBazaarRelatedMonsterGroupHtml(materialKey, "rare", "レアドロップ", rareItems)}
     </div>
   `;
+}
+
+function openBazaarPageForItem(itemName) {
+  const normalizedName = String(itemName || "").trim();
+  if (normalizedName === "" || normalizedName === "-" || normalizedName === "なし") return;
+  closeMonsterInfoModal();
+  switchTab("bazaar");
+  bazaarSearchText = normalizedName;
+  selectedBazaarMaterialName = normalizedName;
+  syncBazaarItemUrl(normalizedName);
+  renderBazaarList();
+  document.getElementById("bazaar")?.scrollIntoView({ block: "start", behavior: "smooth" });
 }
 
 async function openBazaarDetailModal(materialKey) {
@@ -7370,8 +7424,8 @@ async function openBazaarDetailModal(materialKey) {
         })}</div>
       `
       : `<p class="bazaar-detail-modal-chart-empty">表示できる履歴がありません。</p>`;
-  const relatedRecipesHtml = buildBazaarRelatedRecipesHtml(row.materialName);
-  const relatedMonstersHtml = buildBazaarRelatedMonstersHtml(row.materialName);
+  const relatedRecipesHtml = buildBazaarRelatedRecipesHtml(row.materialKey, row.materialName);
+  const relatedMonstersHtml = buildBazaarRelatedMonstersHtml(row.materialKey, row.materialName);
 
   bazaarDetailModalBody.innerHTML = `
     <div class="memo-target-header bazaar-detail-modal-header">
@@ -8945,6 +8999,65 @@ if (bazaarDetailModalBody) {
     event.stopPropagation();
     addMemoEntry(createBazaarMemoEntry(row));
   });
+  bazaarDetailModalBody.addEventListener("click", (event) => {
+    const target = event.target;
+    if (!(target instanceof Element)) return;
+    const toggleButton = target.closest("[data-bazaar-related-toggle]");
+    if (toggleButton && bazaarDetailModalBody.contains(toggleButton)) {
+      event.preventDefault();
+      const toggleKey = String(toggleButton.dataset.bazaarRelatedToggle || "").trim();
+      if (toggleKey === "" || !activeBazaarDetailModalKey) return;
+      const isRecipeToggle = toggleKey.endsWith(":recipes");
+      const targetMap = isRecipeToggle ? bazaarRelatedRecipeExpandStateByMaterialKey : bazaarRelatedMonsterExpandStateByKey;
+      targetMap.set(toggleKey, !(targetMap.get(toggleKey) === true));
+      void openBazaarDetailModal(activeBazaarDetailModalKey);
+      return;
+    }
+    const monsterButton = target.closest("[data-bazaar-related-monster-name]");
+    if (monsterButton && bazaarDetailModalBody.contains(monsterButton)) {
+      event.preventDefault();
+      event.stopPropagation();
+      const monsterName = String(monsterButton.dataset.bazaarRelatedMonsterName || "").trim();
+      if (!monsterName) return;
+      closeBazaarDetailModal();
+      void openMonsterInfoFromOrb(monsterName);
+      return;
+    }
+    const equipmentButton = target.closest("[data-bazaar-related-equipment-name]");
+    if (equipmentButton && bazaarDetailModalBody.contains(equipmentButton)) {
+      event.preventDefault();
+      event.stopPropagation();
+      const equipmentName = String(equipmentButton.dataset.bazaarRelatedEquipmentName || "").trim();
+      if (!equipmentName) return;
+      closeBazaarDetailModal();
+      void openEquipmentDbFromMonsterWhiteBox(equipmentName);
+      return;
+    }
+    const craftButton = target.closest("[data-bazaar-related-craft-name]");
+    if (craftButton && bazaarDetailModalBody.contains(craftButton)) {
+      event.preventDefault();
+      event.stopPropagation();
+      const equipmentName = String(craftButton.dataset.bazaarRelatedCraftName || "").trim();
+      if (!equipmentName) return;
+      const equipmentId = resolveProfitEquipmentIdFromParams({ equipmentName });
+      if (equipmentId) {
+        closeBazaarDetailModal();
+        openProfitFromEquipmentId(equipmentId);
+      } else {
+        closeBazaarDetailModal();
+        clearProfitArmorSetContext();
+        switchTab("profit");
+        navigateByFeatureRoute({
+          tab: "profit",
+          equipmentId: "",
+          materialKey: "",
+          profitEntryType: PROFIT_EQUIPMENT_NAVIGATION_TYPES.weapon,
+          profitEquipmentName: equipmentName,
+        });
+        rerenderAll();
+      }
+    }
+  });
   bazaarDetailModalBody.addEventListener("change", (event) => {
     const target = event.target;
     if (!(target instanceof HTMLSelectElement)) return;
@@ -9034,6 +9147,13 @@ if (monsterInfoModalBody) {
     if (orbButton && monsterInfoModalBody.contains(orbButton)) {
       event.preventDefault();
       void openOrbFromMonsterInfo(String(orbButton.dataset.monsterOrbName || ""));
+      return;
+    }
+    const bazaarButton = target.closest("[data-monster-drop-bazaar-item]");
+    if (bazaarButton && monsterInfoModalBody.contains(bazaarButton)) {
+      event.preventDefault();
+      event.stopPropagation();
+      openBazaarPageForItem(String(bazaarButton.dataset.monsterDropBazaarItem || ""));
       return;
     }
     const button = target.closest("[data-monster-white-box-equipment]");
