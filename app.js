@@ -7189,11 +7189,117 @@ function closeBazaarDetailModal() {
   syncBodyModalOpenState();
 }
 
-function openBazaarDetailModal(materialKey) {
+function getBazaarRelatedRecipeEntries(materialName, limit = 10) {
+  const normalizedName = String(materialName || "").trim();
+  if (normalizedName === "") return { items: [], total: 0 };
+  const matchedMaterial = state.materials.find((material) => String(material?.name || "").trim() === normalizedName);
+  if (!matchedMaterial?.id) return { items: [], total: 0 };
+
+  const equipmentById = new Map((state.equipments || []).map((equipment) => [String(equipment?.id || ""), equipment]));
+  const seenEquipmentIds = new Set();
+  const items = [];
+
+  (state.recipes || []).forEach((recipeRow) => {
+    if (String(recipeRow?.materialId || "") !== String(matchedMaterial.id || "")) return;
+    const equipmentId = String(recipeRow?.equipmentId || "").trim();
+    if (equipmentId === "" || seenEquipmentIds.has(equipmentId)) return;
+    const equipment = equipmentById.get(equipmentId);
+    const equipmentName = String(equipment?.name || "").trim();
+    if (equipmentName === "") return;
+    seenEquipmentIds.add(equipmentId);
+    items.push({
+      equipmentName,
+      equipmentLevel: Number(equipment?.equipmentLevel || 0),
+    });
+  });
+
+  items.sort((a, b) => {
+    if (b.equipmentLevel !== a.equipmentLevel) return b.equipmentLevel - a.equipmentLevel;
+    return a.equipmentName.localeCompare(b.equipmentName, "ja");
+  });
+
+  return { items: items.slice(0, limit), total: items.length };
+}
+
+function getBazaarRelatedMonsterEntries(materialName, limit = 10) {
+  const normalizedName = String(materialName || "").trim();
+  if (normalizedName === "") return { items: [], total: 0 };
+
+  const normalMatches = [];
+  const rareMatches = [];
+  (monsterDetailEntries || []).forEach((entry) => {
+    const monsterName = String(entry?.name || "").trim();
+    if (monsterName === "") return;
+    if (String(entry?.normalDrop || "").trim() === normalizedName) {
+      normalMatches.push({ monsterName, dropType: "通常ドロップ" });
+    }
+    if (String(entry?.rareDrop || "").trim() === normalizedName) {
+      rareMatches.push({ monsterName, dropType: "レアドロップ" });
+    }
+  });
+
+  const items = [...normalMatches, ...rareMatches].sort((a, b) => a.monsterName.localeCompare(b.monsterName, "ja"));
+  return { items: items.slice(0, limit), total: items.length };
+}
+
+function buildBazaarRelatedRecipesHtml(materialName) {
+  const { items, total } = getBazaarRelatedRecipeEntries(materialName);
+  if (items.length === 0) {
+    return `<p class="bazaar-detail-related-empty">この素材を使うレシピは登録されていません。</p>`;
+  }
+  const remainCount = Math.max(total - items.length, 0);
+  return `
+    <div class="bazaar-detail-related-list">
+      ${items
+        .map(
+          (item) => `
+            <article class="bazaar-detail-related-item">
+              <p class="bazaar-detail-related-name">${escapeHtml(item.equipmentName)}</p>
+              <div class="bazaar-detail-related-links">
+                <a class="bazaar-detail-related-link" href="${escapeHtml(getEquipmentUrl(item.equipmentName))}">装備情報</a>
+                <a class="bazaar-detail-related-link" href="${escapeHtml(getCraftUrl(item.equipmentName))}">職人アシスト</a>
+              </div>
+            </article>
+          `
+        )
+        .join("")}
+      ${remainCount > 0 ? `<p class="bazaar-detail-related-more">ほか${remainCount}件</p>` : ""}
+    </div>
+  `;
+}
+
+function buildBazaarRelatedMonstersHtml(materialName) {
+  const { items, total } = getBazaarRelatedMonsterEntries(materialName);
+  if (items.length === 0) {
+    return `<p class="bazaar-detail-related-empty">この素材を落とすモンスターは登録されていません。</p>`;
+  }
+  const remainCount = Math.max(total - items.length, 0);
+  return `
+    <div class="bazaar-detail-related-list">
+      ${items
+        .map(
+          (item) => `
+            <article class="bazaar-detail-related-item">
+              <p class="bazaar-detail-related-name">${escapeHtml(item.monsterName)}</p>
+              <p class="bazaar-detail-related-note">${escapeHtml(item.dropType)}</p>
+              <div class="bazaar-detail-related-links">
+                <a class="bazaar-detail-related-link" href="${escapeHtml(getMonsterUrl(item.monsterName))}">モンスター情報</a>
+              </div>
+            </article>
+          `
+        )
+        .join("")}
+      ${remainCount > 0 ? `<p class="bazaar-detail-related-more">ほか${remainCount}件</p>` : ""}
+    </div>
+  `;
+}
+
+async function openBazaarDetailModal(materialKey) {
   if (!bazaarDetailModalOverlay || !bazaarDetailModalBody) return;
   const row = getBazaarRowByMaterialKey(materialKey);
   if (!row) return;
   syncBazaarItemUrl(row.materialName);
+  await ensureMonsterInfoDataLoaded();
 
   const monthOptions = getBazaarHistoryMonthKeys(row.materialKey);
   const latestMonthKey = monthOptions.length > 0 ? monthOptions[monthOptions.length - 1] : "";
@@ -7264,6 +7370,8 @@ function openBazaarDetailModal(materialKey) {
         })}</div>
       `
       : `<p class="bazaar-detail-modal-chart-empty">表示できる履歴がありません。</p>`;
+  const relatedRecipesHtml = buildBazaarRelatedRecipesHtml(row.materialName);
+  const relatedMonstersHtml = buildBazaarRelatedMonstersHtml(row.materialName);
 
   bazaarDetailModalBody.innerHTML = `
     <div class="memo-target-header bazaar-detail-modal-header">
@@ -7293,6 +7401,14 @@ function openBazaarDetailModal(materialKey) {
         ? `<a class="bazaar-detail-modal-link" href="${row.officialUrl}" target="_blank" rel="noopener noreferrer">公式相場で確認</a>`
         : ""
     }
+    <section class="bazaar-detail-related-section" aria-label="この素材を使うレシピ">
+      <h4 class="bazaar-detail-related-title">この素材を使うレシピ</h4>
+      ${relatedRecipesHtml}
+    </section>
+    <section class="bazaar-detail-related-section" aria-label="この素材を落とすモンスター">
+      <h4 class="bazaar-detail-related-title">この素材を落とすモンスター</h4>
+      ${relatedMonstersHtml}
+    </section>
   `;
 
   activeBazaarDetailModalKey = row.materialKey;

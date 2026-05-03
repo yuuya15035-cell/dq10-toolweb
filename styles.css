@@ -3179,6 +3179,76 @@ button {
   background: #e6cda9;
 }
 
+.bazaar-detail-related-section {
+  margin-top: 14px;
+  padding-top: 10px;
+  border-top: 1px solid #e0cfb7;
+}
+
+.bazaar-detail-related-title {
+  margin: 0 0 8px;
+  font-size: 0.92rem;
+  color: #4b321f;
+}
+
+.bazaar-detail-related-list {
+  display: grid;
+  gap: 8px;
+}
+
+.bazaar-detail-related-item {
+  padding: 8px 10px;
+  border: 1px solid #ddc6a9;
+  border-radius: 10px;
+  background: #fffaf2;
+}
+
+.bazaar-detail-related-name,
+.bazaar-detail-related-note,
+.bazaar-detail-related-more,
+.bazaar-detail-related-empty {
+  margin: 0;
+}
+
+.bazaar-detail-related-name {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: #4a301b;
+}
+
+.bazaar-detail-related-note,
+.bazaar-detail-related-more,
+.bazaar-detail-related-empty {
+  margin-top: 4px;
+  font-size: 0.8rem;
+  color: #6f553d;
+}
+
+.bazaar-detail-related-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 6px;
+}
+
+.bazaar-detail-related-link {
+  display: inline-flex;
+  align-items: center;
+  min-height: 32px;
+  padding: 6px 10px;
+  border-radius: 999px;
+  border: 1px solid #ccb08e;
+  background: #f5e5cf;
+  color: #5b3b23;
+  font-size: 0.8rem;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.bazaar-detail-related-link:hover {
+  background: #eed8ba;
+}
+
 .favorite-material-modal-overlay {
   position: fixed;
   inset: 0;
@@ -3699,6 +3769,25 @@ button {
 
   .bazaar-detail-month-summary strong {
     font-size: 0.84rem;
+  }
+
+  .bazaar-detail-related-section {
+    margin-top: 12px;
+    padding-top: 8px;
+  }
+
+  .bazaar-detail-related-item {
+    padding: 7px 8px;
+  }
+
+  .bazaar-detail-related-links {
+    gap: 5px;
+  }
+
+  .bazaar-detail-related-link {
+    min-height: 30px;
+    padding: 5px 9px;
+    font-size: 0.78rem;
   }
 }
 
