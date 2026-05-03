@@ -2638,21 +2638,21 @@ button {
 }
 
 .recipe-favorite-action {
-  margin-top: -4px;
-  margin-bottom: 10px;
+  margin-top: -2px;
+  margin-bottom: 8px;
 }
 
 .recipe-favorite-toggle-button {
-  width: 100%;
-  min-height: 48px;
+  width: auto;
+  min-height: 38px;
   border: 1px solid #c9ad8b;
   border-radius: 12px;
   background: #fbf0e0;
   color: #4d341f;
-  font-size: 1rem;
+  font-size: 0.88rem;
   font-weight: 700;
   letter-spacing: 0.01em;
-  padding: 10px 14px;
+  padding: 7px 12px;
 }
 
 .recipe-favorite-toggle-button.is-active {
@@ -3627,9 +3627,9 @@ button {
   }
 
   .recipe-favorite-toggle-button {
-    min-height: 50px;
-    font-size: 0.98rem;
-    padding: 11px 12px;
+    min-height: 38px;
+    font-size: 0.84rem;
+    padding: 7px 10px;
   }
 
   .bazaar-card-header {
@@ -4147,6 +4147,32 @@ button {
 @media (max-width: 699px) {
   .recipe-cards-mobile {
     gap: 5px;
+  }
+
+  .profit-equipment-performance {
+    padding: 7px 8px;
+    gap: 5px;
+  }
+
+  .profit-equipment-stat-list {
+    gap: 4px 8px;
+  }
+
+  .profit-equipment-stat-list li {
+    font-size: 0.76rem;
+  }
+
+  .profit-equipment-stat-list strong {
+    font-size: 0.83rem;
+  }
+
+  .profit-equipment-traits-label {
+    font-size: 0.72rem;
+  }
+
+  .profit-equipment-traits-list {
+    font-size: 0.76rem;
+    line-height: 1.35;
   }
 
   .recipe-material-card {
@@ -5155,9 +5181,68 @@ body.memo-panel-open {
   min-height: 20px;
 }
 
+.selected-equipment-summary {
+  display: grid;
+  gap: 6px;
+}
+
 .selected-equipment-type-chip {
   font-size: 0.82rem;
   color: #7b634d;
+}
+
+.profit-equipment-performance {
+  display: grid;
+  gap: 6px;
+  padding: 8px 10px;
+  border: 1px solid #dec7aa;
+  border-radius: 10px;
+  background: rgba(255, 250, 242, 0.9);
+}
+
+.profit-equipment-stat-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 10px;
+}
+
+.profit-equipment-stat-list li {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 4px;
+  color: #5f4836;
+  font-size: 0.8rem;
+}
+
+.profit-equipment-stat-list strong {
+  color: #4a301c;
+  font-size: 0.88rem;
+}
+
+.profit-equipment-traits {
+  display: grid;
+  gap: 4px;
+}
+
+.profit-equipment-traits-label {
+  color: #6d5238;
+  font-size: 0.76rem;
+  font-weight: 700;
+}
+
+.profit-equipment-traits-list {
+  margin: 0;
+  padding-left: 16px;
+  color: #4f3928;
+  font-size: 0.8rem;
+  line-height: 1.4;
+}
+
+.profit-equipment-traits-list li + li {
+  margin-top: 2px;
 }
 
 .whitebox-card.whitebox-card-type-armor .whitebox-card-meta {

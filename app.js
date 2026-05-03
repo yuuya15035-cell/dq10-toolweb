@@ -10245,13 +10245,82 @@ function renderSelectedEquipmentTypeMeta() {
     return;
   }
 
+  if (!hasLoadedEquipmentDbData && !isEquipmentDbDataLoading) {
+    void ensureEquipmentDbDataLoaded().then(() => {
+      if (activeTabId === "profit") renderSelectedEquipmentTypeMeta();
+    });
+  }
+
+  const equipmentDbEntry = resolveProfitEquipmentDetailEntry(equipment);
+  const performanceHtml = buildProfitEquipmentPerformanceHtml(equipment, equipmentDbEntry);
+
   selectedEquipmentTypeMeta.innerHTML = `
-    <span class="equipment-type-meta selected-equipment-type-chip">
-      <img src="${resolveProjectScopedAssetUrl(typeIconPath)}" alt="" class="equipment-type-icon" loading="lazy" decoding="async">
-      <span>種別: ${typeLabel}</span>
-    </span>
+    <div class="selected-equipment-summary">
+      <span class="equipment-type-meta selected-equipment-type-chip">
+        <img src="${resolveProjectScopedAssetUrl(typeIconPath)}" alt="" class="equipment-type-icon" loading="lazy" decoding="async">
+        <span>種別: ${typeLabel}</span>
+      </span>
+      ${performanceHtml}
+    </div>
   `;
   selectedEquipmentTypeMeta.hidden = false;
+}
+
+function resolveProfitEquipmentDetailEntry(equipment) {
+  const normalizedName = String(equipment?.name || "").trim();
+  if (normalizedName === "") return null;
+  const exactEntry = equipmentDbEntryByName.get(normalizedName);
+  if (exactEntry) return exactEntry;
+
+  const normalizedCategory = normalizeArmorPartCategory(equipment?.category);
+  if (normalizedCategory !== "") {
+    const armorEntry = (equipmentDbEntries || []).find((entry) => {
+      if (String(entry?.equipmentGroup || "").trim() !== "armor") return false;
+      const parts = getArmorSetPartsFromRecipes(entry?.equipmentName || "");
+      return parts.some((part) => String(part?.name || "").trim() === normalizedName);
+    });
+    if (armorEntry) return armorEntry;
+  }
+  return null;
+}
+
+function buildProfitEquipmentPerformanceHtml(equipment, entry) {
+  if (!entry) return "";
+  const normalizedCategory = normalizeArmorPartCategory(equipment?.category);
+  const isArmor = normalizedCategory !== "";
+  const stats = [];
+  const pushStat = (label, value, formatter = (raw) => String(raw)) => {
+    if (!Number.isFinite(value) || Number(value) === 0) return;
+    stats.push(`<li><span>${label}</span><strong>${formatter(value)}</strong></li>`);
+  };
+
+  if (isArmor) {
+    pushStat("部位", 1, () => normalizedCategory);
+    pushStat("守備力", entry?.defense);
+    pushStat("HP", entry?.hp);
+    pushStat("MP", entry?.mp);
+    pushStat("攻撃魔力", entry?.attackMagic);
+    pushStat("回復魔力", entry?.healMagic);
+  } else {
+    pushStat("攻撃力", entry?.attack);
+    pushStat("攻撃魔力", entry?.attackMagic);
+    pushStat("回復魔力", entry?.healMagic);
+    pushStat("守備力", entry?.defense);
+    pushStat("盾ガード率", entry?.shieldGuardRate, (raw) => formatEquipmentDbGuardRate(raw));
+  }
+
+  const traits = getMeaningfulEquipmentTraits(entry).slice(0, 4);
+  const traitsTitle = isArmor ? "セット効果" : "特性";
+  const hasStats = stats.length > 0;
+  const hasTraits = traits.length > 0;
+  if (!hasStats && !hasTraits) return "";
+
+  return `
+    <div class="profit-equipment-performance">
+      ${hasStats ? `<ul class="profit-equipment-stat-list">${stats.join("")}</ul>` : ""}
+      ${hasTraits ? `<div class="profit-equipment-traits"><span class="profit-equipment-traits-label">${traitsTitle}</span><ul class="profit-equipment-traits-list">${traits.map((trait) => `<li>${escapeHtml(trait)}</li>`).join("")}</ul></div>` : ""}
+    </div>
+  `;
 }
 
 function renderFilterSelectors() {
@@ -10376,7 +10445,7 @@ function renderRecipeFavoriteAction() {
   if (!equipment) {
     recipeFavoriteActionWrap.innerHTML = `
       <div class="recipe-favorite-action">
-        <button type="button" class="recipe-favorite-toggle-button" disabled>☆ お気に入り登録</button>
+        <button type="button" class="recipe-favorite-toggle-button" disabled>☆ お気に入り</button>
         <p class="helper-text">装備を選択すると、お気に入り登録できます。</p>
       </div>
     `;
@@ -10392,7 +10461,7 @@ function renderRecipeFavoriteAction() {
         data-toggle-selected-recipe-favorite="true"
         aria-label="${equipment.name}をお気に入り${isFavorite ? "解除" : "登録"}"
       >
-        ${isFavorite ? "★ お気に入り解除" : "☆ お気に入り登録"}
+        ${isFavorite ? "★ お気に入り中" : "☆ お気に入り"}
       </button>
     </div>
   `;
