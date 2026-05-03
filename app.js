@@ -1664,6 +1664,7 @@ let appMode = "home";
 let pendingBazaarFocusMaterialKey = "";
 let pendingBazaarFocusMaterialName = "";
 let pendingBazaarAutoOpenMaterialKey = "";
+let pendingBazaarUrlItemName = "";
 let bazaarRowById = new Map();
 let bazaarRowByMaterialKey = new Map();
 let bazaarRowByMaterialName = new Map();
@@ -4109,7 +4110,10 @@ async function ensureBazaarPricesLoaded() {
       bazaarLoadError = true;
     } finally {
       isBazaarLoading = false;
-      if (activeTabId === "bazaar") renderBazaarPrices();
+      if (activeTabId === "bazaar") {
+        applyPendingBazaarUrlItemIfNeeded();
+        renderBazaarPrices();
+      }
       if (activeTabId === "field-farming") renderFieldFarmingRanking();
       if (activeTabId === "favorites") renderFavoritesPage();
       if (activeTabId === "monster-info") renderMonsterInfoCards();
@@ -5964,8 +5968,37 @@ function getVisibleBazaarPausedRows() {
   return getSortedBazaarRows(categoryFilteredRows, selectedBazaarPausedCategory, "standard");
 }
 
+function queueBazaarUrlItemApplication(itemName) {
+  const normalizedName = String(itemName || "").trim();
+  if (normalizedName === "") {
+    pendingBazaarUrlItemName = "";
+    return;
+  }
+  pendingBazaarUrlItemName = normalizedName;
+  selectedBazaarCategory = "";
+  showBazaarFavoritesOnly = false;
+  bazaarSearchText = normalizedName;
+  selectedBazaarMaterialName = normalizedName;
+  pendingBazaarFocusMaterialName = normalizedName;
+  shouldRefocusBazaarSearchInput = false;
+  pendingBazaarAutoOpenMaterialKey = "";
+}
+
+function applyPendingBazaarUrlItemIfNeeded() {
+  const normalizedName = String(pendingBazaarUrlItemName || "").trim();
+  if (normalizedName === "") return false;
+  selectedBazaarCategory = "";
+  showBazaarFavoritesOnly = false;
+  bazaarSearchText = normalizedName;
+  selectedBazaarMaterialName = normalizedName;
+  pendingBazaarFocusMaterialName = normalizedName;
+  pendingBazaarUrlItemName = "";
+  return true;
+}
+
 function renderBazaarPrices() {
   if (!bazaarListWrap) return;
+  applyPendingBazaarUrlItemIfNeeded();
   if (isBazaarLoading && !hasLoadedBazaarPrices) {
     bazaarListWrap.innerHTML = `<p>読み込み中です。しばらくお待ちください。</p>`;
     return;
@@ -7351,11 +7384,7 @@ function openBazaarPageForItem(itemName) {
   if (normalizedName === "" || normalizedName === "-" || normalizedName === "なし") return;
   closeMonsterInfoModal();
   switchTab("bazaar");
-  selectedBazaarCategory = "";
-  showBazaarFavoritesOnly = false;
-  bazaarSearchText = normalizedName;
-  selectedBazaarMaterialName = normalizedName;
-  pendingBazaarFocusMaterialName = normalizedName;
+  queueBazaarUrlItemApplication(normalizedName);
   syncBazaarItemUrl(normalizedName);
   renderBazaarPrices();
   document.getElementById("bazaar")?.scrollIntoView({ block: "start", behavior: "smooth" });
@@ -8824,10 +8853,7 @@ function applyAppRouteFromUrl() {
   const directItemParam = String(tab === "bazaar" ? params.get("item") || "" : "").trim();
   const itemSearchParam = String(params.get("itemSearch") || directItemParam).trim();
   if (itemSearchParam) {
-    selectedBazaarCategory = "";
-    showBazaarFavoritesOnly = false;
-    bazaarSearchText = itemSearchParam;
-    selectedBazaarMaterialName = itemSearchParam;
+    queueBazaarUrlItemApplication(itemSearchParam);
     if (directItemParam) {
       pendingBazaarFocusMaterialName = directItemParam;
       pendingBazaarAutoOpenMaterialKey = "";
@@ -8837,6 +8863,7 @@ function applyAppRouteFromUrl() {
     selectedBazaarMaterialName = "";
     pendingBazaarFocusMaterialName = "";
     pendingBazaarAutoOpenMaterialKey = "";
+    pendingBazaarUrlItemName = "";
   }
   const orbSearchParam = String(params.get("orbSearch") || "").trim();
   if (orbSearchParam) {
