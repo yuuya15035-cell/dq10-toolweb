@@ -40,6 +40,19 @@ const HOME_FEATURE_DEFINITIONS = [
   { id: "orbs", tabId: "orbs", title: "宝珠", icon: "💎" },
   { id: "field-farming", tabId: "field-farming", title: "フィールド狩り", icon: "⚔️" },
 ];
+const DEFAULT_DOCUMENT_TITLE = "DQ10職人ツール";
+const DEFAULT_DOCUMENT_DESCRIPTION = "DQ10の職人アシスト、バザー情報、モンスター情報、装備情報、宝珠情報を確認できる支援サイトです。";
+const TAB_DOCUMENT_LABELS = Object.freeze({
+  profit: "職人アシスト",
+  bazaar: "バザー情報",
+  "monster-info": "モンスター情報",
+  "equipment-db": "装備情報",
+  orbs: "宝珠情報",
+  favorites: "お気に入り",
+  routine: "日課・週課",
+  "present-codes": "プレゼントのじゅもん",
+  "field-farming": "フィールド狩り",
+});
 const DEFAULT_HOME_FEATURE_IDS = Object.freeze(["profit", "bazaar", "favorites", "equipment-db"]);
 const HOME_FEATURE_ID_SET = new Set(HOME_FEATURE_DEFINITIONS.map((feature) => feature.id));
 const SITE_SEARCH_MAX_RESULTS = 10;
@@ -4755,6 +4768,7 @@ function renderMonsterInfoCards() {
     }
     pendingMonsterInfoFocusName = "";
   }
+  updateDocumentMetadata();
 }
 
 function renderWhiteBoxCards() {
@@ -5129,6 +5143,7 @@ function openArmorSetDetailModal(entry) {
   armorSetDetailModalBody.innerHTML = buildArmorSetDetailModalHtml(entry);
   armorSetDetailModalOverlay.hidden = false;
   armorSetDetailModalDialog?.focus();
+  updateDocumentMetadata();
 }
 
 function activateEquipmentDbCard(entryId) {
@@ -5336,6 +5351,7 @@ function renderEquipmentDbCards() {
     pendingEquipmentDbFocusName = "";
   }
 
+  updateDocumentMetadata();
 }
 
 function parseBazaarHistoryDate(value) {
@@ -6391,6 +6407,7 @@ function renderBazaarPrices() {
     }
     pendingBazaarFocusMaterialKey = "";
   }
+  updateDocumentMetadata();
 }
 
 function formatPresentCodeReward(rewardText) {
@@ -6537,6 +6554,7 @@ function renderOrbCards() {
       void openMonsterInfoFromOrb(String(button.dataset.orbMonsterName || ""));
     });
   });
+  updateDocumentMetadata();
 }
 
 function renderPresentCodes() {
@@ -7209,6 +7227,7 @@ function openBazaarDetailModal(materialKey) {
   bazaarDetailModalOverlay.classList.add("is-open");
   syncBodyModalOpenState();
   bazaarDetailModalDialog?.focus();
+  updateDocumentMetadata();
 }
 
 function handleBazaarDetailSwipeStart(event) {
@@ -8107,6 +8126,7 @@ function switchToHomeMode(options = {}) {
   applyAppMode();
   updateMobileBottomNavState();
   navigateByAppParams({ tab: "", equipmentId: "", materialKey: "" }, { replace: true });
+  updateDocumentMetadata();
   if (scroll) scrollToHomeTop();
 }
 
@@ -8161,6 +8181,7 @@ function switchTab(target) {
     renderCraftIdealValue();
   }
   prefetchDataForTab(normalizedTarget);
+  updateDocumentMetadata();
 }
 
 function buildAppQueryParams(nextValues = {}) {
@@ -8290,6 +8311,62 @@ function syncBazaarItemUrl(materialName, options = {}) {
   navigateByFeatureRoute({ tab: "bazaar", equipmentId: "", materialKey: "" }, options);
 }
 
+function getDocumentDescriptionMeta() {
+  return document.querySelector('meta[name="description"]');
+}
+
+function getActiveDocumentTargetName() {
+  if (appMode !== "tool") return "";
+  if (activeTabId === "profit") {
+    return String(getSelectedEquipment()?.name || "").trim();
+  }
+  if (activeTabId === "bazaar") {
+    const detailRow = activeBazaarDetailModalKey ? getBazaarRowByMaterialKey(activeBazaarDetailModalKey) : null;
+    return String(detailRow?.materialName || selectedBazaarMaterialName || "").trim();
+  }
+  if (activeTabId === "monster-info") {
+    const activeEntry = activeMonsterInfoId ? monsterDetailEntryById.get(String(activeMonsterInfoId || "")) : null;
+    return String(activeEntry?.name || monsterInfoSearchKeyword || "").trim();
+  }
+  if (activeTabId === "orbs") {
+    const activeEntry = expandedOrbId ? orbEntryById.get(String(expandedOrbId || "")) : null;
+    return String(activeEntry?.orbName || orbSearchKeyword || "").trim();
+  }
+  if (activeTabId === "equipment-db") {
+    const activeArmorSetEntry = activeArmorSetDetailId ? findEquipmentDbEntryById(String(activeArmorSetDetailId || "")) : null;
+    const expandedEntry = expandedEquipmentDbId ? findEquipmentDbEntryById(String(expandedEquipmentDbId || "")) : null;
+    return String(activeArmorSetEntry?.equipmentName || expandedEntry?.equipmentName || equipmentDbNameKeyword || "").trim();
+  }
+  return "";
+}
+
+function updateDocumentMetadata() {
+  const descriptionMeta = getDocumentDescriptionMeta();
+  if (appMode !== "tool") {
+    document.title = DEFAULT_DOCUMENT_TITLE;
+    if (descriptionMeta) descriptionMeta.setAttribute("content", DEFAULT_DOCUMENT_DESCRIPTION);
+    return;
+  }
+
+  const pageLabel = String(TAB_DOCUMENT_LABELS[activeTabId] || "").trim();
+  const targetName = getActiveDocumentTargetName();
+  if (targetName && pageLabel) {
+    document.title = `${targetName}｜${pageLabel}｜${DEFAULT_DOCUMENT_TITLE}`;
+    if (descriptionMeta) {
+      descriptionMeta.setAttribute(
+        "content",
+        `${targetName}の${pageLabel}を確認できるDQ10職人ツールです。価格・情報は参考用としてご利用ください。`
+      );
+    }
+    return;
+  }
+
+  document.title = pageLabel ? `${pageLabel}｜${DEFAULT_DOCUMENT_TITLE}` : DEFAULT_DOCUMENT_TITLE;
+  if (descriptionMeta) {
+    descriptionMeta.setAttribute("content", DEFAULT_DOCUMENT_DESCRIPTION);
+  }
+}
+
 function hasDirectDataQueryParams(params = new URLSearchParams(window.location.search)) {
   return params.has("equipment") || params.has("item") || params.has("name");
 }
@@ -8382,6 +8459,7 @@ function applyAppRouteFromUrl() {
   }
 
   pendingBazaarFocusMaterialKey = String(params.get("materialKey") || "").trim();
+  updateDocumentMetadata();
 }
 
 function setMenuOpen(isOpen) {
@@ -8704,6 +8782,7 @@ if (monsterInfoListWrap) {
       <div><p>生息地</p><ul class="monster-info-habitat-list">${habitatsHtml || "<li>なし</li>"}</ul></div>`;
     monsterInfoModalOverlay.hidden = false;
     monsterInfoModalDialog?.focus();
+    updateDocumentMetadata();
   });
 
   monsterInfoListWrap.addEventListener("keydown", (event) => {
@@ -10339,6 +10418,7 @@ function rerenderAll() {
   if (activeTabId === "equipment-db") renderEquipmentDbCards();
   if (activeTabId === "monster-info") renderMonsterInfoCards();
   renderSiteSearchCandidates();
+  updateDocumentMetadata();
 }
 
 function rerenderActiveTabOnly() {
@@ -10356,6 +10436,7 @@ function rerenderActiveTabOnly() {
   if (activeTabId === "equipment-db") renderEquipmentDbCards();
   if (activeTabId === "monster-info") renderMonsterInfoCards();
   renderSiteSearchCandidates();
+  updateDocumentMetadata();
 }
 
 // --- イベント定義 ---
