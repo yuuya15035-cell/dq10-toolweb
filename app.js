@@ -5996,6 +5996,31 @@ function applyPendingBazaarUrlItemIfNeeded() {
   return true;
 }
 
+function hasActiveBazaarFilters() {
+  return (
+    String(selectedBazaarCategory || "").trim() !== "" ||
+    String(selectedBazaarSort || "").trim() !== "standard" ||
+    String(bazaarSearchText || "").trim() !== "" ||
+    showBazaarFavoritesOnly
+  );
+}
+
+function clearBazaarFilters() {
+  selectedBazaarCategory = "";
+  selectedBazaarSort = "standard";
+  bazaarSearchText = "";
+  selectedBazaarMaterialName = "";
+  showBazaarFavoritesOnly = false;
+  pendingBazaarFocusMaterialKey = "";
+  pendingBazaarFocusMaterialName = "";
+  pendingBazaarAutoOpenMaterialKey = "";
+  pendingBazaarUrlItemName = "";
+  shouldRefocusBazaarSearchInput = false;
+  syncBazaarItemUrl("", { replace: true });
+  saveBazaarFavoriteState();
+  renderBazaarPrices();
+}
+
 function renderBazaarPrices() {
   if (!bazaarListWrap) return;
   applyPendingBazaarUrlItemIfNeeded();
@@ -6245,15 +6270,6 @@ function renderBazaarPrices() {
               autocapitalize="off"
               spellcheck="false"
             />
-            <button
-              id="bazaarSearchClearButton"
-              type="button"
-              class="bazaar-search-clear-button"
-              aria-label="素材検索をクリア"
-              ${trimmedSearchText === "" ? "disabled" : ""}
-            >
-              ×
-            </button>
           </div>
           <label class="field inline-field bazaar-favorite-filter-field bazaar-favorite-filter-inline">
             <input id="bazaarFavoritesOnlyToggle" type="checkbox" ${showBazaarFavoritesOnly ? "checked" : ""} />
@@ -6281,6 +6297,16 @@ function renderBazaarPrices() {
             : ""
         }
       </label>
+      <div class="filter-reset-wrap">
+        <button
+          id="bazaarClearFiltersButton"
+          type="button"
+          class="filter-reset-button"
+          ${hasActiveBazaarFilters() ? "" : "hidden"}
+        >
+          × 絞り込み解除
+        </button>
+      </div>
     </div>
     ${
       visibleRows.length === 0
@@ -6419,13 +6445,10 @@ function renderBazaarPrices() {
     });
   }
 
-  const bazaarSearchClearButton = bazaarListWrap.querySelector("#bazaarSearchClearButton");
-  if (bazaarSearchClearButton) {
-    bazaarSearchClearButton.addEventListener("click", () => {
-      bazaarSearchText = "";
-      selectedBazaarMaterialName = "";
-      shouldRefocusBazaarSearchInput = true;
-      renderBazaarPrices();
+  const bazaarClearFiltersButton = bazaarListWrap.querySelector("#bazaarClearFiltersButton");
+  if (bazaarClearFiltersButton) {
+    bazaarClearFiltersButton.addEventListener("click", () => {
+      clearBazaarFilters();
     });
   }
 
