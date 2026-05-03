@@ -4048,6 +4048,16 @@ button {
   min-width: 0;
 }
 
+.recipe-material-link {
+  color: #5a3a23;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.recipe-material-link:hover {
+  color: #7a4c28;
+}
+
 .recipe-material-count-line {
   margin: 0 0 1px;
   display: flex;

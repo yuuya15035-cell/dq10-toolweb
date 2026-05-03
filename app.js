@@ -10524,7 +10524,9 @@ function renderRecipeTable() {
   const htmlRows = rows
     .map((row) => {
       const material = state.materials.find((m) => m.id === row.materialId);
+      const materialName = material?.name ?? "(削除済み素材)";
       const marketUrl = getOfficialBazaarUrlByMaterialName(material?.name);
+      const bazaarItemUrl = material?.name ? getBazaarItemUrl(material.name) : "";
       const hasMarketUrl = marketUrl !== "";
       const price = getEffectiveMaterialPrice(row.materialId);
       const safePrice = Number.isFinite(price) ? price : 0;
@@ -10534,7 +10536,11 @@ function renderRecipeTable() {
         subtotalRaw: subtotal,
         table: `
           <tr>
-            <td>${material?.name ?? "(削除済み素材)"}</td>
+            <td>${
+              bazaarItemUrl
+                ? `<a class="recipe-material-link" href="${escapeHtml(bazaarItemUrl)}">${escapeHtml(materialName)}</a>`
+                : escapeHtml(materialName)
+            }</td>
             <td>${row.quantity}</td>
             <td>${productionCount}</td>
             <td>${totalRequired}</td>
@@ -10568,7 +10574,11 @@ function renderRecipeTable() {
         card: `
           <article class="recipe-material-card">
             <div class="recipe-material-header">
-              <h4 class="recipe-material-name">${material?.name ?? "(削除済み素材)"}</h4>
+              <h4 class="recipe-material-name">${
+                bazaarItemUrl
+                  ? `<a class="recipe-material-link" href="${escapeHtml(bazaarItemUrl)}">${escapeHtml(materialName)}</a>`
+                  : escapeHtml(materialName)
+              }</h4>
               ${
                 hasMarketUrl
                   ? `<a
