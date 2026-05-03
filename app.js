@@ -1782,6 +1782,7 @@ let bazaarAdminAutoOpenNextUrlAfterUpdate = false;
 let bazaarAdminAutoScrollNextRowAfterUpdate = true;
 const bazaarAdminAutoAdvanceDelayMs = 400;
 let bazaarAdminAutoUpdateTimerByRowId = new Map();
+let bazaarAdminClipboardReadStateByRowId = new Map();
 let adminChecklistState = {};
 let craftIdealValuesLoadingPromise = null;
 let selectedFieldFarmingSort = "normal_desc";
@@ -2675,6 +2676,60 @@ function setBazaarAdminMessage(message, isError = false) {
   bazaarAdminMessage.style.color = isError ? "#d93025" : "#4f5d75";
 }
 
+function setBazaarAdminPasteStatus(rowId, message, isError = false) {
+  const normalizedRowId = String(rowId || "").trim();
+  if (normalizedRowId === "" || !bazaarAdminListWrap) return;
+  const statusElement = bazaarAdminListWrap.querySelector(`[data-bazaar-admin-paste-status="${normalizedRowId}"]`);
+  if (!(statusElement instanceof HTMLElement)) return;
+  statusElement.textContent = String(message || "").trim();
+  statusElement.classList.toggle("is-error", Boolean(isError) && statusElement.textContent !== "");
+  statusElement.classList.toggle("is-success", !isError && statusElement.textContent !== "");
+}
+
+function dispatchBazaarAdminPasteInput(textarea) {
+  const inputEvent = new Event("input", { bubbles: true });
+  textarea.dispatchEvent(inputEvent);
+}
+
+async function tryAutoPasteBazaarAdminTextarea(textarea) {
+  if (!(textarea instanceof HTMLTextAreaElement)) return;
+  const rowId = String(textarea.dataset.bazaarAdminPasteInput || "").trim();
+  if (rowId === "") return;
+  if (String(textarea.value || "").trim() !== "") return;
+  if (!window.isSecureContext || !navigator.clipboard?.readText) {
+    setBazaarAdminPasteStatus(rowId, "自動貼り付けできませんでした。Ctrl+Vで貼り付けてください。", true);
+    return;
+  }
+
+  const currentState = bazaarAdminClipboardReadStateByRowId.get(rowId);
+  if (currentState === "pending") return;
+  bazaarAdminClipboardReadStateByRowId.set(rowId, "pending");
+
+  try {
+    const clipboardText = String(await navigator.clipboard.readText() || "");
+    if (String(textarea.value || "").trim() !== "") {
+      bazaarAdminClipboardReadStateByRowId.set(rowId, "filled");
+      return;
+    }
+    if (clipboardText.trim() === "") {
+      bazaarAdminClipboardReadStateByRowId.set(rowId, "idle");
+      setBazaarAdminPasteStatus(rowId, "クリップボードが空です。Ctrl+Vでも貼り付けできます。", true);
+      return;
+    }
+    textarea.value = clipboardText;
+    bazaarAdminPastedTextByRowId.set(rowId, clipboardText);
+    dispatchBazaarAdminPasteInput(textarea);
+    bazaarAdminClipboardReadStateByRowId.set(rowId, "filled");
+    setBazaarAdminPasteStatus(rowId, "クリップボードから貼り付けました。");
+    setBazaarAdminMessage("クリップボードから貼り付けました。");
+  } catch (error) {
+    bazaarAdminClipboardReadStateByRowId.set(rowId, "idle");
+    setBazaarAdminPasteStatus(rowId, "自動貼り付けできませんでした。Ctrl+Vで貼り付けてください。", true);
+    setBazaarAdminMessage("自動貼り付けできませんでした。Ctrl+Vで貼り付けてください。", true);
+    console.warn("クリップボードの自動貼り付けに失敗しました", error);
+  }
+}
+
 function updateBazaarAdminActionButtons() {
   const disabled = isBazaarAdminUpdating || !bazaarAdminCsvModel;
   if (bazaarAdminRefreshButton) bazaarAdminRefreshButton.disabled = isBazaarAdminUpdating;
@@ -2845,6 +2900,8 @@ function renderBazaarAdminPanel() {
             <textarea data-bazaar-admin-paste-input="${escapeHtml(row.id)}" rows="2" placeholder="公式ページの出品情報テキストを貼り付け">${escapeHtml(
               pastedText
             )}</textarea>
+            <small class="bazaar-admin-paste-hint">公式ページでコピー後、この欄をクリックすると自動貼り付けできます</small>
+            <small class="bazaar-admin-paste-status" data-bazaar-admin-paste-status="${escapeHtml(row.id)}" aria-live="polite"></small>
           </label>
         </div>
       </article>
@@ -9245,6 +9302,10 @@ if (bazaarAdminListWrap) {
     const rowId = String(target.dataset.bazaarAdminPasteInput || "");
     if (!rowId) return;
     bazaarAdminPastedTextByRowId.set(rowId, target.value || "");
+    bazaarAdminClipboardReadStateByRowId.set(rowId, String(target.value || "").trim() === "" ? "idle" : "filled");
+    if (String(target.value || "").trim() === "") {
+      setBazaarAdminPasteStatus(rowId, "");
+    }
     if (!bazaarAdminAutoUpdateOnPaste || isBazaarAdminUpdating) return;
     const prevTimer = bazaarAdminAutoUpdateTimerByRowId.get(rowId);
     if (prevTimer) {
@@ -9259,6 +9320,25 @@ if (bazaarAdminListWrap) {
       });
     }, 150);
     bazaarAdminAutoUpdateTimerByRowId.set(rowId, timerId);
+  });
+
+  bazaarAdminListWrap.addEventListener("focusin", (event) => {
+    const target = event.target;
+    if (!(target instanceof HTMLTextAreaElement)) return;
+    void tryAutoPasteBazaarAdminTextarea(target);
+  });
+
+  bazaarAdminListWrap.addEventListener("click", (event) => {
+    const target = event.target;
+    if (target instanceof HTMLTextAreaElement) {
+      void tryAutoPasteBazaarAdminTextarea(target);
+      return;
+    }
+    const textarea = target instanceof Element ? target.closest("[data-bazaar-admin-paste-input]") : null;
+    if (textarea instanceof HTMLTextAreaElement) {
+      void tryAutoPasteBazaarAdminTextarea(textarea);
+      return;
+    }
   });
 
   bazaarAdminListWrap.addEventListener("click", async (event) => {

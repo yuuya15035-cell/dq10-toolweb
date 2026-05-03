@@ -5696,6 +5696,31 @@ body.memo-panel-open {
   width: min(360px, 100%);
 }
 
+.bazaar-admin-paste-hint,
+.bazaar-admin-paste-status {
+  display: block;
+  margin-top: 4px;
+  font-size: 0.74rem;
+  line-height: 1.4;
+}
+
+.bazaar-admin-paste-hint {
+  color: #6b5440;
+}
+
+.bazaar-admin-paste-status {
+  min-height: 1.4em;
+  color: #4f5d75;
+}
+
+.bazaar-admin-paste-status.is-success {
+  color: #2f6f42;
+}
+
+.bazaar-admin-paste-status.is-error {
+  color: #b34b3b;
+}
+
 .bazaar-admin-paste-field textarea {
   width: 100%;
   min-height: 52px;
