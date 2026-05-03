@@ -10284,11 +10284,16 @@ function resolveProfitEquipmentDetailEntry(equipment) {
   return null;
 }
 
+function isProfitShieldCategory(value) {
+  const normalized = String(value || "").trim();
+  return normalized === "盾" || normalized === "小盾" || normalized === "大盾";
+}
+
 function buildProfitEquipmentPerformanceHtml(equipment, entry) {
   if (!entry) return "";
   const normalizedCategory = normalizeArmorPartCategory(equipment?.category);
   const isArmor = normalizedCategory !== "";
-  const isShield = String(equipment?.category || "").trim() === "盾";
+  const isShield = isProfitShieldCategory(equipment?.category) || isProfitShieldCategory(entry?.equipmentType);
   const stats = [];
   const pushStat = (label, value, formatter = (raw) => String(raw)) => {
     if (!Number.isFinite(value) || Number(value) === 0) return;
