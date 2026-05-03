@@ -1,17 +1,17 @@
-{
-  "site_title": "ドラゴンクエスト10支援サイト",
-  "site_intro": "ドラゴンクエスト10の日常プレイを少し便利にする支援サイトです。",
-  "site_summary": "バザー相場・職人準備・装備検索をスマホでも見やすくまとめています。\nよく使う機能はサイト内便利ツールに追加して、自分用に使いやすくできます。",
-  "site_notice": "※価格・情報は手動確認ベースのため、更新タイミングにより実際のゲーム内状況と差が出る場合があります。",
-  "updates_heading": "更新情報",
-  "tools_heading": "サイト内便利ツール",
-  "tools_intro": "各カードをクリックすると対象ページへ移動できます。",
-  "menu_hint": "※左上のメニューバーからもホーム追加や操作可能です。",
-  "ui_settings_heading": "UI設定",
-  "ui_settings_note": "スライダーや入力で見た目を調整できます。変更はすぐ反映されます。",
-  "content_editor_heading": "本文編集",
-  "content_editor_note": "主要な説明文・注意書きを編集できます。変更はすぐ反映されます。",
-  "updates_editor_heading": "更新情報編集",
-  "updates_editor_note": "更新情報の追加・編集・削除・並び替えができます。変更は上部の更新情報に即時反映されます。",
-  "menu_title": "メニュー"
+﻿{
+    "site_title":  "ドラゴンクエスト10支援サイト",
+    "site_intro":  "?????????????????????????",
+    "site_summary":  "????????????????????",
+    "site_notice":  "※価格・情報は手動確認ベースのため、更新タイミングにより実際のゲーム内状況と差が出る場合があります。",
+    "updates_heading":  "更新情報",
+    "tools_heading":  "サイト内便利ツール",
+    "tools_intro":  "各カードをクリックすると対象ページへ移動できます。",
+    "menu_hint":  "※左上のメニューバーからもホーム追加や操作可能です。",
+    "ui_settings_heading":  "UI設定",
+    "ui_settings_note":  "スライダーや入力で見た目を調整できます。変更はすぐ反映されます。",
+    "content_editor_heading":  "本文編集",
+    "content_editor_note":  "主要な説明文・注意書きを編集できます。変更はすぐ反映されます。",
+    "updates_editor_heading":  "更新情報編集",
+    "updates_editor_note":  "更新情報の追加・編集・削除・並び替えができます。変更は上部の更新情報に即時反映されます。",
+    "menu_title":  "メニュー"
 }

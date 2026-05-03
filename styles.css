@@ -178,12 +178,12 @@ body.is-modal-open {
 #contentSiteIntro,
 #contentSiteSummary {
   max-width: 44em;
-  line-height: 1.58;
+  line-height: 1.5;
 }
 
 #contentSiteIntro,
 #contentSiteSummary {
-  font-size: 0.95rem;
+  font-size: 0.92rem;
 }
 
 #contentSiteSummary {
@@ -204,7 +204,7 @@ body.is-modal-open {
 
 .app-header {
   margin-bottom: calc(var(--ui-section-vertical-space) - 2px);
-  padding: 10px 12px;
+  padding: 9px 11px;
   border: 1px solid var(--panel-border);
   border-radius: 12px;
   background: linear-gradient(180deg, #f2e7d7 0%, #e4d0b7 100%);
@@ -3229,20 +3229,20 @@ button {
 @media (max-width: 480px) {
 
   .app-header {
-    padding: 9px 10px;
-    margin-bottom: 10px;
+    padding: 8px 9px;
+    margin-bottom: 8px;
   }
 
   .app-header h1 {
-    margin-bottom: 6px;
-    font-size: calc(var(--ui-title-font-size) * 0.88);
-    line-height: 1.2;
+    margin-bottom: 5px;
+    font-size: calc(var(--ui-title-font-size) * 0.84);
+    line-height: 1.16;
   }
 
   #contentSiteIntro,
   #contentSiteSummary {
-    font-size: 0.84rem;
-    line-height: 1.5;
+    font-size: 0.8rem;
+    line-height: 1.38;
   }
 
   .app-header-subtitle {
@@ -3252,9 +3252,9 @@ button {
 
   .app-header-price-note {
     padding: 4px 6px;
-    margin-bottom: 4px;
-    font-size: 0.72rem;
-    line-height: 1.4;
+    margin-bottom: 3px;
+    font-size: 0.69rem;
+    line-height: 1.32;
   }
 
   .home-shortcut-note {
