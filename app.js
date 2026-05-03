@@ -8079,7 +8079,9 @@ function setToolSiteSearchOpen(isOpen) {
 
 function applyAppMode() {
   const isHomeMode = appMode === "home";
+  const isAdminBazaarMode = appMode === "tool" && activeTabId === "bazaar-admin";
   appRoot?.classList.toggle("is-home-mode", isHomeMode);
+  appRoot?.classList.toggle("is-admin-bazaar-mode", isAdminBazaarMode);
   appHeader?.classList.toggle("is-collapsed", !isHomeMode);
   toolSiteSearchDock?.classList.add("is-visible");
   topQuickAccessSection?.classList.toggle("is-collapsed", !isHomeMode);

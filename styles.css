@@ -60,6 +60,10 @@ body.is-modal-open {
   padding-bottom: 14px;
 }
 
+.app.is-admin-bazaar-mode {
+  max-width: min(1380px, calc(100vw - 24px));
+}
+
 .hamburger-button {
   position: fixed;
   top: 12px;
@@ -5826,8 +5830,9 @@ body.memo-panel-open {
 
 @media (min-width: 900px) {
   .bazaar-admin-layout {
-    grid-template-columns: minmax(0, 1fr) 320px;
+    grid-template-columns: minmax(0, 1fr) 340px;
     align-items: start;
+    gap: 20px;
   }
 
   .admin-checklist-panel {
@@ -5856,6 +5861,39 @@ body.memo-panel-open {
 }
 
 @media (min-width: 1200px) {
+  .app.is-admin-bazaar-mode {
+    max-width: min(1400px, calc(100vw - 40px));
+    padding-left: 20px;
+    padding-right: 20px;
+  }
+
+  .bazaar-admin-layout {
+    grid-template-columns: minmax(0, 1fr) 360px;
+    gap: 24px;
+  }
+
+  .bazaar-admin-row {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(340px, 420px);
+    align-items: start;
+    gap: 14px;
+  }
+
+  .bazaar-admin-row-actions {
+    width: 100%;
+    align-items: stretch;
+  }
+
+  .bazaar-admin-row-actions > button,
+  .bazaar-admin-row-actions > .bazaar-admin-paste-field {
+    width: 100%;
+  }
+
+  .bazaar-admin-paste-field {
+    width: 100%;
+    max-width: none;
+  }
+
   .bazaar-list {
     grid-template-columns: 1fr;
   }
