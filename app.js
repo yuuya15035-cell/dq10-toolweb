@@ -4779,7 +4779,7 @@ function clearMonsterInfoFilters() {
   selectedMonsterInfoSort = "exp_asc";
   activeMonsterInfoId = "";
   keepMonsterInfoTypeCleared = false;
-  navigateByFeatureRoute({ tab: "monster-info", monsterSearch: "", equipmentId: "", materialKey: "" });
+  syncMonsterInfoUrl("", { replace: true });
   renderMonsterInfoCards();
 }
 
@@ -5222,7 +5222,7 @@ function openArmorSetDetailModal(entry) {
 function activateEquipmentDbCard(entryId) {
   const targetEntry = findEquipmentDbEntryById(entryId);
   if (!targetEntry) return;
-  navigateByFeatureRoute({ tab: "equipment-db", equipmentSearch: String(targetEntry.equipmentName || "").trim(), equipmentId: "", materialKey: "" });
+  syncEquipmentUrl(String(targetEntry.equipmentName || "").trim());
   if (isArmorSetEntry(targetEntry)) {
     openArmorSetDetailModal(targetEntry);
     return;
@@ -6607,7 +6607,7 @@ function renderOrbCards() {
       const targetOrb = orbEntryById.get(clickedOrbId);
       expandedOrbId = expandedOrbId === clickedOrbId ? "" : clickedOrbId;
       if (targetOrb?.orbName) {
-        navigateByFeatureRoute({ tab: "orbs", orbSearch: String(targetOrb.orbName || "").trim(), equipmentId: "", materialKey: "" });
+        syncOrbUrl(String(targetOrb.orbName || "").trim());
       }
       renderOrbCards();
     });
@@ -8333,29 +8333,69 @@ function navigateByFeatureRoute(nextValues = {}, options = {}) {
   });
 }
 
+function buildFeatureRouteUrl(tab, params = new URLSearchParams()) {
+  const normalizedTab = String(tab || "").trim();
+  const routeSegment = ENTRY_ROUTE_TAB_TO_SEGMENT.get(normalizedTab);
+  const pathname = routeSegment ? `${getProjectBasePath()}/${routeSegment}/` : getProjectRootPath();
+  const query = params.toString();
+  return `${pathname}${query ? `?${query}` : ""}`;
+}
+
+function getBazaarItemUrl(itemName) {
+  const params = new URLSearchParams();
+  const normalizedName = String(itemName || "").trim();
+  if (normalizedName) params.set("item", normalizedName);
+  return buildFeatureRouteUrl("bazaar", params);
+}
+
+function getMonsterUrl(monsterName) {
+  const params = new URLSearchParams();
+  const normalizedName = String(monsterName || "").trim();
+  if (normalizedName) params.set("monsterSearch", normalizedName);
+  return buildFeatureRouteUrl("monster-info", params);
+}
+
+function getOrbUrl(orbName) {
+  const params = new URLSearchParams();
+  const normalizedName = String(orbName || "").trim();
+  if (normalizedName) params.set("orbSearch", normalizedName);
+  return buildFeatureRouteUrl("orbs", params);
+}
+
+function getEquipmentUrl(equipmentName) {
+  const params = new URLSearchParams();
+  const normalizedName = String(equipmentName || "").trim();
+  if (normalizedName) params.set("equipmentSearch", normalizedName);
+  return buildFeatureRouteUrl("equipment-db", params);
+}
+
+function getCraftUrl(equipmentName) {
+  const params = new URLSearchParams();
+  const normalizedName = String(equipmentName || "").trim();
+  if (normalizedName) params.set("equipment", normalizedName);
+  return buildFeatureRouteUrl("profit", params);
+}
+
+function getFieldFarmingUrl() {
+  return buildFeatureRouteUrl("field-farming");
+}
+
 function navigateByDirectFeatureQuery(tab, queryKey, queryValue, options = {}) {
   const normalizedTab = String(tab || "").trim();
   const normalizedKey = String(queryKey || "").trim();
   const normalizedValue = String(queryValue || "").trim();
   const { replace = false } = options;
   const params = new URLSearchParams();
-  let pathname = getProjectRootPath();
 
   if (normalizedKey && normalizedValue) {
     params.set(normalizedKey, normalizedValue);
   }
 
-  if (normalizedTab) {
-    const routeSegment = ENTRY_ROUTE_TAB_TO_SEGMENT.get(normalizedTab);
-    if (routeSegment) {
-      pathname = `${getProjectBasePath()}/${routeSegment}/`;
-    } else {
-      params.set("tab", normalizedTab);
-    }
+  if (!ENTRY_ROUTE_TAB_TO_SEGMENT.has(normalizedTab) && normalizedTab) {
+    params.set("tab", normalizedTab);
   }
 
-  const query = params.toString();
-  const nextUrl = `${pathname}${query ? `?${query}` : ""}${window.location.hash}`;
+  const nextUrl = `${buildFeatureRouteUrl(normalizedTab, params)}${window.location.hash}`;
   const currentUrl = `${window.location.pathname}${window.location.search}${window.location.hash}`;
   if (nextUrl === currentUrl) return;
 
@@ -8386,8 +8426,108 @@ function syncBazaarItemUrl(materialName, options = {}) {
   navigateByFeatureRoute({ tab: "bazaar", equipmentId: "", materialKey: "" }, options);
 }
 
+function syncMonsterInfoUrl(monsterName, options = {}) {
+  const normalizedName = String(monsterName || "").trim();
+  if (normalizedName) {
+    const nextUrl = `${getMonsterUrl(normalizedName)}${window.location.hash}`;
+    const currentUrl = `${window.location.pathname}${window.location.search}${window.location.hash}`;
+    if (nextUrl !== currentUrl) {
+      if (options.replace) {
+        window.history.replaceState({}, "", nextUrl);
+      } else {
+        window.history.pushState({}, "", nextUrl);
+      }
+    }
+    return;
+  }
+  navigateByFeatureRoute({ tab: "monster-info", monsterSearch: "", equipmentId: "", materialKey: "" }, options);
+}
+
+function syncOrbUrl(orbName, options = {}) {
+  const normalizedName = String(orbName || "").trim();
+  if (normalizedName) {
+    const nextUrl = `${getOrbUrl(normalizedName)}${window.location.hash}`;
+    const currentUrl = `${window.location.pathname}${window.location.search}${window.location.hash}`;
+    if (nextUrl !== currentUrl) {
+      if (options.replace) {
+        window.history.replaceState({}, "", nextUrl);
+      } else {
+        window.history.pushState({}, "", nextUrl);
+      }
+    }
+    return;
+  }
+  navigateByFeatureRoute({ tab: "orbs", orbSearch: "", equipmentId: "", materialKey: "" }, options);
+}
+
+function syncEquipmentUrl(equipmentName, options = {}) {
+  const normalizedName = String(equipmentName || "").trim();
+  if (normalizedName) {
+    const nextUrl = `${getEquipmentUrl(normalizedName)}${window.location.hash}`;
+    const currentUrl = `${window.location.pathname}${window.location.search}${window.location.hash}`;
+    if (nextUrl !== currentUrl) {
+      if (options.replace) {
+        window.history.replaceState({}, "", nextUrl);
+      } else {
+        window.history.pushState({}, "", nextUrl);
+      }
+    }
+    return;
+  }
+  navigateByFeatureRoute({ tab: "equipment-db", equipmentSearch: "", equipmentId: "", materialKey: "" }, options);
+}
+
+function syncFieldFarmingUrl(options = {}) {
+  const nextUrl = `${getFieldFarmingUrl()}${window.location.hash}`;
+  const currentUrl = `${window.location.pathname}${window.location.search}${window.location.hash}`;
+  if (nextUrl === currentUrl) return;
+  if (options.replace) {
+    window.history.replaceState({}, "", nextUrl);
+  } else {
+    window.history.pushState({}, "", nextUrl);
+  }
+}
+
 function getDocumentDescriptionMeta() {
   return document.querySelector('meta[name="description"]');
+}
+
+function getDefaultTabDocumentDescription(tabId) {
+  switch (String(tabId || "").trim()) {
+    case "bazaar":
+      return "バザー価格、前日比、更新日時を確認できるDQ10職人ツールです。価格・情報は参考用としてご利用ください。";
+    case "monster-info":
+      return "モンスターの通常ドロップ、レアドロップ、白宝箱、宝珠、生息地を確認できるDQ10職人ツールです。";
+    case "orbs":
+      return "宝珠の効果とドロップモンスターを確認できるDQ10職人ツールです。";
+    case "equipment-db":
+      return "装備情報、白宝箱ドロップモンスター、防具セット詳細を確認できるDQ10職人ツールです。";
+    case "profit":
+      return "装備の素材、原価、職人アシスト計算を確認できるDQ10職人ツールです。";
+    case "field-farming":
+      return "フィールド狩りのおすすめモンスターとドロップ相場を確認できるDQ10職人ツールです。";
+    default:
+      return DEFAULT_DOCUMENT_DESCRIPTION;
+  }
+}
+
+function getTargetDocumentDescription(tabId, targetName) {
+  const normalizedName = String(targetName || "").trim();
+  if (!normalizedName) return getDefaultTabDocumentDescription(tabId);
+  switch (String(tabId || "").trim()) {
+    case "bazaar":
+      return `${normalizedName}のバザー価格、前日比、更新日時を確認できます。`;
+    case "monster-info":
+      return `${normalizedName}の通常ドロップ、レアドロップ、白宝箱、宝珠、生息地を確認できます。`;
+    case "orbs":
+      return `${normalizedName}の効果とドロップモンスターを確認できます。`;
+    case "equipment-db":
+      return `${normalizedName}の装備情報と白宝箱ドロップモンスターを確認できます。`;
+    case "profit":
+      return `${normalizedName}の素材、原価、職人アシスト計算を確認できます。`;
+    default:
+      return `${normalizedName}の情報を確認できるDQ10職人ツールです。`;
+  }
 }
 
 function getActiveDocumentTargetName() {
@@ -8428,17 +8568,14 @@ function updateDocumentMetadata() {
   if (targetName && pageLabel) {
     document.title = `${targetName}｜${pageLabel}｜${DEFAULT_DOCUMENT_TITLE}`;
     if (descriptionMeta) {
-      descriptionMeta.setAttribute(
-        "content",
-        `${targetName}の${pageLabel}を確認できるDQ10職人ツールです。価格・情報は参考用としてご利用ください。`
-      );
+      descriptionMeta.setAttribute("content", getTargetDocumentDescription(activeTabId, targetName));
     }
     return;
   }
 
   document.title = pageLabel ? `${pageLabel}｜${DEFAULT_DOCUMENT_TITLE}` : DEFAULT_DOCUMENT_TITLE;
   if (descriptionMeta) {
-    descriptionMeta.setAttribute("content", DEFAULT_DOCUMENT_DESCRIPTION);
+    descriptionMeta.setAttribute("content", pageLabel ? getDefaultTabDocumentDescription(activeTabId) : DEFAULT_DOCUMENT_DESCRIPTION);
   }
 }
 
@@ -8534,6 +8671,14 @@ function applyAppRouteFromUrl() {
   }
 
   pendingBazaarFocusMaterialKey = String(params.get("materialKey") || "").trim();
+  if (
+    tab === "field-farming" &&
+    window.location.pathname === getProjectRootPath() &&
+    String(params.get("tab") || "").trim() === "field-farming" &&
+    params.size === 1
+  ) {
+    syncFieldFarmingUrl({ replace: true });
+  }
   updateDocumentMetadata();
 }
 
@@ -8836,7 +8981,7 @@ if (monsterInfoListWrap) {
     const targetId = String(button.dataset.monsterInfoId || "");
     const entry = monsterDetailEntryById.get(targetId);
     if (!entry || !monsterInfoModalOverlay || !monsterInfoModalBody || activeTabId !== "monster-info") return;
-    navigateByFeatureRoute({ tab: "monster-info", monsterSearch: String(entry.name || "").trim(), equipmentId: "", materialKey: "" });
+    syncMonsterInfoUrl(String(entry.name || "").trim());
     activeMonsterInfoId = targetId;
     const habitatsHtml = entry.habitats.map((name) => {
       const meta = mapMasterByName.get(name);
@@ -9645,7 +9790,7 @@ async function openEquipmentDbFromMonsterWhiteBox(itemName) {
   equipmentDbNameKeyword = normalizedName;
   isEquipmentDbNameSearchOpen = true;
   switchTab("equipment-db");
-  navigateByFeatureRoute({ tab: "equipment-db", equipmentSearch: normalizedName, equipmentId: "", materialKey: "" });
+  syncEquipmentUrl(normalizedName);
   renderEquipmentDbCards();
   document.getElementById("equipment-db")?.scrollIntoView({ block: "start", behavior: "smooth" });
 }
@@ -9707,7 +9852,7 @@ async function openOrbFromMonsterInfo(orbName) {
   orbSearchKeyword = normalizedOrbName;
   expandedOrbId = matchedOrb?.id || "";
   switchTab("orbs");
-  navigateByFeatureRoute({ tab: "orbs", orbSearch: normalizedOrbName, equipmentId: "", materialKey: "" });
+  syncOrbUrl(normalizedOrbName);
   renderOrbCards();
   document.getElementById("orbs")?.scrollIntoView({ block: "start", behavior: "smooth" });
 }
@@ -9720,7 +9865,7 @@ async function openMonsterInfoFromOrb(monsterName) {
   selectedMonsterInfoType = matchedMonster?.type || "";
   monsterInfoSearchKeyword = normalizedMonsterName;
   switchTab("monster-info");
-  navigateByFeatureRoute({ tab: "monster-info", monsterSearch: normalizedMonsterName, equipmentId: "", materialKey: "" });
+  syncMonsterInfoUrl(normalizedMonsterName);
   renderMonsterInfoCards();
   document.getElementById("monster-info")?.scrollIntoView({ block: "start", behavior: "smooth" });
 }
