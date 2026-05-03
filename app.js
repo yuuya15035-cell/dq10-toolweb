@@ -4359,46 +4359,28 @@ function renderRoutineTasks() {
           const estimatedTime = task.estimatedTime || "-";
           const reward = task.reward || "-";
           const howTo = task.howTo || "-";
+          const toolAvailableLabel = formatRoutineToolAvailableLabel(task.toolAvailable);
           return `
             <article class="card routine-task-card${checked ? " is-complete" : ""}">
               <div class="routine-task-card-header">
                 <div class="routine-task-title-wrap">
-                  <h3 class="routine-task-title">${escapeHtml(task.title)}</h3>
-                  <p class="routine-task-reset">${escapeHtml(formatRoutineResetRuleLabel(task.resetRule))}</p>
+                  <div class="routine-task-title-line">
+                    <h3 class="routine-task-title">${escapeHtml(task.title)}</h3>
+                    <span class="routine-task-version">(ver${escapeHtml(startVersion)})</span>
+                    ${toolAvailableLabel === "対応" ? '<span class="routine-task-tool-badge">ツール</span>' : ""}
+                  </div>
+                  <p class="routine-task-summary">
+                    <span class="routine-task-summary-item">${escapeHtml(howTo)}</span>
+                    <span class="routine-task-summary-item">${escapeHtml(reward)}</span>
+                    <span class="routine-task-summary-item">所要時間${escapeHtml(estimatedTime)}</span>
+                    <span class="routine-task-summary-item">${escapeHtml(comment)}</span>
+                  </p>
                 </div>
                 <label class="routine-task-check">
                   <input type="checkbox" data-routine-task-id="${escapeHtml(task.id)}" ${checked ? "checked" : ""} />
                   <span>${checkLabel}</span>
                 </label>
               </div>
-              <dl class="routine-task-meta">
-                <div class="routine-task-meta-row">
-                  <dt>やり方</dt>
-                  <dd>${escapeHtml(howTo)}</dd>
-                </div>
-                <div class="routine-task-meta-row">
-                  <dt>報酬</dt>
-                  <dd>${escapeHtml(reward)}</dd>
-                </div>
-                <div class="routine-task-meta-row">
-                  <dt>所要時間</dt>
-                  <dd>${escapeHtml(estimatedTime)}</dd>
-                </div>
-                <div class="routine-task-meta-row">
-                  <dt>コメント</dt>
-                  <dd>${escapeHtml(comment)}</dd>
-                </div>
-                <div class="routine-task-meta-grid">
-                  <div class="routine-task-meta-chip">
-                    <span class="routine-task-meta-chip-label">冒険者ツール</span>
-                    <strong>${escapeHtml(formatRoutineToolAvailableLabel(task.toolAvailable))}</strong>
-                  </div>
-                  <div class="routine-task-meta-chip">
-                    <span class="routine-task-meta-chip-label">開始VER</span>
-                    <strong>${escapeHtml(startVersion)}</strong>
-                  </div>
-                </div>
-              </dl>
             </article>
           `;
         })

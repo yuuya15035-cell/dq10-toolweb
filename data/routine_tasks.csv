@@ -1,5 +1,5 @@
 ﻿routine_id,tool_available,reset_rule,start_varsion,type,title,hou_to,reward,estimated_time,comment,sort_order
-1,,daily_AM6:00,,daily,魔法の迷宮,魔法の迷宮,ふくびき券*3,3分,ボスコインでサクッと,1
+1,,daily_AM6:00,,daily,魔法の迷宮,魔法の迷宮クリア,ふくびき券*3,3分,ボスコインでサクッと,1
 2,,daily_AM6:00,,daily,強ボス,強戦士の書使用,各種オーブ,20~40分,オーブの香水と併用して楽に,2
 3,,daily_AM6:00,VER1,daily,日替わり討伐,主要都市入口から受注,10000~40000G,3~10分,強ボスを選ぶと楽です,3
 4,〇,daily_AM6:00,,daily,畑,住宅地の畑の世話,植えた種の野菜等,1~5分,冒険者のツールがおすすめ,4

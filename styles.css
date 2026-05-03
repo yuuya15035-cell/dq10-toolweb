@@ -1101,25 +1101,21 @@ body.is-modal-open {
 
   .routine-task-card-header {
     gap: 8px;
-    margin-bottom: 8px;
+    margin-bottom: 0;
   }
 
   .routine-task-title {
     font-size: 0.92rem;
   }
 
+  .routine-task-version,
+  .routine-task-tool-badge,
+  .routine-task-summary {
+    font-size: 0.76rem;
+  }
+
   .routine-task-check {
     font-size: 0.78rem;
-  }
-
-  .routine-task-meta-row dt,
-  .routine-task-meta-row dd,
-  .routine-task-meta-chip {
-    font-size: 0.8rem;
-  }
-
-  .routine-task-meta-grid {
-    grid-template-columns: 1fr;
   }
 
   .equipment-db-card-grid {
@@ -4149,6 +4145,13 @@ button {
   flex: 1 1 auto;
 }
 
+.routine-task-title-line {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 4px 8px;
+}
+
 .routine-task-title {
   margin: 0;
   color: #3f2f22;
@@ -4158,10 +4161,40 @@ button {
   overflow-wrap: break-word;
 }
 
-.routine-task-reset {
-  margin: 4px 0 0;
+.routine-task-version {
+  color: #8b7664;
+  font-size: 0.78rem;
+  white-space: nowrap;
+}
+
+.routine-task-tool-badge {
+  display: inline-flex;
+  align-items: center;
+  min-height: 20px;
+  padding: 1px 7px;
+  border: 1px solid #d3c1a6;
+  border-radius: 999px;
+  background: #f7efe3;
   color: #6a523f;
-  font-size: 0.8rem;
+  font-size: 0.72rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.routine-task-summary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 10px;
+  margin: 6px 0 0;
+  color: #5a4635;
+  font-size: 0.84rem;
+  line-height: 1.4;
+}
+
+.routine-task-summary-item {
+  min-width: 0;
+  word-break: keep-all;
+  overflow-wrap: anywhere;
 }
 
 .routine-task-check {
@@ -4178,51 +4211,6 @@ button {
   width: 18px;
   height: 18px;
   margin: 0;
-}
-
-.routine-task-meta {
-  display: grid;
-  gap: 8px;
-  margin: 0;
-}
-
-.routine-task-meta-row {
-  display: grid;
-  gap: 4px;
-}
-
-.routine-task-meta-row dt {
-  color: #5f4734;
-  font-weight: 700;
-}
-
-.routine-task-meta-row dd {
-  margin: 0;
-  color: #3f2f22;
-  line-height: 1.45;
-  white-space: pre-wrap;
-  word-break: keep-all;
-  overflow-wrap: anywhere;
-}
-
-.routine-task-meta-grid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 8px;
-}
-
-.routine-task-meta-chip {
-  border: 1px solid #d6c2a8;
-  border-radius: 10px;
-  background: rgba(255, 255, 255, 0.76);
-  padding: 8px 10px;
-}
-
-.routine-task-meta-chip-label {
-  display: block;
-  margin-bottom: 2px;
-  color: #6a523f;
-  font-size: 0.74rem;
 }
 
 .routine-status-card {
