@@ -1647,6 +1647,7 @@ let homeFeatureIdSet = new Set(homeFeatureIds);
 let activeTabId = "profit";
 let appMode = "home";
 let pendingBazaarFocusMaterialKey = "";
+let pendingBazaarFocusMaterialName = "";
 let bazaarRowById = new Map();
 let bazaarRowByMaterialKey = new Map();
 let bazaarRowByMaterialName = new Map();
@@ -1689,6 +1690,7 @@ let selectedEquipmentDbType = "";
 let isEquipmentDbTypeExplicitAll = false;
 let equipmentDbNameKeyword = "";
 let equipmentDbMonsterKeyword = "";
+let pendingEquipmentDbFocusName = "";
 let expandedEquipmentDbId = "";
 let presentCodesKeyword = "";
 let fieldFarmingKeyword = "";
@@ -1747,6 +1749,7 @@ let selectedMonsterInfoType = "";
 let monsterInfoSearchKeyword = "";
 let selectedMonsterInfoSort = "exp_asc";
 let activeMonsterInfoId = "";
+let pendingMonsterInfoFocusName = "";
 let keepMonsterInfoTypeCleared = false;
 let activeArmorSetDetailId = "";
 let bazaarLoadingPromise = null;
@@ -4739,6 +4742,19 @@ function renderMonsterInfoCards() {
       <button type="button" class="memo-add-button monster-info-card-memo-button" data-memo-monster-id="${escapeHtml(entry.id)}">＋メモ</button>
     </article>`;
   }).join("")}</div>`;
+  if (pendingMonsterInfoFocusName !== "") {
+    const normalizedName = String(pendingMonsterInfoFocusName || "").trim();
+    const targetEntry =
+      monsterDetailEntryByName.get(normalizedName) ||
+      (monsterDetailEntries || []).find((entry) => String(entry?.name || "").includes(normalizedName));
+    if (targetEntry?.id) {
+      const focusTarget = Array.from(monsterInfoListWrap.querySelectorAll("[data-monster-info-id]")).find(
+        (element) => String(element.dataset.monsterInfoId || "") === String(targetEntry.id)
+      );
+      focusTarget?.closest(".monster-info-card")?.scrollIntoView({ block: "center", behavior: "smooth" });
+    }
+    pendingMonsterInfoFocusName = "";
+  }
 }
 
 function renderWhiteBoxCards() {
@@ -4924,6 +4940,22 @@ function getFilteredEquipmentDbEntries() {
       );
     })
     .sort(compareEquipmentDbEntries);
+}
+
+function findEquipmentDbEntryByDirectName(equipmentName) {
+  const normalizedName = String(equipmentName || "").trim();
+  if (normalizedName === "") return null;
+  const exactEntry = equipmentDbEntryByName.get(normalizedName);
+  if (exactEntry) return exactEntry;
+  const directNameEntry = (equipmentDbEntries || []).find((entry) => String(entry?.equipmentName || "").includes(normalizedName));
+  if (directNameEntry) return directNameEntry;
+  return (
+    (equipmentDbEntries || []).find(
+      (entry) =>
+        isArmorSetEntry(entry) &&
+        getArmorSetPartsFromRecipes(entry.equipmentName).some((part) => String(part?.name || "").includes(normalizedName))
+    ) || null
+  );
 }
 
 function resetEquipmentDbTypeToDefaultIfNeeded() {
@@ -5292,6 +5324,16 @@ function renderEquipmentDbCards() {
       }
     </div>
   `;
+  if (pendingEquipmentDbFocusName !== "") {
+    const targetEntry = findEquipmentDbEntryByDirectName(pendingEquipmentDbFocusName);
+    if (targetEntry?.id) {
+      const focusTarget = Array.from(equipmentDbListWrap.querySelectorAll("[data-equipment-db-id]")).find(
+        (element) => String(element.dataset.equipmentDbId || "") === String(targetEntry.id)
+      );
+      focusTarget?.closest(".equipment-db-card")?.scrollIntoView({ block: "center", behavior: "smooth" });
+    }
+    pendingEquipmentDbFocusName = "";
+  }
 
 }
 
@@ -5800,6 +5842,16 @@ function getVisibleBazaarRows() {
   return getSortedBazaarRows(favoriteFilteredRows, selectedBazaarCategory, selectedBazaarSort);
 }
 
+function findBazaarRowByDirectName(itemName) {
+  const normalizedName = normalizeMaterialNameKey(itemName);
+  if (normalizedName === "") return null;
+  return (
+    bazaarRowByMaterialName.get(normalizedName) ||
+    (bazaarPrices || []).find((row) => normalizeMaterialNameKey(row?.materialName).includes(normalizedName)) ||
+    null
+  );
+}
+
 function getVisibleBazaarPausedRows() {
   const normalizedKeyword = normalizeBazaarSearchText(bazaarSearchText);
   const keywordFilteredRows =
@@ -5844,6 +5896,18 @@ function renderBazaarPrices() {
 
   if (selectedBazaarCategory !== "" && !hasSelectedCategory) {
     selectedBazaarCategory = "";
+  }
+
+  if (pendingBazaarFocusMaterialName !== "") {
+    const focusRow = findBazaarRowByDirectName(pendingBazaarFocusMaterialName);
+    if (focusRow?.materialKey) {
+      pendingBazaarFocusMaterialKey = String(focusRow.materialKey || "");
+      if (isBazaarPausedByComment(focusRow.comment)) {
+        isBazaarPausedSectionExpanded = true;
+        selectedBazaarPausedCategory = "";
+      }
+    }
+    pendingBazaarFocusMaterialName = "";
   }
 
   const visibleRows = getVisibleBazaarRows();
@@ -8166,6 +8230,10 @@ function navigateByFeatureRoute(nextValues = {}, options = {}) {
   });
 }
 
+function hasDirectDataQueryParams(params = new URLSearchParams(window.location.search)) {
+  return params.has("equipment") || params.has("item") || params.has("name");
+}
+
 function applyAppRouteFromUrl() {
   const params = new URLSearchParams(window.location.search);
   const tab = resolveRouteTabFromLocation();
@@ -8179,7 +8247,7 @@ function applyAppRouteFromUrl() {
   const profitEntryType = String(params.get("profitEntryType") || "").trim();
   const profitArmorSetName = String(params.get("profitArmorSetName") || "").trim();
   const profitArmorPart = String(params.get("profitArmorPart") || "").trim();
-  const profitEquipmentName = String(params.get("profitEquipmentName") || "").trim();
+  const profitEquipmentName = String(params.get("profitEquipmentName") || (tab === "profit" ? params.get("equipment") || "" : "")).trim();
   const profitEquipmentType = String(params.get("profitEquipmentType") || "").trim();
   clearProfitArmorSetContext();
   if (profitEntryType === PROFIT_EQUIPMENT_NAVIGATION_TYPES.armorSet && profitArmorSetName) {
@@ -8213,16 +8281,20 @@ function applyAppRouteFromUrl() {
     equipmentDbMonsterKeyword = "";
     expandedEquipmentDbId = "";
   }
-  const equipmentSearchParam = String(params.get("equipmentSearch") || "").trim();
+  const directEquipmentNameParam = String(tab === "equipment-db" ? params.get("name") || "" : "").trim();
+  const equipmentSearchParam = String(params.get("equipmentSearch") || directEquipmentNameParam).trim();
   if (equipmentSearchParam) {
     equipmentDbNameKeyword = equipmentSearchParam;
+    if (directEquipmentNameParam) pendingEquipmentDbFocusName = directEquipmentNameParam;
   } else if (tab === "equipment-db") {
     equipmentDbNameKeyword = "";
   }
-  const itemSearchParam = String(params.get("itemSearch") || "").trim();
+  const directItemParam = String(tab === "bazaar" ? params.get("item") || "" : "").trim();
+  const itemSearchParam = String(params.get("itemSearch") || directItemParam).trim();
   if (itemSearchParam) {
     bazaarSearchText = itemSearchParam;
     selectedBazaarMaterialName = itemSearchParam;
+    if (directItemParam) pendingBazaarFocusMaterialName = directItemParam;
   } else if (tab === "bazaar") {
     bazaarSearchText = "";
     selectedBazaarMaterialName = "";
@@ -8236,10 +8308,12 @@ function applyAppRouteFromUrl() {
     selectedOrbCategory = "";
     expandedOrbId = "";
   }
-  const monsterSearchParam = String(params.get("monsterSearch") || "").trim();
+  const directMonsterNameParam = String(tab === "monster-info" ? params.get("name") || "" : "").trim();
+  const monsterSearchParam = String(params.get("monsterSearch") || directMonsterNameParam).trim();
   if (monsterSearchParam) {
     monsterInfoSearchKeyword = monsterSearchParam;
     selectedMonsterInfoType = "";
+    if (directMonsterNameParam) pendingMonsterInfoFocusName = directMonsterNameParam;
   } else if (tab === "monster-info") {
     monsterInfoSearchKeyword = "";
     selectedMonsterInfoType = "";
@@ -11115,24 +11189,26 @@ async function initialize() {
   decorateSideMenuWithHomeActions();
   renderHomeQuickFeatures();
   applyAppRouteFromUrl();
-  navigateByAppParams(
-    {
-      tab: appMode === "tool" ? activeTabId : "",
-      equipmentId: activeTabId === "profit" ? selectedEquipmentId : "",
-      materialKey: activeTabId === "bazaar" ? pendingBazaarFocusMaterialKey : "",
-      itemSearch: activeTabId === "bazaar" ? bazaarSearchText : "",
-      equipmentSearch: activeTabId === "equipment-db" ? equipmentDbNameKeyword : "",
-      orbSearch: activeTabId === "orbs" ? orbSearchKeyword : "",
-      monsterSearch: activeTabId === "monster-info" ? monsterInfoSearchKeyword : "",
-      equipmentDbGroup: activeTabId === "equipment-db" ? selectedEquipmentDbGroup : "",
-      profitEntryType:
-        activeTabId === "profit" && pendingProfitArmorSetContext?.type === PROFIT_EQUIPMENT_NAVIGATION_TYPES.armorSet
-          ? PROFIT_EQUIPMENT_NAVIGATION_TYPES.armorSet
-          : "",
-      profitArmorSetName: activeTabId === "profit" ? String(pendingProfitArmorSetContext?.setName || "") : "",
-    },
-    { replace: true }
-  );
+  if (!hasDirectDataQueryParams()) {
+    navigateByAppParams(
+      {
+        tab: appMode === "tool" ? activeTabId : "",
+        equipmentId: activeTabId === "profit" ? selectedEquipmentId : "",
+        materialKey: activeTabId === "bazaar" ? pendingBazaarFocusMaterialKey : "",
+        itemSearch: activeTabId === "bazaar" ? bazaarSearchText : "",
+        equipmentSearch: activeTabId === "equipment-db" ? equipmentDbNameKeyword : "",
+        orbSearch: activeTabId === "orbs" ? orbSearchKeyword : "",
+        monsterSearch: activeTabId === "monster-info" ? monsterInfoSearchKeyword : "",
+        equipmentDbGroup: activeTabId === "equipment-db" ? selectedEquipmentDbGroup : "",
+        profitEntryType:
+          activeTabId === "profit" && pendingProfitArmorSetContext?.type === PROFIT_EQUIPMENT_NAVIGATION_TYPES.armorSet
+            ? PROFIT_EQUIPMENT_NAVIGATION_TYPES.armorSet
+            : "",
+        profitArmorSetName: activeTabId === "profit" ? String(pendingProfitArmorSetContext?.setName || "") : "",
+      },
+      { replace: true }
+    );
+  }
   saveData();
   rerenderAll();
   prefetchDataForTab(activeTabId);
