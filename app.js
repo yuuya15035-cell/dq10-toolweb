@@ -1710,6 +1710,7 @@ let isEquipmentDbTypeExplicitAll = false;
 let equipmentDbNameKeyword = "";
 let equipmentDbMonsterKeyword = "";
 let pendingEquipmentDbFocusName = "";
+let pendingEquipmentDbAutoOpenName = "";
 let expandedEquipmentDbId = "";
 let presentCodesKeyword = "";
 let fieldFarmingKeyword = "";
@@ -1769,6 +1770,7 @@ let monsterInfoSearchKeyword = "";
 let selectedMonsterInfoSort = "exp_asc";
 let activeMonsterInfoId = "";
 let pendingMonsterInfoFocusName = "";
+let pendingMonsterInfoAutoOpenName = "";
 let keepMonsterInfoTypeCleared = false;
 let activeArmorSetDetailId = "";
 let bazaarLoadingPromise = null;
@@ -4854,6 +4856,16 @@ function renderMonsterInfoCards() {
     }
     pendingMonsterInfoFocusName = "";
   }
+  if (pendingMonsterInfoAutoOpenName !== "") {
+    const normalizedName = String(pendingMonsterInfoAutoOpenName || "").trim();
+    const targetEntry =
+      monsterDetailEntryByName.get(normalizedName) ||
+      (monsterDetailEntries || []).find((entry) => String(entry?.name || "").includes(normalizedName));
+    pendingMonsterInfoAutoOpenName = "";
+    if (targetEntry?.id && activeMonsterInfoId !== String(targetEntry.id || "")) {
+      openMonsterInfoDetailModal(targetEntry);
+    }
+  }
   updateDocumentMetadata();
 }
 
@@ -5228,7 +5240,46 @@ function openArmorSetDetailModal(entry) {
   activeArmorSetDetailId = String(entry.id || "");
   armorSetDetailModalBody.innerHTML = buildArmorSetDetailModalHtml(entry);
   armorSetDetailModalOverlay.hidden = false;
+  armorSetDetailModalDialog.scrollTop = 0;
+  armorSetDetailModalBody.scrollTop = 0;
+  window.requestAnimationFrame(() => {
+    armorSetDetailModalDialog.scrollTop = 0;
+    armorSetDetailModalBody.scrollTop = 0;
+  });
   armorSetDetailModalDialog?.focus();
+  updateDocumentMetadata();
+}
+
+function openMonsterInfoDetailModal(entry) {
+  if (!entry || !monsterInfoModalOverlay || !monsterInfoModalBody) return;
+  activeMonsterInfoId = String(entry.id || "");
+  const habitatsHtml = entry.habitats
+    .map((name) => {
+      const meta = mapMasterByName.get(name);
+      const version = formatMonsterHabitatVersion(meta?.version);
+      const area = meta?.areaGroup ? escapeHtml(meta.areaGroup) : "";
+      return `<li><strong>${escapeHtml(name)}</strong><br>${escapeHtml(version)}${area ? ` / ${area}` : ""}</li>`;
+    })
+    .join("");
+  monsterInfoModalBody.innerHTML = `<div class="memo-target-header">
+        <h3>${escapeHtml(entry.name)}</h3>
+        <button type="button" class="memo-add-button" data-memo-monster-id="${escapeHtml(entry.id)}">＋メモ</button>
+      </div>
+      <p class="monster-info-modal-type monster-info-modal-type-${escapeHtml(getMonsterTypeThemeClass(entry.type))}">${buildMonsterTypeLabelHtml(entry.type)}</p>
+      <p>経験値：${escapeHtml(entry.exp)} / ゴールド：${escapeHtml(entry.gold)}</p>
+      <div class="monster-drop-normal">${buildMonsterDropHtml("通常ドロップ", entry.normalDrop, { modal: true })}</div>
+      <div class="monster-drop-rare">${buildMonsterDropHtml("レアドロップ", entry.rareDrop, { modal: true })}</div>
+      <div><p>白宝箱</p><div class="monster-info-chip-list">${buildMonsterWhiteBoxLinksHtml(entry.whiteBoxList)}</div></div>
+      <div><p>宝珠 / オーブ</p><div class="monster-info-chip-list">${buildMonsterOrbLinksHtml(entry.orbList)}</div></div>
+      <div><p>生息地</p><ul class="monster-info-habitat-list">${habitatsHtml || "<li>なし</li>"}</ul></div>`;
+  monsterInfoModalOverlay.hidden = false;
+  monsterInfoModalDialog.scrollTop = 0;
+  monsterInfoModalBody.scrollTop = 0;
+  window.requestAnimationFrame(() => {
+    monsterInfoModalDialog.scrollTop = 0;
+    monsterInfoModalBody.scrollTop = 0;
+  });
+  monsterInfoModalDialog?.focus();
   updateDocumentMetadata();
 }
 
@@ -5435,6 +5486,19 @@ function renderEquipmentDbCards() {
       focusTarget?.closest(".equipment-db-card")?.scrollIntoView({ block: "center", behavior: "smooth" });
     }
     pendingEquipmentDbFocusName = "";
+  }
+  if (pendingEquipmentDbAutoOpenName !== "") {
+    const targetEntry = findEquipmentDbEntryByDirectName(pendingEquipmentDbAutoOpenName);
+    pendingEquipmentDbAutoOpenName = "";
+    if (targetEntry?.id) {
+      if (isArmorSetEntry(targetEntry)) {
+        openArmorSetDetailModal(targetEntry);
+      } else if (expandedEquipmentDbId !== String(targetEntry.id || "")) {
+        expandedEquipmentDbId = String(targetEntry.id || "");
+        renderEquipmentDbCards();
+        return;
+      }
+    }
   }
 
   updateDocumentMetadata();
@@ -8880,9 +8944,12 @@ function applyAppRouteFromUrl() {
   const equipmentSearchParam = String(params.get("equipmentSearch") || directEquipmentNameParam).trim();
   if (equipmentSearchParam) {
     equipmentDbNameKeyword = equipmentSearchParam;
-    if (directEquipmentNameParam) pendingEquipmentDbFocusName = directEquipmentNameParam;
+    pendingEquipmentDbFocusName = directEquipmentNameParam || equipmentSearchParam;
+    pendingEquipmentDbAutoOpenName = directEquipmentNameParam || equipmentSearchParam;
   } else if (tab === "equipment-db") {
     equipmentDbNameKeyword = "";
+    pendingEquipmentDbFocusName = "";
+    pendingEquipmentDbAutoOpenName = "";
   }
   const directItemParam = String(tab === "bazaar" ? params.get("item") || "" : "").trim();
   const itemSearchParam = String(params.get("itemSearch") || directItemParam).trim();
@@ -8913,12 +8980,15 @@ function applyAppRouteFromUrl() {
   if (monsterSearchParam) {
     monsterInfoSearchKeyword = monsterSearchParam;
     selectedMonsterInfoType = "";
-    if (directMonsterNameParam) pendingMonsterInfoFocusName = directMonsterNameParam;
+    pendingMonsterInfoFocusName = directMonsterNameParam || monsterSearchParam;
+    pendingMonsterInfoAutoOpenName = directMonsterNameParam || monsterSearchParam;
   } else if (tab === "monster-info") {
     monsterInfoSearchKeyword = "";
     selectedMonsterInfoType = "";
     selectedMonsterInfoSort = "exp_asc";
     activeMonsterInfoId = "";
+    pendingMonsterInfoFocusName = "";
+    pendingMonsterInfoAutoOpenName = "";
   }
 
   pendingBazaarFocusMaterialKey = String(params.get("materialKey") || "").trim();
@@ -9299,27 +9369,7 @@ if (monsterInfoListWrap) {
     const entry = monsterDetailEntryById.get(targetId);
     if (!entry || !monsterInfoModalOverlay || !monsterInfoModalBody || activeTabId !== "monster-info") return;
     syncMonsterInfoUrl(String(entry.name || "").trim());
-    activeMonsterInfoId = targetId;
-    const habitatsHtml = entry.habitats.map((name) => {
-      const meta = mapMasterByName.get(name);
-      const version = formatMonsterHabitatVersion(meta?.version);
-      const area = meta?.areaGroup ? escapeHtml(meta.areaGroup) : "";
-      return `<li><strong>${escapeHtml(name)}</strong><br>${escapeHtml(version)}${area ? ` / ${area}` : ""}</li>`;
-    }).join("");
-    monsterInfoModalBody.innerHTML = `<div class="memo-target-header">
-        <h3>${escapeHtml(entry.name)}</h3>
-        <button type="button" class="memo-add-button" data-memo-monster-id="${escapeHtml(entry.id)}">＋メモ</button>
-      </div>
-      <p class="monster-info-modal-type monster-info-modal-type-${escapeHtml(getMonsterTypeThemeClass(entry.type))}">${buildMonsterTypeLabelHtml(entry.type)}</p>
-      <p>経験値：${escapeHtml(entry.exp)} / ゴールド：${escapeHtml(entry.gold)}</p>
-      <div class="monster-drop-normal">${buildMonsterDropHtml("通常ドロップ", entry.normalDrop, { modal: true })}</div>
-      <div class="monster-drop-rare">${buildMonsterDropHtml("レアドロップ", entry.rareDrop, { modal: true })}</div>
-      <div><p>白宝箱</p><div class="monster-info-chip-list">${buildMonsterWhiteBoxLinksHtml(entry.whiteBoxList)}</div></div>
-      <div><p>宝珠 / オーブ</p><div class="monster-info-chip-list">${buildMonsterOrbLinksHtml(entry.orbList)}</div></div>
-      <div><p>生息地</p><ul class="monster-info-habitat-list">${habitatsHtml || "<li>なし</li>"}</ul></div>`;
-    monsterInfoModalOverlay.hidden = false;
-    monsterInfoModalDialog?.focus();
-    updateDocumentMetadata();
+    openMonsterInfoDetailModal(entry);
   });
 
   monsterInfoListWrap.addEventListener("keydown", (event) => {
@@ -10105,6 +10155,8 @@ async function openEquipmentDbFromMonsterWhiteBox(itemName) {
   selectedEquipmentDbType = getEquipmentDbTypeForWhiteBoxItem(normalizedName, equipmentGroup);
   expandedEquipmentDbId = "";
   equipmentDbNameKeyword = normalizedName;
+  pendingEquipmentDbFocusName = normalizedName;
+  pendingEquipmentDbAutoOpenName = normalizedName;
   isEquipmentDbNameSearchOpen = true;
   switchTab("equipment-db");
   syncEquipmentUrl(normalizedName);
@@ -10181,6 +10233,8 @@ async function openMonsterInfoFromOrb(monsterName) {
   const matchedMonster = monsterDetailEntryByName.get(normalizedMonsterName);
   selectedMonsterInfoType = matchedMonster?.type || "";
   monsterInfoSearchKeyword = normalizedMonsterName;
+  pendingMonsterInfoFocusName = normalizedMonsterName;
+  pendingMonsterInfoAutoOpenName = normalizedMonsterName;
   switchTab("monster-info");
   syncMonsterInfoUrl(normalizedMonsterName);
   renderMonsterInfoCards();
