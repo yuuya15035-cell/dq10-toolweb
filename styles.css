@@ -5931,6 +5931,10 @@ body.memo-panel-open {
   line-height: 1.55;
 }
 
+.site-footer-disclaimer {
+  color: #5a4331;
+}
+
 .site-footer p + p {
   margin-top: 8px;
   padding-top: 8px;
