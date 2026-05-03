@@ -10,6 +10,7 @@ const BAZAAR_CSV_PATH = "./data/bazaar_prices.csv";
 const BAZAAR_HISTORY_CSV_PATH = "./data/bazaar_prices_history.csv";
 const PRESENT_CODES_CSV_PATH = "./data/datapresent_codes.csv";
 const FIELD_FARMING_CSV_PATH = "./data/field_farming_monsters.csv";
+const ROUTINE_TASKS_CSV_PATH = "./data/routine_tasks.csv";
 const ORB_DATA_CSV_PATH = "./data/orb_data.csv";
 const MONSTER_DATA_CSV_PATH = "./data/monster_data.csv";
 const ORB_MONSTERS_CSV_PATH = "./data/orb_monsters.csv";
@@ -26,11 +27,13 @@ const RECIPE_FAVORITES_STORAGE_KEY = "dq10_toolweb_recipe_favorites_v1";
 const HOME_FEATURES_STORAGE_KEY = "dq10_toolweb_home_features_v1";
 const MEMO_STORAGE_KEY = "dq10_toolweb_memos_v1";
 const ADMIN_CHECKLIST_STORAGE_KEY = "dq10_toolweb_admin_checklist_v1";
+const ROUTINE_TASKS_STORAGE_KEY = "dq10_toolweb_routine_tasks_v1";
 const RECIPE_FAVORITE_CATEGORY_VALUE = "__favorites__";
 const HOME_FEATURE_DEFINITIONS = [
   { id: "bazaar", tabId: "bazaar", title: "バザー情報", icon: "💰" },
   { id: "profit", tabId: "profit", title: "職人アシスト", icon: "🛠️" },
   { id: "favorites", tabId: "favorites", title: "お気に入り", icon: "📌" },
+  { id: "routine", tabId: "routine", title: "日課・週課", icon: "📅" },
   { id: "present-codes", tabId: "present-codes", title: "プレゼント", icon: "🎁" },
   { id: "monster-info", tabId: "monster-info", title: "モンスター情報", icon: "👾" },
   { id: "equipment-db", tabId: "equipment-db", title: "装備データ", icon: "🛡️" },
@@ -48,6 +51,7 @@ const SITE_SEARCH_MATCH_RANK = Object.freeze({
 const ENTRY_ROUTE_SEGMENT_TO_TAB = Object.freeze({
   bazaar: "bazaar",
   craft: "profit",
+  routine: "routine",
   monster: "monster-info",
   equipment: "equipment-db",
   orb: "orbs",
@@ -57,6 +61,7 @@ const ENTRY_ROUTE_SEGMENT_TO_TAB = Object.freeze({
 });
 const LEGACY_QUERY_TAB_ALIASES = Object.freeze({
   craft: "profit",
+  routine: "routine",
   monster: "monster-info",
   equipment: "equipment-db",
   orb: "orbs",
@@ -74,6 +79,7 @@ const TAB_IDS = new Set([
   "present-codes",
   "bazaar",
   "favorites",
+  "routine",
   "data",
   "field-farming",
   "orbs",
@@ -1217,6 +1223,175 @@ function saveMemoEntries() {
   );
 }
 
+function loadRoutineTaskState() {
+  const raw = localStorage.getItem(ROUTINE_TASKS_STORAGE_KEY);
+  if (!raw) return {};
+  try {
+    const parsed = JSON.parse(raw);
+    return parsed && typeof parsed.checkedTokens === "object" && parsed.checkedTokens ? parsed.checkedTokens : {};
+  } catch {
+    return {};
+  }
+}
+
+function saveRoutineTaskState() {
+  localStorage.setItem(
+    ROUTINE_TASKS_STORAGE_KEY,
+    JSON.stringify({
+      version: 1,
+      checkedTokens: routineTaskCheckedTokens,
+    })
+  );
+}
+
+function makeRoutineTaskId(value, index) {
+  const normalized = String(value || "").trim();
+  return normalized !== "" ? `routine:${normalized}` : `routine:row:${index + 1}`;
+}
+
+function normalizeRoutineType(value) {
+  const normalized = String(value || "").trim().toLowerCase();
+  if (normalized === "weekly") return "weekly";
+  if (normalized === "monthly") return "monthly";
+  return "daily";
+}
+
+function normalizeRoutineResetRule(value) {
+  return String(value || "")
+    .trim()
+    .toLowerCase()
+    .replace(/[　\s]+/g, "")
+    .replace(/：/g, ":");
+}
+
+function parseRoutineResetTime(rule) {
+  const match = rule.match(/(am|pm)?(\d{1,2})(?::?(\d{2}))?$/i);
+  if (!match) return { hour: 6, minute: 0, suffix: "" };
+  const suffix = String(match[1] || "").toLowerCase();
+  let hour = Number(match[2] || 0);
+  const minute = Number(match[3] || 0);
+  if (suffix === "pm" && hour < 12) hour += 12;
+  if (suffix === "am" && hour === 12) hour = 0;
+  return { hour, minute, suffix };
+}
+
+function formatRoutineResetToken(date, hour, minute) {
+  const year = date.getFullYear();
+  const month = `${date.getMonth() + 1}`.padStart(2, "0");
+  const day = `${date.getDate()}`.padStart(2, "0");
+  return `${year}-${month}-${day}@${String(hour).padStart(2, "0")}:${String(minute).padStart(2, "0")}`;
+}
+
+function buildRoutineResetDate(baseDate, hour, minute) {
+  return new Date(baseDate.getFullYear(), baseDate.getMonth(), baseDate.getDate(), hour, minute, 0, 0);
+}
+
+function getRoutineMonthlyResetToken(now, days, hour, minute) {
+  const buildCandidates = (year, monthIndex) =>
+    days
+      .map((day) => Number(day))
+      .filter((day) => Number.isFinite(day) && day > 0)
+      .map((day) => {
+        const lastDay = new Date(year, monthIndex + 1, 0).getDate();
+        if (day > lastDay) return null;
+        return new Date(year, monthIndex, day, hour, minute, 0, 0);
+      })
+      .filter(Boolean);
+
+  const currentCandidates = buildCandidates(now.getFullYear(), now.getMonth()).filter((candidate) => candidate <= now);
+  if (currentCandidates.length > 0) {
+    const latest = currentCandidates[currentCandidates.length - 1];
+    return formatRoutineResetToken(latest, hour, minute);
+  }
+
+  const previousMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+  const previousCandidates = buildCandidates(previousMonth.getFullYear(), previousMonth.getMonth());
+  const latestPrevious = previousCandidates[previousCandidates.length - 1];
+  return latestPrevious ? formatRoutineResetToken(latestPrevious, hour, minute) : "manual";
+}
+
+function getRoutineResetToken(task, now = new Date()) {
+  const normalizedRule = normalizeRoutineResetRule(task?.resetRule);
+  if (normalizedRule === "") return `manual:${task.id}`;
+
+  const { hour, minute } = parseRoutineResetTime(normalizedRule);
+  if (normalizedRule.startsWith("daily")) {
+    const resetDate = buildRoutineResetDate(now, hour, minute);
+    if (now < resetDate) {
+      resetDate.setDate(resetDate.getDate() - 1);
+    }
+    return formatRoutineResetToken(resetDate, hour, minute);
+  }
+
+  if (normalizedRule.startsWith("weekly_")) {
+    const weeklyBase = normalizedRule.replace(/(am|pm)?\d{1,2}(?::?\d{2})?$/i, "").replace(/_+$/, "");
+    const dayToken = weeklyBase.split("_")[1] || "sun";
+    const dayMap = { sun: 0, mon: 1, tue: 2, wed: 3, thu: 4, fri: 5, sat: 6 };
+    const targetDay = Object.prototype.hasOwnProperty.call(dayMap, dayToken) ? dayMap[dayToken] : 0;
+    const candidate = buildRoutineResetDate(now, hour, minute);
+    const diff = (candidate.getDay() - targetDay + 7) % 7;
+    candidate.setDate(candidate.getDate() - diff);
+    if (now < candidate) {
+      candidate.setDate(candidate.getDate() - 7);
+    }
+    return formatRoutineResetToken(candidate, hour, minute);
+  }
+
+  if (normalizedRule.startsWith("monthly_")) {
+    const monthlyBase = normalizedRule.replace(/(am|pm)?\d{1,2}(?::?\d{2})?$/i, "").replace(/_+$/, "");
+    const dayNumbers = monthlyBase
+      .split("_")
+      .slice(1)
+      .map((value) => Number(value))
+      .filter((value) => Number.isFinite(value) && value > 0)
+      .sort((a, b) => a - b);
+    if (dayNumbers.length > 0) {
+      return getRoutineMonthlyResetToken(now, dayNumbers, hour, minute);
+    }
+  }
+
+  return `manual:${task.id}`;
+}
+
+function isRoutineTaskChecked(task) {
+  const currentToken = getRoutineResetToken(task);
+  return routineTaskCheckedTokens[task.id] === currentToken;
+}
+
+function setRoutineTaskChecked(task, checked) {
+  if (!task?.id) return;
+  if (checked) {
+    routineTaskCheckedTokens[task.id] = getRoutineResetToken(task);
+  } else {
+    delete routineTaskCheckedTokens[task.id];
+  }
+}
+
+function pruneRoutineTaskCheckedState() {
+  const validIds = new Set((routineTasks || []).map((task) => task.id));
+  Object.keys(routineTaskCheckedTokens).forEach((taskId) => {
+    if (!validIds.has(taskId)) {
+      delete routineTaskCheckedTokens[taskId];
+    }
+  });
+}
+
+function expireRoutineTaskCheckedState() {
+  let changed = false;
+  (routineTasks || []).forEach((task) => {
+    const savedToken = routineTaskCheckedTokens[task.id];
+    if (!savedToken) return;
+    const currentToken = getRoutineResetToken(task);
+    if (savedToken !== currentToken) {
+      delete routineTaskCheckedTokens[task.id];
+      changed = true;
+    }
+  });
+  if (changed) {
+    saveRoutineTaskState();
+  }
+}
+
 function getChecklistPeriodToken(periodType, date = new Date()) {
   const year = date.getFullYear();
   const month = `${date.getMonth() + 1}`.padStart(2, "0");
@@ -1487,6 +1662,7 @@ let memoToastTimer = null;
 let activeFavoriteMaterialModalKey = "";
 let presentCodes = [];
 let fieldFarmingMonsters = [];
+let routineTasks = [];
 let orbEntries = [];
 let orbEntryById = new Map();
 let orbEntryByName = new Map();
@@ -1514,6 +1690,9 @@ let equipmentDbMonsterKeyword = "";
 let expandedEquipmentDbId = "";
 let presentCodesKeyword = "";
 let fieldFarmingKeyword = "";
+let selectedRoutineType = "daily";
+let showRoutineIncompleteOnly = false;
+let routineTaskCheckedTokens = {};
 let siteSearchKeyword = "";
 let isSiteSearchDataLoading = false;
 let hasLoadedSiteSearchData = false;
@@ -1524,6 +1703,7 @@ let isEquipmentDbNameSearchOpen = false;
 let isEquipmentDbMonsterSearchOpen = false;
 let hasLoadedPresentCodes = false;
 let hasLoadedFieldFarmingMonsters = false;
+let hasLoadedRoutineTasks = false;
 let hasLoadedOrbData = false;
 let hasLoadedWhiteBoxData = false;
 let hasLoadedEquipmentDbData = false;
@@ -1534,6 +1714,7 @@ let hasLoadedCraftIdealValues = false;
 let bazaarLoadError = false;
 let presentCodesLoadError = false;
 let fieldFarmingLoadError = false;
+let routineTasksLoadError = false;
 let orbLoadError = false;
 let whiteBoxLoadError = false;
 let equipmentDbLoadError = false;
@@ -1541,6 +1722,7 @@ let monsterInfoLoadError = false;
 let hasSyncedMaterialPricesWithBazaar = false;
 let isPresentCodesLoading = false;
 let isFieldFarmingLoading = false;
+let isRoutineTasksLoading = false;
 let isOrbDataLoading = false;
 let isWhiteBoxDataLoading = false;
 let isEquipmentDbDataLoading = false;
@@ -1551,6 +1733,7 @@ let isCraftIdealValuesLoading = false;
 let isToolSiteSearchOpen = false;
 let presentCodesLoadingPromise = null;
 let fieldFarmingLoadingPromise = null;
+let routineTasksLoadingPromise = null;
 let orbDataLoadingPromise = null;
 let whiteBoxDataLoadingPromise = null;
 let equipmentDbDataLoadingPromise = null;
@@ -1675,6 +1858,12 @@ const bazaarDetailModalHandle = getRequiredElementById("bazaarDetailModalHandle"
 const bazaarDetailModalBody = getRequiredElementById("bazaarDetailModalBody");
 const presentCodeListWrap = getRequiredElementById("presentCodeListWrap");
 const fieldFarmingListWrap = getRequiredElementById("fieldFarmingListWrap");
+const routineTypeTabButtons = Array.from(document.querySelectorAll("[data-routine-type]"));
+const routineProgressText = getRequiredElementById("routineProgressText");
+const routineCheckAllButton = getRequiredElementById("routineCheckAllButton");
+const routineClearAllButton = getRequiredElementById("routineClearAllButton");
+const routineIncompleteOnlyToggle = getRequiredElementById("routineIncompleteOnlyToggle");
+const routineListWrap = getRequiredElementById("routineListWrap");
 const orbListWrap = getRequiredElementById("orbListWrap");
 const orbSearchInput = getRequiredElementById("orbSearchInput");
 const orbCategoryFilterWrap = getRequiredElementById("orbCategoryFilterWrap");
@@ -3968,6 +4157,76 @@ async function ensureEquipmentDbDataLoaded() {
   return equipmentDbDataLoadingPromise;
 }
 
+async function loadRoutineTasksCsv() {
+  const lines = await fetchCsvLines(ROUTINE_TASKS_CSV_PATH);
+  if (lines.length <= 1) return [];
+  const headers = parseCsvLine(lines[0]);
+  const idx = {
+    id: findHeaderIndex(headers, ["routine_id", "id"]),
+    toolAvailable: findHeaderIndex(headers, ["tool_available", "tool"]),
+    resetRule: findHeaderIndex(headers, ["reset_rule", "reset"]),
+    startVersion: findHeaderIndex(headers, ["start_version", "start_varsion", "version"]),
+    type: findHeaderIndex(headers, ["type", "routine_type"]),
+    title: findHeaderIndex(headers, ["title", "name"]),
+    howTo: findHeaderIndex(headers, ["how_to", "hou_to", "method"]),
+    reward: findHeaderIndex(headers, ["reward"]),
+    estimatedTime: findHeaderIndex(headers, ["estimated_time", "time"]),
+    comment: findHeaderIndex(headers, ["comment", "memo"]),
+    sortOrder: findHeaderIndex(headers, ["sort_order", "sort"]),
+  };
+  return lines
+    .slice(1)
+    .map((line, index) => {
+      const row = parseCsvLine(line);
+      const title = String(row[idx.title] || "").trim();
+      if (!title) return null;
+      const type = normalizeRoutineType(row[idx.type]);
+      const sortOrder = Number(row[idx.sortOrder] || Number.MAX_SAFE_INTEGER);
+      return {
+        id: makeRoutineTaskId(row[idx.id], index),
+        csvId: String(row[idx.id] || "").trim(),
+        type,
+        title,
+        toolAvailable: String(row[idx.toolAvailable] || "").trim(),
+        resetRule: String(row[idx.resetRule] || "").trim(),
+        startVersion: String(row[idx.startVersion] || "").trim(),
+        howTo: String(row[idx.howTo] || "").trim(),
+        reward: String(row[idx.reward] || "").trim(),
+        estimatedTime: String(row[idx.estimatedTime] || "").trim(),
+        comment: String(row[idx.comment] || "").trim(),
+        sortOrder: Number.isFinite(sortOrder) ? sortOrder : Number.MAX_SAFE_INTEGER,
+      };
+    })
+    .filter(Boolean)
+    .sort((a, b) => {
+      if (a.type !== b.type) return a.type.localeCompare(b.type, "ja");
+      if (a.sortOrder !== b.sortOrder) return a.sortOrder - b.sortOrder;
+      return a.title.localeCompare(b.title, "ja");
+    });
+}
+
+async function ensureRoutineTasksLoaded() {
+  if (hasLoadedRoutineTasks || isRoutineTasksLoading) return routineTasksLoadingPromise;
+  isRoutineTasksLoading = true;
+  routineTasksLoadingPromise = (async () => {
+    try {
+      routineTasks = await loadRoutineTasksCsv();
+      hasLoadedRoutineTasks = true;
+      routineTasksLoadError = false;
+      pruneRoutineTaskCheckedState();
+      expireRoutineTaskCheckedState();
+    } catch (error) {
+      console.error(`routine_tasks.csv の読み込みに失敗しました: path=${ROUTINE_TASKS_CSV_PATH}`, error);
+      routineTasks = [];
+      routineTasksLoadError = true;
+    } finally {
+      isRoutineTasksLoading = false;
+      if (activeTabId === "routine") renderRoutineTasks();
+    }
+  })();
+  return routineTasksLoadingPromise;
+}
+
 function findHeaderIndex(headers, candidates) {
   const normalized = headers.map((h) => String(h || "").trim().toLowerCase());
   return candidates
@@ -3981,6 +4240,171 @@ function parsePipeList(value) {
     .split("｜")
     .map((item) => item.trim())
     .filter(Boolean);
+}
+
+function getRoutineTypeLabel(type) {
+  if (type === "weekly") return "週課";
+  if (type === "monthly") return "月課";
+  return "日課";
+}
+
+function formatRoutineResetTimeLabel(hour, minute) {
+  return `${hour}:${String(minute).padStart(2, "0")}`;
+}
+
+function formatRoutineResetRuleLabel(rule) {
+  const raw = String(rule || "").trim();
+  if (!raw) return "手動リセット";
+  const normalized = normalizeRoutineResetRule(raw);
+  const { hour, minute } = parseRoutineResetTime(normalized);
+  const timeLabel = formatRoutineResetTimeLabel(hour, minute);
+  if (normalized.startsWith("daily")) {
+    return `毎日 ${timeLabel}`;
+  }
+  if (normalized.startsWith("weekly_")) {
+    const weeklyBase = normalized.replace(/(am|pm)?\d{1,2}(?::?\d{2})?$/i, "").replace(/_+$/, "");
+    const dayToken = weeklyBase.split("_")[1] || "sun";
+    const dayMap = {
+      sun: "日曜",
+      mon: "月曜",
+      tue: "火曜",
+      wed: "水曜",
+      thu: "木曜",
+      fri: "金曜",
+      sat: "土曜",
+    };
+    return `毎週${dayMap[dayToken] || "日曜"} ${timeLabel}`;
+  }
+  if (normalized.startsWith("monthly_")) {
+    const monthlyBase = normalized.replace(/(am|pm)?\d{1,2}(?::?\d{2})?$/i, "").replace(/_+$/, "");
+    const dayNumbers = monthlyBase
+      .split("_")
+      .slice(1)
+      .map((value) => Number(value))
+      .filter((value) => Number.isFinite(value) && value > 0)
+      .sort((a, b) => a - b);
+    if (dayNumbers.length > 0) {
+      return `毎月${dayNumbers.join("日・")}日 ${timeLabel}`;
+    }
+  }
+  return raw;
+}
+
+function formatRoutineToolAvailableLabel(value) {
+  const normalized = String(value || "").trim();
+  if (!normalized) return "未対応";
+  if (/[〇○◯]/.test(normalized) || /yes|ok|true|対応/i.test(normalized)) return "対応";
+  return normalized;
+}
+
+function getRoutineTasksByType(type = selectedRoutineType) {
+  return (routineTasks || []).filter((task) => task.type === type);
+}
+
+function getRoutineTaskById(taskId) {
+  return (routineTasks || []).find((task) => task.id === taskId) || null;
+}
+
+function updateRoutineTypeTabState() {
+  routineTypeTabButtons.forEach((button) => {
+    const isActive = String(button.dataset.routineType || "") === selectedRoutineType;
+    button.classList.toggle("is-active", isActive);
+    button.setAttribute("aria-selected", isActive ? "true" : "false");
+    button.setAttribute("tabindex", isActive ? "0" : "-1");
+  });
+}
+
+function renderRoutineTasks() {
+  updateRoutineTypeTabState();
+  if (routineIncompleteOnlyToggle) {
+    routineIncompleteOnlyToggle.checked = showRoutineIncompleteOnly;
+  }
+  const currentTypeLabel = getRoutineTypeLabel(selectedRoutineType);
+  const currentTasks = getRoutineTasksByType(selectedRoutineType);
+  const completedCount = currentTasks.filter((task) => isRoutineTaskChecked(task)).length;
+  if (routineProgressText) {
+    routineProgressText.textContent = `${currentTypeLabel} ${completedCount}/${currentTasks.length} 完了`;
+  }
+  if (routineCheckAllButton) routineCheckAllButton.disabled = currentTasks.length === 0;
+  if (routineClearAllButton) routineClearAllButton.disabled = currentTasks.length === 0;
+
+  if (!routineListWrap) return;
+  if (isRoutineTasksLoading && !hasLoadedRoutineTasks && routineTasks.length === 0) {
+    routineListWrap.innerHTML = '<div class="card routine-status-card">日課・週課・月課データを読み込んでいます…</div>';
+    return;
+  }
+  if (routineTasksLoadError && routineTasks.length === 0) {
+    routineListWrap.innerHTML = '<div class="card routine-status-card">データを読み込めませんでした。</div>';
+    return;
+  }
+
+  const visibleTasks = showRoutineIncompleteOnly ? currentTasks.filter((task) => !isRoutineTaskChecked(task)) : currentTasks;
+  if (visibleTasks.length === 0) {
+    routineListWrap.innerHTML = `<div class="card routine-status-card">${
+      currentTasks.length === 0
+        ? `${currentTypeLabel}の項目はまだありません。`
+        : `${currentTypeLabel}はすべて完了しています。`
+    }</div>`;
+    return;
+  }
+
+  routineListWrap.innerHTML = `
+    <div class="routine-card-list">
+      ${visibleTasks
+        .map((task) => {
+          const checked = isRoutineTaskChecked(task);
+          const checkLabel = checked ? "完了済み" : "未完了";
+          const startVersion = task.startVersion || "-";
+          const comment = task.comment || "-";
+          const estimatedTime = task.estimatedTime || "-";
+          const reward = task.reward || "-";
+          const howTo = task.howTo || "-";
+          return `
+            <article class="card routine-task-card${checked ? " is-complete" : ""}">
+              <div class="routine-task-card-header">
+                <div class="routine-task-title-wrap">
+                  <h3 class="routine-task-title">${escapeHtml(task.title)}</h3>
+                  <p class="routine-task-reset">${escapeHtml(formatRoutineResetRuleLabel(task.resetRule))}</p>
+                </div>
+                <label class="routine-task-check">
+                  <input type="checkbox" data-routine-task-id="${escapeHtml(task.id)}" ${checked ? "checked" : ""} />
+                  <span>${checkLabel}</span>
+                </label>
+              </div>
+              <dl class="routine-task-meta">
+                <div class="routine-task-meta-row">
+                  <dt>やり方</dt>
+                  <dd>${escapeHtml(howTo)}</dd>
+                </div>
+                <div class="routine-task-meta-row">
+                  <dt>報酬</dt>
+                  <dd>${escapeHtml(reward)}</dd>
+                </div>
+                <div class="routine-task-meta-row">
+                  <dt>所要時間</dt>
+                  <dd>${escapeHtml(estimatedTime)}</dd>
+                </div>
+                <div class="routine-task-meta-row">
+                  <dt>コメント</dt>
+                  <dd>${escapeHtml(comment)}</dd>
+                </div>
+                <div class="routine-task-meta-grid">
+                  <div class="routine-task-meta-chip">
+                    <span class="routine-task-meta-chip-label">冒険者ツール</span>
+                    <strong>${escapeHtml(formatRoutineToolAvailableLabel(task.toolAvailable))}</strong>
+                  </div>
+                  <div class="routine-task-meta-chip">
+                    <span class="routine-task-meta-chip-label">開始VER</span>
+                    <strong>${escapeHtml(startVersion)}</strong>
+                  </div>
+                </div>
+              </dl>
+            </article>
+          `;
+        })
+        .join("")}
+    </div>
+  `;
 }
 
 const MONSTER_TYPE_ORDER = [
@@ -4150,6 +4574,10 @@ async function ensureMonsterInfoDataLoaded() {
 function prefetchDataForTab(tabId) {
   if (tabId === "profit") {
     void ensureBazaarPricesLoaded();
+    return;
+  }
+  if (tabId === "routine") {
+    void ensureRoutineTasksLoaded();
     return;
   }
   if (tabId === "present-codes") {
@@ -7652,6 +8080,8 @@ function switchTab(target) {
     renderPresentCodes();
   } else if (normalizedTarget === "field-farming") {
     renderFieldFarmingRanking();
+  } else if (normalizedTarget === "routine") {
+    renderRoutineTasks();
   } else if (normalizedTarget === "bazaar") {
     renderBazaarPrices();
   } else if (normalizedTarget === "favorites") {
@@ -9772,6 +10202,7 @@ function rerenderAll() {
   renderMaterialList();
   renderRecipeAdminList();
   calcAndRenderSummary();
+  if (activeTabId === "routine") renderRoutineTasks();
   if (activeTabId === "present-codes") renderPresentCodes();
   if (activeTabId === "field-farming") renderFieldFarmingRanking();
   if (activeTabId === "bazaar") renderBazaarPrices();
@@ -9788,6 +10219,7 @@ function rerenderActiveTabOnly() {
     rerenderAll();
     return;
   }
+  if (activeTabId === "routine") renderRoutineTasks();
   if (activeTabId === "present-codes") renderPresentCodes();
   if (activeTabId === "field-farming") renderFieldFarmingRanking();
   if (activeTabId === "bazaar") renderBazaarPrices();
@@ -10591,6 +11023,54 @@ equipmentDbGroupTabButtons.forEach((button) => {
   });
 });
 
+routineTypeTabButtons.forEach((button) => {
+  button.addEventListener("click", () => {
+    selectedRoutineType = normalizeRoutineType(button.dataset.routineType);
+    renderRoutineTasks();
+  });
+});
+
+if (routineIncompleteOnlyToggle) {
+  routineIncompleteOnlyToggle.addEventListener("change", (event) => {
+    showRoutineIncompleteOnly = Boolean(event.target instanceof HTMLInputElement && event.target.checked);
+    renderRoutineTasks();
+  });
+}
+
+if (routineCheckAllButton) {
+  routineCheckAllButton.addEventListener("click", () => {
+    getRoutineTasksByType(selectedRoutineType).forEach((task) => {
+      setRoutineTaskChecked(task, true);
+    });
+    saveRoutineTaskState();
+    renderRoutineTasks();
+  });
+}
+
+if (routineClearAllButton) {
+  routineClearAllButton.addEventListener("click", () => {
+    getRoutineTasksByType(selectedRoutineType).forEach((task) => {
+      setRoutineTaskChecked(task, false);
+    });
+    saveRoutineTaskState();
+    renderRoutineTasks();
+  });
+}
+
+if (routineListWrap) {
+  routineListWrap.addEventListener("change", (event) => {
+    const target = event.target;
+    if (!(target instanceof HTMLInputElement) || target.type !== "checkbox") return;
+    const taskId = String(target.dataset.routineTaskId || "");
+    if (!taskId) return;
+    const task = getRoutineTaskById(taskId);
+    if (!task) return;
+    setRoutineTaskChecked(task, target.checked);
+    saveRoutineTaskState();
+    renderRoutineTasks();
+  });
+}
+
 window.buildBazaarHistorySnapshotRows = buildBazaarHistorySnapshotRows;
 window.mergeBazaarHistoryLines = mergeBazaarHistoryLines;
 
@@ -10609,6 +11089,7 @@ async function initialize() {
   setAdminModeEnabled(isAdminModeEnabled);
   loadAdminChecklistState();
   memoEntries = loadMemoEntries();
+  routineTaskCheckedTokens = loadRoutineTaskState();
   rebuildMemoEntryIdSet();
   renderMemoList();
   renderAdminChecklist();

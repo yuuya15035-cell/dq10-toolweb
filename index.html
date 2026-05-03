@@ -52,6 +52,9 @@
               <button type="button" class="side-menu-item side-menu-sub-item" data-menu-target="favorites">
                 お気に入り
               </button>
+              <button type="button" class="side-menu-item side-menu-sub-item" data-menu-target="routine">
+                日課・週課
+              </button>
             </div>
           </section>
           <section class="side-menu-group" aria-label="金策">
@@ -385,6 +388,35 @@
           </label>
         </div>
         <div id="fieldFarmingListWrap"></div>
+      </section>
+
+      <section id="routine" class="tab-content" aria-label="日課・週課・月課チェック画面">
+        <h2>便利ツール &gt; 日課・週課・月課チェック</h2>
+        <div class="routine-controls card">
+          <div class="routine-type-tabs" role="tablist" aria-label="日課・週課・月課の切り替え">
+            <button type="button" class="routine-type-tab-button is-active" data-routine-type="daily" role="tab" aria-selected="true" tabindex="0">
+              日課
+            </button>
+            <button type="button" class="routine-type-tab-button" data-routine-type="weekly" role="tab" aria-selected="false" tabindex="-1">
+              週課
+            </button>
+            <button type="button" class="routine-type-tab-button" data-routine-type="monthly" role="tab" aria-selected="false" tabindex="-1">
+              月課
+            </button>
+          </div>
+          <div class="routine-toolbar">
+            <p id="routineProgressText" class="routine-progress-text" aria-live="polite"></p>
+            <div class="routine-action-row">
+              <button id="routineCheckAllButton" type="button">すべてチェック</button>
+              <button id="routineClearAllButton" type="button">チェック解除</button>
+            </div>
+            <label class="field inline-field routine-incomplete-toggle">
+              <input id="routineIncompleteOnlyToggle" type="checkbox" />
+              <span>未完了のみ表示</span>
+            </label>
+          </div>
+        </div>
+        <div id="routineListWrap"></div>
       </section>
 
       <section id="orbs" class="tab-content" aria-label="宝珠データベース画面">
