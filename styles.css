@@ -4109,13 +4109,15 @@ button {
 
 .routine-card-list {
   display: grid;
-  gap: 6px;
+  gap: 4px;
+  margin: 0;
 }
 
 .routine-task-card {
   border-color: #d7c5ae;
   background: #fffaf5;
   padding: 9px 10px;
+  margin: 0;
 }
 
 .routine-task-card.is-complete {
