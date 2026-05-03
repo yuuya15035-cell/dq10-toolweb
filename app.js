@@ -7390,6 +7390,13 @@ function openBazaarPageForItem(itemName) {
   document.getElementById("bazaar")?.scrollIntoView({ block: "start", behavior: "smooth" });
 }
 
+function resetBazaarDetailModalScrollPosition() {
+  bazaarDetailModalDialog?.scrollTo?.({ top: 0, left: 0, behavior: "auto" });
+  bazaarDetailModalBody?.scrollTo?.({ top: 0, left: 0, behavior: "auto" });
+  if (bazaarDetailModalDialog) bazaarDetailModalDialog.scrollTop = 0;
+  if (bazaarDetailModalBody) bazaarDetailModalBody.scrollTop = 0;
+}
+
 async function openBazaarDetailModal(materialKey) {
   if (!bazaarDetailModalOverlay || !bazaarDetailModalBody) return;
   const row = getBazaarRowByMaterialKey(materialKey);
@@ -7511,7 +7518,11 @@ async function openBazaarDetailModal(materialKey) {
   bazaarDetailModalOverlay.hidden = false;
   bazaarDetailModalOverlay.classList.add("is-open");
   syncBodyModalOpenState();
+  resetBazaarDetailModalScrollPosition();
   bazaarDetailModalDialog?.focus();
+  requestAnimationFrame(() => {
+    resetBazaarDetailModalScrollPosition();
+  });
   updateDocumentMetadata();
 }
 
