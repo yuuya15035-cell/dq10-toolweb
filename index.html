@@ -1,991 +1,116 @@
-﻿<!doctype html>
+<!doctype html>
 <html lang="ja">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="theme-color" content="#634027" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
-    <meta name="apple-mobile-web-app-title" content="DQ10繧｢繧ｷ繧ｹ繝・ />
+    <meta name="apple-mobile-web-app-title" content="DQ10職人ツール" />
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
     <link rel="manifest" href="./manifest.webmanifest" />
     <link rel="apple-touch-icon" href="./icons/apple-touch-icon-180.png" />
-    <title>DQ10&#x8077;&#x4EBA;&#x30C4;&#x30FC;&#x30EB;</title>
-    <meta
-      name="description"
-      content="DQ10&#x306E;&#x8077;&#x4EBA;&#x30A2;&#x30B7;&#x30B9;&#x30C8;&#x3001;&#x30D0;&#x30B6;&#x30FC;&#x60C5;&#x5831;&#x3001;&#x30E2;&#x30F3;&#x30B9;&#x30BF;&#x30FC;&#x60C5;&#x5831;&#x3001;&#x88C5;&#x5099;&#x60C5;&#x5831;&#x3001;&#x5B9D;&#x73E0;&#x60C5;&#x5831;&#x3092;&#x78BA;&#x8A8D;&#x3067;&#x304D;&#x308B;&#x652F;&#x63F4;&#x30B5;&#x30A4;&#x30C8;&#x3067;&#x3059;&#x3002;"
-    />
+    <title>DQ10職人ツール</title>
+    <meta name="description" content="DQ10の職人アシスト、バザー情報、モンスター情報、装備情報、宝珠情報を確認できる支援サイトです。" />
     <link rel="stylesheet" href="styles.css" />
   </head>
   <body>
     <main class="app">
-      <button
-        id="menuToggleButton"
-        class="hamburger-button"
-        type="button"
-        aria-label="繝｡繝九Η繝ｼ繧帝幕縺・
-        aria-expanded="false"
-        aria-controls="sideMenu"
-      >
-        <span aria-hidden="true">竕｡</span>
+      <button id="menuToggleButton" class="hamburger-button" type="button" aria-label="メニューを開く" aria-expanded="false" aria-controls="sideMenu">
+        <span aria-hidden="true">≡</span>
       </button>
-
       <div id="menuOverlay" class="menu-overlay" hidden></div>
-
-      <aside id="sideMenu" class="side-menu" aria-hidden="true" aria-label="荳ｻ隕√Γ繝九Η繝ｼ">
-        <div class="side-menu-header">
-          <h2 data-content-key="menu_title">繝｡繝九Η繝ｼ</h2>
-        </div>
-        <nav class="side-menu-nav" aria-label="荳ｻ隕√ヶ繝ｭ繝・け縺ｸ縺ｮ遘ｻ蜍・>
-          <section class="side-menu-group" aria-label="繝帙・繝">
-            <h3 class="side-menu-group-title">繝帙・繝</h3>
-            <div class="side-menu-sub-list">
-              <button type="button" class="side-menu-item side-menu-sub-item" data-menu-action="home">
-                繝帙・繝縺ｫ謌ｻ繧・
-              </button>
-            </div>
-          </section>
-          <section class="side-menu-group" aria-label="繝・・繝ｫ">
-            <h3 class="side-menu-group-title">繝・・繝ｫ</h3>
-            <div class="side-menu-sub-list">
-              <button type="button" class="side-menu-item side-menu-sub-item" data-menu-target="profit">
-                閨ｷ莠ｺ繧｢繧ｷ繧ｹ繝・
-              </button>
-              <button type="button" class="side-menu-item side-menu-sub-item" data-menu-target="bazaar">
-                繝舌じ繝ｼ萓｡譬ｼ荳隕ｧ
-              </button>
-              <button type="button" class="side-menu-item side-menu-sub-item" data-menu-target="favorites">
-                縺頑ｰ励↓蜈･繧・              </button>
-              <button type="button" class="side-menu-item side-menu-sub-item" data-menu-target="routine">
-                譌･隱ｲ繝ｻ騾ｱ隱ｲ
-              </button>
-            </div>
-          </section>
-          <section class="side-menu-group" aria-label="驥醍ｭ・>
-            <h3 class="side-menu-group-title">驥醍ｭ・/h3>
-            <div class="side-menu-sub-list">
-              <button type="button" class="side-menu-item side-menu-sub-item" data-menu-target="field-farming">
-                繝輔ぅ繝ｼ繝ｫ繝臥叫繧・
-              </button>
-            </div>
-          </section>
-          <section class="side-menu-group" aria-label="縺昴・莉・>
-            <h3 class="side-menu-group-title">縺昴・莉・/h3>
-            <div class="side-menu-sub-list">
-              <button type="button" class="side-menu-item side-menu-sub-item" data-menu-target="present-codes">
-                繝励Ξ繧ｼ繝ｳ繝医・縺倥ｅ繧ゅｓ
-              </button>
-            </div>
-          </section>
-          <section class="side-menu-group" aria-label="繝・・繧ｿ繝吶・繧ｹ">
-            <h3 class="side-menu-group-title">繝・・繧ｿ繝吶・繧ｹ</h3>
-            <div class="side-menu-sub-list">
-              <button type="button" class="side-menu-item side-menu-sub-item" data-menu-target="monster-info">
-                繝｢繝ｳ繧ｹ繧ｿ繝ｼ諠・ｱ
-              </button>
-              <button type="button" class="side-menu-item side-menu-sub-item" data-menu-target="equipment-db">
-                陬・ｙ
-              </button>
-              <button type="button" class="side-menu-item side-menu-sub-item" data-menu-target="orbs">
-                螳晉匠
-              </button>
-            </div>
-          </section>
+      <aside id="sideMenu" class="side-menu" aria-hidden="true" aria-label="主要メニュー">
+        <div class="side-menu-header"><h2 data-content-key="menu_title">メニュー</h2></div>
+        <nav class="side-menu-nav" aria-label="主要ページへの移動">
+          <section class="side-menu-group" aria-label="ホーム"><h3 class="side-menu-group-title">ホーム</h3><div class="side-menu-sub-list"><button type="button" class="side-menu-item side-menu-sub-item" data-menu-action="home">ホームに戻る</button></div></section>
+          <section class="side-menu-group" aria-label="ツール"><h3 class="side-menu-group-title">ツール</h3><div class="side-menu-sub-list"><button type="button" class="side-menu-item side-menu-sub-item" data-menu-target="profit">職人アシスト</button><button type="button" class="side-menu-item side-menu-sub-item" data-menu-target="bazaar">バザー価格一覧</button><button type="button" class="side-menu-item side-menu-sub-item" data-menu-target="favorites">お気に入り</button><button type="button" class="side-menu-item side-menu-sub-item" data-menu-target="routine">日課・週課</button></div></section>
+          <section class="side-menu-group" aria-label="金策"><h3 class="side-menu-group-title">金策</h3><div class="side-menu-sub-list"><button type="button" class="side-menu-item side-menu-sub-item" data-menu-target="field-farming">フィールド狩り</button></div></section>
+          <section class="side-menu-group" aria-label="その他"><h3 class="side-menu-group-title">その他</h3><div class="side-menu-sub-list"><button type="button" class="side-menu-item side-menu-sub-item" data-menu-target="present-codes">プレゼントのじゅもん</button></div></section>
+          <section class="side-menu-group" aria-label="データベース"><h3 class="side-menu-group-title">データベース</h3><div class="side-menu-sub-list"><button type="button" class="side-menu-item side-menu-sub-item" data-menu-target="monster-info">モンスター情報</button><button type="button" class="side-menu-item side-menu-sub-item" data-menu-target="equipment-db">装備</button><button type="button" class="side-menu-item side-menu-sub-item" data-menu-target="orbs">宝珠</button></div></section>
         </nav>
       </aside>
 
       <header class="app-header">
-        <h1 id="contentSiteTitle" data-content-key="site_title">繝峨Λ繧ｴ繝ｳ繧ｯ繧ｨ繧ｹ繝・0謾ｯ謠ｴ繧ｵ繧､繝・/h1>
-        <p id="contentSiteNotice" class="app-header-price-note">
-          窶ｻ萓｡譬ｼ繝ｻ諠・ｱ縺ｯ謇句虚遒ｺ隱阪・繝ｼ繧ｹ縺ｮ縺溘ａ縲∵峩譁ｰ繧ｿ繧､繝溘Φ繧ｰ縺ｫ繧医ｊ螳滄圀縺ｮ繧ｲ繝ｼ繝蜀・憾豕√→蟾ｮ縺悟・繧句ｴ蜷医′縺ゅｊ縺ｾ縺吶・
-        </p>
-        <p id="contentSiteIntro">迴ｾ蝨ｨ縺ｯ隧ｦ菴懈ｮｵ髫弱・縺溘ａ縲∬｡ｨ遉ｺ蜀・ｮｹ繧・ｩ溯・繧定ｪｿ謨ｴ荳ｭ縺ｧ縺吶・/p>
-        <p id="contentSiteSummary" data-content-key="site_summary">萓｡譬ｼ繝ｻ諠・ｱ縺ｯ蜿り・畑縺ｨ縺励※縺泌茜逕ｨ縺上□縺輔＞縲・/p>
+        <h1 id="contentSiteTitle" data-content-key="site_title">ドラゴンクエスト10支援サイト</h1>
+        <p id="contentSiteNotice" class="app-header-price-note" data-content-key="site_notice">※価格・情報は手動確認ベースのため、更新タイミングにより実際のゲーム内状況と差が出る場合があります。</p>
+        <p id="contentSiteIntro" data-content-key="site_intro">現在は試作段階のため、表示内容や機能を調整中です。</p>
+        <p id="contentSiteSummary" data-content-key="site_summary">価格・情報は参考用としてご利用ください。</p>
       </header>
 
-      <section id="toolSiteSearchDock" class="tool-site-search-dock" aria-label="繧ｵ繧､繝亥・讀懃ｴ｢・亥・繝壹・繧ｸ蜈ｱ騾夲ｼ・>
-        <button
-          id="toolSiteSearchToggleButton"
-          class="tool-site-search-toggle"
-          type="button"
-          aria-expanded="false"
-          aria-controls="toolSiteSearchPanel"
-        >
-          剥 讀懃ｴ｢
-        </button>
+      <section id="toolSiteSearchDock" class="tool-site-search-dock" aria-label="サイト内検索">
+        <button id="toolSiteSearchToggleButton" class="tool-site-search-toggle" type="button" aria-expanded="false" aria-controls="toolSiteSearchPanel">検索</button>
         <div id="toolSiteSearchPanel" class="tool-site-search-panel" hidden>
-          <label class="field site-search-field" for="toolSiteSearchInput">
-            <span>繧ｵ繧､繝亥・讀懃ｴ｢</span>
-            <input
-              id="toolSiteSearchInput"
-              type="search"
-              placeholder="陬・ｙ蜷阪・邏譚仙錐繝ｻ繝｢繝ｳ繧ｹ繧ｿ繝ｼ蜷阪↑縺ｩ縺ｧ讀懃ｴ｢"
-              autocomplete="off"
-            />
-          </label>
+          <label class="field site-search-field" for="toolSiteSearchInput"><span>サイト内検索</span><input id="toolSiteSearchInput" type="search" placeholder="装備名・素材名・モンスター名などで検索" autocomplete="off" /></label>
           <div id="toolSiteSearchResultWrap" class="site-search-result-wrap" hidden></div>
         </div>
       </section>
 
-      <section class="top-quick-access" aria-label="繧医￥菴ｿ縺・ｩ溯・">
-        <h2 id="contentToolsHeading" data-content-key="tools_heading">繧医￥菴ｿ縺・ｩ溯・</h2>
-        <p id="contentToolsIntro" class="top-quick-access-note">蜷・ｩ溯・繝壹・繧ｸ繧・Γ繝九Η繝ｼ縺ｮ縲後・繝ｼ繝霑ｽ蜉縲阪°繧芽｡ｨ遉ｺ縺ｮ霑ｽ蜉/蜑企勁縺後〒縺阪∪縺吶・/p>
-        <p id="contentMenuHint" class="top-quick-access-note top-quick-access-note-sub" data-content-key="menu_hint">窶ｻ蟾ｦ荳翫・繝｡繝九Η繝ｼ繝舌・縺九ｉ繧よ桃菴懊〒縺阪∪縺・/p>
+      <section class="top-quick-access" aria-label="サイト内便利ツール">
+        <h2 id="contentToolsHeading" data-content-key="tools_heading">サイト内便利ツール</h2>
+        <p id="contentToolsIntro" class="top-quick-access-note" data-content-key="tools_intro">各カードをクリックすると対象ページへ移動できます。</p>
+        <p id="contentMenuHint" class="top-quick-access-note top-quick-access-note-sub" data-content-key="menu_hint">※左上のメニューバーからもホーム追加や操作可能です。</p>
         <p class="top-quick-access-note top-quick-access-note-memo">＋メモで気になる項目を保存できます。素材・装備・モンスターを見比べながら、あとでまとめて確認できます。</p>
         <div class="home-quick-grid" id="homeQuickFeatureGrid"></div>
       </section>
 
-      <section class="top-update-list card" aria-label="譖ｴ譁ｰ諠・ｱ" id="topUpdateSection">
-        <h2 id="contentUpdatesHeading" data-content-key="updates_heading">譖ｴ譁ｰ諠・ｱ</h2>
+      <section class="top-update-list card" aria-label="更新情報" id="topUpdateSection">
+        <h2 id="contentUpdatesHeading" data-content-key="updates_heading">更新情報</h2>
         <ul id="topUpdateList"></ul>
-        <a id="topUpdateViewAllLink" class="top-update-view-all-button" href="./updates.html">荳隕ｧ繧定ｦ九ｋ</a>
+        <a id="topUpdateViewAllLink" class="top-update-view-all-button" href="./updates.html">一覧を見る</a>
       </section>
 
-      <section id="profit" class="tab-content" aria-label="閨ｷ莠ｺ繧｢繧ｷ繧ｹ繝育判髱｢">
-        <h2 class="assist-section-title">
-          <span class="assist-section-title-main">閨ｷ莠ｺ繧｢繧ｷ繧ｹ繝・/span>
-          <span class="assist-section-title-note">窶ｻ 陬・ｙ驕ｸ謚槭・邏譚千｢ｺ隱阪・蜴滉ｾ｡險育ｮ励・蛻ｩ逶顔｢ｺ隱阪′縺ｧ縺阪∪縺・/span>
-        </h2>
-
+      <section id="profit" class="tab-content" aria-label="職人アシスト画面">
+        <h2 class="assist-section-title"><span class="assist-section-title-main">職人アシスト</span><span class="assist-section-title-note">※ 装備選択、素材確認、原価計算、利益確認ができます。</span></h2>
         <div id="profitArmorSetAssistWrap" class="profit-armor-set-assist" hidden></div>
-
-        <div class="search-filter-grid">
-          <label class="field">
-            <span>閨ｷ莠ｺ遞ｮ蛻･</span>
-            <select id="craftsmanFilterSelect"></select>
-          </label>
-          <label class="field">
-            <span>陬・ｙ繧ｸ繝｣繝ｳ繝ｫ</span>
-            <select id="categoryFilterSelect"></select>
-          </label>
-        </div>
-
-        <label class="field">
-          <span>陬・ｙ繧帝∈謚・/span>
-          <select id="equipmentSelect"></select>
-        </label>
+        <div class="search-filter-grid"><label class="field"><span>職人種別</span><select id="craftsmanFilterSelect"></select></label><label class="field"><span>装備ジャンル</span><select id="categoryFilterSelect"></select></label></div>
+        <label class="field"><span>装備を選択</span><select id="equipmentSelect"></select></label>
         <div id="selectedEquipmentTypeMeta" class="selected-equipment-type-meta" aria-live="polite"></div>
         <div id="recipeFavoriteActionWrap"></div>
         <div id="craftIdealValueWrap" class="craft-ideal-value-wrap"></div>
         <div class="assist-sub-search">
-          <p class="assist-sub-search-label">陬懷勧讀懃ｴ｢・亥ｿ・ｦ√↑縺ｨ縺阪□縺托ｼ・/p>
+          <p class="assist-sub-search-label">補助検索（必要なときだけ）</p>
           <div class="search-toggle-stack">
-            <div class="search-toggle-group">
-              <button
-                id="equipmentSearchToggleButton"
-                class="search-toggle-button"
-                type="button"
-                aria-expanded="false"
-                aria-controls="equipmentSearchField"
-              >
-                ・・陬・ｙ蜷阪〒讀懃ｴ｢
-              </button>
-              <label id="equipmentSearchField" class="field search-field-collapsible" hidden>
-                <span>陬・ｙ蜷肴､懃ｴ｢・磯Κ蛻・ｸ閾ｴ・・/span>
-                <p class="search-toggle-note">陬・ｙ蜷阪°繧臥峩謗･謗｢縺励◆縺・婿縺ｯ縺薙■繧・/p>
-                <input id="equipmentSearchInput" type="text" placeholder="萓・ 縺ｯ縺後・ / 縺､繧九℃" />
-              </label>
-              <div id="equipmentSearchCandidateWrap" class="assist-search-candidate-wrap" hidden></div>
-            </div>
-            <div class="search-toggle-group">
-              <button
-                id="materialSearchToggleButton"
-                class="search-toggle-button"
-                type="button"
-                aria-expanded="false"
-                aria-controls="materialSearchField"
-              >
-                ・・邏譚舌〒讀懃ｴ｢
-              </button>
-              <label id="materialSearchField" class="field search-field-collapsible" hidden>
-                <span>邏譚舌〒讀懃ｴ｢・磯Κ蛻・ｸ閾ｴ・・/span>
-                <p class="search-toggle-note">邏譚仙錐縺九ｉ騾・ｼ輔″縺励◆縺・婿縺ｯ縺薙■繧・/p>
-                <input id="materialSearchInput" type="text" placeholder="萓・ 遶懊・豸・ />
-              </label>
-              <div id="materialSearchCandidateWrap" class="assist-search-candidate-wrap" hidden></div>
-            </div>
+            <div class="search-toggle-group"><button id="equipmentSearchToggleButton" class="search-toggle-button" type="button" aria-expanded="false" aria-controls="equipmentSearchField">＋ 装備名で検索</button><label id="equipmentSearchField" class="field search-field-collapsible" hidden><span>装備名検索（部分一致）</span><p class="search-toggle-note">装備名から直接探したい方はこちら。</p><input id="equipmentSearchInput" type="text" placeholder="例：はがね / つるぎ" /></label><div id="equipmentSearchCandidateWrap" class="assist-search-candidate-wrap" hidden></div></div>
+            <div class="search-toggle-group"><button id="materialSearchToggleButton" class="search-toggle-button" type="button" aria-expanded="false" aria-controls="materialSearchField">＋ 素材で検索</button><label id="materialSearchField" class="field search-field-collapsible" hidden><span>素材で検索（部分一致）</span><p class="search-toggle-note">素材名から逆引きしたい方はこちら。</p><input id="materialSearchInput" type="text" placeholder="例：竜の涙" /></label><div id="materialSearchCandidateWrap" class="assist-search-candidate-wrap" hidden></div></div>
           </div>
         </div>
-
-        <div class="card">
-          <div class="card-header-inline">
-            <div class="recipe-section-header">
-              <h3>蠢・ｦ∫ｴ譚蝉ｸ隕ｧ</h3>
-              <p class="recipe-cost-note">
-                窶ｻ 陦ｨ遉ｺ荳ｭ縺ｮ蜴滉ｾ｡縺ｯ譖ｴ譁ｰ譎る俣縺ｮ萓｡譬ｼ縺ｧ縺吶ょｮ滄圀縺ｮ萓｡譬ｼ縺ｯ蜈ｬ蠑冗嶌蝣ｴ繧偵＃遒ｺ隱阪♀鬘倥＞縺励∪縺吶・
-              </p>
-            </div>
-            <div class="material-header-actions">
-              <button id="profitMemoAddButton" class="memo-add-button profit-memo-add-button" type="button">・九Γ繝｢</button>
-              <label class="field inline-field">
-                <span>蛻ｶ菴懈焚</span>
-                <input id="productionCountInput" type="number" min="1" step="1" value="1" />
-              </label>
-            </div>
-          </div>
-          <div id="recipeTableWrap"></div>
-        </div>
-
-        <div id="toolWrap" class="card">
-          <h3>閨ｷ莠ｺ驕灘・</h3>
-          <div class="tool-toggle-row">
-            <button
-              id="toolSectionToggleButton"
-              class="tool-toggle-button"
-              type="button"
-              aria-expanded="false"
-              aria-controls="toolSectionDetail"
-            >
-              ・・閨ｷ莠ｺ驕灘・繧貞次萓｡縺ｫ蜷ｫ繧√ｋ
-            </button>
-            <p class="tool-toggle-note">窶ｻ 閨ｷ莠ｺ驕灘・莉｣繧貞次萓｡縺ｫ蜷ｫ繧√ｋ蝣ｴ蜷医・縺ｿ縲√％縺｡繧峨ｒ險ｭ螳壹＠縺ｦ縺上□縺輔＞縲・/p>
-          </div>
-          <div id="toolSectionDetail" class="tool-detail-wrap" hidden>
-            <div class="grid-2">
-              <label class="field">
-                <span>菴ｿ逕ｨ閨ｷ莠ｺ驕灘・</span>
-                <select id="toolSelect"></select>
-              </label>
-              <label class="field">
-                <span>閠蝉ｹ・焚・郁・蜍包ｼ・/span>
-                <input id="toolDurabilityInput" type="text" readonly />
-              </label>
-            </div>
-            <label class="field">
-              <span>驕灘・雉ｼ蜈･蜊倅ｾ｡・・・・/span>
-              <input id="toolPurchasePriceInput" type="number" min="0" step="1" placeholder="雉ｼ蜈･蜊倅ｾ｡繧貞・蜉・ />
-            </label>
-          </div>
-        </div>
-
-        <div class="card">
-          <h3>雋ｩ螢ｲ萓｡譬ｼ・医〒縺阪・繧医＆蛻･・・/h3>
-          <div class="sale-input-list" aria-label="縺ｧ縺阪・繧医＆蛻･雋ｩ螢ｲ萓｡譬ｼ蜈･蜉・>
-            <div class="sale-input-row">
-              <p class="sale-star-badge">笘・</p>
-              <label class="field sale-price-field">
-                <span>雋ｩ螢ｲ萓｡譬ｼ <small>・・・・/small></span>
-                <div class="sale-price-input-wrap">
-                  <input id="salePriceStar0Input" type="number" min="0" step="1" />
-                  <button id="salePriceStar0ResetButton" class="sale-price-reset-button" type="button" aria-label="笘・縺ｮ雋ｩ螢ｲ萓｡譬ｼ繧偵Μ繧ｻ繝・ヨ">ﾃ・/button>
-                </div>
-              </label>
-              <label class="field sale-count-field">
-                <span>蛟区焚</span>
-                <input id="countStar0Input" type="number" min="0" step="1" value="0" />
-              </label>
-            </div>
-            <div class="sale-input-row">
-              <p class="sale-star-badge">笘・</p>
-              <label class="field sale-price-field">
-                <span>雋ｩ螢ｲ萓｡譬ｼ <small>・・・・/small></span>
-                <div class="sale-price-input-wrap">
-                  <input id="salePriceStar1Input" type="number" min="0" step="1" />
-                  <button id="salePriceStar1ResetButton" class="sale-price-reset-button" type="button" aria-label="笘・縺ｮ雋ｩ螢ｲ萓｡譬ｼ繧偵Μ繧ｻ繝・ヨ">ﾃ・/button>
-                </div>
-              </label>
-              <label class="field sale-count-field">
-                <span>蛟区焚</span>
-                <input id="countStar1Input" type="number" min="0" step="1" value="0" />
-              </label>
-            </div>
-            <div class="sale-input-row">
-              <p class="sale-star-badge">笘・</p>
-              <label class="field sale-price-field">
-                <span>雋ｩ螢ｲ萓｡譬ｼ <small>・・・・/small></span>
-                <div class="sale-price-input-wrap">
-                  <input id="salePriceStar2Input" type="number" min="0" step="1" />
-                  <button id="salePriceStar2ResetButton" class="sale-price-reset-button" type="button" aria-label="笘・縺ｮ雋ｩ螢ｲ萓｡譬ｼ繧偵Μ繧ｻ繝・ヨ">ﾃ・/button>
-                </div>
-              </label>
-              <label class="field sale-count-field">
-                <span>蛟区焚</span>
-                <input id="countStar2Input" type="number" min="0" step="1" value="0" />
-              </label>
-            </div>
-            <div class="sale-input-row">
-              <p class="sale-star-badge">笘・</p>
-              <label class="field sale-price-field">
-                <span>雋ｩ螢ｲ萓｡譬ｼ <small>・・・・/small></span>
-                <div class="sale-price-input-wrap">
-                  <input id="salePriceStar3Input" type="number" min="0" step="1" />
-                  <button id="salePriceStar3ResetButton" class="sale-price-reset-button" type="button" aria-label="笘・縺ｮ雋ｩ螢ｲ萓｡譬ｼ繧偵Μ繧ｻ繝・ヨ">ﾃ・/button>
-                </div>
-              </label>
-              <label class="field sale-count-field">
-                <span>蛟区焚</span>
-                <input id="countStar3Input" type="number" min="0" step="1" value="0" />
-              </label>
-            </div>
-          </div>
-        </div>
-
-        <div class="summary card">
-          <div class="summary-header">
-            <h3>險育ｮ礼ｵ先棡</h3>
-            <small>窶ｻ謇区焚譁吶・荳蠕・%縺ｧ縺・/small>
-          </div>
-          <p id="productionCountWarning" class="warning-text" aria-live="polite"></p>
-          <div class="summary-grid">
-            <section class="summary-column">
-              <h4>1蛟九≠縺溘ｊ諠・ｱ</h4>
-              <p>1蝗槭≠縺溘ｊ驕灘・繧ｳ繧ｹ繝・ <strong id="perCraftToolCost">0 G</strong></p>
-              <p>1蛟九≠縺溘ｊ邏譚仙粋險・ <strong id="totalMaterialCost">0 G</strong></p>
-              <p>笘・縺ｮ1蛟九≠縺溘ｊ邏泌茜逶・ <strong id="profitStar0Value" class="profit-value">0 G</strong></p>
-              <p>笘・縺ｮ1蛟九≠縺溘ｊ邏泌茜逶・ <strong id="profitStar1Value" class="profit-value">0 G</strong></p>
-              <p>笘・縺ｮ1蛟九≠縺溘ｊ邏泌茜逶・ <strong id="profitStar2Value" class="profit-value">0 G</strong></p>
-              <p>笘・縺ｮ1蛟九≠縺溘ｊ邏泌茜逶・ <strong id="profitStar3Value" class="profit-value">0 G</strong></p>
-            </section>
-            <section class="summary-column">
-              <h4>隍・焚蛻ｶ菴懃ｵ先棡</h4>
-              <p>笘・蛟区焚: <strong id="countStar0Value">0</strong></p>
-              <p>笘・蛟区焚: <strong id="countStar1Value">0</strong></p>
-              <p>笘・蛟区焚: <strong id="countStar2Value">0</strong></p>
-              <p>笘・蛟区焚: <strong id="countStar3Value">0</strong></p>
-              <p>笘・蛻ｩ逶雁粋險・ <strong id="totalProfitStar0Value" class="profit-value">0 G</strong></p>
-              <p>笘・蛻ｩ逶雁粋險・ <strong id="totalProfitStar1Value" class="profit-value">0 G</strong></p>
-              <p>笘・蛻ｩ逶雁粋險・ <strong id="totalProfitStar2Value" class="profit-value">0 G</strong></p>
-              <p>笘・蛻ｩ逶雁粋險・ <strong id="totalProfitStar3Value" class="profit-value">0 G</strong></p>
-              <p>邱乗焔謨ｰ譁・ <strong id="totalFeeValue">0 G</strong></p>
-              <p>蟷ｳ蝮・ｴ泌｣ｲ荳・ <strong id="averageNetSalesValue">0 G</strong></p>
-              <p>邏泌茜逶奇ｼ育ｷ丞茜逶奇ｼ・ <strong id="totalProfitValue" class="profit-value">0 G</strong></p>
-            </section>
-          </div>
-        </div>
-
-        <div class="profit-reset-actions">
-          <button id="profitResetButton" class="filter-reset-button profit-reset-button" type="button">蜈ｨ縺ｦ繝ｪ繧ｻ繝・ヨ</button>
-        </div>
+        <div class="card"><div class="card-header-inline"><div class="recipe-section-header"><h3>必要素材一覧</h3><p class="recipe-cost-note">※ 表示中の原価は更新時点の価格です。実際の価格は公式旅人バザーをご確認ください。</p></div><div class="material-header-actions"><button id="profitMemoAddButton" class="memo-add-button profit-memo-add-button" type="button">＋メモ</button><label class="field inline-field"><span>制作数</span><input id="productionCountInput" type="number" min="1" step="1" value="1" /></label></div></div><div id="recipeTableWrap"></div></div>
+        <div id="toolWrap" class="card"><h3>職人道具</h3><div class="tool-toggle-row"><button id="toolSectionToggleButton" class="tool-toggle-button" type="button" aria-expanded="false" aria-controls="toolSectionDetail">＋ 職人道具を原価に含める</button><p class="tool-toggle-note">※ 職人道具代を原価に含める場合のみ、こちらを設定してください。</p></div><div id="toolSectionDetail" class="tool-detail-wrap" hidden><div class="grid-2"><label class="field"><span>使用職人道具</span><select id="toolSelect"></select></label><label class="field"><span>耐久回数（自動）</span><input id="toolDurabilityInput" type="text" readonly /></label></div><label class="field"><span>道具購入単価（G）</span><input id="toolPurchasePriceInput" type="number" min="0" step="1" placeholder="購入単価を入力" /></label></div></div>
+        <div class="card"><h3>販売価格（できのよさ別）</h3><div class="sale-input-list" aria-label="できのよさ別販売価格入力">
+          <div class="sale-input-row"><p class="sale-star-badge">☆0</p><label class="field sale-price-field"><span>販売価格 <small>G</small></span><div class="sale-price-input-wrap"><input id="salePriceStar0Input" type="number" min="0" step="1" /><button id="salePriceStar0ResetButton" class="sale-price-reset-button" type="button" aria-label="☆0の販売価格をリセット">×</button></div></label><label class="field sale-count-field"><span>個数</span><input id="countStar0Input" type="number" min="0" step="1" value="0" /></label></div>
+          <div class="sale-input-row"><p class="sale-star-badge">☆1</p><label class="field sale-price-field"><span>販売価格 <small>G</small></span><div class="sale-price-input-wrap"><input id="salePriceStar1Input" type="number" min="0" step="1" /><button id="salePriceStar1ResetButton" class="sale-price-reset-button" type="button" aria-label="☆1の販売価格をリセット">×</button></div></label><label class="field sale-count-field"><span>個数</span><input id="countStar1Input" type="number" min="0" step="1" value="0" /></label></div>
+          <div class="sale-input-row"><p class="sale-star-badge">☆2</p><label class="field sale-price-field"><span>販売価格 <small>G</small></span><div class="sale-price-input-wrap"><input id="salePriceStar2Input" type="number" min="0" step="1" /><button id="salePriceStar2ResetButton" class="sale-price-reset-button" type="button" aria-label="☆2の販売価格をリセット">×</button></div></label><label class="field sale-count-field"><span>個数</span><input id="countStar2Input" type="number" min="0" step="1" value="0" /></label></div>
+          <div class="sale-input-row"><p class="sale-star-badge">☆3</p><label class="field sale-price-field"><span>販売価格 <small>G</small></span><div class="sale-price-input-wrap"><input id="salePriceStar3Input" type="number" min="0" step="1" /><button id="salePriceStar3ResetButton" class="sale-price-reset-button" type="button" aria-label="☆3の販売価格をリセット">×</button></div></label><label class="field sale-count-field"><span>個数</span><input id="countStar3Input" type="number" min="0" step="1" value="0" /></label></div>
+        </div></div>
+        <div class="summary card"><div class="summary-header"><h3>計算結果</h3><small>※手数料は一律5%です。</small></div><p id="productionCountWarning" class="warning-text" aria-live="polite"></p><div class="summary-grid"><section class="summary-column"><h4>1個あたり情報</h4><p>1回あたり道具コスト <strong id="perCraftToolCost">0 G</strong></p><p>1個あたり素材合計 <strong id="totalMaterialCost">0 G</strong></p><p>☆0の1個あたり純利益 <strong id="profitStar0Value" class="profit-value">0 G</strong></p><p>☆1の1個あたり純利益 <strong id="profitStar1Value" class="profit-value">0 G</strong></p><p>☆2の1個あたり純利益 <strong id="profitStar2Value" class="profit-value">0 G</strong></p><p>☆3の1個あたり純利益 <strong id="profitStar3Value" class="profit-value">0 G</strong></p></section><section class="summary-column"><h4>複数制作結果</h4><p>☆0個数: <strong id="countStar0Value">0</strong></p><p>☆1個数: <strong id="countStar1Value">0</strong></p><p>☆2個数: <strong id="countStar2Value">0</strong></p><p>☆3個数: <strong id="countStar3Value">0</strong></p><p>☆0利益合計 <strong id="totalProfitStar0Value" class="profit-value">0 G</strong></p><p>☆1利益合計 <strong id="totalProfitStar1Value" class="profit-value">0 G</strong></p><p>☆2利益合計 <strong id="totalProfitStar2Value" class="profit-value">0 G</strong></p><p>☆3利益合計 <strong id="totalProfitStar3Value" class="profit-value">0 G</strong></p><p>総手数料 <strong id="totalFeeValue">0 G</strong></p><p>平均販売単価 <strong id="averageNetSalesValue">0 G</strong></p><p>純利益（総利益） <strong id="totalProfitValue" class="profit-value">0 G</strong></p></section></div></div>
+        <button id="profitResetButton" class="filter-reset-button profit-reset-button" type="button">全てリセット</button>
       </section>
 
-      <section id="bazaar" class="tab-content" aria-label="繝舌じ繝ｼ萓｡譬ｼ荳隕ｧ逕ｻ髱｢">
-        <h2>
-          繝舌じ繝ｼ萓｡譬ｼ荳隕ｧ
-          <span class="tab-heading-note">
-            萓｡譬ｼ縺ｯ譖ｴ譁ｰ譎る俣譎らせ縺ｧ縺ｮ譛螳牙､縺ｫ縺ｪ縺｣縺ｦ縺翫ｊ縺ｾ縺吶・br>
-            <span id="bazaarPageUpdatedAt">繝壹・繧ｸ譖ｴ譁ｰ: -</span>
-          </span>
-        </h2>
-        <div id="bazaarListWrap"></div>
-      </section>
-
-      <section id="present-codes" class="tab-content" aria-label="繝励Ξ繧ｼ繝ｳ繝医・縺倥ｅ繧ゅｓ荳隕ｧ逕ｻ髱｢">
-        <h2>繝励Ξ繧ｼ繝ｳ繝医・縺倥ｅ繧ゅｓ</h2>
-        <div id="presentCodeListWrap"></div>
-      </section>
-
-      <section id="field-farming" class="tab-content" aria-label="繝輔ぅ繝ｼ繝ｫ繝臥叫繧翫Λ繝ｳ繧ｭ繝ｳ繧ｰ逕ｻ髱｢">
-        <h2>驥醍ｭ・&gt; 繝輔ぅ繝ｼ繝ｫ繝臥叫繧・/h2>
-        <p class="field-farming-description card">
-          鬲泌屏邏ｰ閭樒叫繧雁髄縺代↓縲・ｭ皮阜逕滓・繝｢繝ｳ繧ｹ繧ｿ繝ｼ縺ｮ騾壼ｸｸ繝峨Ο繝・・萓｡譬ｼ繧貞渕貅悶↓縺励◆繝輔ぅ繝ｼ繝ｫ繝臥叫繧翫Λ繝ｳ繧ｭ繝ｳ繧ｰ縺ｧ縺吶・br>
-          萓｡譬ｼ縺ｯ蜊倅ｾ｡譖ｴ譁ｰ譎らせ縺ｮ蜿り・ｾ｡譬ｼ縺ｧ縺吶・br>
-          <span class="field-farming-beginner-note">縺薙・繝壹・繧ｸ縺ｯ ver5.0 縺九ｉ騾ｲ繧√ｋ縲碁ｭ皮阜縲阪〒縺ｮ驥醍ｭ匁ュ蝣ｱ縺ｧ縺呻ｼ亥・蠢・・・蠕ｩ蟶ｰ蜍｢蜷代￠・峨・/span><br>
-          <strong class="field-farming-party-note">縺翫☆縺吶ａ繝代・繝・ぅ繝ｼ・・er7.6蠕梧悄迴ｾ蝨ｨ・会ｼ壼ｼ薙Ξ繝ｳ繧ｸ繝｣繝ｼ1 or 繝舌ヨ繝ｫ繝ｬ繝・け繧ｹ / 逶苓ｳ・讒区・</strong>
-        </p>
-        <div class="field-farming-control-wrap card">
-          <label class="field field-farming-sort-field" for="fieldFarmingSortSelect">
-            <span>荳ｦ縺ｳ譖ｿ縺・/span>
-            <select id="fieldFarmingSortSelect">
-              <option value="normal_desc">騾壼ｸｸ繝峨Ο繝・・萓｡譬ｼ縺碁ｫ倥＞鬆・/option>
-              <option value="rare_desc">繝ｬ繧｢繝峨Ο繝・・萓｡譬ｼ縺碁ｫ倥＞鬆・/option>
-            </select>
-          </label>
-        </div>
-        <div id="fieldFarmingListWrap"></div>
-      </section>
-
-      <section id="routine" class="tab-content" aria-label="譌･隱ｲ繝ｻ騾ｱ隱ｲ繝ｻ譛郁ｪｲ繝√ぉ繝・け逕ｻ髱｢">
-        <h2>萓ｿ蛻ｩ繝・・繝ｫ &gt; 譌･隱ｲ繝ｻ騾ｱ隱ｲ繝ｻ譛郁ｪｲ繝√ぉ繝・け</h2>
-        <div class="routine-controls card">
-          <div class="routine-type-tabs" role="tablist" aria-label="譌･隱ｲ繝ｻ騾ｱ隱ｲ繝ｻ譛郁ｪｲ縺ｮ蛻・ｊ譖ｿ縺・>
-            <button type="button" class="routine-type-tab-button is-active" data-routine-type="daily" role="tab" aria-selected="true" tabindex="0">
-              譌･隱ｲ
-            </button>
-            <button type="button" class="routine-type-tab-button" data-routine-type="weekly" role="tab" aria-selected="false" tabindex="-1">
-              騾ｱ隱ｲ
-            </button>
-            <button type="button" class="routine-type-tab-button" data-routine-type="monthly" role="tab" aria-selected="false" tabindex="-1">
-              譛郁ｪｲ
-            </button>
-          </div>
-          <div class="routine-toolbar">
-            <div class="routine-toolbar-main">
-            <p id="routineProgressText" class="routine-progress-text" aria-live="polite"></p>
-            <div class="routine-action-row">
-              <button id="routineCheckAllButton" type="button">縺吶∋縺ｦ繝√ぉ繝・け</button>
-              <button id="routineClearAllButton" type="button">繝√ぉ繝・け隗｣髯､</button>
-            </div>
-            </div>
-            <p id="routineResetDescription" class="routine-reset-description" aria-live="polite"></p>
-          </div>
-        </div>
-        <div id="routineListWrap"></div>
-      </section>
-
-      <section id="orbs" class="tab-content" aria-label="螳晉匠繝・・繧ｿ繝吶・繧ｹ逕ｻ髱｢">
-        <h2>繝・・繧ｿ繝吶・繧ｹ &gt; 螳晉匠</h2>
-        <div class="orb-controls card">
-          <label class="field orb-search-field" for="orbSearchInput">
-            <span>讀懃ｴ｢・亥ｮ晉匠蜷阪・蜉ｹ譫懊・繝｢繝ｳ繧ｹ繧ｿ繝ｼ蜷搾ｼ・/span>
-            <input id="orbSearchInput" type="search" placeholder="萓・ 轤・/ 謾ｻ謦・凾 / 繧ｭ繝ｩ繝ｼ繝槭す繝ｳ" autocomplete="off" />
-          </label>
-          <div id="orbCategoryFilterWrap" class="orb-category-filter" aria-label="螳晉匠繧ｫ繝・ざ繝ｪ邨槭ｊ霎ｼ縺ｿ"></div>
-          <div class="filter-reset-wrap">
-            <button id="orbClearFiltersButton" class="filter-reset-button" type="button" hidden>笨・邨槭ｊ霎ｼ縺ｿ隗｣髯､</button>
-          </div>
-        </div>
-        <div id="orbListWrap"></div>
-      </section>
-
-      <section id="white-boxes" class="tab-content" aria-label="逋ｽ螳晉ｮｱ繝・・繧ｿ繝吶・繧ｹ逕ｻ髱｢" hidden>
-        <h2>繝・・繧ｿ繝吶・繧ｹ &gt; 逋ｽ螳晉ｮｱ</h2>
-        <div class="whitebox-controls card">
-          <div class="whitebox-type-tabs" role="tablist" aria-label="陬・ｙ遞ｮ蛻･蛻・ｊ譖ｿ縺・>
-            <button
-              type="button"
-              class="whitebox-type-tab-button is-active"
-              id="whiteBoxTypeTabWeapon"
-              role="tab"
-              aria-selected="true"
-              data-whitebox-type="weapon"
-            >
-              豁ｦ蝎ｨ
-            </button>
-            <button
-              type="button"
-              class="whitebox-type-tab-button"
-              id="whiteBoxTypeTabArmor"
-              role="tab"
-              aria-selected="false"
-              data-whitebox-type="armor"
-              tabindex="-1"
-            >
-              髦ｲ蜈ｷ
-            </button>
-          </div>
-          <div class="search-filter-grid whitebox-filter-grid">
-            <label class="field whitebox-filter-field" for="whiteBoxSortSelect">
-              <span>荳ｦ縺ｳ譖ｿ縺・/span>
-              <select id="whiteBoxSortSelect">
-                <option value="level_desc" selected>陬・ｙ繝ｬ繝吶Ν縺碁ｫ倥＞鬆・/option>
-                <option value="level_asc">陬・ｙ繝ｬ繝吶Ν縺御ｽ弱＞鬆・/option>
-              </select>
-            </label>
-            <label class="field whitebox-filter-field" for="whiteBoxSlotFilterSelect">
-              <span>陬・ｙ繧ｸ繝｣繝ｳ繝ｫ</span>
-              <select id="whiteBoxSlotFilterSelect"></select>
-            </label>
-          </div>
-        </div>
-        <div id="whiteBoxListWrap"></div>
-      </section>
-
-      <section id="equipment-db" class="tab-content" aria-label="陬・ｙ繝・・繧ｿ繝吶・繧ｹ逕ｻ髱｢">
-        <h2>繝・・繧ｿ繝吶・繧ｹ &gt; 陬・ｙ</h2>
-        <div class="equipment-db-controls card">
-          <div class="equipment-db-type-tabs" role="tablist" aria-label="陬・ｙ遞ｮ蛻･蛻・ｊ譖ｿ縺・>
-            <button
-              type="button"
-              class="equipment-db-type-tab-button is-active"
-              data-equipment-db-group="weapon"
-              role="tab"
-              aria-selected="true"
-              tabindex="0"
-            >
-              豁ｦ蝎ｨ
-            </button>
-            <button
-              type="button"
-              class="equipment-db-type-tab-button"
-              data-equipment-db-group="armor"
-              role="tab"
-              aria-selected="false"
-              tabindex="-1"
-            >
-              髦ｲ蜈ｷ
-            </button>
-          </div>
-          <div class="search-filter-grid equipment-db-filter-grid">
-            <label class="field equipment-db-filter-field" for="equipmentDbSortSelect">
-              <span>陬・ｙ繝ｬ繝吶Ν繧ｽ繝ｼ繝・/span>
-              <select id="equipmentDbSortSelect">
-                <option value="level_desc" selected>陬・ｙ繝ｬ繝吶Ν縺碁ｫ倥＞鬆・/option>
-                <option value="level_asc">陬・ｙ繝ｬ繝吶Ν縺御ｽ弱＞鬆・/option>
-              </select>
-            </label>
-            <label class="field equipment-db-filter-field" for="equipmentDbTypeFilterSelect">
-              <span>陬・ｙ繧ｸ繝｣繝ｳ繝ｫ</span>
-              <select id="equipmentDbTypeFilterSelect"></select>
-            </label>
-          </div>
-          <button
-            id="equipmentDbNameSearchToggleButton"
-            class="search-toggle-button"
-            type="button"
-            aria-expanded="false"
-            aria-controls="equipmentDbNameSearchField"
-          >
-            ・・陬・ｙ蜷阪〒讀懃ｴ｢縺励◆縺・婿
-          </button>
-          <label id="equipmentDbNameSearchField" class="field equipment-db-filter-field search-field-collapsible" for="equipmentDbNameSearchInput" hidden>
-            <span>蜷榊燕讀懃ｴ｢</span>
-            <input id="equipmentDbNameSearchInput" type="search" placeholder="萓・ 螳郁ｭｷ遶・/ 繧ｽ繝ｼ繝・ autocomplete="off" />
-          </label>
-          <button
-            id="equipmentDbMonsterSearchToggleButton"
-            class="search-toggle-button"
-            type="button"
-            aria-expanded="false"
-            aria-controls="equipmentDbMonsterSearchField"
-          >
-            ・・逋ｽ螳晉ｮｱ繝峨Ο繝・・繝｢繝ｳ繧ｹ繧ｿ繝ｼ讀懃ｴ｢
-          </button>
-          <label id="equipmentDbMonsterSearchField" class="field equipment-db-filter-field search-field-collapsible" for="equipmentDbMonsterSearchInput" hidden>
-            <span>繝｢繝ｳ繧ｹ繧ｿ繝ｼ蜷肴､懃ｴ｢・磯Κ蛻・ｸ閾ｴ・・/span>
-            <input id="equipmentDbMonsterSearchInput" type="search" placeholder="萓・ 繧ｭ繝ｩ繝ｼ繝槭す繝ｳ" autocomplete="off" />
-          </label>
-          <div class="filter-reset-wrap">
-            <button id="equipmentDbClearFiltersButton" class="filter-reset-button" type="button" hidden>笨・邨槭ｊ霎ｼ縺ｿ隗｣髯､</button>
-          </div>
-        </div>
-        <div id="equipmentDbListWrap"></div>
-      </section>
-
-      <section id="monster-info" class="tab-content" aria-label="繝｢繝ｳ繧ｹ繧ｿ繝ｼ諠・ｱ逕ｻ髱｢">
-        <h2>繝・・繧ｿ繝吶・繧ｹ &gt; 繝｢繝ｳ繧ｹ繧ｿ繝ｼ諠・ｱ</h2>
-        <div class="monster-info-controls card">
-          <label class="field" for="monsterInfoSearchInput">
-            <span>讀懃ｴ｢・医Δ繝ｳ繧ｹ繧ｿ繝ｼ蜷阪・繝峨Ο繝・・繝ｻ逕滓・蝨ｰ・・/span>
-            <input id="monsterInfoSearchInput" type="search" placeholder="萓・ 繧ｹ繝ｩ繧､繝 / 繧・￥縺昴≧ / 繧ｬ繝ｼ繝医Λ繝ｳ繝・ autocomplete="off" />
-          </label>
-          <label class="field" for="monsterInfoTypeFilterSelect">
-            <span>繝｢繝ｳ繧ｹ繧ｿ繝ｼ遞ｮ蛻･</span>
-            <select id="monsterInfoTypeFilterSelect"></select>
-          </label>
-          <label class="field" for="monsterInfoSortSelect">
-            <span>荳ｦ縺ｳ鬆・/span>
-            <select id="monsterInfoSortSelect">
-              <option value="exp_asc">邨碁ｨ灘､縺御ｽ弱＞鬆・/option>
-              <option value="exp_desc">邨碁ｨ灘､縺碁ｫ倥＞鬆・/option>
-              <option value="normal_drop_price_desc">騾壼ｸｸ繝峨Ο繝・・萓｡譬ｼ縺碁ｫ倥＞鬆・/option>
-              <option value="rare_drop_price_desc">繝ｬ繧｢繝峨Ο繝・・萓｡譬ｼ縺碁ｫ倥＞鬆・/option>
-            </select>
-          </label>
-          <div class="filter-reset-wrap">
-            <button id="monsterInfoClearFiltersButton" class="filter-reset-button" type="button" hidden>笨・邨槭ｊ霎ｼ縺ｿ隗｣髯､</button>
-          </div>
-        </div>
-        <div id="monsterInfoListWrap"></div>
-      </section>
-
-      <section id="ui-settings" class="tab-content" aria-label="UI險ｭ螳夂判髱｢">
-        <h2 data-content-key="ui_settings_heading">UI險ｭ螳・/h2>
-        <div class="card ui-settings-panel">
-          <p class="ui-settings-note" data-content-key="ui_settings_note">繧ｹ繝ｩ繧､繝繝ｼ繧・・蜉帙〒隕九◆逶ｮ繧定ｪｿ謨ｴ縺ｧ縺阪∪縺吶ょ､画峩縺ｯ縺吶＄蜿肴丐縺輔ｌ縺ｾ縺吶・/p>
-          <div id="uiSettingsControlList" class="ui-settings-control-list"></div>
-          <div class="ui-settings-actions">
-            <button id="uiSettingsResetButton" type="button">蛻晄悄蛟､縺ｫ謌ｻ縺・/button>
-            <button id="uiSettingsExportButton" type="button">險ｭ螳哽SON繧偵ム繧ｦ繝ｳ繝ｭ繝ｼ繝・/button>
-          </div>
-          <p id="uiSettingsMessage" class="helper-text" aria-live="polite"></p>
-          <p class="helper-text">窶ｻ 險ｭ螳壹ヵ繧｡繧､繝ｫ縺ｮ菫晏ｭ伜・: <code>data/ui-settings.json</code></p>
-        </div>
-      </section>
-
-      <section id="content-editor" class="tab-content" aria-label="譛ｬ譁・ｷｨ髮・判髱｢">
-        <h2 data-content-key="content_editor_heading">譛ｬ譁・ｷｨ髮・/h2>
-        <div class="card ui-settings-panel">
-          <p class="ui-settings-note" data-content-key="content_editor_note">荳ｻ隕√↑隱ｬ譏取枚繝ｻ豕ｨ諢乗嶌縺阪ｒ邱ｨ髮・〒縺阪∪縺吶ょ､画峩縺ｯ縺吶＄蜿肴丐縺輔ｌ縺ｾ縺吶・/p>
-          <div id="contentEditorControlList" class="ui-settings-control-list"></div>
-          <div class="ui-settings-actions">
-            <button id="contentEditorModeToggleButton" type="button">譛ｬ譁・ｷｨ髮・Δ繝ｼ繝・ OFF</button>
-            <button id="contentEditorResetButton" type="button">隱ｭ霎ｼ譎ゅ・譛ｬ譁・↓謌ｻ縺・/button>
-            <button id="contentEditorExportButton" type="button">譛ｬ譁⑪SON繧偵ム繧ｦ繝ｳ繝ｭ繝ｼ繝・/button>
-          </div>
-          <p id="contentEditorMessage" class="helper-text" aria-live="polite"></p>
-          <p class="helper-text">窶ｻ 譛ｬ譁・ヵ繧｡繧､繝ｫ縺ｮ菫晏ｭ伜・: <code>data/content.json</code></p>
-        </div>
-      </section>
-
-      <section id="updates-editor" class="tab-content" aria-label="譖ｴ譁ｰ諠・ｱ邱ｨ髮・判髱｢">
-        <h2 data-content-key="updates_editor_heading">譖ｴ譁ｰ諠・ｱ邱ｨ髮・/h2>
-        <div class="card ui-settings-panel">
-          <p class="ui-settings-note" data-content-key="updates_editor_note">
-            譖ｴ譁ｰ諠・ｱ縺ｮ霑ｽ蜉繝ｻ邱ｨ髮・・蜑企勁繝ｻ荳ｦ縺ｳ譖ｿ縺医′縺ｧ縺阪∪縺吶ょ､画峩縺ｯ荳企Κ縺ｮ譖ｴ譁ｰ諠・ｱ縺ｫ蜊ｳ譎ょ渚譏縺輔ｌ縺ｾ縺吶・
-          </p>
-          <div class="ui-settings-actions">
-            <button id="updatesEditorAddButton" type="button">譖ｴ譁ｰ諠・ｱ繧定ｿｽ蜉</button>
-            <button id="updatesEditorResetButton" type="button">隱ｭ霎ｼ譎ゅ・譖ｴ譁ｰ諠・ｱ縺ｫ謌ｻ縺・/button>
-            <button id="updatesEditorExportButton" type="button">譖ｴ譁ｰ諠・ｱJSON繧偵ム繧ｦ繝ｳ繝ｭ繝ｼ繝・/button>
-          </div>
-          <div id="updatesEditorList" class="updates-editor-list"></div>
-          <p id="updatesEditorMessage" class="helper-text" aria-live="polite"></p>
-          <p class="helper-text">窶ｻ 譖ｴ譁ｰ諠・ｱ繝輔ぃ繧､繝ｫ縺ｮ菫晏ｭ伜・: <code>data/updates.json</code></p>
-        </div>
-      </section>
-
-      <section id="bazaar-admin" class="tab-content" aria-label="繝舌じ繝ｼ萓｡譬ｼ譖ｴ譁ｰ邂｡逅・判髱｢">
-        <h2>繝舌じ繝ｼ萓｡譬ｼ譖ｴ譁ｰ・育ｮ｡逅・ｼ・/h2>
-        <div class="bazaar-admin-layout">
-        <div class="card bazaar-admin-panel">
-          <p class="helper-text">
-            窶ｻ comment 縺ｫ縲悟崋螳壻ｾ｡譬ｼ縲阪檎樟蝨ｨ蝗ｺ螳壹阪悟ｺ怜｣ｲ繧贋ｾ｡譬ｼ蝗ｺ螳壹阪ｒ蜷ｫ繧邏譚舌・閾ｪ蜍墓峩譁ｰ蟇ｾ雎｡縺九ｉ髯､螟悶＠縺ｾ縺吶よ峩譁ｰ縺ｯ謇句虚陬懷勧蝙九〒縺吶ょ・蠑上・繝ｼ繧ｸ繧帝幕縺・※蜃ｺ蜩∵ュ蝣ｱ繝・く繧ｹ繝医ｒ雋ｼ繧贋ｻ倥￠縺ｦ縺九ｉ縲後％縺ｮ陦後ｒ譖ｴ譁ｰ縲阪ｒ謚ｼ縺励※縺上□縺輔＞縲・
-          </p>
-          <div class="bazaar-admin-toolbar">
-            <label class="field bazaar-admin-category-field" for="bazaarAdminCategorySelect">
-              <span>繧ｫ繝・ざ繝ｪ謖・ｮ壽峩譁ｰ</span>
-              <select id="bazaarAdminCategorySelect"></select>
-            </label>
-            <button id="bazaarAdminRefreshButton" type="button">CSV蜀崎ｪｭ霎ｼ</button>
-            <button id="bazaarAdminUpdateCategoryButton" type="button">繧ｫ繝・ざ繝ｪ譖ｴ譁ｰ</button>
-            <button id="bazaarAdminUpdateAllButton" type="button">蜈ｨ莉ｶ譖ｴ譁ｰ</button>
-            <button id="bazaarAdminDownloadButton" type="button">譖ｴ譁ｰCSV繧偵ム繧ｦ繝ｳ繝ｭ繝ｼ繝・/button>
-          </div>
-          <ul class="helper-text bazaar-admin-button-help">
-            <li>CSV蜀崎ｪｭ霎ｼ: 迴ｾ蝨ｨ縺ｮ bazaar_prices.csv 繧貞・隱ｭ縺ｿ霎ｼ縺ｿ縺励∪縺吶・SV繧貞ｷｮ縺玲崛縺医◆縺ゅ→縺ｫ菴ｿ縺・∪縺吶・/li>
-            <li>繧ｫ繝・ざ繝ｪ譖ｴ譁ｰ: 驕ｸ謚樔ｸｭ繧ｫ繝・ざ繝ｪ縺ｮ譖ｴ譁ｰ蟇ｾ雎｡縺縺代ｒ譖ｴ譁ｰ縺励∪縺吶ょ崋螳壻ｾ｡譬ｼ繧ｳ繝｡繝ｳ繝井ｻ倥″縺ｯ髯､螟悶＠縺ｾ縺吶・/li>
-            <li>蜈ｨ莉ｶ譖ｴ譁ｰ: 閾ｪ蜍墓峩譁ｰ蟇ｾ雎｡縺ｮ蜈ｨ邏譚舌ｒ縺ｾ縺ｨ繧√※譖ｴ譁ｰ縺励∪縺吶ょ崋螳壻ｾ｡譬ｼ繧ｳ繝｡繝ｳ繝井ｻ倥″縺ｯ髯､螟悶＠縺ｾ縺吶・/li>
-            <li>譖ｴ譁ｰCSV繧偵ム繧ｦ繝ｳ繝ｭ繝ｼ繝・ 迴ｾ蝨ｨ縺ｮ邂｡逅・判髱｢縺ｮ蜀・ｮｹ繧貞渚譏縺励◆CSV繧剃ｿ晏ｭ倥＠縺ｾ縺吶・/li>
-          </ul>
-          <p id="bazaarAdminMessage" class="helper-text" aria-live="polite"></p>
-          <div id="bazaarAdminListWrap" class="bazaar-admin-list-wrap"></div>
-        </div>
-        <aside class="card admin-checklist-panel" aria-labelledby="adminChecklistHeading">
-          <div class="card-header-inline admin-checklist-header">
-            <div>
-              <h3 id="adminChecklistHeading">驕狗畑繝√ぉ繝・け繝ｪ繧ｹ繝・/h3>
-              <p class="helper-text admin-checklist-note">
-                豈取律繝ｻ騾ｱ谺｡繝ｻ譛域ｬ｡縺ｮ遒ｺ隱咲畑繝｡繝｢縺ｧ縺吶ゅメ繧ｧ繝・け迥ｶ諷九・縺薙・繝悶Λ繧ｦ繧ｶ縺ｫ菫晏ｭ倥＆繧後∪縺吶・              </p>
-            </div>
-          </div>
-          <p id="adminChecklistStatus" class="helper-text" aria-live="polite"></p>
-          <div id="adminChecklistWrap" class="admin-checklist-wrap"></div>
-        </aside>
-        </div>
-      </section>
-
-      <section id="favorites" class="tab-content" aria-label="縺頑ｰ励↓蜈･繧贋ｸ隕ｧ逕ｻ髱｢">
-        <h2>
-          縺頑ｰ励↓蜈･繧・
-          <span class="tab-heading-note">
-            縺頑ｰ励↓蜈･繧顔匳骭ｲ縺励◆繧ゅ・繧定｡ｨ遉ｺ縺励※縺・∪縺吶・br>繧ｯ繝ｪ繝・け縺ｧ隧ｳ邏ｰ遒ｺ隱阪ｄ蟇ｾ雎｡繝壹・繧ｸ縺ｸ縺ｮ遘ｻ蜍輔′縺ｧ縺阪∪縺吶・
-          </span>
-        </h2>
-        <div class="favorites-tabs" role="tablist" aria-label="縺頑ｰ励↓蜈･繧願｡ｨ遉ｺ蛻・崛">
-          <button
-            type="button"
-            class="favorites-tab-button is-active"
-            id="favoritesTabRecipes"
-            role="tab"
-            aria-selected="true"
-            aria-controls="favoritesRecipesPanel"
-            data-favorites-tab="recipes"
-          >
-            繝ｬ繧ｷ繝・
-          </button>
-          <button
-            type="button"
-            class="favorites-tab-button"
-            id="favoritesTabMaterials"
-            role="tab"
-            aria-selected="false"
-            aria-controls="favoritesMaterialsPanel"
-            data-favorites-tab="materials"
-            tabindex="-1"
-          >
-            邏譚・
-          </button>
-        </div>
-
-        <div class="favorites-layout">
-          <section
-            id="favoritesRecipesPanel"
-            class="favorites-panel is-active"
-            role="tabpanel"
-            aria-labelledby="favoritesTabRecipes"
-          >
-            <section class="card favorites-section" aria-labelledby="favoriteRecipesHeading">
-              <h3 id="favoriteRecipesHeading">縺頑ｰ励↓蜈･繧翫Ξ繧ｷ繝・/h3>
-              <div id="favoriteRecipesListWrap"></div>
-            </section>
-          </section>
-
-          <section
-            id="favoritesMaterialsPanel"
-            class="favorites-panel"
-            role="tabpanel"
-            aria-labelledby="favoritesTabMaterials"
-            hidden
-          >
-            <section class="card favorites-section" aria-labelledby="favoriteMaterialsHeading">
-              <h3 id="favoriteMaterialsHeading">縺頑ｰ励↓蜈･繧顔ｴ譚・/h3>
-              <div id="favoriteMaterialsListWrap"></div>
-            </section>
-          </section>
-        </div>
-      </section>
-
-      <section id="data" class="tab-content" aria-label="繝・・繧ｿ霑ｽ蜉逕ｻ髱｢">
-        <h2>繝・・繧ｿ霑ｽ蜉</h2>
-        <div class="grid-2">
-          <form id="materialForm" class="card compact-card">
-            <h3>邏譚占ｿｽ蜉</h3>
-            <div class="grid-2">
-              <label class="field">
-                <span>邏譚仙錐</span>
-                <input id="newMaterialName" required />
-              </label>
-              <label class="field">
-                <span>蜊倅ｾ｡・・・・/span>
-                <input id="newMaterialPrice" type="number" min="0" step="1" required />
-              </label>
-            </div>
-            <button type="submit">邏譚舌ｒ霑ｽ蜉</button>
-          </form>
-
-          <form id="equipmentForm" class="card compact-card">
-            <h3>陬・ｙ霑ｽ蜉</h3>
-            <div class="grid-2">
-              <label class="field">
-                <span>陬・ｙ蜷・/span>
-                <input id="newEquipmentName" required />
-              </label>
-              <label class="field">
-                <span>雋ｩ螢ｲ萓｡譬ｼ・・・・/span>
-                <input id="newEquipmentPrice" type="number" min="0" step="1" required />
-              </label>
-            </div>
-            <button type="submit">陬・ｙ繧定ｿｽ蜉</button>
-          </form>
-        </div>
-
-        <form id="recipeForm" class="card compact-card">
-          <h3>繝ｬ繧ｷ繝碑ｿｽ蜉</h3>
-          <div class="grid-2">
-            <label class="field">
-              <span>陬・ｙ</span>
-              <select id="recipeEquipmentSelect" required></select>
-            </label>
-            <label class="field">
-              <span>邏譚・/span>
-              <select id="recipeMaterialSelect" required></select>
-            </label>
-          </div>
-          <label class="field">
-            <span>蠢・ｦ∝区焚</span>
-            <input id="recipeQuantity" type="number" min="1" step="1" required />
-          </label>
-          <button type="submit">繝ｬ繧ｷ繝碑｡後ｒ霑ｽ蜉</button>
-        </form>
-
-        <div class="card">
-          <div class="card-header-inline">
-            <h3>邏譚蝉ｸ隕ｧ・井ｾ｡譬ｼ邱ｨ髮・庄・・/h3>
-            <div class="material-data-transfer-actions">
-              <button id="exportMaterialPricesButton" type="button">蜊倅ｾ｡繧剃ｿ晏ｭ・/button>
-              <button id="importMaterialPricesButton" type="button">蜊倅ｾ｡繧定ｪｭ霎ｼ</button>
-              <input id="importMaterialPricesInput" type="file" accept=".json,.csv,application/json,text/csv" hidden />
-            </div>
-          </div>
-          <p id="materialDataTransferMessage" class="helper-text" aria-live="polite"></p>
-          <div id="materialListWrap"></div>
-        </div>
-
-        <div class="card">
-          <h3>逋ｻ骭ｲ貂医∩繝ｬ繧ｷ繝比ｸ隕ｧ</h3>
-          <div id="recipeAdminListWrap"></div>
-        </div>
-
-        <div class="card">
-          <h3>繝舌じ繝ｼ螻･豁ｴ菫晏ｭ假ｼ磯°逕ｨ・・/h3>
-          <p class="helper-text">
-            譖ｴ譁ｰ蜑阪・ <code>bazaar_prices.csv</code> 繧貞ｱ･豁ｴ蛹悶＠縲・㍾隍・メ繧ｧ繝・け蠕後・
-            <code>bazaar_prices_history.csv</code> 繧偵ム繧ｦ繝ｳ繝ｭ繝ｼ繝峨＠縺ｾ縺吶・
-          </p>
-          <div class="grid-2">
-            <label class="field">
-              <span>菫晏ｭ俶律莉・/span>
-              <input id="bazaarHistorySnapshotDateInput" type="date" />
-            </label>
-            <label class="field">
-              <span>&nbsp;</span>
-              <button id="saveBazaarHistoryButton" type="button">螻･豁ｴ菫晏ｭ呂SV繧剃ｽ懈・</button>
-            </label>
-          </div>
-          <p id="bazaarHistorySaveMessage" class="helper-text" aria-live="polite"></p>
-        </div>
-      </section>
-
-      <section id="homeShortcutNoteBottom" class="home-shortcut-note home-shortcut-note-bottom" aria-label="繝帙・繝逕ｻ髱｢霑ｽ蜉譯亥・">
-        <h3>繝帙・繝逕ｻ髱｢縺ｫ霑ｽ蜉</h3>
-        <p>豈取律菴ｿ縺・婿縺ｯ霑ｽ蜉縺励※縺翫￥縺ｨ縲∵ｬ｡蝗槭°繧峨☆縺宣幕縺代∪縺吶・/p>
-        <p class="home-shortcut-note-sub">
-          iPhone 縺ｯ蜈ｱ譛峨Γ繝九Η繝ｼ縲、ndroid 縺ｯ繝悶Λ繧ｦ繧ｶ繝｡繝九Η繝ｼ縺九ｉ縲後・繝ｼ繝逕ｻ髱｢縺ｫ霑ｽ蜉縲阪ｒ驕ｸ謚槭＠縺ｦ縺上□縺輔＞縲・
-        </p>
-      </section>
+      <section id="bazaar" class="tab-content" aria-label="バザー価格一覧画面"><h2>バザー価格一覧 <span class="tab-heading-note">価格は更新時点での最安値です。<br /><span id="bazaarPageUpdatedAt">ページ更新: -</span></span></h2><div id="bazaarListWrap"></div></section>
+      <section id="present-codes" class="tab-content" aria-label="プレゼントのじゅもん一覧画面"><h2>プレゼントのじゅもん</h2><div id="presentCodeListWrap"></div></section>
+      <section id="field-farming" class="tab-content" aria-label="フィールド狩りランキング画面"><h2>金策 &gt; フィールド狩り</h2><p class="tab-heading-note">魔因細胞狩り向けに、魔界生息モンスターの通常ドロップ価格を基準にしたフィールド狩りランキングです。<br />価格は単価更新時点の参考価格です。<br /><span class="field-farming-beginner-note">このページは ver5.0 から進める「魔界」での金策情報です（初心者・復帰勢向け）。</span><br /><strong class="field-farming-party-note">おすすめパーティー（ver7.6後期現在）：弓レンジャー1 or バトルレックス / 盗賊 構成</strong></p><div class="search-filter-grid"><label class="field"><span>並び替え</span><select id="fieldFarmingSortSelect"><option value="normal_desc">通常ドロップ価格が高い順</option><option value="rare_desc">レアドロップ価格が高い順</option></select></label></div><div id="fieldFarmingListWrap"></div></section>
+      <section id="routine" class="tab-content" aria-label="日課・週課・月課チェック画面"><h2>便利ツール &gt; 日課・週課・月課チェック</h2><div class="card routine-control-card"><div class="routine-type-tabs" role="tablist" aria-label="日課・週課・月課の切り替え"><button type="button" class="routine-type-tab is-active" data-routine-type="daily" role="tab" aria-selected="true">日課</button><button type="button" class="routine-type-tab" data-routine-type="weekly" role="tab" aria-selected="false">週課</button><button type="button" class="routine-type-tab" data-routine-type="monthly" role="tab" aria-selected="false">月課</button></div><div class="routine-control-row"><p id="routineProgressText" class="routine-progress-text" aria-live="polite"></p><div class="routine-action-buttons"><button id="routineCheckAllButton" type="button">すべてチェック</button><button id="routineClearAllButton" type="button">チェック解除</button></div><p id="routineResetDescription" class="routine-reset-description" aria-live="polite"></p></div></div><div id="routineListWrap"></div></section>
+      <section id="orbs" class="tab-content" aria-label="宝珠データベース画面"><h2>データベース &gt; 宝珠</h2><div class="search-filter-grid"><label class="field"><span>検索（宝珠名・効果・モンスター名）</span><input id="orbSearchInput" type="search" placeholder="例：炎 / 攻撃時 / キラーマシン" autocomplete="off" /></label></div><div id="orbCategoryFilterWrap" class="orb-category-filter" aria-label="宝珠カテゴリ絞り込み"></div><div class="filter-reset-wrap"><button id="orbClearFiltersButton" class="filter-reset-button" type="button" hidden>× 絞り込み解除</button></div><div id="orbListWrap"></div></section>
+      <section id="white-boxes" class="tab-content" aria-label="白宝箱データベース画面" hidden><h2>データベース &gt; 白宝箱</h2><div class="whitebox-type-tabs" role="tablist" aria-label="装備種別切り替え"><button id="whiteBoxTypeTabWeapon" type="button" class="whitebox-type-tab is-active" data-whitebox-type="weapon" role="tab" aria-selected="true">武器</button><button id="whiteBoxTypeTabArmor" type="button" class="whitebox-type-tab" data-whitebox-type="armor" role="tab" aria-selected="false">防具</button></div><div class="search-filter-grid"><label class="field"><span>並び替え</span><select id="whiteBoxSortSelect"><option value="level_desc" selected>装備レベルが高い順</option><option value="level_asc">装備レベルが低い順</option></select></label><label class="field"><span>部位</span><select id="whiteBoxSlotFilterSelect"></select></label></div><div id="whiteBoxListWrap"></div></section>
+      <section id="equipment-db" class="tab-content" aria-label="装備データベース画面"><h2>データベース &gt; 装備</h2><div class="equipment-db-type-tabs" role="tablist" aria-label="装備種別切り替え"><button type="button" class="equipment-db-type-tab is-active" data-equipment-db-group="weapon" role="tab" aria-selected="true">武器</button><button type="button" class="equipment-db-type-tab" data-equipment-db-group="armor" role="tab" aria-selected="false">防具</button></div><div class="search-filter-grid equipment-db-filter-grid"><label class="field equipment-db-filter-field"><span>装備レベルソート</span><select id="equipmentDbSortSelect"><option value="level_desc" selected>装備レベルが高い順</option><option value="level_asc">装備レベルが低い順</option></select></label><label class="field equipment-db-filter-field"><span>装備ジャンル</span><select id="equipmentDbTypeFilterSelect"></select></label></div><div class="equipment-db-search-toggle-wrap"><button id="equipmentDbNameSearchToggleButton" class="search-toggle-button" type="button" aria-expanded="false" aria-controls="equipmentDbNameSearchField">＋ 装備名で検索したい方</button><label id="equipmentDbNameSearchField" class="field equipment-db-filter-field search-field-collapsible" for="equipmentDbNameSearchInput" hidden><span>装備名検索</span><input id="equipmentDbNameSearchInput" type="search" placeholder="例：守護竜 / ソード" autocomplete="off" /></label><button id="equipmentDbMonsterSearchToggleButton" class="search-toggle-button" type="button" aria-expanded="false" aria-controls="equipmentDbMonsterSearchField">＋ 白宝箱ドロップモンスター検索</button><label id="equipmentDbMonsterSearchField" class="field equipment-db-filter-field search-field-collapsible" for="equipmentDbMonsterSearchInput" hidden><span>モンスター名検索（部分一致）</span><input id="equipmentDbMonsterSearchInput" type="search" placeholder="例：キラーマシン" autocomplete="off" /></label></div><div class="filter-reset-wrap"><button id="equipmentDbClearFiltersButton" class="filter-reset-button" type="button" hidden>× 絞り込み解除</button></div><div id="equipmentDbListWrap"></div></section>
+      <section id="monster-info" class="tab-content" aria-label="モンスター情報画面"><h2>データベース &gt; モンスター情報</h2><div class="search-filter-grid"><label class="field"><span>検索（モンスター名・ドロップ・生息地）</span><input id="monsterInfoSearchInput" type="search" placeholder="例：スライム / やくそう / ガートラント" autocomplete="off" /></label><label class="field"><span>モンスター種別</span><select id="monsterInfoTypeFilterSelect"></select></label><label class="field"><span>並び順</span><select id="monsterInfoSortSelect"><option value="exp_asc">経験値が低い順</option><option value="exp_desc">経験値が高い順</option><option value="normal_drop_price_desc">通常ドロップ価格が高い順</option><option value="rare_drop_price_desc">レアドロップ価格が高い順</option></select></label></div><div class="filter-reset-wrap"><button id="monsterInfoClearFiltersButton" class="filter-reset-button" type="button" hidden>× 絞り込み解除</button></div><div id="monsterInfoListWrap"></div></section>
+      <section id="ui-settings" class="tab-content" aria-label="UI設定画面"><h2 data-content-key="ui_settings_heading">UI設定</h2><div class="card"><p class="ui-settings-note" data-content-key="ui_settings_note">スライダーや入力で見た目を調整できます。変更はすぐ反映されます。</p><div id="uiSettingsControlList" class="ui-settings-control-list"></div><div class="card-header-inline"><button id="uiSettingsResetButton" type="button">初期値に戻す</button><button id="uiSettingsExportButton" type="button">設定JSONをダウンロード</button></div><p id="uiSettingsMessage" class="helper-text" aria-live="polite"></p><p class="helper-text">※ 設定ファイルの保存先: <code>data/ui-settings.json</code></p></div></section>
+      <section id="content-editor" class="tab-content" aria-label="本文編集画面"><h2 data-content-key="content_editor_heading">本文編集</h2><div class="card"><p class="ui-settings-note" data-content-key="content_editor_note">主要な説明文・注意書きを編集できます。変更はすぐ反映されます。</p><div class="card-header-inline"><button id="contentEditorModeToggleButton" type="button">本文編集モード OFF</button><button id="contentEditorResetButton" type="button">読込時の本文に戻す</button><button id="contentEditorExportButton" type="button">本文JSONをダウンロード</button></div><div id="contentEditorControlList" class="ui-settings-control-list"></div><p id="contentEditorMessage" class="helper-text" aria-live="polite"></p><p class="helper-text">※ 本文ファイルの保存先: <code>data/content.json</code></p></div></section>
+      <section id="updates-editor" class="tab-content" aria-label="更新情報編集画面"><h2 data-content-key="updates_editor_heading">更新情報編集</h2><div class="card"><p class="ui-settings-note" data-content-key="updates_editor_note">更新情報の追加・編集・削除・並び替えができます。変更は上部の更新情報に即時反映されます。</p><div class="card-header-inline"><button id="updatesEditorAddButton" type="button">更新情報を追加</button><button id="updatesEditorResetButton" type="button">読込時の更新情報に戻す</button><button id="updatesEditorExportButton" type="button">更新情報JSONをダウンロード</button></div><div id="updatesEditorList" class="updates-editor-list"></div><p id="updatesEditorMessage" class="helper-text" aria-live="polite"></p><p class="helper-text">※ 更新情報ファイルの保存先: <code>data/updates.json</code></p></div></section>
+      <section id="bazaar-admin" class="tab-content" aria-label="バザー価格更新管理画面"><h2>バザー価格更新（管理）</h2><div class="bazaar-admin-layout"><div class="card bazaar-admin-panel"><p class="helper-text">※ 固定価格・店売り・更新停止中の商品は通常更新対象から除外します。公式ページを開き、出品情報を貼り付けてから更新してください。</p><div class="bazaar-admin-toolbar"><label class="field bazaar-admin-category-field" for="bazaarAdminCategorySelect"><span>カテゴリ指定更新</span><select id="bazaarAdminCategorySelect"></select></label><button id="bazaarAdminRefreshButton" type="button">CSV再読込</button><button id="bazaarAdminUpdateCategoryButton" type="button">カテゴリ更新</button><button id="bazaarAdminUpdateAllButton" type="button">全件更新</button><button id="bazaarAdminDownloadButton" type="button">更新CSVをダウンロード</button></div><p id="bazaarAdminMessage" class="helper-text" aria-live="polite"></p><div id="bazaarAdminListWrap" class="bazaar-admin-list-wrap"></div></div><aside class="card admin-checklist-panel" aria-labelledby="adminChecklistHeading"><div class="card-header-inline admin-checklist-header"><div><h3 id="adminChecklistHeading">運用チェックリスト</h3><p class="helper-text admin-checklist-note">毎日・週次・月次の確認用メモです。チェック状態はこのブラウザに保存されます。</p></div></div><p id="adminChecklistStatus" class="helper-text" aria-live="polite"></p><div id="adminChecklistWrap" class="admin-checklist-wrap"></div></aside></div></section>
+      <section id="favorites" class="tab-content" aria-label="お気に入り一覧画面"><h2>お気に入り <span class="tab-heading-note">登録した素材やレシピをまとめて確認できます。</span></h2><div class="favorites-tabs" role="tablist" aria-label="お気に入り表示切り替え"><button type="button" class="favorites-tab-button is-active" id="favoritesTabRecipes" role="tab" aria-selected="true" aria-controls="favoritesRecipesPanel" data-favorites-tab="recipes">レシピ</button><button type="button" class="favorites-tab-button" id="favoritesTabMaterials" role="tab" aria-selected="false" aria-controls="favoritesMaterialsPanel" data-favorites-tab="materials" tabindex="-1">素材</button></div><div class="favorites-layout"><section id="favoritesRecipesPanel" class="favorites-panel is-active" role="tabpanel" aria-labelledby="favoritesTabRecipes"><section class="card favorites-section" aria-labelledby="favoriteRecipesHeading"><h3 id="favoriteRecipesHeading">お気に入りレシピ</h3><div id="favoriteRecipesListWrap"></div></section></section><section id="favoritesMaterialsPanel" class="favorites-panel" role="tabpanel" aria-labelledby="favoritesTabMaterials" hidden><section class="card favorites-section" aria-labelledby="favoriteMaterialsHeading"><h3 id="favoriteMaterialsHeading">お気に入り素材</h3><div id="favoriteMaterialsListWrap"></div></section></section></div></section>
+      <section id="data" class="tab-content" aria-label="データ追加画面"><h2>データ追加</h2><div class="grid-2"><form id="materialForm" class="card compact-card"><h3>素材追加</h3><div class="grid-2"><label class="field"><span>素材名</span><input id="newMaterialName" required /></label><label class="field"><span>単価（G）</span><input id="newMaterialPrice" type="number" min="0" step="1" required /></label></div><button type="submit">素材を追加</button></form><form id="equipmentForm" class="card compact-card"><h3>装備追加</h3><div class="grid-2"><label class="field"><span>装備名</span><input id="newEquipmentName" required /></label><label class="field"><span>販売価格（G）</span><input id="newEquipmentPrice" type="number" min="0" step="1" required /></label></div><button type="submit">装備を追加</button></form></div><form id="recipeForm" class="card compact-card"><h3>レシピ追加</h3><div class="grid-2"><label class="field"><span>装備</span><select id="recipeEquipmentSelect" required></select></label><label class="field"><span>素材</span><select id="recipeMaterialSelect" required></select></label></div><label class="field"><span>必要個数</span><input id="recipeQuantity" type="number" min="1" step="1" required /></label><button type="submit">レシピ行を追加</button></form><div class="card"><div class="card-header-inline"><h3>素材一覧・価格編集</h3><div class="material-data-transfer-actions"><button id="exportMaterialPricesButton" type="button">単価を保存</button><button id="importMaterialPricesButton" type="button">単価を読込</button><input id="importMaterialPricesInput" type="file" accept=".json,.csv,application/json,text/csv" hidden /></div></div><p id="materialDataTransferMessage" class="helper-text" aria-live="polite"></p><div id="materialListWrap"></div></div><div class="card"><h3>登録済みレシピ一覧</h3><div id="recipeAdminListWrap"></div></div><div class="card"><h3>バザー履歴保存（運用）</h3><p class="helper-text">更新前の <code>bazaar_prices.csv</code> を履歴化し、重複チェック後に <code>bazaar_prices_history.csv</code> をダウンロードします。</p><div class="grid-2"><label class="field"><span>保存日付</span><input id="bazaarHistorySnapshotDateInput" type="date" /></label><label class="field"><span>&nbsp;</span><button id="saveBazaarHistoryButton" type="button">履歴保存CSVを作成</button></label></div><p id="bazaarHistorySaveMessage" class="helper-text" aria-live="polite"></p></div></section>
+      <section id="homeShortcutNoteBottom" class="home-shortcut-note home-shortcut-note-bottom" aria-label="ホーム画面追加案内"><h3>ホーム画面に追加</h3><p>毎日使う場合はホーム画面に追加しておくと、次回からすぐ開けます。</p><p class="home-shortcut-note-sub">iPhone は共有メニュー、Android はブラウザメニューから「ホーム画面に追加」を選択してください。</p><button id="homeModeButton" type="button">ホーム表示に戻す</button></section>
     </main>
-
-    <nav class="mobile-bottom-nav" aria-label="荳矩Κ繝翫ン繧ｲ繝ｼ繧ｷ繝ｧ繝ｳ">
-      <button type="button" class="mobile-bottom-nav-item" data-bottom-nav-action="back" aria-label="謌ｻ繧・ hidden>
-        <span class="mobile-bottom-nav-icon" aria-hidden="true">竊・/span>
-        <span class="mobile-bottom-nav-label">謌ｻ繧・/span>
-      </button>
-      <button type="button" class="mobile-bottom-nav-item" data-bottom-nav-action="home" aria-label="繝帙・繝">
-        <span class="mobile-bottom-nav-icon" aria-hidden="true">竚・/span>
-        <span class="mobile-bottom-nav-label">繝帙・繝</span>
-      </button>
-      <button type="button" class="mobile-bottom-nav-item" data-bottom-nav-target="profit" aria-label="閨ｷ莠ｺ">
-        <span class="mobile-bottom-nav-icon" aria-hidden="true">屏・・/span>
-        <span class="mobile-bottom-nav-label">閨ｷ莠ｺ</span>
-      </button>
-      <button type="button" class="mobile-bottom-nav-item" data-bottom-nav-target="bazaar" aria-label="繝舌じ繝ｼ">
-        <span class="mobile-bottom-nav-icon" aria-hidden="true">腸</span>
-        <span class="mobile-bottom-nav-label">繝舌じ繝ｼ</span>
-      </button>
-      <button type="button" class="mobile-bottom-nav-item" data-bottom-nav-target="favorites" aria-label="縺頑ｰ励↓蜈･繧・>
-        <span class="mobile-bottom-nav-icon" aria-hidden="true">笘・/span>
-        <span class="mobile-bottom-nav-label">縺頑ｰ励↓蜈･繧・/span>
-      </button>
-      <button type="button" class="mobile-bottom-nav-item" data-bottom-nav-action="menu" aria-label="縺昴・莉・>
-        <span class="mobile-bottom-nav-icon" aria-hidden="true">站ｯ</span>
-        <span class="mobile-bottom-nav-label">縺昴・莉・/span>
-      </button>
-    </nav>
-
-    <footer class="site-footer" aria-label="讓ｩ蛻ｩ陦ｨ險・>
-      <div class="site-footer-inner">
-        <p class="site-footer-disclaimer">
-          譛ｬ繧ｵ繧､繝医・蛟倶ｺｺ蛻ｶ菴懊・髱槫・蠑上ラ繝ｩ繧ｴ繝ｳ繧ｯ繧ｨ繧ｹ繝・謾ｯ謠ｴ繧ｵ繧､繝医〒縺吶・br />
-          謗ｲ霈峨＠縺ｦ縺・ｋ萓｡譬ｼ繝ｻ諠・ｱ縺ｯ蜿り・畑縺ｧ縺ゅｊ縲∵ｭ｣遒ｺ諤ｧ繝ｻ螳悟・諤ｧ繧剃ｿ晁ｨｼ縺吶ｋ繧ゅ・縺ｧ縺ｯ縺ゅｊ縺ｾ縺帙ｓ縲・br />
-          譛譁ｰ縺九▽豁｣遒ｺ縺ｪ諠・ｱ縺ｯ縲√ご繝ｼ繝蜀・♀繧医・蜈ｬ蠑上し繧､繝医ｒ縺皮｢ｺ隱阪￥縺縺輔＞縲・        </p>
-        <p>
-          縺薙・繝壹・繧ｸ縺ｧ蛻ｩ逕ｨ縺励※縺・ｋ譬ｪ蠑丈ｼ夂､ｾ繧ｹ繧ｯ繧ｦ繧ｧ繧｢繝ｻ繧ｨ繝九ャ繧ｯ繧ｹ繧剃ｻ｣陦ｨ縺ｨ縺吶ｋ蜈ｱ蜷瑚送菴懆・′讓ｩ蛻ｩ繧呈園譛峨☆繧狗判蜒上・霆｢霈峨・驟榊ｸ・・遖∵ｭ｢縺・◆縺励∪縺吶・br />
-          (C) ARMOR PROJECT/BIRD STUDIO/SQUARE ENIX All Rights Reserved.
-        </p>
-        <p>
-          縺薙・蜍慕判縺ｧ蛻ｩ逕ｨ縺励※縺・ｋ譬ｪ蠑丈ｼ夂､ｾ繧ｹ繧ｯ繧ｦ繧ｧ繧｢繝ｻ繧ｨ繝九ャ繧ｯ繧ｹ繧剃ｻ｣陦ｨ縺ｨ縺吶ｋ蜈ｱ蜷瑚送菴懆・′讓ｩ蛻ｩ繧呈園譛峨☆繧玖送菴懃黄蜿翫・繧ｹ繧ｮ繝､繝槫ｷ･謌ｿ譛蛾剞莨夂､ｾ縺梧ｨｩ蛻ｩ繧呈園譛峨☆繧区･ｽ譖ｲ縺ｮ霆｢霈峨・驟榊ｸ・・遖∵ｭ｢縺・◆縺励∪縺吶・br />
-          (C) ARMOR PROJECT/BIRD STUDIO/SQUARE ENIX All Rights Reserved.<br />
-          (C) SUGIYAMA KOBO<br />
-          (P) SUGIYAMA KOBO
-        </p>
-      </div>
-    </footer>
-
-    <div id="adminFab" class="admin-fab-wrap" hidden aria-hidden="true">
-      <button id="adminFabToggleButton" class="admin-fab-button" type="button" aria-expanded="false" aria-controls="adminFabPanel">
-        邂｡逅・・Γ繝九Η繝ｼ
-      </button>
-      <section id="adminFabPanel" class="admin-fab-panel" hidden aria-label="邂｡逅・・Γ繝九Η繝ｼ">
-        <p class="admin-fab-note">窶ｻ邁｡譏撤IN菫晁ｭｷ・域悽逡ｪ逕ｨ縺ｮ蠑ｷ蝗ｺ縺ｪ隱崎ｨｼ縺ｧ縺ｯ縺ゅｊ縺ｾ縺帙ｓ・・/p>
-        <div id="adminPinGate" class="admin-pin-gate">
-          <label class="field">
-            <span>邂｡逅・IN</span>
-            <input id="adminPinInput" type="password" inputmode="numeric" placeholder="PIN繧貞・蜉・ />
-          </label>
-          <button id="adminPinUnlockButton" type="button">邂｡逅・Δ繝ｼ繝峨ｒ髢九￥</button>
-        </div>
-        <div id="adminActionList" class="admin-action-list" hidden>
-          <button id="adminOpenManageModeButton" type="button">邂｡逅・Δ繝ｼ繝峨ｒ髢九￥</button>
-          <button id="adminOpenUiSettingsButton" type="button">UI險ｭ螳壹ｒ髢九￥</button>
-          <button id="adminOpenContentEditorButton" type="button">譛ｬ譁・ｷｨ髮・Δ繝ｼ繝峨ｒ髢九￥</button>
-          <button id="adminToggleContentEditModeButton" type="button">譛ｬ譁・ｷｨ髮・Δ繝ｼ繝・ OFF</button>
-          <button id="adminOpenUpdatesEditorButton" type="button">譖ｴ譁ｰ諠・ｱ邱ｨ髮・ｒ髢九￥</button>
-          <button id="adminOpenBazaarAdminButton" type="button">繝舌じ繝ｼ萓｡譬ｼ譖ｴ譁ｰ繧帝幕縺・/button>
-          <button id="adminExportUiSettingsButton" type="button">險ｭ螳哽SON繧偵ム繧ｦ繝ｳ繝ｭ繝ｼ繝・/button>
-          <button id="adminExportContentButton" type="button">譛ｬ譁⑪SON繧偵ム繧ｦ繝ｳ繝ｭ繝ｼ繝・/button>
-          <button id="adminExportUpdatesButton" type="button">譖ｴ譁ｰ諠・ｱJSON繧偵ム繧ｦ繝ｳ繝ｭ繝ｼ繝・/button>
-          <button id="adminLockButton" type="button">邂｡逅・Δ繝ｼ繝峨ｒ髢峨§繧・/button>
-        </div>
-        <p id="adminFabMessage" class="helper-text" aria-live="polite"></p>
-      </section>
-    </div>
-
-    <section id="memoDock" class="memo-dock" aria-label="繝｡繝｢蟶ｳ">
-      <button id="historyBackButton" class="history-back-button" type="button">竊・謌ｻ繧・/button>
-      <button id="memoDockButton" class="memo-dock-button" type="button" aria-expanded="false" aria-controls="memoPanel">
-        繝｡繝｢
-      </button>
-      <div id="memoDockHint" class="memo-dock-hint" hidden>
-        <p>気になる項目をメモして、あとでまとめて確認できます</p>
-        <button id="memoDockHintCloseButton" class="memo-dock-hint-close" type="button" aria-label="メモ機能の案内を閉じる">×</button>
-      </div>
-      <p id="memoToast" class="memo-toast" hidden aria-live="polite"></p>
-      <div id="memoPanelBackdrop" class="memo-panel-backdrop" hidden aria-hidden="true"></div>
-      <div id="memoPanel" class="memo-panel" role="dialog" aria-label="繝｡繝｢蟶ｳ" hidden>
-        <div id="memoPanelHandle" class="memo-panel-handle" aria-hidden="true"></div>
-        <header class="memo-panel-header">
-          <h2>繝｡繝｢蟶ｳ</h2>
-          <div class="memo-panel-actions">
-            <button id="memoClearAllButton" class="memo-clear-all-button" type="button">蜈ｨ蜑企勁</button>
-            <button id="memoPanelCloseButton" class="memo-panel-close-button" type="button" aria-label="髢峨§繧・>ﾃ・/button>
-          </div>
-        </header>
-        <p id="memoPanelStatus" class="memo-panel-status" aria-live="polite"></p>
-        <div id="memoListWrap" class="memo-list-wrap"></div>
-      </div>
-    </section>
-
-    <div id="bazaarDetailModalOverlay" class="bazaar-detail-modal-overlay" hidden>
-      <section
-        id="bazaarDetailModalDialog"
-        class="bazaar-detail-modal"
-        role="dialog"
-        aria-modal="true"
-        aria-label="繝舌じ繝ｼ邏譚舌・隧ｳ邏ｰ"
-        tabindex="-1"
-      >
-        <button id="bazaarDetailModalCloseButton" class="bazaar-detail-modal-close" type="button" aria-label="髢峨§繧・>
-          ﾃ・
-        </button>
-        <div id="bazaarDetailModalHandle" class="bazaar-detail-modal-handle" aria-hidden="true"></div>
-        <div id="bazaarDetailModalBody"></div>
-      </section>
-    </div>
-
-    <div id="favoriteMaterialModalOverlay" class="favorite-material-modal-overlay" hidden>
-      <section
-        id="favoriteMaterialModalDialog"
-        class="favorite-material-modal"
-        role="dialog"
-        aria-modal="true"
-        aria-label="縺頑ｰ励↓蜈･繧顔ｴ譚舌・隧ｳ邏ｰ"
-        tabindex="-1"
-      >
-        <button id="favoriteMaterialModalCloseButton" class="favorite-material-modal-close" type="button" aria-label="髢峨§繧・>
-          ﾃ・
-        </button>
-        <div id="favoriteMaterialModalBody"></div>
-      </section>
-    </div>
-
-    <div id="fieldFarmingMapModalOverlay" class="field-farming-map-modal-overlay" hidden>
-      <section
-        id="fieldFarmingMapModalDialog"
-        class="field-farming-map-modal"
-        role="dialog"
-        aria-modal="true"
-        aria-label="蜃ｺ迴ｾ繝槭ャ繝・
-        tabindex="-1"
-      >
-        <button id="fieldFarmingMapModalCloseButton" class="field-farming-map-modal-close" type="button" aria-label="髢峨§繧・>
-          ﾃ・
-        </button>
-        <div id="fieldFarmingMapModalBody"></div>
-      </section>
-    </div>
-
-    <div id="monsterInfoModalOverlay" class="monster-info-modal-overlay" hidden>
-      <section id="monsterInfoModalDialog" class="monster-info-modal" role="dialog" aria-modal="true" aria-label="繝｢繝ｳ繧ｹ繧ｿ繝ｼ隧ｳ邏ｰ" tabindex="-1">
-        <button id="monsterInfoModalCloseButton" class="monster-info-modal-close" type="button" aria-label="髢峨§繧・>ﾃ・/button>
-        <div id="monsterInfoModalBody"></div>
-      </section>
-    </div>
-    <div id="armorSetDetailModalOverlay" class="monster-info-modal-overlay armor-set-detail-modal-overlay" hidden>
-      <section id="armorSetDetailModalDialog" class="monster-info-modal armor-set-detail-modal" role="dialog" aria-modal="true" aria-label="髦ｲ蜈ｷ繧ｻ繝・ヨ隧ｳ邏ｰ" tabindex="-1">
-        <button id="armorSetDetailModalCloseButton" class="monster-info-modal-close" type="button" aria-label="髢峨§繧・>ﾃ・/button>
-        <div id="armorSetDetailModalBody"></div>
-      </section>
-    </div>
-
+    <nav class="mobile-bottom-nav" aria-label="下部ナビゲーション"><button type="button" class="mobile-bottom-nav-item" data-bottom-nav-action="back" aria-label="戻る" hidden><span class="mobile-bottom-nav-icon" aria-hidden="true">←</span><span class="mobile-bottom-nav-label">戻る</span></button><button type="button" class="mobile-bottom-nav-item" data-bottom-nav-action="home" aria-label="ホーム"><span class="mobile-bottom-nav-icon" aria-hidden="true">⌂</span><span class="mobile-bottom-nav-label">ホーム</span></button><button type="button" class="mobile-bottom-nav-item" data-bottom-nav-target="profit" aria-label="職人"><span class="mobile-bottom-nav-icon" aria-hidden="true">🛠</span><span class="mobile-bottom-nav-label">職人</span></button><button type="button" class="mobile-bottom-nav-item" data-bottom-nav-target="bazaar" aria-label="バザー"><span class="mobile-bottom-nav-icon" aria-hidden="true">💰</span><span class="mobile-bottom-nav-label">バザー</span></button><button type="button" class="mobile-bottom-nav-item" data-bottom-nav-target="favorites" aria-label="お気に入り"><span class="mobile-bottom-nav-icon" aria-hidden="true">☆</span><span class="mobile-bottom-nav-label">お気に入り</span></button><button type="button" class="mobile-bottom-nav-item" data-bottom-nav-action="menu" aria-label="その他"><span class="mobile-bottom-nav-icon" aria-hidden="true">☰</span><span class="mobile-bottom-nav-label">その他</span></button></nav>
+    <footer class="site-footer" aria-label="権利表記"><div class="site-footer-inner"><p class="site-footer-disclaimer">本サイトは個人制作の非公式ドラゴンクエストX支援サイトです。<br />掲載している価格・情報は参考用であり、正確性・完全性を保証するものではありません。<br />最新かつ正確な情報は、ゲーム内および公式サイトをご確認ください。</p><p>このページで利用している株式会社スクウェア・エニックスを代表とする共同著作者が権利を所有する画像の転載・配布は禁止いたします。<br />(C) ARMOR PROJECT/BIRD STUDIO/SQUARE ENIX All Rights Reserved.</p><p>この動画で利用している株式会社スクウェア・エニックスを代表とする共同著作者が権利を所有する著作物及びスギヤマ工房有限会社が権利を所有する楽曲の転載・配布は禁止いたします。<br />(C) ARMOR PROJECT/BIRD STUDIO/SQUARE ENIX All Rights Reserved.<br />(C) SUGIYAMA KOBO<br />(P) SUGIYAMA KOBO</p></div></footer>
+    <div id="adminFab" class="admin-fab-wrap" hidden aria-hidden="true"><button id="adminFabToggleButton" class="admin-fab-button" type="button" aria-expanded="false" aria-controls="adminFabPanel">管理者メニュー</button><section id="adminFabPanel" class="admin-fab-panel" hidden aria-label="管理者メニュー"><p class="admin-fab-note">※簡易PIN保護です。本番用の強固な認証ではありません。</p><div id="adminPinGate" class="admin-pin-gate"><label class="field"><span>管理PIN</span><input id="adminPinInput" type="password" inputmode="numeric" placeholder="PINを入力" /></label><button id="adminPinUnlockButton" type="button">管理モードを開く</button></div><div id="adminActionList" class="admin-action-list" hidden><button id="adminOpenManageModeButton" type="button">管理モードを開く</button><button id="adminOpenUiSettingsButton" type="button">UI設定を開く</button><button id="adminOpenContentEditorButton" type="button">本文編集モードを開く</button><button id="adminToggleContentEditModeButton" type="button">本文編集モード OFF</button><button id="adminOpenUpdatesEditorButton" type="button">更新情報編集を開く</button><button id="adminOpenBazaarAdminButton" type="button">バザー価格更新を開く</button><button id="adminExportUiSettingsButton" type="button">設定JSONをダウンロード</button><button id="adminExportContentButton" type="button">本文JSONをダウンロード</button><button id="adminExportUpdatesButton" type="button">更新情報JSONをダウンロード</button><button id="adminLockButton" type="button">管理モードを閉じる</button></div><p id="adminFabMessage" class="helper-text" aria-live="polite"></p></section></div>
+    <section id="memoDock" class="memo-dock" aria-label="メモ帳"><button id="historyBackButton" class="history-back-button" type="button">← 戻る</button><button id="memoDockButton" class="memo-dock-button" type="button" aria-expanded="false" aria-controls="memoPanel">メモ</button><div id="memoDockHint" class="memo-dock-hint" hidden><p>気になる項目をメモして、あとでまとめて確認できます。</p><button id="memoDockHintCloseButton" class="memo-dock-hint-close" type="button" aria-label="メモ機能の案内を閉じる">×</button></div><p id="memoToast" class="memo-toast" hidden aria-live="polite"></p><div id="memoPanelBackdrop" class="memo-panel-backdrop" hidden aria-hidden="true"></div><div id="memoPanel" class="memo-panel" role="dialog" aria-label="メモ帳" hidden><div id="memoPanelHandle" class="memo-panel-handle" aria-hidden="true"></div><header class="memo-panel-header"><h2>メモ帳</h2><div class="memo-panel-actions"><button id="memoClearAllButton" class="memo-clear-all-button" type="button">全削除</button><button id="memoPanelCloseButton" class="memo-panel-close-button" type="button" aria-label="閉じる">×</button></div></header><p class="memo-panel-help">メモはこの端末のブラウザに保存されます。ブラウザのデータ削除や別端末では引き継がれません。</p><p id="memoPanelStatus" class="memo-panel-status" aria-live="polite"></p><div id="memoListWrap" class="memo-list-wrap"></div></div></section>
+    <div id="bazaarDetailModalOverlay" class="bazaar-detail-modal-overlay" hidden><section id="bazaarDetailModalDialog" class="bazaar-detail-modal" role="dialog" aria-modal="true" aria-label="バザー素材詳細" tabindex="-1"><button id="bazaarDetailModalCloseButton" class="bazaar-detail-modal-close" type="button" aria-label="閉じる">×</button><div id="bazaarDetailModalHandle" class="bazaar-detail-modal-handle" aria-hidden="true"></div><div id="bazaarDetailModalBody"></div></section></div>
+    <div id="favoriteMaterialModalOverlay" class="favorite-material-modal-overlay" hidden><section id="favoriteMaterialModalDialog" class="favorite-material-modal" role="dialog" aria-modal="true" aria-label="お気に入り素材詳細" tabindex="-1"><button id="favoriteMaterialModalCloseButton" class="favorite-material-modal-close" type="button" aria-label="閉じる">×</button><div id="favoriteMaterialModalBody"></div></section></div>
+    <div id="fieldFarmingMapModalOverlay" class="field-farming-map-modal-overlay" hidden><section id="fieldFarmingMapModalDialog" class="field-farming-map-modal" role="dialog" aria-modal="true" aria-label="出現マップ" tabindex="-1"><button id="fieldFarmingMapModalCloseButton" class="field-farming-map-modal-close" type="button" aria-label="閉じる">×</button><div id="fieldFarmingMapModalBody"></div></section></div>
+    <div id="monsterInfoModalOverlay" class="monster-info-modal-overlay" hidden><section id="monsterInfoModalDialog" class="monster-info-modal" role="dialog" aria-modal="true" aria-label="モンスター詳細" tabindex="-1"><button id="monsterInfoModalCloseButton" class="monster-info-modal-close" type="button" aria-label="閉じる">×</button><div id="monsterInfoModalBody"></div></section></div>
+    <div id="armorSetDetailModalOverlay" class="monster-info-modal-overlay armor-set-detail-modal-overlay" hidden><section id="armorSetDetailModalDialog" class="monster-info-modal armor-set-detail-modal" role="dialog" aria-modal="true" aria-label="防具セット詳細" tabindex="-1"><button id="armorSetDetailModalCloseButton" class="monster-info-modal-close" type="button" aria-label="閉じる">×</button><div id="armorSetDetailModalBody"></div></section></div>
     <script src="app.js"></script>
   </body>
 </html>
