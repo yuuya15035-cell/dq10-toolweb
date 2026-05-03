@@ -1,21 +1,25 @@
-<!doctype html>
-<html lang="ja" data-entry-title="dq10toolweb Favorites" data-entry-description="Open the favorites page." data-entry-fallback="../?tab=favorites">
+﻿<!doctype html>
+<html lang="ja" data-entry-title="お気に入り｜DQ10職人ツール" data-entry-description="DQ10のお気に入りページを開きます。" data-entry-loading="お気に入りを読み込み中です…" data-entry-load-failed="ページを読み込めませんでした。下のリンクをお試しください。" data-entry-fallback-label="トップページを開く" data-entry-fallback="../?tab=favorites">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>dq10toolweb Favorites</title>
-  <meta name="description" content="Open the favorites page.">
+  <title>お気に入り｜DQ10職人ツール</title>
+  <meta name="description" content="DQ10のお気に入りページを開きます。">
   <link rel="canonical" href="./">
   <style>
     body { margin: 0; min-height: 100vh; display: grid; place-items: center; font-family: sans-serif; background: #f7efe3; color: #4b3624; }
-    a { color: #7b4a22; font-weight: 700; }
+    main { padding: 16px; text-align: center; }
+    #entryPageStatus { margin: 0; font-size: 0.96rem; line-height: 1.5; }
+    #entryPageFallbackLink { color: #7b4a22; font-weight: 700; }
+    #entryPageFallbackLink[hidden] { display: none; }
+    .entry-page-fallback { margin: 10px 0 0; }
   </style>
   <script src="../public/entry-loader.js" defer></script>
 </head>
 <body>
   <main>
-    <p id="entryPageStatus">Loading favorites...</p>
-    <p><a id="entryPageFallbackLink" href="../?tab=favorites">Open the existing tab URL</a></p>
+    <p id="entryPageStatus">お気に入りを読み込み中です…</p>
+    <p class="entry-page-fallback"><a id="entryPageFallbackLink" href="../?tab=favorites" hidden>トップページを開く</a></p>
   </main>
 </body>
 </html>

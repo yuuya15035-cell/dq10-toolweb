@@ -1,7 +1,10 @@
-(function () {
+﻿(function () {
   const root = document.documentElement;
   const entryTitle = String(root.dataset.entryTitle || document.title || "").trim();
   const entryDescription = String(root.dataset.entryDescription || "").trim();
+  const entryLoading = String(root.dataset.entryLoading || "ページを読み込み中です…").trim();
+  const entryLoadFailed = String(root.dataset.entryLoadFailed || "ページを読み込めませんでした。下のリンクをお試しください。").trim();
+  const fallbackLabel = String(root.dataset.entryFallbackLabel || "トップページを開く").trim();
   const currentCanonical = `${window.location.origin}${window.location.pathname}`;
   const fallbackLink = String(root.dataset.entryFallback || "../").trim();
 
@@ -10,7 +13,7 @@
       .replace(/&/g, "&amp;")
       .replace(/</g, "&lt;")
       .replace(/>/g, "&gt;")
-      .replace(/"/g, "&quot;");
+      .replace(/\"/g, "&quot;");
   }
 
   function upsertMetaTag(html, pattern, replacement, insertAfterHead = false) {
@@ -21,6 +24,17 @@
       return html.replace(/<head([^>]*)>/i, `<head$1>\n    ${replacement}`);
     }
     return html;
+  }
+
+  const status = document.getElementById("entryPageStatus");
+  if (status) {
+    status.textContent = entryLoading;
+  }
+
+  const fallback = document.getElementById("entryPageFallbackLink");
+  if (fallback) {
+    fallback.setAttribute("href", fallbackLink);
+    fallback.textContent = fallbackLabel;
   }
 
   fetch("../index.html", { cache: "no-cache" })
@@ -56,13 +70,13 @@
     })
     .catch((error) => {
       console.error("Failed to load entry page shell", error);
-      const status = document.getElementById("entryPageStatus");
       if (status) {
-        status.textContent = "Loading failed. Please use the fallback link below.";
+        status.textContent = entryLoadFailed;
       }
-      const fallback = document.getElementById("entryPageFallbackLink");
       if (fallback) {
+        fallback.hidden = false;
         fallback.setAttribute("href", fallbackLink);
+        fallback.textContent = fallbackLabel;
       }
     });
 }());
