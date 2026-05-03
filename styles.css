@@ -4955,7 +4955,11 @@ body.memo-panel-open {
 .memo-clear-all-button,
 .memo-add-button,
 .memo-delete-button,
-.memo-detail-button {
+.memo-detail-button,
+.memo-move-button,
+.memo-note-toggle-button,
+.memo-note-save-button,
+.memo-note-cancel-button {
   border: 1px solid #b7926d;
   background: #fffaf0;
   color: #4d3421;
@@ -4973,7 +4977,11 @@ body.memo-panel-open {
 .memo-clear-all-button,
 .memo-add-button,
 .memo-delete-button,
-.memo-detail-button {
+.memo-detail-button,
+.memo-move-button,
+.memo-note-toggle-button,
+.memo-note-save-button,
+.memo-note-cancel-button {
   min-height: 32px;
   padding: 5px 9px;
   border-radius: 999px;
@@ -4985,6 +4993,18 @@ body.memo-panel-open {
   margin: 6px 0;
   color: #6a5038;
   font-size: 0.78rem;
+}
+
+.memo-panel-help {
+  margin: 6px 0 4px;
+  color: #7a5b3d;
+  font-size: 0.76rem;
+  line-height: 1.45;
+}
+
+.memo-move-button:disabled {
+  opacity: 0.42;
+  cursor: not-allowed;
 }
 
 .memo-list-wrap {
@@ -5028,6 +5048,15 @@ body.memo-panel-open {
   align-items: flex-start;
 }
 
+.memo-card-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 5px;
+  flex: 0 0 auto;
+  max-width: 150px;
+}
+
 .memo-card-type {
   margin: 0 0 2px;
   color: #7a5b3d;
@@ -5056,6 +5085,61 @@ body.memo-panel-open {
 
 .memo-card-more {
   color: #806247;
+}
+
+.memo-user-note {
+  margin-top: 7px;
+  padding: 7px 8px;
+  border-radius: 8px;
+  background: #fff6e5;
+  border: 1px solid rgba(183, 146, 109, 0.42);
+}
+
+.memo-user-note p {
+  margin: 0;
+  color: #4d3a2a;
+  font-size: 0.8rem;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+}
+
+.memo-user-note .memo-user-note-label {
+  margin-bottom: 3px;
+  color: #7a5b3d;
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+
+.memo-note-editor {
+  margin-top: 8px;
+  display: grid;
+  gap: 6px;
+}
+
+.memo-note-editor-label {
+  color: #6a5038;
+  font-size: 0.76rem;
+  font-weight: 700;
+}
+
+.memo-note-editor textarea {
+  width: 100%;
+  box-sizing: border-box;
+  resize: vertical;
+  min-height: 64px;
+  border: 1px solid #d0b493;
+  border-radius: 9px;
+  padding: 8px;
+  color: #3f2b1c;
+  background: #fffdf8;
+  font: inherit;
+  font-size: 0.86rem;
+}
+
+.memo-note-editor-actions {
+  display: flex;
+  gap: 6px;
+  justify-content: flex-end;
 }
 
 .monster-info-card-memo-button,

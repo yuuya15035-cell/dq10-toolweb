@@ -1,4 +1,4 @@
-﻿// DQ10職人ツールの最小実装。
+// DQ10職人ツールの最小実装。
 // 日本語コメントを多めに入れて、将来の拡張をしやすくしています。
 
 const STORAGE_KEY = "dq10_toolweb_data_v1";
@@ -785,7 +785,7 @@ function validateCsvHeader(text, requiredHeaders, minDataRows = 0) {
   const hasHeaders = requiredHeaders.every((header) => headers.includes(header));
   if (!hasHeaders) return false;
   if (lines.length - 1 < minDataRows) return false;
-  if (lines.length > 1 && lines[1].includes("�")) return false;
+  if (lines.length > 1 && lines[1].includes("\uFFFD")) return false;
   return true;
 }
 
@@ -1221,7 +1221,19 @@ function loadMemoEntries() {
   if (!raw) return [];
   try {
     const parsed = JSON.parse(raw);
-    return Array.isArray(parsed?.items) ? parsed.items : [];
+    const items = Array.isArray(parsed?.items) ? parsed.items : Array.isArray(parsed) ? parsed : [];
+    return items
+      .map((memo) => ({
+        ...memo,
+        id: String(memo?.id || ""),
+        type: normalizeMemoValue(memo?.type),
+        name: normalizeMemoValue(memo?.name),
+        lines: Array.isArray(memo?.lines) ? memo.lines.map((line) => normalizeMemoValue(line)).filter(Boolean) : [],
+        userNote: normalizeMemoValue(memo?.userNote),
+        createdAt: memo?.createdAt || new Date().toISOString(),
+        updatedAt: memo?.updatedAt || memo?.createdAt || "",
+      }))
+      .filter((memo) => memo.id !== "" && memo.name !== "");
   } catch {
     return [];
   }
@@ -1721,6 +1733,7 @@ let memoEntries = [];
 let memoEntryIdSet = new Set();
 let memoPanelSwipeState = null;
 const expandedMemoIds = new Set();
+const editingMemoNoteIds = new Set();
 let memoToastTimer = null;
 let isMemoHintDismissed = false;
 let activeFavoriteMaterialModalKey = "";
@@ -2100,7 +2113,9 @@ function createMemoEntry(type, name, lines) {
     type: normalizedType,
     name: normalizedName,
     lines: formatMemoLines(lines),
+    userNote: "",
     createdAt: new Date().toISOString(),
+    updatedAt: "",
   };
 }
 
@@ -2170,6 +2185,29 @@ function addMemoEntry(entry, options = {}) {
   return true;
 }
 
+function moveMemoEntry(memoId, direction) {
+  const currentIndex = memoEntries.findIndex((memo) => memo.id === memoId);
+  if (currentIndex < 0) return;
+  const nextIndex = currentIndex + direction;
+  if (nextIndex < 0 || nextIndex >= memoEntries.length) return;
+  const nextEntries = [...memoEntries];
+  [nextEntries[currentIndex], nextEntries[nextIndex]] = [nextEntries[nextIndex], nextEntries[currentIndex]];
+  memoEntries = nextEntries;
+  saveMemoEntries();
+  renderMemoList();
+}
+
+function updateMemoUserNote(memoId, note) {
+  const normalizedNote = normalizeMemoValue(note);
+  const memo = memoEntries.find((entry) => entry.id === memoId);
+  if (!memo) return;
+  memo.userNote = normalizedNote;
+  memo.updatedAt = new Date().toISOString();
+  saveMemoEntries();
+  setMemoStatus(normalizedNote ? "ユーザーメモを保存しました" : "ユーザーメモを空にしました");
+  renderMemoList();
+}
+
 function renderMemoList() {
   if (!memoListWrap) return;
   if (!memoEntries.length) {
@@ -2179,22 +2217,46 @@ function renderMemoList() {
   }
   if (memoClearAllButton) memoClearAllButton.disabled = false;
   memoListWrap.innerHTML = memoEntries
-    .map((memo) => {
+    .map((memo, index) => {
       const isExpanded = expandedMemoIds.has(memo.id);
+      const isEditingNote = editingMemoNoteIds.has(memo.id);
       const visibleLines = isExpanded ? memo.lines : memo.lines.slice(0, 3);
       const remainingCount = Math.max(memo.lines.length - visibleLines.length, 0);
+      const userNote = normalizeMemoValue(memo.userNote);
       return `<article class="memo-card" role="button" tabindex="0" data-memo-card-id="${escapeHtml(memo.id)}" aria-expanded="${isExpanded ? "true" : "false"}">
         <header class="memo-card-header">
           <div>
             <p class="memo-card-type">${escapeHtml(memo.type)}</p>
             <h3>${escapeHtml(memo.name)}</h3>
           </div>
-          <button type="button" class="memo-delete-button" data-memo-delete-id="${escapeHtml(memo.id)}">削除</button>
+          <div class="memo-card-actions">
+            <button type="button" class="memo-move-button" data-memo-move-id="${escapeHtml(memo.id)}" data-memo-move-direction="-1" ${index === 0 ? "disabled" : ""} aria-label="${escapeHtml(memo.name)}を上へ移動">↑</button>
+            <button type="button" class="memo-move-button" data-memo-move-id="${escapeHtml(memo.id)}" data-memo-move-direction="1" ${index === memoEntries.length - 1 ? "disabled" : ""} aria-label="${escapeHtml(memo.name)}を下へ移動">↓</button>
+            <button type="button" class="memo-note-toggle-button" data-memo-note-toggle-id="${escapeHtml(memo.id)}">${userNote ? "編集" : "追記"}</button>
+            <button type="button" class="memo-delete-button" data-memo-delete-id="${escapeHtml(memo.id)}">削除</button>
+          </div>
         </header>
         <div class="memo-card-body">
           ${visibleLines.map((line) => `<p>${escapeHtml(line)}</p>`).join("")}
           ${remainingCount > 0 ? `<p class="memo-card-more">ほか${remainingCount}件</p>` : ""}
         </div>
+        ${
+          userNote
+            ? `<div class="memo-user-note"><p class="memo-user-note-label">ユーザーメモ</p><p>${escapeHtml(userNote)}</p></div>`
+            : ""
+        }
+        ${
+          isEditingNote
+            ? `<div class="memo-note-editor" data-memo-note-editor-id="${escapeHtml(memo.id)}">
+                <label class="memo-note-editor-label" for="memoNoteInput-${escapeHtml(memo.id)}">ユーザーメモ</label>
+                <textarea id="memoNoteInput-${escapeHtml(memo.id)}" data-memo-note-input-id="${escapeHtml(memo.id)}" rows="3" placeholder="あとで確認したいことを入力">${escapeHtml(userNote)}</textarea>
+                <div class="memo-note-editor-actions">
+                  <button type="button" class="memo-note-save-button" data-memo-note-save-id="${escapeHtml(memo.id)}">保存</button>
+                  <button type="button" class="memo-note-cancel-button" data-memo-note-cancel-id="${escapeHtml(memo.id)}">キャンセル</button>
+                </div>
+              </div>`
+            : ""
+        }
         ${
           memo.lines.length > 3
             ? `<button type="button" class="memo-detail-button" data-memo-toggle-id="${escapeHtml(memo.id)}">${isExpanded ? "閉じる" : "詳細"}</button>`
@@ -11875,6 +11937,7 @@ if (memoClearAllButton) {
     memoEntries = [];
     memoEntryIdSet.clear();
     expandedMemoIds.clear();
+    editingMemoNoteIds.clear();
     saveMemoEntries();
     setMemoStatus("メモをすべて削除しました");
     renderMemoList();
@@ -11891,8 +11954,43 @@ if (memoListWrap) {
       memoEntries = memoEntries.filter((memo) => memo.id !== memoId);
       memoEntryIdSet.delete(memoId);
       expandedMemoIds.delete(memoId);
+      editingMemoNoteIds.delete(memoId);
       saveMemoEntries();
       setMemoStatus("メモを削除しました");
+      renderMemoList();
+      return;
+    }
+    const moveButton = target.closest("[data-memo-move-id]");
+    if (moveButton && memoListWrap.contains(moveButton)) {
+      const memoId = String(moveButton.dataset.memoMoveId || "");
+      const direction = Number(moveButton.dataset.memoMoveDirection || 0);
+      moveMemoEntry(memoId, direction < 0 ? -1 : 1);
+      return;
+    }
+    const noteToggleButton = target.closest("[data-memo-note-toggle-id]");
+    if (noteToggleButton && memoListWrap.contains(noteToggleButton)) {
+      const memoId = String(noteToggleButton.dataset.memoNoteToggleId || "");
+      if (editingMemoNoteIds.has(memoId)) {
+        editingMemoNoteIds.delete(memoId);
+      } else {
+        editingMemoNoteIds.add(memoId);
+      }
+      renderMemoList();
+      return;
+    }
+    const noteSaveButton = target.closest("[data-memo-note-save-id]");
+    if (noteSaveButton && memoListWrap.contains(noteSaveButton)) {
+      const memoId = String(noteSaveButton.dataset.memoNoteSaveId || "");
+      const input = Array.from(memoListWrap.querySelectorAll("[data-memo-note-input-id]")).find(
+        (element) => element instanceof HTMLTextAreaElement && element.dataset.memoNoteInputId === memoId
+      );
+      editingMemoNoteIds.delete(memoId);
+      updateMemoUserNote(memoId, input instanceof HTMLTextAreaElement ? input.value : "");
+      return;
+    }
+    const noteCancelButton = target.closest("[data-memo-note-cancel-id]");
+    if (noteCancelButton && memoListWrap.contains(noteCancelButton)) {
+      editingMemoNoteIds.delete(String(noteCancelButton.dataset.memoNoteCancelId || ""));
       renderMemoList();
       return;
     }
@@ -11901,6 +11999,7 @@ if (memoListWrap) {
       toggleMemoExpanded(String(toggleButton.dataset.memoToggleId || ""));
       return;
     }
+    if (target.closest(".memo-note-editor")) return;
     const memoCard = target.closest("[data-memo-card-id]");
     if (memoCard && memoListWrap.contains(memoCard)) {
       toggleMemoExpanded(String(memoCard.dataset.memoCardId || ""));
@@ -11911,7 +12010,7 @@ if (memoListWrap) {
     if (event.key !== "Enter" && event.key !== " ") return;
     const target = event.target;
     if (!(target instanceof Element)) return;
-    if (target.closest("[data-memo-delete-id]") || target.closest("[data-memo-toggle-id]")) return;
+    if (target.closest("button, textarea")) return;
     const memoCard = target.closest("[data-memo-card-id]");
     if (!memoCard || !memoListWrap.contains(memoCard)) return;
     event.preventDefault();
