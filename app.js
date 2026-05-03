@@ -52,6 +52,7 @@ const ENTRY_ROUTE_SEGMENT_TO_TAB = Object.freeze({
   bazaar: "bazaar",
   craft: "profit",
   routine: "routine",
+  "present-codes": "present-codes",
   monster: "monster-info",
   equipment: "equipment-db",
   orb: "orbs",
@@ -62,6 +63,7 @@ const ENTRY_ROUTE_SEGMENT_TO_TAB = Object.freeze({
 const LEGACY_QUERY_TAB_ALIASES = Object.freeze({
   craft: "profit",
   routine: "routine",
+  "present-codes": "present-codes",
   monster: "monster-info",
   equipment: "equipment-db",
   orb: "orbs",
@@ -6941,7 +6943,7 @@ function applySiteSearchNavigation(entry) {
   if (entry.tabId === "present-codes") {
     presentCodesKeyword = keyword;
     switchTab("present-codes");
-    navigateByAppParams({ tab: "present-codes", equipmentId: "", materialKey: "" });
+    navigateByFeatureRoute({ tab: "present-codes", equipmentId: "", materialKey: "" });
     renderPresentCodes();
     resetSearchUi();
     document.getElementById("present-codes")?.scrollIntoView({ block: "start", behavior: "smooth" });
