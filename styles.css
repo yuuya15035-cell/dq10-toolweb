@@ -44,13 +44,10 @@ body {
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Hiragino Kaku Gothic ProN", "Noto Sans JP", sans-serif;
   font-size: var(--ui-body-font-size);
   background:
-    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 360 220'%3E%3Cg fill='%23fffdf7' fill-opacity='.17'%3E%3Cpath d='M68 66c0-24 19-42 44-42 24 0 43 18 43 42 0 10-3 17-9 25l-14 19c-8 10-20 15-35 15s-27-5-35-15L77 91c-6-8-9-15-9-25z'/%3E%3Cpath d='M260 30c7 0 12 4 15 10l8 15 19-12c9-5 17-6 25-6l-10 18c-3 5-4 10-4 14 11 1 19 4 28 11-12 3-23 3-35-1l-21-7-8 10c-6 8-14 12-24 12s-18-4-24-12l-8-10-21 7c-12 4-23 4-35 1 9-7 17-10 28-11 0-4-1-9-4-14l-10-18c8 0 16 1 25 6l19 12 8-15c3-6 8-10 15-10h15z'/%3E%3Cpath d='M238 124h18l6-18h42l6 18h18c10 0 18 8 18 18v24c0 7-5 12-12 12h-84c-7 0-12-5-12-12v-24c0-10 8-18 18-18zm28-52h38v24h-38zm-8 24h12v18h-18zm48 0h12v18h-18zM242 148h88v10h-88zm8 16h18v12h-18zm28 0h18v12h-18zm28 0h18v12h-18z'/%3E%3C/g%3E%3C/svg%3E") 0 0 / 360px 220px repeat,
-    radial-gradient(circle at 50% 18%, rgba(255, 251, 243, 0.56) 0, rgba(255, 247, 233, 0.28) 28%, transparent 58%),
-    radial-gradient(circle at 50% 52%, rgba(255, 246, 229, 0.38) 0, rgba(255, 243, 223, 0.14) 42%, transparent 72%),
-    radial-gradient(20px 16px at 10% 16%, rgba(47, 167, 232, 0.03) 0 44%, transparent 47%),
-    radial-gradient(28px 18px at 84% 20%, rgba(74, 45, 24, 0.025) 0 42%, transparent 45%),
-    linear-gradient(135deg, rgba(255, 255, 255, 0.15) 25%, transparent 25%) 0 0 / 34px 34px,
-    linear-gradient(180deg, #efdfc5 0%, var(--bg) 55%, #ddc6a1 100%);
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 640 420'%3E%3Cg fill='%23fffaf1' fill-opacity='.65'%3E%3Cpath d='M73 56c0-14 10-25 24-25 13 0 23 11 23 25 0 8-3 14-8 20l-8 9c-5 6-12 9-19 9s-14-3-19-9l-8-9c-5-6-8-12-8-20z'/%3E%3Cpath d='M266 33c4 0 8 2 10 6l5 9 11-7c6-4 11-4 17-4l-7 11c-2 4-3 7-3 11 8 1 14 3 21 8-9 2-16 2-25-1l-12-4-5 6c-4 5-9 7-15 7s-11-2-15-7l-5-6-12 4c-9 3-16 3-25 1 7-5 13-7 21-8 0-4-1-7-3-11l-7-11c6 0 11 0 17 4l11 7 5-9c2-4 6-6 10-6h11z'/%3E%3Cpath d='M465 39h17l4-13h29l4 13h17c8 0 14 6 14 13v18c0 5-4 9-9 9h-67c-5 0-9-4-9-9V52c0-7 6-13 14-13zm20-35h26v19h-26zm-5 19h9v13h-13zm34 0h9v13h-13zM468 57h70v8h-70zm6 13h13v9h-13zm22 0h13v9h-13zm22 0h13v9h-13z'/%3E%3Cpath d='M104 189c0-14 10-25 24-25 13 0 23 11 23 25 0 8-3 14-8 20l-8 9c-5 6-12 9-19 9s-14-3-19-9l-8-9c-5-6-8-12-8-20z'/%3E%3Cpath d='M360 170c4 0 8 2 10 6l5 9 11-7c6-4 11-4 17-4l-7 11c-2 4-3 7-3 11 8 1 14 3 21 8-9 2-16 2-25-1l-12-4-5 6c-4 5-9 7-15 7s-11-2-15-7l-5-6-12 4c-9 3-16 3-25 1 7-5 13-7 21-8 0-4-1-7-3-11l-7-11c6 0 11 0 17 4l11 7 5-9c2-4 6-6 10-6h11z'/%3E%3Cpath d='M515 176h17l4-13h29l4 13h17c8 0 14 6 14 13v18c0 5-4 9-9 9h-67c-5 0-9-4-9-9v-18c0-7 6-13 14-13zm20-35h26v19h-26zm-5 19h9v13h-13zm34 0h9v13h-13zm-46 34h70v8h-70zm6 13h13v9h-13zm22 0h13v9h-13zm22 0h13v9h-13z'/%3E%3Cpath d='M48 332c0-14 10-25 24-25 13 0 23 11 23 25 0 8-3 14-8 20l-8 9c-5 6-12 9-19 9s-14-3-19-9l-8-9c-5-6-8-12-8-20z'/%3E%3Cpath d='M240 310c4 0 8 2 10 6l5 9 11-7c6-4 11-4 17-4l-7 11c-2 4-3 7-3 11 8 1 14 3 21 8-9 2-16 2-25-1l-12-4-5 6c-4 5-9 7-15 7s-11-2-15-7l-5-6-12 4c-9 3-16 3-25 1 7-5 13-7 21-8 0-4-1-7-3-11l-7-11c6 0 11 0 17 4l11 7 5-9c2-4 6-6 10-6h11z'/%3E%3Cpath d='M458 319h17l4-13h29l4 13h17c8 0 14 6 14 13v18c0 5-4 9-9 9h-67c-5 0-9-4-9-9v-18c0-7 6-13 14-13zm20-35h26v19h-26zm-5 19h9v13h-13zm34 0h9v13h-13zm-46 34h70v8h-70zm6 13h13v9h-13zm22 0h13v9h-13zm22 0h13v9h-13z'/%3E%3C/g%3E%3C/svg%3E") 0 0 / 620px 405px repeat,
+    radial-gradient(circle at 50% 12%, rgba(255, 250, 240, 0.86) 0, rgba(255, 244, 224, 0.48) 24%, transparent 56%),
+    radial-gradient(circle at 50% 58%, rgba(255, 246, 230, 0.44) 0, rgba(252, 238, 213, 0.18) 42%, transparent 76%),
+    linear-gradient(180deg, #f3e5cf 0%, #ead8bb 54%, #e0c79f 100%);
   color: var(--text);
 }
 
@@ -187,6 +184,11 @@ body.is-modal-open {
 .app-header p {
   margin: 0;
   color: #4f3a29;
+}
+
+.app-header p:empty,
+.app-header-price-note:empty {
+  display: none;
 }
 
 #contentSiteIntro,
@@ -497,6 +499,10 @@ body.is-modal-open {
   font-size: 0.75rem;
   line-height: 1.4;
   color: #5a3c27;
+}
+
+.top-quick-access-note:empty {
+  display: none;
 }
 
 .top-quick-access-note-sub {
