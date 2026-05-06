@@ -708,16 +708,20 @@ body.is-modal-open {
   box-shadow:
     inset 0 0 0 1px rgba(255, 249, 239, 0.92),
     inset 0 4px 0 var(--monster-card-accent, rgba(201, 174, 139, 0.22)),
+    0 0 0 2px rgba(168, 130, 72, 0.18),
     0 5px 14px rgba(74, 45, 24, 0.12);
   overflow: hidden;
 }
 .monster-info-card::before {
   content: "";
   position: absolute;
-  inset: 6px;
-  border: 1px solid rgba(190, 151, 95, 0.42);
+  inset: 5px;
+  border: 1px solid rgba(186, 145, 88, 0.52);
   border-radius: 10px;
   pointer-events: none;
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 244, 220, 0.7),
+    inset 0 0 0 3px rgba(176, 137, 83, 0.12);
 }
 
 .monster-info-card::after {
@@ -726,12 +730,14 @@ body.is-modal-open {
   inset: 0;
   pointer-events: none;
   background:
-    radial-gradient(circle at 12px 12px, rgba(199, 162, 99, 0.8) 0 1.3px, transparent 1.4px),
-    radial-gradient(circle at calc(100% - 12px) 12px, rgba(199, 162, 99, 0.8) 0 1.3px, transparent 1.4px),
-    radial-gradient(circle at 12px calc(100% - 12px), rgba(199, 162, 99, 0.8) 0 1.3px, transparent 1.4px),
-    radial-gradient(circle at calc(100% - 12px) calc(100% - 12px), rgba(199, 162, 99, 0.8) 0 1.3px, transparent 1.4px),
-    linear-gradient(90deg, transparent 0 9px, rgba(191, 154, 99, 0.22) 9px 10px, transparent 10px calc(100% - 10px), rgba(191, 154, 99, 0.22) calc(100% - 10px) calc(100% - 9px), transparent calc(100% - 9px)),
-    linear-gradient(transparent 0 9px, rgba(191, 154, 99, 0.22) 9px 10px, transparent 10px calc(100% - 10px), rgba(191, 154, 99, 0.22) calc(100% - 10px) calc(100% - 9px), transparent calc(100% - 9px));
+    radial-gradient(circle at 14px 14px, rgba(44, 126, 203, 0.9) 0 4px, rgba(247, 233, 186, 0.92) 4.5px 7px, transparent 7.2px),
+    radial-gradient(circle at calc(100% - 14px) 14px, rgba(44, 126, 203, 0.9) 0 4px, rgba(247, 233, 186, 0.92) 4.5px 7px, transparent 7.2px),
+    radial-gradient(circle at 14px calc(100% - 14px), rgba(44, 126, 203, 0.9) 0 4px, rgba(247, 233, 186, 0.92) 4.5px 7px, transparent 7.2px),
+    radial-gradient(circle at calc(100% - 14px) calc(100% - 14px), rgba(44, 126, 203, 0.9) 0 4px, rgba(247, 233, 186, 0.92) 4.5px 7px, transparent 7.2px),
+    radial-gradient(circle at 50% 9px, rgba(197, 151, 87, 0.9) 0 4px, rgba(255, 245, 214, 0.85) 4.5px 6px, transparent 6.2px),
+    radial-gradient(circle at 50% calc(100% - 9px), rgba(197, 151, 87, 0.9) 0 4px, rgba(255, 245, 214, 0.85) 4.5px 6px, transparent 6.2px),
+    linear-gradient(90deg, transparent 0 18px, rgba(191, 154, 99, 0.18) 18px calc(50% - 18px), rgba(191, 154, 99, 0.54) calc(50% - 18px) calc(50% - 8px), rgba(191, 154, 99, 0.18) calc(50% - 8px) calc(50% + 8px), rgba(191, 154, 99, 0.54) calc(50% + 8px) calc(50% + 18px), rgba(191, 154, 99, 0.18) calc(50% + 18px) calc(100% - 18px), transparent calc(100% - 18px)),
+    linear-gradient(transparent 0 18px, rgba(191, 154, 99, 0.18) 18px calc(50% - 18px), rgba(191, 154, 99, 0.54) calc(50% - 18px) calc(50% - 8px), rgba(191, 154, 99, 0.18) calc(50% - 8px) calc(50% + 8px), rgba(191, 154, 99, 0.54) calc(50% + 8px) calc(50% + 18px), rgba(191, 154, 99, 0.18) calc(50% + 18px) calc(100% - 18px), transparent calc(100% - 18px));
 }
 
 .monster-info-card-toggle {
@@ -1113,6 +1119,17 @@ body.is-modal-open {
     inset: 5px;
     border-radius: 8px;
   }
+  .monster-info-card::after {
+    background:
+      radial-gradient(circle at 12px 12px, rgba(44, 126, 203, 0.88) 0 3px, rgba(247, 233, 186, 0.88) 3.4px 5.6px, transparent 5.8px),
+      radial-gradient(circle at calc(100% - 12px) 12px, rgba(44, 126, 203, 0.88) 0 3px, rgba(247, 233, 186, 0.88) 3.4px 5.6px, transparent 5.8px),
+      radial-gradient(circle at 12px calc(100% - 12px), rgba(44, 126, 203, 0.88) 0 3px, rgba(247, 233, 186, 0.88) 3.4px 5.6px, transparent 5.8px),
+      radial-gradient(circle at calc(100% - 12px) calc(100% - 12px), rgba(44, 126, 203, 0.88) 0 3px, rgba(247, 233, 186, 0.88) 3.4px 5.6px, transparent 5.8px),
+      radial-gradient(circle at 50% 8px, rgba(197, 151, 87, 0.88) 0 3px, rgba(255, 245, 214, 0.82) 3.4px 5px, transparent 5.2px),
+      radial-gradient(circle at 50% calc(100% - 8px), rgba(197, 151, 87, 0.88) 0 3px, rgba(255, 245, 214, 0.82) 3.4px 5px, transparent 5.2px),
+      linear-gradient(90deg, transparent 0 14px, rgba(191, 154, 99, 0.16) 14px calc(50% - 14px), rgba(191, 154, 99, 0.48) calc(50% - 14px) calc(50% - 6px), rgba(191, 154, 99, 0.16) calc(50% - 6px) calc(50% + 6px), rgba(191, 154, 99, 0.48) calc(50% + 6px) calc(50% + 14px), rgba(191, 154, 99, 0.16) calc(50% + 14px) calc(100% - 14px), transparent calc(100% - 14px)),
+      linear-gradient(transparent 0 14px, rgba(191, 154, 99, 0.16) 14px calc(50% - 14px), rgba(191, 154, 99, 0.48) calc(50% - 14px) calc(50% - 6px), rgba(191, 154, 99, 0.16) calc(50% - 6px) calc(50% + 6px), rgba(191, 154, 99, 0.48) calc(50% + 6px) calc(50% + 14px), rgba(191, 154, 99, 0.16) calc(50% + 14px) calc(100% - 14px), transparent calc(100% - 14px));
+  }
   .monster-info-card p {
     margin-bottom: 4px;
     font-size: 0.74rem;
@@ -1248,6 +1265,18 @@ body.is-modal-open {
 
   .equipment-db-card-traits {
     padding: 8px 8px 42px;
+  }
+
+  .equipment-db-card::after {
+    background:
+      radial-gradient(circle at 12px 12px, rgba(44, 126, 203, 0.88) 0 3px, rgba(247, 233, 186, 0.88) 3.4px 5.6px, transparent 5.8px),
+      radial-gradient(circle at calc(100% - 12px) 12px, rgba(44, 126, 203, 0.88) 0 3px, rgba(247, 233, 186, 0.88) 3.4px 5.6px, transparent 5.8px),
+      radial-gradient(circle at 12px calc(100% - 12px), rgba(44, 126, 203, 0.88) 0 3px, rgba(247, 233, 186, 0.88) 3.4px 5.6px, transparent 5.8px),
+      radial-gradient(circle at calc(100% - 12px) calc(100% - 12px), rgba(44, 126, 203, 0.88) 0 3px, rgba(247, 233, 186, 0.88) 3.4px 5.6px, transparent 5.8px),
+      radial-gradient(circle at 50% 8px, rgba(197, 151, 87, 0.88) 0 3px, rgba(255, 245, 214, 0.82) 3.4px 5px, transparent 5.2px),
+      radial-gradient(circle at 50% calc(100% - 8px), rgba(197, 151, 87, 0.88) 0 3px, rgba(255, 245, 214, 0.82) 3.4px 5px, transparent 5.2px),
+      linear-gradient(90deg, transparent 0 14px, rgba(191, 154, 99, 0.16) 14px calc(50% - 14px), rgba(191, 154, 99, 0.48) calc(50% - 14px) calc(50% - 6px), rgba(191, 154, 99, 0.16) calc(50% - 6px) calc(50% + 6px), rgba(191, 154, 99, 0.48) calc(50% + 6px) calc(50% + 14px), rgba(191, 154, 99, 0.16) calc(50% + 14px) calc(100% - 14px), transparent calc(100% - 14px)),
+      linear-gradient(transparent 0 14px, rgba(191, 154, 99, 0.16) 14px calc(50% - 14px), rgba(191, 154, 99, 0.48) calc(50% - 14px) calc(50% - 6px), rgba(191, 154, 99, 0.16) calc(50% - 6px) calc(50% + 6px), rgba(191, 154, 99, 0.48) calc(50% + 6px) calc(50% + 14px), rgba(191, 154, 99, 0.16) calc(50% + 14px) calc(100% - 14px), transparent calc(100% - 14px));
   }
 }
 
@@ -5163,6 +5192,7 @@ body.memo-panel-open {
   background: linear-gradient(180deg, #fffaf2 0%, #fffdf9 100%);
   box-shadow:
     inset 0 0 0 1px rgba(255, 249, 239, 0.88),
+    0 0 0 2px rgba(168, 130, 72, 0.18),
     0 5px 14px rgba(74, 45, 24, 0.12);
 }
 
@@ -5179,10 +5209,13 @@ body.memo-panel-open {
 .equipment-db-card::before {
   content: "";
   position: absolute;
-  inset: 6px;
-  border: 1px solid rgba(190, 151, 95, 0.42);
+  inset: 5px;
+  border: 1px solid rgba(186, 145, 88, 0.52);
   border-radius: 10px;
   pointer-events: none;
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 244, 220, 0.7),
+    inset 0 0 0 3px rgba(176, 137, 83, 0.12);
 }
 
 .equipment-db-card::after {
@@ -5191,10 +5224,14 @@ body.memo-panel-open {
   inset: 0;
   pointer-events: none;
   background:
-    radial-gradient(circle at 12px 12px, rgba(199, 162, 99, 0.8) 0 1.3px, transparent 1.4px),
-    radial-gradient(circle at calc(100% - 12px) 12px, rgba(199, 162, 99, 0.8) 0 1.3px, transparent 1.4px),
-    radial-gradient(circle at 12px calc(100% - 12px), rgba(199, 162, 99, 0.8) 0 1.3px, transparent 1.4px),
-    radial-gradient(circle at calc(100% - 12px) calc(100% - 12px), rgba(199, 162, 99, 0.8) 0 1.3px, transparent 1.4px);
+    radial-gradient(circle at 14px 14px, rgba(44, 126, 203, 0.9) 0 4px, rgba(247, 233, 186, 0.92) 4.5px 7px, transparent 7.2px),
+    radial-gradient(circle at calc(100% - 14px) 14px, rgba(44, 126, 203, 0.9) 0 4px, rgba(247, 233, 186, 0.92) 4.5px 7px, transparent 7.2px),
+    radial-gradient(circle at 14px calc(100% - 14px), rgba(44, 126, 203, 0.9) 0 4px, rgba(247, 233, 186, 0.92) 4.5px 7px, transparent 7.2px),
+    radial-gradient(circle at calc(100% - 14px) calc(100% - 14px), rgba(44, 126, 203, 0.9) 0 4px, rgba(247, 233, 186, 0.92) 4.5px 7px, transparent 7.2px),
+    radial-gradient(circle at 50% 9px, rgba(197, 151, 87, 0.9) 0 4px, rgba(255, 245, 214, 0.85) 4.5px 6px, transparent 6.2px),
+    radial-gradient(circle at 50% calc(100% - 9px), rgba(197, 151, 87, 0.9) 0 4px, rgba(255, 245, 214, 0.85) 4.5px 6px, transparent 6.2px),
+    linear-gradient(90deg, transparent 0 18px, rgba(191, 154, 99, 0.18) 18px calc(50% - 18px), rgba(191, 154, 99, 0.54) calc(50% - 18px) calc(50% - 8px), rgba(191, 154, 99, 0.18) calc(50% - 8px) calc(50% + 8px), rgba(191, 154, 99, 0.54) calc(50% + 8px) calc(50% + 18px), rgba(191, 154, 99, 0.18) calc(50% + 18px) calc(100% - 18px), transparent calc(100% - 18px)),
+    linear-gradient(transparent 0 18px, rgba(191, 154, 99, 0.18) 18px calc(50% - 18px), rgba(191, 154, 99, 0.54) calc(50% - 18px) calc(50% - 8px), rgba(191, 154, 99, 0.18) calc(50% - 8px) calc(50% + 8px), rgba(191, 154, 99, 0.54) calc(50% + 8px) calc(50% + 18px), rgba(191, 154, 99, 0.18) calc(50% + 18px) calc(100% - 18px), transparent calc(100% - 18px));
 }
 
 .equipment-db-card-toggle {
