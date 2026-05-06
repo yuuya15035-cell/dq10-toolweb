@@ -1,4 +1,4 @@
-// DQ10職人ツールの最小実装。
+﻿// DQ10職人ツールの最小実装。
 // 日本語コメントを多めに入れて、将来の拡張をしやすくしています。
 
 const STORAGE_KEY = "dq10_toolweb_data_v1";
@@ -6368,9 +6368,15 @@ function renderBazaarPrices() {
           tabindex="0"
         >
           <div class="bazaar-primary">
-            <p class="bazaar-today-price ${priceVisualToneClass}">${todayPriceHtml}</p>
+            <div class="bazaar-price-stack">
+              <p class="bazaar-today-price ${priceVisualToneClass}"><span class="bazaar-price-label">本日</span><strong>${todayPriceHtml}</strong></p>
+              <p class="bazaar-previous-price"><span class="bazaar-price-label">前日</span><span class="bazaar-price-sub-value">${formatBazaarPriceWithUnit(row.previousDayPrice)}</span></p>
+              <div class="bazaar-meta-row">
+                <p class="bazaar-updated-at"><span class="bazaar-meta-label">更新</span><span>${updatedAtText}</span></p>
+                <p class="bazaar-change-rate"><span class="bazaar-meta-label">前日比</span><span class="bazaar-change-value ${changePresentation.toneClass}">${changePresentation.text}</span>${changeArrowHtml}</p>
+              </div>
+            </div>
             ${priceStatusBadgeHtml}
-            <p class="bazaar-change-rate">前日比: <span class="bazaar-change-value ${changePresentation.toneClass}">${changePresentation.text}</span>${changeArrowHtml}</p>
             ${
               hasOfficialUrl
                 ? `<a
@@ -6378,10 +6384,10 @@ function renderBazaarPrices() {
                     href="${row.officialUrl}"
                     target="_blank"
                     rel="noopener noreferrer"
-                    aria-label="${row.materialName}の公式相場サイトを新しいタブで開く"
+                    aria-label="${row.materialName}縺ｮ蜈ｬ蠑冗嶌蝣ｴ繧ｵ繧､繝医ｒ譁ｰ縺励＞繧ｿ繝悶〒髢九￥"
                     data-bazaar-official-link="true"
                   >
-                    公式相場
+                    蜈ｬ蠑冗嶌蝣ｴ
                   </a>`
                 : ""
             }
@@ -6400,10 +6406,6 @@ function renderBazaarPrices() {
                 : `<p class="bazaar-mini-chart-empty">履歴なし</p>`
             }
           </div>
-        </div>
-        <div class="bazaar-footer-row">
-          <p class="bazaar-updated-at">更新: ${updatedAtText}</p>
-          <p class="bazaar-previous-price">前日: ${formatBazaarPriceWithUnit(row.previousDayPrice)}</p>
         </div>
       </article>
     `;
@@ -12288,4 +12290,5 @@ async function initialize() {
 }
 
 initialize();
+
 

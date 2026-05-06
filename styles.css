@@ -2428,12 +2428,109 @@ button {
   gap: 8px;
 }
 
-.bazaar-updated-at {
+.bazaar-primary {
+  display: grid;
+  align-content: start;
+  gap: 4px;
+}
+
+.bazaar-price-stack {
+  display: grid;
+  gap: 3px;
+}
+
+.bazaar-today-price,
+.bazaar-previous-price,
+.bazaar-change-rate {
   margin: 0;
+}
+
+.bazaar-today-price {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  color: #4a2d18;
+  font-size: 0.98rem;
+  line-height: 1.2;
+}
+
+.bazaar-today-price strong {
+  font-size: 1.12rem;
+  font-weight: 800;
+  color: #2f1d11;
+}
+
+.bazaar-price-label,
+.bazaar-meta-label {
+  flex: 0 0 auto;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+.bazaar-price-label {
+  color: #7b5b3d;
+  font-size: 0.73rem;
+}
+
+.bazaar-previous-price {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  color: #725843;
+  font-size: 0.82rem;
+  line-height: 1.2;
+}
+
+.bazaar-price-sub-value {
+  color: #5f4733;
+}
+
+.bazaar-meta-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 10px;
+}
+
+.bazaar-meta-label {
+  color: #8a6847;
+  font-size: 0.7rem;
+}
+
+.bazaar-updated-at {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 5px;
   color: #6c5440;
-  font-size: 0.76rem;
+  font-size: 0.73rem;
   line-height: 1.2;
   white-space: nowrap;
+}
+
+.bazaar-change-rate {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 4px;
+  color: #6c5440;
+  font-size: 0.73rem;
+  line-height: 1.2;
+}
+
+.bazaar-change-value.is-positive,
+.bazaar-change-arrow.is-positive {
+  color: #3d7f72;
+}
+
+.bazaar-change-value.is-negative,
+.bazaar-change-arrow.is-negative {
+  color: #9b5a3d;
+}
+
+.bazaar-change-value.is-neutral,
+.bazaar-change-arrow.is-neutral,
+.bazaar-change-value.is-unavailable,
+.bazaar-change-arrow.is-unavailable {
+  color: #7c644c;
 }
 
 .bazaar-footer-row {
@@ -3165,6 +3262,7 @@ button {
 
   .bazaar-main {
     margin-top: 2px;
+    gap: 3px;
   }
 
   .bazaar-footer-row {
@@ -3183,21 +3281,31 @@ button {
   }
 
   .bazaar-today-price {
-    font-size: 0.96rem;
+    gap: 6px;
+    font-size: 0.92rem;
   }
 
-  .bazaar-today-price span {
-    font-size: 0.7rem;
+  .bazaar-today-price strong {
+    font-size: 1rem;
   }
 
-  .bazaar-change-rate {
-    font-size: 0.72rem;
-    gap: 3px;
+  .bazaar-price-label,
+  .bazaar-meta-label {
+    font-size: 0.66rem;
   }
 
   .bazaar-previous-price {
+    gap: 6px;
     font-size: 0.68rem;
-    margin-top: 0;
+  }
+
+  .bazaar-meta-row {
+    gap: 3px 8px;
+  }
+
+  .bazaar-updated-at,
+  .bazaar-change-rate {
+    font-size: 0.67rem;
   }
 
 }
