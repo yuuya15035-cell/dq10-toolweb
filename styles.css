@@ -1,14 +1,14 @@
 :root {
   color-scheme: light;
-  --bg: #efe0c5;
+  --bg: #ead8bb;
   --card: #fff8ec;
   --text: #2b1a10;
   --primary: #1f8edb;
   --line: #c9a36a;
   --panel-border: #b78a55;
   --panel-shadow: rgba(43, 26, 16, 0.18);
-  --heading-band: #2b1a10;
-  --heading-band-soft: #3a2415;
+  --heading-band: #4a2d18;
+  --heading-band-soft: #6b4528;
   --accent-gold: #c9a36a;
   --accent-blue: #2fa7e8;
   --surface-soft: #fbf0dc;
@@ -42,12 +42,13 @@ body {
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Hiragino Kaku Gothic ProN", "Noto Sans JP", sans-serif;
   font-size: var(--ui-body-font-size);
   background:
-    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 260 180'%3E%3Cg fill='%23fffdf8' fill-opacity='.25'%3E%3Cpath d='M54 84c0-18 15-32 34-32s34 14 34 32c0 11-7 19-11 28-4 10-12 15-23 15s-19-5-23-15c-4-9-11-17-11-28z'/%3E%3Cpath d='M176 64c9 0 16 4 21 12 7-7 16-10 28-10-6 7-10 14-12 21 8 1 13 4 18 10-11 1-20-2-28-7-5 4-10 7-17 7s-12-3-17-7c-8 5-17 8-28 7 5-6 10-9 18-10-2-7-6-14-12-21 12 0 21 3 28 10 5-8 12-12 21-12z'/%3E%3Cpath d='M163 116h18v-10c0-4 3-7 7-7h10c4 0 7 3 7 7v10h18c10 0 18 8 18 18v16c0 6-5 11-11 11h-56c-6 0-11-5-11-11v-16c0-10 8-18 18-18z'/%3E%3C/g%3E%3C/svg%3E") 0 0 / 280px 190px repeat,
-    radial-gradient(18px 24px at 9% 14%, rgba(47, 167, 232, 0.045) 0 44%, transparent 47%),
-    radial-gradient(26px 16px at 86% 18%, rgba(58, 36, 21, 0.035) 0 42%, transparent 45%),
-    radial-gradient(18px 12px at 18% 76%, rgba(183, 138, 85, 0.055) 0 44%, transparent 47%),
-    linear-gradient(135deg, rgba(255, 255, 255, 0.2) 25%, transparent 25%) 0 0 / 34px 34px,
-    linear-gradient(180deg, #f5ead6 0%, var(--bg) 58%, #e7d1ad 100%);
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 360 220'%3E%3Cg fill='%23fffdf7' fill-opacity='.17'%3E%3Cpath d='M68 66c0-24 19-42 44-42 24 0 43 18 43 42 0 10-3 17-9 25l-14 19c-8 10-20 15-35 15s-27-5-35-15L77 91c-6-8-9-15-9-25z'/%3E%3Cpath d='M260 30c7 0 12 4 15 10l8 15 19-12c9-5 17-6 25-6l-10 18c-3 5-4 10-4 14 11 1 19 4 28 11-12 3-23 3-35-1l-21-7-8 10c-6 8-14 12-24 12s-18-4-24-12l-8-10-21 7c-12 4-23 4-35 1 9-7 17-10 28-11 0-4-1-9-4-14l-10-18c8 0 16 1 25 6l19 12 8-15c3-6 8-10 15-10h15z'/%3E%3Cpath d='M238 124h18l6-18h42l6 18h18c10 0 18 8 18 18v24c0 7-5 12-12 12h-84c-7 0-12-5-12-12v-24c0-10 8-18 18-18zm28-52h38v24h-38zm-8 24h12v18h-18zm48 0h12v18h-18zM242 148h88v10h-88zm8 16h18v12h-18zm28 0h18v12h-18zm28 0h18v12h-18z'/%3E%3C/g%3E%3C/svg%3E") 0 0 / 360px 220px repeat,
+    radial-gradient(circle at 50% 18%, rgba(255, 251, 243, 0.56) 0, rgba(255, 247, 233, 0.28) 28%, transparent 58%),
+    radial-gradient(circle at 50% 52%, rgba(255, 246, 229, 0.38) 0, rgba(255, 243, 223, 0.14) 42%, transparent 72%),
+    radial-gradient(20px 16px at 10% 16%, rgba(47, 167, 232, 0.03) 0 44%, transparent 47%),
+    radial-gradient(28px 18px at 84% 20%, rgba(74, 45, 24, 0.025) 0 42%, transparent 45%),
+    linear-gradient(135deg, rgba(255, 255, 255, 0.15) 25%, transparent 25%) 0 0 / 34px 34px,
+    linear-gradient(180deg, #efdfc5 0%, var(--bg) 55%, #ddc6a1 100%);
   color: var(--text);
 }
 
@@ -2054,6 +2055,84 @@ button {
   font-weight: 800;
 }
 
+.bazaar-mini-chart-wrap {
+  display: grid;
+  align-content: start;
+  gap: 6px;
+}
+
+.bazaar-mini-chart-plot {
+  width: 100%;
+}
+
+.bazaar-mini-chart-canvas {
+  width: 100%;
+  min-width: 0;
+  aspect-ratio: 320 / 108;
+}
+
+.bazaar-mini-chart-svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+
+.bazaar-mini-chart-grid-line {
+  stroke: rgba(124, 92, 63, 0.22);
+  stroke-width: 1;
+}
+
+.bazaar-mini-chart-grid-line.is-edge {
+  stroke: rgba(124, 92, 63, 0.3);
+}
+
+.bazaar-mini-chart-reference-line {
+  stroke: rgba(112, 82, 56, 0.5);
+  stroke-width: 1.2;
+  stroke-dasharray: 5 4;
+}
+
+.bazaar-mini-chart-line {
+  fill: none;
+  stroke-width: 2.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.bazaar-mini-chart-area {
+  stroke: none;
+}
+
+.bazaar-mini-chart-point {
+  fill: rgba(183, 138, 85, 0.78);
+}
+
+.bazaar-mini-chart-latest-point {
+  fill: #6b4122;
+  stroke: #fff7ea;
+  stroke-width: 1.4;
+}
+
+.bazaar-mini-chart-axis-label,
+.bazaar-mini-chart-axis-date {
+  fill: #6d5038;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.bazaar-mini-chart-axis-date {
+  opacity: 0.88;
+}
+
+.bazaar-mini-chart-meta,
+.bazaar-mini-chart-empty {
+  margin: 0;
+  font-size: 0.74rem;
+  line-height: 1.35;
+  color: #6a513d;
+}
+
 .bazaar-category-field {
   margin-bottom: 0;
 }
@@ -3189,7 +3268,8 @@ button {
   }
 
   .bazaar-detail-modal-chart .bazaar-mini-chart-svg {
-    height: 206px;
+    height: auto;
+    min-height: 206px;
   }
 
   .bazaar-detail-modal-chart .bazaar-mini-chart-axis-label,
@@ -3282,8 +3362,12 @@ button {
     width: 100%;
   }
 
+  .bazaar-mini-chart-canvas {
+    min-height: 104px;
+  }
+
   .bazaar-mini-chart-canvas .bazaar-mini-chart-svg {
-    height: 104px;
+    height: auto;
   }
 
   .bazaar-mini-chart-canvas .bazaar-mini-chart-axis-date {

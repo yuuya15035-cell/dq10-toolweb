@@ -5907,8 +5907,8 @@ function buildBazaarSparklineSvg(history, options = {}) {
   const paddingLeft = Number(options.paddingLeft) || 12;
   const pointRadius = Number(options.pointRadius) || 2;
   const latestPointRadius = Number(options.latestPointRadius) || 4;
-  const chartStroke = options.stroke || "#8b5e3c";
-  const areaFill = options.areaFill || "rgba(139, 94, 60, 0.18)";
+  const chartStroke = options.stroke || "#6b4122";
+  const areaFill = options.areaFill || "rgba(183, 138, 85, 0.22)";
   const includeYAxisLabels = options.includeYAxisLabels !== false;
   const xAxisLabelCount = Math.max(1, Number(options.xAxisLabelCount) || 3);
   const yAxisTickCount = Math.max(2, Math.min(3, Number(options.yAxisTickCount) || 3));
@@ -6012,7 +6012,7 @@ function buildBazaarSparklineSvg(history, options = {}) {
   const firstPrice = points[0].price;
   const trendClass = latestPrice > firstPrice ? "is-positive" : latestPrice < firstPrice ? "is-negative" : "is-neutral";
   return `
-    <svg viewBox="0 0 ${width} ${height}" preserveAspectRatio="none" class="bazaar-mini-chart-svg ${trendClass}" aria-hidden="true" focusable="false">
+    <svg viewBox="0 0 ${width} ${height}" preserveAspectRatio="xMidYMid meet" class="bazaar-mini-chart-svg ${trendClass}" aria-hidden="true" focusable="false">
       <line x1="${paddingLeft}" y1="${topGridY}" x2="${width - paddingRight}" y2="${topGridY}" class="bazaar-mini-chart-grid-line is-edge"></line>
       <line x1="${paddingLeft}" y1="${middleGridY}" x2="${width - paddingRight}" y2="${middleGridY}" class="bazaar-mini-chart-grid-line"></line>
       <line x1="${paddingLeft}" y1="${bottomGridY}" x2="${width - paddingRight}" y2="${bottomGridY}" class="bazaar-mini-chart-grid-line is-edge"></line>
