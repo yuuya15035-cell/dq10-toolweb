@@ -4,8 +4,8 @@
   "description": "DQ10の職人・バザー・お気に入り機能をまとめた支援ツール",
   "start_url": "./index.html",
   "display": "standalone",
-  "theme_color": "#634027",
-  "background_color": "#e8e0d5",
+  "theme_color": "#2b1a10",
+  "background_color": "#f5ead6",
   "icons": [
     {
       "src": "./icons/app-icon-192.png",
