@@ -42,6 +42,7 @@ body {
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Hiragino Kaku Gothic ProN", "Noto Sans JP", sans-serif;
   font-size: var(--ui-body-font-size);
   background:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 260 180'%3E%3Cg fill='%23fffdf8' fill-opacity='.25'%3E%3Cpath d='M54 84c0-18 15-32 34-32s34 14 34 32c0 11-7 19-11 28-4 10-12 15-23 15s-19-5-23-15c-4-9-11-17-11-28z'/%3E%3Cpath d='M176 64c9 0 16 4 21 12 7-7 16-10 28-10-6 7-10 14-12 21 8 1 13 4 18 10-11 1-20-2-28-7-5 4-10 7-17 7s-12-3-17-7c-8 5-17 8-28 7 5-6 10-9 18-10-2-7-6-14-12-21 12 0 21 3 28 10 5-8 12-12 21-12z'/%3E%3Cpath d='M163 116h18v-10c0-4 3-7 7-7h10c4 0 7 3 7 7v10h18c10 0 18 8 18 18v16c0 6-5 11-11 11h-56c-6 0-11-5-11-11v-16c0-10 8-18 18-18z'/%3E%3C/g%3E%3C/svg%3E") 0 0 / 280px 190px repeat,
     radial-gradient(18px 24px at 9% 14%, rgba(47, 167, 232, 0.045) 0 44%, transparent 47%),
     radial-gradient(26px 16px at 86% 18%, rgba(58, 36, 21, 0.035) 0 42%, transparent 45%),
     radial-gradient(18px 12px at 18% 76%, rgba(183, 138, 85, 0.055) 0 44%, transparent 47%),
@@ -2593,6 +2594,179 @@ button {
   text-decoration: none;
 }
 
+.bazaar-detail-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(24, 15, 9, 0.56);
+  display: none;
+  align-items: flex-end;
+  justify-content: center;
+  padding: 16px 12px;
+  z-index: 1205;
+  overscroll-behavior: contain;
+}
+
+.bazaar-detail-modal-overlay.is-open {
+  display: flex;
+}
+
+.bazaar-detail-modal {
+  width: min(720px, 100%);
+  max-height: min(88vh, 760px);
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  overflow: hidden;
+  border: 1px solid #997656;
+  border-radius: 18px 18px 12px 12px;
+  background: #f6ead9;
+  box-shadow: 0 18px 42px rgba(22, 13, 7, 0.34);
+  position: relative;
+  overscroll-behavior: contain;
+}
+
+.bazaar-detail-modal-close {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  width: 36px;
+  height: 36px;
+  border-radius: 999px;
+  border: 1px solid #b89370;
+  background: #fff9f0;
+  color: #4a3120;
+  font-size: 1.2rem;
+  line-height: 1;
+  padding: 0;
+  z-index: 2;
+}
+
+.bazaar-detail-modal-handle {
+  width: 48px;
+  height: 5px;
+  border-radius: 999px;
+  background: rgba(102, 74, 49, 0.35);
+  margin: 10px auto 4px;
+}
+
+#bazaarDetailModalBody {
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+  padding: 4px 14px 16px;
+}
+
+.bazaar-detail-modal-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 6px;
+  padding-right: 44px;
+}
+
+.bazaar-detail-modal-title {
+  margin: 0;
+  font-size: 1.1rem;
+  line-height: 1.35;
+  color: #3b2819;
+}
+
+.bazaar-detail-modal-updated-at,
+.bazaar-detail-modal-previous,
+.bazaar-detail-modal-period,
+.bazaar-detail-modal-chart-empty {
+  margin: 0 0 8px;
+  font-size: 0.86rem;
+  color: #654d39;
+}
+
+.bazaar-detail-modal-latest {
+  margin: 8px 0 10px;
+  font-size: 0.96rem;
+  color: #3b2819;
+}
+
+.bazaar-detail-modal-latest strong {
+  font-size: 1.08rem;
+}
+
+.bazaar-detail-month-summary {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+  margin: 10px 0;
+}
+
+.bazaar-detail-month-summary p {
+  margin: 0;
+  padding: 7px 8px;
+  border: 1px solid #ccb08b;
+  border-radius: 10px;
+  background: rgba(255, 253, 248, 0.88);
+}
+
+.bazaar-detail-month-summary span {
+  display: block;
+  font-size: 0.74rem;
+  color: #735845;
+}
+
+.bazaar-detail-month-summary strong {
+  display: block;
+  margin-top: 2px;
+  font-size: 0.92rem;
+  color: #3b2819;
+}
+
+.bazaar-detail-modal-chart {
+  margin: 10px 0 8px;
+  border: 1px solid #c4ac8f;
+  border-radius: 10px;
+  background: #fffdf8;
+  padding: 8px 8px 4px;
+  overflow: hidden;
+}
+
+.bazaar-detail-modal-chart .bazaar-mini-chart-svg {
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  height: auto;
+}
+
+.bazaar-detail-modal-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 2px;
+  border-radius: 8px;
+  border: 1px solid #b79068;
+  background: #ead5b7;
+  color: #56371f;
+  padding: 8px 10px;
+  font-size: 0.82rem;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.bazaar-detail-modal-link::after {
+  content: "\2197";
+  margin-left: 4px;
+}
+
+.bazaar-detail-related-section {
+  margin-top: 14px;
+  padding-top: 10px;
+  border-top: 1px solid rgba(151, 118, 86, 0.24);
+}
+
+.bazaar-detail-related-title {
+  margin: 0 0 8px;
+  font-size: 0.95rem;
+  color: #4a3120;
+}
+
 @media (min-width: 768px) {
   .favorite-materials-grid {
     grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -3024,11 +3198,16 @@ button {
   }
 
   .bazaar-detail-month-summary {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 5px;
   }
 
   .bazaar-detail-month-summary p {
     padding: 5px 6px;
+  }
+
+  #bazaarDetailModalBody {
+    padding: 2px 12px 16px;
   }
 
   .bazaar-detail-month-summary span {
