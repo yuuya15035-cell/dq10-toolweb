@@ -6384,10 +6384,10 @@ function renderBazaarPrices() {
                     href="${row.officialUrl}"
                     target="_blank"
                     rel="noopener noreferrer"
-                    aria-label="${row.materialName}縺ｮ蜈ｬ蠑冗嶌蝣ｴ繧ｵ繧､繝医ｒ譁ｰ縺励＞繧ｿ繝悶〒髢九￥"
+                    aria-label="${row.materialName}の公式相場サイトを新しいタブで開く"
                     data-bazaar-official-link="true"
                   >
-                    蜈ｬ蠑冗嶌蝣ｴ
+                    公式相場
                   </a>`
                 : ""
             }
@@ -12290,5 +12290,6 @@ async function initialize() {
 }
 
 initialize();
+
 
 
