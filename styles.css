@@ -700,7 +700,7 @@ body.is-modal-open {
   text-align: left;
   color: #2f2117;
   margin: 0;
-  padding-bottom: 40px;
+  padding-bottom: 44px;
   border: 1px solid var(--monster-card-border, rgba(150, 118, 82, 0.26));
   border-radius: 14px;
   background:
@@ -1045,7 +1045,9 @@ body.is-modal-open {
 
 .monster-info-card-memo-button {
   position: absolute;
-  right: 10px;
+  left: 50%;
+  right: auto;
+  transform: translateX(-50%);
   bottom: 10px;
   margin: 0;
   z-index: 1;
@@ -1113,7 +1115,7 @@ body.is-modal-open {
     column-gap: 9px;
   }
   .monster-info-card {
-    padding: 0 0 42px;
+    padding: 0 0 44px;
     border-radius: 12px;
   }
   .monster-info-card::before {
@@ -4837,6 +4839,12 @@ body.memo-panel-open {
   z-index: 1;
 }
 
+.monster-info-card-memo-button {
+  left: 50%;
+  right: auto;
+  transform: translateX(-50%);
+}
+
 .mobile-bottom-nav {
   position: fixed;
   left: 0;
@@ -6245,6 +6253,12 @@ body.memo-panel-open {
     min-height: 26px;
     padding: 3px 7px;
     font-size: 0.68rem;
+  }
+
+  .monster-info-card-memo-button {
+    left: 50%;
+    right: auto;
+    transform: translateX(-50%);
   }
 
   .orb-memo-button {
