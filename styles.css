@@ -33,6 +33,8 @@
   --mobile-bottom-nav-item-active-accent: #9a6f49;
   --mobile-safe-bottom: env(safe-area-inset-bottom, 0px);
   --mobile-standalone-bottom-gap: 0px;
+  --mobile-fixed-bottom-gap: 8px;
+  --mobile-bottom-reserved-space: calc(var(--mobile-bottom-nav-height) + var(--mobile-safe-bottom) + var(--mobile-standalone-bottom-gap) + var(--mobile-fixed-bottom-gap));
 }
 
 * {
@@ -60,11 +62,11 @@ body.is-modal-open {
   margin: 0 auto;
   padding: 14px;
   padding-top: 72px;
-  padding-bottom: calc(14px + var(--mobile-bottom-nav-height) + var(--mobile-safe-bottom) + var(--mobile-standalone-bottom-gap));
+  padding-bottom: calc(22px + var(--mobile-bottom-reserved-space));
 }
 
 .app.is-home-mode {
-  padding-bottom: 14px;
+  padding-bottom: calc(22px + var(--mobile-bottom-reserved-space));
 }
 
 .app.is-admin-bazaar-mode {
@@ -4346,7 +4348,7 @@ button {
   left: 10px;
   right: auto;
   top: auto;
-  bottom: calc(var(--mobile-bottom-nav-height) + 12px + var(--mobile-safe-bottom) + var(--mobile-standalone-bottom-gap));
+  bottom: calc(var(--mobile-bottom-reserved-space) + 12px);
   z-index: 80;
   display: grid;
   gap: 6px;
@@ -4389,7 +4391,7 @@ button {
 .memo-dock {
   position: fixed;
   right: 10px;
-  bottom: calc(var(--mobile-bottom-nav-height) + 16px + var(--mobile-safe-bottom) + var(--mobile-standalone-bottom-gap));
+  bottom: calc(var(--mobile-bottom-reserved-space) + 16px);
   z-index: 1300;
   pointer-events: none;
   display: flex;
@@ -4410,7 +4412,7 @@ button {
   position: fixed;
   left: 10px;
   right: auto;
-  bottom: calc(var(--mobile-bottom-nav-height) + 16px + var(--mobile-safe-bottom) + var(--mobile-standalone-bottom-gap));
+  bottom: calc(var(--mobile-bottom-reserved-space) + 16px);
   border: 1px solid #b7926d;
   border-radius: 999px;
   background: #fff5df;
@@ -4537,7 +4539,7 @@ body.memo-panel-open {
   position: fixed;
   left: 8px;
   right: 8px;
-  bottom: calc(var(--mobile-bottom-nav-height) + 10px + var(--mobile-safe-bottom) + var(--mobile-standalone-bottom-gap));
+  bottom: calc(var(--mobile-bottom-reserved-space) + 10px);
   width: min(620px, calc(100vw - 16px));
   max-height: min(78vh, 680px);
   margin: 0 auto;
@@ -4840,14 +4842,14 @@ body.memo-panel-open {
   position: fixed;
   left: 0;
   right: 0;
-  bottom: 0;
+  bottom: calc(var(--mobile-safe-bottom) + var(--mobile-standalone-bottom-gap) + var(--mobile-fixed-bottom-gap));
   margin: 0 auto;
   width: min(var(--ui-desktop-max-width), 100%);
   z-index: 950;
   display: grid;
   grid-template-columns: repeat(5, minmax(0, 1fr));
   gap: 3px;
-  padding: 5px 6px calc(5px + var(--mobile-safe-bottom) + var(--mobile-standalone-bottom-gap));
+  padding: 5px 6px;
   border-top: 1px solid rgba(123, 92, 62, 0.35);
   background: rgba(250, 241, 228, 0.96);
   backdrop-filter: blur(6px);
@@ -4865,7 +4867,7 @@ body.memo-panel-open {
 }
 
 .mobile-bottom-nav.is-hidden {
-  transform: translateY(calc(100% + var(--mobile-safe-bottom) + var(--mobile-standalone-bottom-gap)));
+  transform: translateY(calc(100% + var(--mobile-safe-bottom) + var(--mobile-standalone-bottom-gap) + var(--mobile-fixed-bottom-gap)));
   opacity: 0.08;
   pointer-events: none;
 }
@@ -4943,7 +4945,7 @@ body.memo-panel-open {
 @media (max-width: 420px) {
   .mobile-bottom-nav {
     gap: 2px;
-    padding: 4px 4px calc(4px + var(--mobile-safe-bottom) + var(--mobile-standalone-bottom-gap));
+    padding: 4px;
   }
 
   .mobile-bottom-nav-item {
