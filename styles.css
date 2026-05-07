@@ -6646,6 +6646,22 @@ body.memo-panel-open {
   color: #5a4331;
 }
 
+.site-footer-contact {
+  color: #55402f;
+}
+
+.site-footer-contact a {
+  color: #6a4528;
+  font-weight: 700;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.site-footer-contact a:hover,
+.site-footer-contact a:focus-visible {
+  color: #8b5b34;
+}
+
 .site-footer p + p {
   margin-top: 8px;
   padding-top: 8px;
