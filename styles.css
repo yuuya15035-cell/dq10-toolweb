@@ -1384,6 +1384,10 @@ body.is-modal-open {
   line-height: 1.6;
 }
 
+#field-farming .tab-heading-note {
+  color: #4f3a29;
+}
+
 .field-farming-beginner-note {
   color: #5c4027;
 }
