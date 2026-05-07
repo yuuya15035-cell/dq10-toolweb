@@ -6285,6 +6285,11 @@ body.memo-panel-open {
   z-index: 0;
 }
 
+.monster-info-card,
+.equipment-db-card {
+  overflow: visible;
+}
+
 .monster-info-card > *,
 .equipment-db-card > * {
   position: relative;
@@ -6294,14 +6299,29 @@ body.memo-panel-open {
 .monster-info-card::after,
 .equipment-db-card::after {
   background:
-    radial-gradient(circle at 13px 13px, rgba(39, 126, 201, 0.82) 0 3.2px, rgba(248, 231, 178, 0.9) 3.7px 6.2px, transparent 6.6px),
-    radial-gradient(circle at calc(100% - 13px) 13px, rgba(39, 126, 201, 0.82) 0 3.2px, rgba(248, 231, 178, 0.9) 3.7px 6.2px, transparent 6.6px),
-    radial-gradient(circle at 13px calc(100% - 13px), rgba(39, 126, 201, 0.82) 0 3.2px, rgba(248, 231, 178, 0.9) 3.7px 6.2px, transparent 6.6px),
-    radial-gradient(circle at calc(100% - 13px) calc(100% - 13px), rgba(39, 126, 201, 0.82) 0 3.2px, rgba(248, 231, 178, 0.9) 3.7px 6.2px, transparent 6.6px),
-    linear-gradient(90deg, transparent 0 34px, rgba(181, 137, 75, 0.28) 34px calc(100% - 34px), transparent calc(100% - 34px)) top / 100% 2px no-repeat,
-    linear-gradient(90deg, transparent 0 34px, rgba(181, 137, 75, 0.24) 34px calc(100% - 34px), transparent calc(100% - 34px)) bottom / 100% 2px no-repeat,
-    linear-gradient(180deg, transparent 0 34px, rgba(181, 137, 75, 0.18) 34px calc(100% - 34px), transparent calc(100% - 34px)) left / 2px 100% no-repeat,
-    linear-gradient(180deg, transparent 0 34px, rgba(181, 137, 75, 0.18) 34px calc(100% - 34px), transparent calc(100% - 34px)) right / 2px 100% no-repeat;
+    radial-gradient(circle at 2px 2px, rgba(154, 36, 36, 0.92) 0 4.3px, rgba(242, 205, 150, 0.96) 4.7px 7.2px, rgba(111, 42, 20, 0.18) 7.3px 7.9px, transparent 8.1px),
+    radial-gradient(circle at calc(100% - 2px) 2px, rgba(154, 36, 36, 0.92) 0 4.3px, rgba(242, 205, 150, 0.96) 4.7px 7.2px, rgba(111, 42, 20, 0.18) 7.3px 7.9px, transparent 8.1px),
+    radial-gradient(circle at 2px calc(100% - 2px), rgba(154, 36, 36, 0.92) 0 4.3px, rgba(242, 205, 150, 0.96) 4.7px 7.2px, rgba(111, 42, 20, 0.18) 7.3px 7.9px, transparent 8.1px),
+    radial-gradient(circle at calc(100% - 2px) calc(100% - 2px), rgba(154, 36, 36, 0.92) 0 4.3px, rgba(242, 205, 150, 0.96) 4.7px 7.2px, rgba(111, 42, 20, 0.18) 7.3px 7.9px, transparent 8.1px),
+    linear-gradient(90deg, transparent 0 26px, rgba(181, 137, 75, 0.24) 26px calc(50% - 18px), rgba(181, 137, 75, 0.46) calc(50% - 18px) calc(50% - 7px), rgba(181, 137, 75, 0.14) calc(50% - 7px) calc(50% + 7px), rgba(181, 137, 75, 0.46) calc(50% + 7px) calc(50% + 18px), rgba(181, 137, 75, 0.24) calc(50% + 18px) calc(100% - 26px), transparent calc(100% - 26px)) top / 100% 2px no-repeat,
+    linear-gradient(90deg, transparent 0 26px, rgba(181, 137, 75, 0.2) 26px calc(50% - 18px), rgba(181, 137, 75, 0.42) calc(50% - 18px) calc(50% - 7px), rgba(181, 137, 75, 0.14) calc(50% - 7px) calc(50% + 7px), rgba(181, 137, 75, 0.42) calc(50% + 7px) calc(50% + 18px), rgba(181, 137, 75, 0.2) calc(50% + 18px) calc(100% - 26px), transparent calc(100% - 26px)) bottom / 100% 2px no-repeat,
+    linear-gradient(180deg, transparent 0 26px, rgba(181, 137, 75, 0.16) 26px calc(100% - 26px), transparent calc(100% - 26px)) left / 2px 100% no-repeat,
+    linear-gradient(180deg, transparent 0 26px, rgba(181, 137, 75, 0.16) 26px calc(100% - 26px), transparent calc(100% - 26px)) right / 2px 100% no-repeat;
+}
+
+.monster-info-grid {
+  row-gap: 10px;
+}
+
+.equipment-db-card-grid {
+  row-gap: 10px;
+}
+
+@media (max-width: 640px) {
+  .monster-info-grid,
+  .equipment-db-card-grid {
+    row-gap: 7px;
+  }
 }
 
 
