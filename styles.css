@@ -46,7 +46,6 @@ body {
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Hiragino Kaku Gothic ProN", "Noto Sans JP", sans-serif;
   font-size: var(--ui-body-font-size);
   background:
-    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 700 460'%3E%3Cg fill='%23fffaf2' fill-opacity='.72'%3E%3Cg transform='translate(34 22)'%3E%3Cpath d='M52 88c-18 0-33-13-33-31 0-10 5-19 12-27 6-6 11-11 15-20 3-6 5-10 6-20 1 10 3 14 6 20 4 9 9 14 15 20 7 8 12 17 12 27 0 18-15 31-33 31z'/%3E%3C/g%3E%3Cg transform='translate(214 18)'%3E%3Cellipse cx='58' cy='52' rx='34' ry='31'/%3E%3Cpath d='M26 46C4 23-12 20-27 26c8 10 16 18 28 24-12 4-21 10-28 20 15 4 29 1 42-8l13-9z'/%3E%3Cpath d='M90 46c22-23 38-26 53-20-8 10-16 18-28 24 12 4 21 10 28 20-15 4-29 1-42-8l-13-9z'/%3E%3Cpath d='M47 18 41 0c10 1 16 7 20 17z'/%3E%3Cpath d='M69 18 75 0c-10 1-16 7-20 17z'/%3E%3Cpath d='M38 82c-10 10-14 20-12 31 12-4 20-12 24-23z'/%3E%3Cpath d='M78 82c10 10 14 20 12 31-12-4-20-12-24-23z'/%3E%3C/g%3E%3Cg transform='translate(470 8)'%3E%3Crect x='36' y='0' width='34' height='38' rx='8'/%3E%3Crect x='17' y='37' width='72' height='58' rx='14'/%3E%3Crect x='-6' y='42' width='28' height='52' rx='12' transform='rotate(18 8 68)'/%3E%3Crect x='84' y='42' width='28' height='52' rx='12' transform='rotate(-18 98 68)'/%3E%3Crect x='18' y='92' width='25' height='58' rx='11' transform='rotate(10 30 121)'/%3E%3Crect x='63' y='92' width='25' height='58' rx='11' transform='rotate(-10 75 121)'/%3E%3Crect x='4' y='140' width='42' height='18' rx='4' transform='rotate(-8 25 149)'/%3E%3Crect x='60' y='140' width='42' height='18' rx='4' transform='rotate(8 81 149)'/%3E%3C/g%3E%3Cg transform='translate(92 226)'%3E%3Cpath d='M52 88c-18 0-33-13-33-31 0-10 5-19 12-27 6-6 11-11 15-20 3-6 5-10 6-20 1 10 3 14 6 20 4 9 9 14 15 20 7 8 12 17 12 27 0 18-15 31-33 31z'/%3E%3C/g%3E%3Cg transform='translate(338 232)'%3E%3Cellipse cx='58' cy='52' rx='34' ry='31'/%3E%3Cpath d='M26 46C4 23-12 20-27 26c8 10 16 18 28 24-12 4-21 10-28 20 15 4 29 1 42-8l13-9z'/%3E%3Cpath d='M90 46c22-23 38-26 53-20-8 10-16 18-28 24 12 4 21 10 28 20-15 4-29 1-42-8l-13-9z'/%3E%3Cpath d='M47 18 41 0c10 1 16 7 20 17z'/%3E%3Cpath d='M69 18 75 0c-10 1-16 7-20 17z'/%3E%3Cpath d='M38 82c-10 10-14 20-12 31 12-4 20-12 24-23z'/%3E%3Cpath d='M78 82c10 10 14 20 12 31-12-4-20-12-24-23z'/%3E%3C/g%3E%3Cg transform='translate(542 228) scale(.86)'%3E%3Crect x='36' y='0' width='34' height='38' rx='8'/%3E%3Crect x='17' y='37' width='72' height='58' rx='14'/%3E%3Crect x='-6' y='42' width='28' height='52' rx='12' transform='rotate(18 8 68)'/%3E%3Crect x='84' y='42' width='28' height='52' rx='12' transform='rotate(-18 98 68)'/%3E%3Crect x='18' y='92' width='25' height='58' rx='11' transform='rotate(10 30 121)'/%3E%3Crect x='63' y='92' width='25' height='58' rx='11' transform='rotate(-10 75 121)'/%3E%3Crect x='4' y='140' width='42' height='18' rx='4' transform='rotate(-8 25 149)'/%3E%3Crect x='60' y='140' width='42' height='18' rx='4' transform='rotate(8 81 149)'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E") 0 0 / 620px 405px repeat,
     radial-gradient(circle at 50% 12%, rgba(255, 250, 240, 0.86) 0, rgba(255, 244, 224, 0.48) 24%, transparent 56%),
     radial-gradient(circle at 50% 58%, rgba(255, 246, 230, 0.44) 0, rgba(252, 238, 213, 0.18) 42%, transparent 76%),
     linear-gradient(180deg, #f3e5cf 0%, #ead8bb 54%, #e0c79f 100%);
@@ -1046,8 +1045,8 @@ body.is-modal-open {
 
 .monster-info-card-memo-button {
   position: absolute;
-  right: 8px;
-  bottom: 8px;
+  right: 10px;
+  bottom: 10px;
   margin: 0;
   z-index: 1;
   min-height: 28px;
@@ -6241,8 +6240,8 @@ body.memo-panel-open {
   .monster-info-card-memo-button,
   .equipment-db-memo-button,
   .bazaar-card-memo-button {
-    right: 7px;
-    bottom: 7px;
+    right: 8px;
+    bottom: 8px;
     min-height: 26px;
     padding: 3px 7px;
     font-size: 0.68rem;
