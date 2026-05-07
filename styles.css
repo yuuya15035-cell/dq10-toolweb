@@ -555,6 +555,7 @@ body.is-modal-open {
   margin: 0;
   font-size: 1rem;
   color: #4f3522;
+  white-space: nowrap;
 }
 
 .home-bazaar-change-ranking-header {
@@ -3465,11 +3466,21 @@ button {
   }
 
   .home-bazaar-change-ranking-header {
-    align-items: start;
+    flex-direction: column;
+    align-items: stretch;
     gap: 8px;
   }
 
+  .home-bazaar-change-ranking h2 {
+    font-size: 0.94rem;
+  }
+
+  .home-bazaar-change-ranking-sort {
+    width: 100%;
+  }
+
   .home-bazaar-change-ranking-sort select {
+    width: 100%;
     min-height: 32px;
     padding: 4px 24px 4px 9px;
     font-size: 0.71rem;
