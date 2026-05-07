@@ -1772,6 +1772,7 @@ let fieldFarmingKeyword = "";
 let selectedRoutineType = "daily";
 let routineTaskCheckedTokens = {};
 let siteSearchKeyword = "";
+let homeBazaarChangeRankingSort = "up";
 let isSiteSearchDataLoading = false;
 let hasLoadedSiteSearchData = false;
 let topUpdates = [];
@@ -1882,6 +1883,8 @@ const topUpdateList = document.getElementById("topUpdateList");
 const topUpdateViewAllLink = document.getElementById("topUpdateViewAllLink");
 const topQuickAccessSection = document.querySelector(".top-quick-access");
 const homeBazaarChangeRankingSection = document.getElementById("homeBazaarChangeRankingSection");
+const homeBazaarChangeRankingSortSelect = document.getElementById("homeBazaarChangeRankingSortSelect");
+const homeBazaarChangeRankingNote = document.getElementById("homeBazaarChangeRankingNote");
 const homeBazaarChangeRankingWrap = document.getElementById("homeBazaarChangeRankingWrap");
 const homeShortcutNoteBottom = document.getElementById("homeShortcutNoteBottom");
 const homeQuickFeatureGrid = getRequiredElementById("homeQuickFeatureGrid");
@@ -9541,6 +9544,13 @@ if (homeModeButton) {
   });
 }
 
+if (homeBazaarChangeRankingSortSelect) {
+  homeBazaarChangeRankingSortSelect.addEventListener("change", (event) => {
+    homeBazaarChangeRankingSort = String(event.target.value || "up") === "down" ? "down" : "up";
+    renderHomeBazaarChangeRanking();
+  });
+}
+
 mobileBottomNavItems.forEach((item) => {
   item.addEventListener("click", () => {
     const action = String(item.dataset.bottomNavAction || "");
@@ -10149,23 +10159,38 @@ function renderEquipmentSearchCandidates() {
 
 function getHomeBazaarChangeRankingRows() {
   if (!Array.isArray(bazaarPrices) || bazaarPrices.length === 0) return [];
-  return bazaarPrices
-    .filter((row) => {
-      if (!row || !row.materialName) return false;
-      if (!isMonitoringByComment(row.comment)) return false;
-      if (!Number.isFinite(row.todayPrice)) return false;
-      if (!Number.isFinite(row.previousDayPrice) || row.previousDayPrice === 0) return false;
-      const changeRate = getBazaarRowChangeRate(row);
-      return Number.isFinite(changeRate);
-    })
+  const filteredRows = bazaarPrices.filter((row) => {
+    if (!row || !row.materialName) return false;
+    if (!isMonitoringByComment(row.comment)) return false;
+    if (!Number.isFinite(row.todayPrice)) return false;
+    if (!Number.isFinite(row.previousDayPrice) || row.previousDayPrice === 0) return false;
+    const changeRate = getBazaarRowChangeRate(row);
+    if (!Number.isFinite(changeRate)) return false;
+    if (homeBazaarChangeRankingSort === "down") return changeRate < 0;
+    return changeRate > 0;
+  });
+  return filteredRows
     .slice()
-    .sort((a, b) => Math.abs(getBazaarRowChangeRate(b)) - Math.abs(getBazaarRowChangeRate(a)))
+    .sort((a, b) => {
+      const aRate = getBazaarRowChangeRate(a);
+      const bRate = getBazaarRowChangeRate(b);
+      return homeBazaarChangeRankingSort === "down" ? aRate - bRate : bRate - aRate;
+    })
     .slice(0, 10);
 }
 
 function renderHomeBazaarChangeRanking() {
   if (!homeBazaarChangeRankingSection || !homeBazaarChangeRankingWrap) return;
   if (appMode !== "home") return;
+  if (homeBazaarChangeRankingSortSelect) {
+    homeBazaarChangeRankingSortSelect.value = homeBazaarChangeRankingSort;
+  }
+  if (homeBazaarChangeRankingNote) {
+    homeBazaarChangeRankingNote.textContent =
+      homeBazaarChangeRankingSort === "down"
+        ? "前日比で下落率が大きい素材を10件表示しています。"
+        : "前日比で上昇率が高い素材を10件表示しています。";
+  }
   if (isBazaarLoading && !hasLoadedBazaarPrices) {
     homeBazaarChangeRankingSection.hidden = false;
     homeBazaarChangeRankingWrap.innerHTML = `<p class="home-bazaar-change-ranking-empty">読み込み中です。しばらくお待ちください。</p>`;

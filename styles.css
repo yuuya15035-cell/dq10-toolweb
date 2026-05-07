@@ -552,9 +552,34 @@ body.is-modal-open {
 }
 
 .home-bazaar-change-ranking h2 {
-  margin: 0 0 6px;
+  margin: 0;
   font-size: 1rem;
   color: #4f3522;
+}
+
+.home-bazaar-change-ranking-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 6px;
+}
+
+.home-bazaar-change-ranking-sort {
+  display: inline-flex;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.home-bazaar-change-ranking-sort select {
+  min-height: 34px;
+  padding: 5px 28px 5px 10px;
+  border: 1px solid rgba(184, 148, 112, 0.92);
+  border-radius: 999px;
+  background: rgba(255, 249, 241, 0.92);
+  color: #5d3f29;
+  font-size: 0.74rem;
+  font-weight: 700;
 }
 
 .home-bazaar-change-ranking-note {
@@ -3295,6 +3320,17 @@ button {
 
   .home-bazaar-change-ranking {
     padding: 9px;
+  }
+
+  .home-bazaar-change-ranking-header {
+    align-items: start;
+    gap: 8px;
+  }
+
+  .home-bazaar-change-ranking-sort select {
+    min-height: 32px;
+    padding: 4px 24px 4px 9px;
+    font-size: 0.71rem;
   }
 
   .home-bazaar-change-ranking-note {

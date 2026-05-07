@@ -55,8 +55,17 @@
       </section>
 
       <section class="card home-bazaar-change-ranking" aria-label="バザー価格変動ランキング" id="homeBazaarChangeRankingSection">
-        <h2>バザー価格 変動ランキング</h2>
-        <p class="home-bazaar-change-ranking-note">前日比の変動が大きい素材を10件表示しています。</p>
+        <div class="home-bazaar-change-ranking-header">
+          <h2>バザー価格 変動ランキング</h2>
+          <label class="home-bazaar-change-ranking-sort">
+            <span class="sr-only">ランキング並び替え</span>
+            <select id="homeBazaarChangeRankingSortSelect" aria-label="変動ランキングの並び替え">
+              <option value="up" selected>上昇率が高い順</option>
+              <option value="down">下落率が大きい順</option>
+            </select>
+          </label>
+        </div>
+        <p class="home-bazaar-change-ranking-note" id="homeBazaarChangeRankingNote">前日比で上昇率が高い素材を10件表示しています。</p>
         <div id="homeBazaarChangeRankingWrap"></div>
       </section>
 
