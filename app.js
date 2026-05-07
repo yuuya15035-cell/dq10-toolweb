@@ -1,4 +1,4 @@
-﻿// DQ10職人ツールの最小実装。
+﻿// DQ10ツールの最小実装。
 // 日本語コメントを多めに入れて、将来の拡張をしやすくしています。
 
 const STORAGE_KEY = "dq10_toolweb_data_v1";
@@ -41,7 +41,7 @@ const HOME_FEATURE_DEFINITIONS = [
   { id: "orbs", tabId: "orbs", title: "宝珠", icon: "💎" },
   { id: "field-farming", tabId: "field-farming", title: "フィールド狩り", icon: "⚔️" },
 ];
-const DEFAULT_DOCUMENT_TITLE = "DQ10職人ツール";
+const DEFAULT_DOCUMENT_TITLE = "DQ10ツール";
 const DEFAULT_DOCUMENT_DESCRIPTION = "DQ10の職人アシスト、バザー情報、モンスター情報、装備情報、宝珠情報を確認できる支援サイトです。";
 const TAB_DOCUMENT_LABELS = Object.freeze({
   profit: "職人アシスト",
@@ -8936,17 +8936,17 @@ function getDocumentDescriptionMeta() {
 function getDefaultTabDocumentDescription(tabId) {
   switch (String(tabId || "").trim()) {
     case "bazaar":
-      return "バザー価格、前日比、更新日時を確認できるDQ10職人ツールです。価格・情報は参考用としてご利用ください。";
+      return "バザー価格、前日比、更新日時を確認できるDQ10ツールです。価格・情報は参考用としてご利用ください。";
     case "monster-info":
-      return "モンスターの通常ドロップ、レアドロップ、白宝箱、宝珠、生息地を確認できるDQ10職人ツールです。";
+      return "モンスターの通常ドロップ、レアドロップ、白宝箱、宝珠、生息地を確認できるDQ10ツールです。";
     case "orbs":
-      return "宝珠の効果とドロップモンスターを確認できるDQ10職人ツールです。";
+      return "宝珠の効果とドロップモンスターを確認できるDQ10ツールです。";
     case "equipment-db":
-      return "装備情報、白宝箱ドロップモンスター、防具セット詳細を確認できるDQ10職人ツールです。";
+      return "装備情報、白宝箱ドロップモンスター、防具セット詳細を確認できるDQ10ツールです。";
     case "profit":
-      return "装備の素材、原価、職人アシスト計算を確認できるDQ10職人ツールです。";
+      return "装備の素材、原価、職人アシスト計算を確認できるDQ10ツールです。";
     case "field-farming":
-      return "フィールド狩りのおすすめモンスターとドロップ相場を確認できるDQ10職人ツールです。";
+      return "フィールド狩りのおすすめモンスターとドロップ相場を確認できるDQ10ツールです。";
     default:
       return DEFAULT_DOCUMENT_DESCRIPTION;
   }
@@ -8967,7 +8967,7 @@ function getTargetDocumentDescription(tabId, targetName) {
     case "profit":
       return `${normalizedName}の素材、原価、職人アシスト計算を確認できます。`;
     default:
-      return `${normalizedName}の情報を確認できるDQ10職人ツールです。`;
+      return `${normalizedName}の情報を確認できるDQ10ツールです。`;
   }
 }
 
@@ -12392,6 +12392,7 @@ async function initialize() {
 }
 
 initialize();
+
 
 
 
