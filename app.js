@@ -1881,6 +1881,8 @@ const topUpdateSection = document.getElementById("topUpdateSection");
 const topUpdateList = document.getElementById("topUpdateList");
 const topUpdateViewAllLink = document.getElementById("topUpdateViewAllLink");
 const topQuickAccessSection = document.querySelector(".top-quick-access");
+const homeBazaarChangeRankingSection = document.getElementById("homeBazaarChangeRankingSection");
+const homeBazaarChangeRankingWrap = document.getElementById("homeBazaarChangeRankingWrap");
 const homeShortcutNoteBottom = document.getElementById("homeShortcutNoteBottom");
 const homeQuickFeatureGrid = getRequiredElementById("homeQuickFeatureGrid");
 const homeModeButton = document.getElementById("homeModeButton");
@@ -4229,6 +4231,7 @@ async function ensureBazaarPricesLoaded() {
         applyPendingBazaarUrlItemIfNeeded();
         renderBazaarPrices();
       }
+      renderHomeBazaarChangeRanking();
       if (activeTabId === "field-farming") renderFieldFarmingRanking();
       if (activeTabId === "favorites") renderFavoritesPage();
       if (activeTabId === "monster-info") renderMonsterInfoCards();
@@ -8589,11 +8592,13 @@ function applyAppMode() {
   appHeader?.classList.toggle("is-collapsed", !isHomeMode);
   toolSiteSearchDock?.classList.add("is-visible");
   topQuickAccessSection?.classList.toggle("is-collapsed", !isHomeMode);
+  homeBazaarChangeRankingSection?.classList.toggle("is-collapsed", !isHomeMode);
   topUpdateSection?.classList.toggle("is-collapsed", !isHomeMode);
   homeShortcutNoteBottom?.classList.toggle("is-collapsed", !isHomeMode);
   mobileBottomNav?.classList.toggle("is-disabled", isHomeMode);
   if (isHomeMode) {
     setMobileBottomNavHidden(false);
+    renderHomeBazaarChangeRanking();
   }
   updateHistoryBackButtonVisibility();
 }
@@ -10140,6 +10145,77 @@ function renderEquipmentSearchCandidates() {
       `;
     })
     .join("");
+}
+
+function getHomeBazaarChangeRankingRows() {
+  if (!Array.isArray(bazaarPrices) || bazaarPrices.length === 0) return [];
+  return bazaarPrices
+    .filter((row) => {
+      if (!row || !row.materialName) return false;
+      if (!isMonitoringByComment(row.comment)) return false;
+      if (!Number.isFinite(row.todayPrice)) return false;
+      if (!Number.isFinite(row.previousDayPrice) || row.previousDayPrice === 0) return false;
+      const changeRate = getBazaarRowChangeRate(row);
+      return Number.isFinite(changeRate);
+    })
+    .slice()
+    .sort((a, b) => Math.abs(getBazaarRowChangeRate(b)) - Math.abs(getBazaarRowChangeRate(a)))
+    .slice(0, 10);
+}
+
+function renderHomeBazaarChangeRanking() {
+  if (!homeBazaarChangeRankingSection || !homeBazaarChangeRankingWrap) return;
+  if (appMode !== "home") return;
+  if (isBazaarLoading && !hasLoadedBazaarPrices) {
+    homeBazaarChangeRankingSection.hidden = false;
+    homeBazaarChangeRankingWrap.innerHTML = `<p class="home-bazaar-change-ranking-empty">読み込み中です。しばらくお待ちください。</p>`;
+    return;
+  }
+  if (!hasLoadedBazaarPrices) {
+    homeBazaarChangeRankingSection.hidden = false;
+    homeBazaarChangeRankingWrap.innerHTML = `<p class="home-bazaar-change-ranking-empty">読み込み中です。しばらくお待ちください。</p>`;
+    void ensureBazaarPricesLoaded();
+    return;
+  }
+  const rows = getHomeBazaarChangeRankingRows();
+  if (rows.length === 0) {
+    homeBazaarChangeRankingSection.hidden = false;
+    homeBazaarChangeRankingWrap.innerHTML = `<p class="home-bazaar-change-ranking-empty">現在表示できる変動データがありません。</p>`;
+    return;
+  }
+  homeBazaarChangeRankingSection.hidden = false;
+  homeBazaarChangeRankingWrap.innerHTML = `
+    <div class="home-bazaar-change-ranking-list">
+      ${rows
+        .map((row, index) => {
+          const rank = index + 1;
+          const changePresentation = getBazaarChangePresentation(getBazaarRowChangeRate(row));
+          return `
+            <button
+              type="button"
+              class="home-bazaar-change-item"
+              data-home-bazaar-material-key="${escapeHtml(row.materialKey)}"
+              aria-label="${escapeHtml(row.materialName)}のバザー詳細を開く"
+            >
+              <span class="home-bazaar-change-rank">${rank}位</span>
+              <span class="home-bazaar-change-main">
+                <strong class="home-bazaar-change-name">${escapeHtml(row.materialName)}</strong>
+                <span class="home-bazaar-change-prices">本日 ${formatGold(row.todayPrice)} / 前日 ${formatGold(row.previousDayPrice)}</span>
+              </span>
+              <span class="home-bazaar-change-rate ${changePresentation.toneClass}">前日比 ${escapeHtml(changePresentation.text)}</span>
+            </button>
+          `;
+        })
+        .join("")}
+    </div>
+  `;
+  homeBazaarChangeRankingWrap.querySelectorAll("[data-home-bazaar-material-key]").forEach((button) => {
+    button.addEventListener("click", () => {
+      const materialKey = String(button.dataset.homeBazaarMaterialKey || "");
+      if (materialKey === "") return;
+      void openBazaarDetailModal(materialKey);
+    });
+  });
 }
 
 function getMaterialSearchCandidates() {

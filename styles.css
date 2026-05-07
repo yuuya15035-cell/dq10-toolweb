@@ -543,6 +543,103 @@ body.is-modal-open {
   color: #5a3c27;
 }
 
+.home-bazaar-change-ranking {
+  margin-bottom: var(--ui-section-vertical-space);
+}
+
+.home-bazaar-change-ranking.is-collapsed {
+  display: none;
+}
+
+.home-bazaar-change-ranking h2 {
+  margin: 0 0 6px;
+  font-size: 1rem;
+  color: #4f3522;
+}
+
+.home-bazaar-change-ranking-note {
+  margin: 0 0 10px;
+  font-size: 0.76rem;
+  line-height: 1.45;
+  color: #6a4a33;
+}
+
+.home-bazaar-change-ranking-list {
+  display: grid;
+  gap: 8px;
+}
+
+.home-bazaar-change-item {
+  width: 100%;
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 10px;
+  border: 1px solid rgba(184, 148, 112, 0.82);
+  border-radius: 12px;
+  background: linear-gradient(180deg, rgba(255, 251, 244, 0.95) 0%, rgba(245, 234, 217, 0.94) 100%);
+  color: #4b3424;
+  text-align: left;
+  cursor: pointer;
+}
+
+.home-bazaar-change-item:hover,
+.home-bazaar-change-item:focus-visible {
+  border-color: #b68153;
+  box-shadow: 0 3px 10px rgba(88, 61, 37, 0.12);
+}
+
+.home-bazaar-change-rank {
+  min-width: 2.6em;
+  font-size: 0.77rem;
+  font-weight: 800;
+  color: #7a5434;
+}
+
+.home-bazaar-change-main {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.home-bazaar-change-name {
+  font-size: 0.92rem;
+  color: #3b281b;
+  line-height: 1.35;
+}
+
+.home-bazaar-change-prices {
+  font-size: 0.75rem;
+  line-height: 1.4;
+  color: #6b4a32;
+}
+
+.home-bazaar-change-rate {
+  font-size: 0.78rem;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.home-bazaar-change-rate.is-up {
+  color: #2b6b61;
+}
+
+.home-bazaar-change-rate.is-down {
+  color: #8a4a33;
+}
+
+.home-bazaar-change-rate.is-neutral {
+  color: #6b4a32;
+}
+
+.home-bazaar-change-ranking-empty {
+  margin: 0;
+  font-size: 0.82rem;
+  color: #6a4a33;
+}
+
 .top-tool-card {
   display: grid;
   gap: 4px;
@@ -3194,6 +3291,36 @@ button {
 
   .top-quick-access-note-sub {
     display: none;
+  }
+
+  .home-bazaar-change-ranking {
+    padding: 9px;
+  }
+
+  .home-bazaar-change-ranking-note {
+    margin-bottom: 8px;
+    font-size: 0.73rem;
+  }
+
+  .home-bazaar-change-item {
+    grid-template-columns: auto 1fr;
+    align-items: start;
+    gap: 6px 8px;
+    padding: 8px 9px;
+  }
+
+  .home-bazaar-change-rate {
+    grid-column: 2;
+    white-space: normal;
+    font-size: 0.74rem;
+  }
+
+  .home-bazaar-change-name {
+    font-size: 0.88rem;
+  }
+
+  .home-bazaar-change-prices {
+    font-size: 0.72rem;
   }
 
   .home-quick-card {
