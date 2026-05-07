@@ -42,6 +42,7 @@
 }
 
 body {
+  position: relative;
   margin: 0;
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Hiragino Kaku Gothic ProN", "Noto Sans JP", sans-serif;
   font-size: var(--ui-body-font-size);
@@ -52,11 +53,32 @@ body {
   color: var(--text);
 }
 
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  user-select: none;
+  z-index: 0;
+  opacity: 0.11;
+  background:
+    url("/public/assets/bg-monster-bat.svg") no-repeat right -18px top 92px / min(18vw, 170px),
+    url("/public/assets/bg-monster-dragon.svg") no-repeat right -58px center / min(29vw, 290px),
+    url("/public/assets/bg-monster-ogre.svg") no-repeat left -24px bottom 118px / min(18vw, 180px),
+    url("/public/assets/bg-monster-wyvern.svg") no-repeat left -8px top 184px / min(16vw, 150px);
+}
+
+body.is-home-mode::before {
+  opacity: 0.15;
+}
+
 body.is-modal-open {
   overflow: hidden;
 }
 
 .app {
+  position: relative;
+  z-index: 1;
   max-width: var(--ui-desktop-max-width);
   margin: 0 auto;
   padding: 14px;
@@ -6239,6 +6261,19 @@ body.memo-panel-open {
 }
 
 @media (max-width: 640px) {
+  body::before {
+    opacity: 0.09;
+    background:
+      url("/public/assets/bg-monster-bat.svg") no-repeat right -34px top 104px / 108px,
+      url("/public/assets/bg-monster-dragon.svg") no-repeat right -72px bottom 160px / 176px,
+      url("/public/assets/bg-monster-ogre.svg") no-repeat left -34px bottom 128px / 116px,
+      url("/public/assets/bg-monster-wyvern.svg") no-repeat left -20px top 200px / 96px;
+  }
+
+  body.is-home-mode::before {
+    opacity: 0.12;
+  }
+
   .history-back-button,
   .memo-dock-button {
     min-height: 44px;
