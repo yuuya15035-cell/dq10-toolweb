@@ -1386,12 +1386,18 @@ body.is-modal-open {
     gap: 6px;
   }
 
-  .routine-type-tab-button {
+  .routine-type-tab,
+  .favorites-tab-button,
+  .equipment-db-type-tab {
     padding: 6px 10px;
     font-size: 0.84rem;
   }
 
-  .routine-action-row {
+  .routine-control-row {
+    gap: 8px;
+  }
+
+  .routine-action-buttons {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
@@ -1401,7 +1407,7 @@ body.is-modal-open {
     line-height: 1.45;
   }
 
-  .routine-action-row button {
+  .routine-action-buttons button {
     min-height: 36px;
     font-size: 0.8rem;
     padding: 6px 8px;
@@ -1965,6 +1971,142 @@ button {
 .filter-reset-button:hover,
 .filter-reset-button:focus-visible {
   background: linear-gradient(180deg, #f7ead4 0%, #e8cfab 100%);
+}
+
+.recipe-favorite-action {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.recipe-favorite-toggle-button,
+.favorite-sub-action-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 36px;
+  padding: 8px 12px;
+  border-radius: 999px;
+  border: 1px solid #725742;
+  background: #8a6a52;
+  color: #ffffff;
+  font-size: 0.82rem;
+  font-weight: 700;
+  line-height: 1.2;
+  text-decoration: none;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background-color 0.18s ease, border-color 0.18s ease, color 0.18s ease, box-shadow 0.18s ease;
+  box-shadow: 0 1px 3px rgba(54, 35, 20, 0.18);
+}
+
+.recipe-favorite-toggle-button:hover,
+.recipe-favorite-toggle-button:focus-visible,
+.favorite-sub-action-button:hover,
+.favorite-sub-action-button:focus-visible {
+  background: #7d5f49;
+  color: #ffffff;
+}
+
+.recipe-favorite-toggle-button.is-active,
+.favorite-sub-action-button.is-restore {
+  border-color: #c67a9d;
+  background: #fff2f8;
+  color: #ea4f9f;
+}
+
+.recipe-favorite-toggle-button.is-active:hover,
+.recipe-favorite-toggle-button.is-active:focus-visible,
+.favorite-sub-action-button.is-restore:hover,
+.favorite-sub-action-button.is-restore:focus-visible {
+  background: #fde8f3;
+  color: #d93d8e;
+}
+
+.recipe-favorite-toggle-button:disabled {
+  border-color: #bea48b;
+  background: #e7d9c8;
+  color: #8b7461;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+.favorites-tabs,
+.routine-type-tabs,
+.equipment-db-type-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.favorites-tab-button,
+.routine-type-tab,
+.equipment-db-type-tab {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 42px;
+  padding: 8px 14px;
+  border: 1px solid #c9af90;
+  border-radius: 999px;
+  background: linear-gradient(180deg, #fff8ef 0%, #eedfcb 100%);
+  color: #5c4431;
+  font-size: 0.9rem;
+  font-weight: 700;
+  line-height: 1.2;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.78), 0 1px 2px rgba(86, 60, 38, 0.08);
+  cursor: pointer;
+}
+
+.favorites-tab-button:hover,
+.favorites-tab-button:focus-visible,
+.routine-type-tab:hover,
+.routine-type-tab:focus-visible,
+.equipment-db-type-tab:hover,
+.equipment-db-type-tab:focus-visible {
+  background: linear-gradient(180deg, #fffaf4 0%, #f1e2ce 100%);
+  color: #4f3827;
+}
+
+.favorites-tab-button.is-active,
+.routine-type-tab.is-active,
+.equipment-db-type-tab.is-active {
+  border-color: #7a5638;
+  background: linear-gradient(180deg, #8b6543 0%, #6f4b31 100%);
+  color: #fffaf1;
+  box-shadow: inset 0 1px 0 rgba(255, 244, 230, 0.2), 0 3px 8px rgba(78, 52, 31, 0.16);
+}
+
+.routine-control-row {
+  display: grid;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.routine-action-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.routine-action-buttons button {
+  min-height: 40px;
+  padding: 8px 12px;
+  border: 1px solid #b48a60;
+  border-radius: 12px;
+  background: linear-gradient(180deg, #f2e3c9 0%, #e2c69f 100%);
+  color: #5b3f2a;
+  font-size: 0.84rem;
+  font-weight: 700;
+  line-height: 1.2;
+  box-shadow: inset 0 1px 0 rgba(255, 250, 242, 0.75), 0 1px 2px rgba(83, 56, 34, 0.08);
+}
+
+.routine-action-buttons button:hover,
+.routine-action-buttons button:focus-visible {
+  background: linear-gradient(180deg, #f7ead4 0%, #e8cfab 100%);
+  color: #4c3322;
 }
 
 .material-header-actions {
