@@ -631,6 +631,78 @@ body.is-modal-open {
   font-size: 0.9rem;
 }
 
+.present-code-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 12px;
+  align-items: stretch;
+}
+
+.present-code-card {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-height: 100%;
+  padding: 12px 13px;
+  border: 1px solid rgba(186, 151, 113, 0.9);
+  border-radius: 14px;
+  background: linear-gradient(180deg, rgba(255, 251, 244, 0.98) 0%, rgba(247, 237, 222, 0.96) 100%);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.72), 0 4px 12px rgba(98, 70, 43, 0.08);
+}
+
+.present-code-label {
+  margin: 0;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: #8a6542;
+}
+
+.present-code-name,
+.present-code-reward,
+.present-code-expire,
+.present-code-note,
+.present-code-link-note {
+  margin: 0;
+  color: #4c3624;
+}
+
+.present-code-name {
+  margin-bottom: 2px;
+}
+
+.present-code-link {
+  color: #6b3f16;
+  font-size: 1rem;
+  font-weight: 800;
+  line-height: 1.4;
+  text-decoration: none;
+  word-break: break-word;
+}
+
+.present-code-link:hover,
+.present-code-link:focus-visible {
+  color: #8a4c18;
+  text-decoration: underline;
+}
+
+.present-code-card.is-url .present-code-link {
+  font-size: 0.92rem;
+}
+
+.present-code-link-note {
+  margin-bottom: 4px;
+  font-size: 0.72rem;
+  color: #7a5a3d;
+}
+
+.present-code-reward,
+.present-code-expire,
+.present-code-note {
+  font-size: 0.84rem;
+  line-height: 1.55;
+}
+
 .updates-page-header {
   margin: 0 0 12px;
 }
