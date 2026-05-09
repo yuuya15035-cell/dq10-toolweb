@@ -47,9 +47,9 @@ body {
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Hiragino Kaku Gothic ProN", "Noto Sans JP", sans-serif;
   font-size: var(--ui-body-font-size);
   background:
-    radial-gradient(circle at 50% 12%, rgba(255, 250, 240, 0.86) 0, rgba(255, 244, 224, 0.48) 24%, transparent 56%),
-    radial-gradient(circle at 50% 58%, rgba(255, 246, 230, 0.44) 0, rgba(252, 238, 213, 0.18) 42%, transparent 76%),
-    linear-gradient(180deg, #f3e5cf 0%, #ead8bb 54%, #e0c79f 100%);
+    radial-gradient(circle at 50% 12%, rgba(255, 248, 236, 0.8) 0, rgba(244, 229, 203, 0.42) 24%, transparent 56%),
+    radial-gradient(circle at 50% 58%, rgba(243, 228, 203, 0.36) 0, rgba(226, 207, 173, 0.16) 42%, transparent 76%),
+    linear-gradient(180deg, #efe0c8 0%, #e2cfb0 54%, #d4bb92 100%);
   color: var(--text);
 }
 
@@ -60,16 +60,12 @@ body::before {
   pointer-events: none;
   user-select: none;
   z-index: 0;
-  opacity: 0.11;
-  background:
-    url("/public/assets/bg-monster-bat.svg") no-repeat right -18px top 92px / min(18vw, 170px),
-    url("/public/assets/bg-monster-dragon.svg") no-repeat right -58px center / min(29vw, 290px),
-    url("/public/assets/bg-monster-ogre.svg") no-repeat left -24px bottom 118px / min(18vw, 180px),
-    url("/public/assets/bg-monster-wyvern.svg") no-repeat left -8px top 184px / min(16vw, 150px);
+  opacity: 0;
+  background: none;
 }
 
 body.is-home-mode::before {
-  opacity: 0.15;
+  opacity: 0;
 }
 
 body.is-modal-open {
@@ -6831,16 +6827,12 @@ body.memo-panel-open {
 
 @media (max-width: 640px) {
   body::before {
-    opacity: 0.09;
-    background:
-      url("/public/assets/bg-monster-bat.svg") no-repeat right -34px top 104px / 108px,
-      url("/public/assets/bg-monster-dragon.svg") no-repeat right -72px bottom 160px / 176px,
-      url("/public/assets/bg-monster-ogre.svg") no-repeat left -34px bottom 128px / 116px,
-      url("/public/assets/bg-monster-wyvern.svg") no-repeat left -20px top 200px / 96px;
+    opacity: 0;
+    background: none;
   }
 
   body.is-home-mode::before {
-    opacity: 0.12;
+    opacity: 0;
   }
 
   .history-back-button,
