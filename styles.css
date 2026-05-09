@@ -367,6 +367,32 @@ body.is-modal-open {
   margin-bottom: calc(8px + var(--mobile-fixed-bottom-gap));
 }
 
+.ad-slot-pc-side {
+  display: none;
+}
+
+@media (min-width: 1380px) {
+  .ad-slot-pc-side {
+    display: block;
+    position: fixed;
+    top: 92px;
+    right: max(20px, calc((100vw - var(--ui-desktop-max-width)) / 2 - 206px));
+    width: 180px;
+    z-index: 2;
+    margin: 0;
+  }
+
+  .ad-slot-pc-side .ad-slot-placeholder {
+    min-height: 520px;
+    align-items: flex-start;
+    padding-top: 18px;
+  }
+
+  .app.is-admin-bazaar-mode + .ad-slot-pc-side {
+    display: none;
+  }
+}
+
 .site-search-result-item {
   width: 100%;
   text-align: left;
@@ -3522,6 +3548,10 @@ button {
 
   .ad-slot-placeholder-text {
     font-size: 0.74rem;
+  }
+
+  .ad-slot-pc-side {
+    display: none !important;
   }
 
   .top-quick-access {
