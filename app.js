@@ -1889,6 +1889,17 @@ const homeBazaarChangeRankingWrap = document.getElementById("homeBazaarChangeRan
 const homeShortcutNoteBottom = document.getElementById("homeShortcutNoteBottom");
 const homeQuickFeatureGrid = getRequiredElementById("homeQuickFeatureGrid");
 const homeModeButton = document.getElementById("homeModeButton");
+const PAGE_AD_SECTION_IDS = [
+  "bazaar",
+  "profit",
+  "favorites",
+  "routine",
+  "equipment-db",
+  "monster-info",
+  "orbs",
+  "present-codes",
+  "field-farming",
+];
 
 const equipmentSelect = getRequiredElementById("equipmentSelect");
 const selectedEquipmentTypeMeta = getRequiredElementById("selectedEquipmentTypeMeta");
@@ -8610,6 +8621,48 @@ function clampNumber(value, min, max) {
   return Math.min(Math.max(value, min), max);
 }
 
+function createAdSlotElement(slotName, labelText = "スポンサーリンク") {
+  const wrapper = document.createElement("section");
+  wrapper.className = `ad-slot ${slotName}`;
+  wrapper.dataset.adSlot = slotName;
+  wrapper.setAttribute("aria-label", "広告枠");
+  wrapper.innerHTML = `
+    <p class="ad-slot-label">${labelText}</p>
+    <div class="ad-slot-placeholder" aria-hidden="true">
+      <span class="ad-slot-placeholder-text">広告コード掲載予定</span>
+    </div>
+  `;
+  return wrapper;
+}
+
+function injectPageAdSlots() {
+  if (homeShortcutNoteBottom && !homeShortcutNoteBottom.querySelector('[data-ad-slot="home-bottom"]')) {
+    homeShortcutNoteBottom.appendChild(createAdSlotElement("ad-slot-home-bottom"));
+  }
+
+  PAGE_AD_SECTION_IDS.forEach((sectionId) => {
+    const section = document.getElementById(sectionId);
+    if (!(section instanceof HTMLElement)) return;
+
+    if (!section.querySelector(`[data-ad-slot="${sectionId}-top"]`)) {
+      const topSlot = createAdSlotElement("ad-slot-page-top");
+      topSlot.dataset.adSlot = `${sectionId}-top`;
+      const heading = section.querySelector("h2");
+      if (heading?.nextSibling) {
+        section.insertBefore(topSlot, heading.nextSibling);
+      } else {
+        section.appendChild(topSlot);
+      }
+    }
+
+    if (!section.querySelector(`[data-ad-slot="${sectionId}-bottom"]`)) {
+      const bottomSlot = createAdSlotElement("ad-slot-page-bottom");
+      bottomSlot.dataset.adSlot = `${sectionId}-bottom`;
+      section.appendChild(bottomSlot);
+    }
+  });
+}
+
 function scrollToToolSection(target) {
   if (!target) return;
   const currentScrollY = window.scrollY || window.pageYOffset || 0;
@@ -12312,6 +12365,7 @@ async function initialize() {
   await loadContentData();
   applyUiSettingsToRoot();
   applyContentToView();
+  injectPageAdSlots();
   renderUiSettingsPanel();
   renderContentEditorPanel();
   setContentEditModeEnabled(false);
