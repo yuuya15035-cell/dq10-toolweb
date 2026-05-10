@@ -459,6 +459,11 @@ body.is-modal-open {
   display: none !important;
 }
 
+#equipmentSearchCandidateWrap {
+  max-height: min(56vh, 420px);
+  overflow-y: auto;
+}
+
 .assist-search-candidate-item {
   min-height: 48px;
 }
