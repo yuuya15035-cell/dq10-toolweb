@@ -10166,8 +10166,13 @@ function renderEquipmentSelectors() {
 }
 
 function getEquipmentSearchCandidates() {
-  if (equipmentSearchKeyword.trim() === "") return [];
-  return getFilteredEquipmentContext().filteredEquipments.slice(0, 30);
+  const normalizedKeyword = equipmentSearchKeyword.trim().toLowerCase();
+  if (normalizedKeyword === "") return [];
+  // 装備名検索の候補は、職人/カテゴリ絞り込みに左右されず名称一致を優先します。
+  return state.equipments
+    .filter((equipment) => String(equipment?.name || "").trim().toLowerCase().includes(normalizedKeyword))
+    .sort(compareEquipmentsByBaseSort)
+    .slice(0, 30);
 }
 
 function renderEquipmentSearchCandidates() {
