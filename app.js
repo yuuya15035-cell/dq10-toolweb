@@ -10167,7 +10167,7 @@ function renderEquipmentSelectors() {
 
 function getEquipmentSearchCandidates() {
   if (equipmentSearchKeyword.trim() === "") return [];
-  return getFilteredEquipmentContext().filteredEquipments.slice(0, 15);
+  return getFilteredEquipmentContext().filteredEquipments.slice(0, 20);
 }
 
 function renderEquipmentSearchCandidates() {
