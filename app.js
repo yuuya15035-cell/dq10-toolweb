@@ -7628,6 +7628,7 @@ async function openBazaarDetailModal(materialKey) {
   if (!row) return;
   syncBazaarItemUrl(row.materialName);
   await ensureMonsterInfoDataLoaded();
+  await ensureBazaarPriceHistoryLoaded();
 
   const monthOptions = getBazaarHistoryMonthKeys(row.materialKey);
   const latestMonthKey = monthOptions.length > 0 ? monthOptions[monthOptions.length - 1] : "";
