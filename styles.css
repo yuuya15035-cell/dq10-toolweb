@@ -758,6 +758,13 @@ body.is-modal-open {
   color: #6a4a33;
 }
 
+.home-bazaar-change-ranking-updated {
+  margin: -5px 0 9px;
+  color: #7a5b3e;
+  font-size: 0.7rem;
+  line-height: 1.35;
+}
+
 .home-bazaar-change-ranking-list {
   display: grid;
   gap: 8px;

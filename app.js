@@ -2065,6 +2065,7 @@ const homeDailyInfoWrap = document.getElementById("homeDailyInfoWrap");
 const homeBazaarChangeRankingSection = document.getElementById("homeBazaarChangeRankingSection");
 const homeBazaarChangeRankingSortSelect = document.getElementById("homeBazaarChangeRankingSortSelect");
 const homeBazaarChangeRankingNote = document.getElementById("homeBazaarChangeRankingNote");
+const homeBazaarChangeRankingUpdatedAt = document.getElementById("homeBazaarChangeRankingUpdatedAt");
 const homeBazaarChangeRankingWrap = document.getElementById("homeBazaarChangeRankingWrap");
 const homeShortcutNoteBottom = document.getElementById("homeShortcutNoteBottom");
 const homeQuickFeatureGrid = getRequiredElementById("homeQuickFeatureGrid");
@@ -10421,6 +10422,24 @@ function getHomeBazaarChangeRankingRows() {
     .slice(0, 10);
 }
 
+function getHomeBazaarLatestUpdatedAtText() {
+  if (!Array.isArray(bazaarPrices) || bazaarPrices.length === 0) return "";
+  const updatedValues = bazaarPrices
+    .filter((row) => row?.materialName && isMonitoringByComment(row.comment))
+    .map((row) => String(row.updatedAt || "").trim())
+    .filter(Boolean);
+  if (updatedValues.length === 0) return "";
+
+  const latest = updatedValues.reduce((currentLatest, value) => {
+    const currentTime = new Date(currentLatest.replace(/-/g, "/")).getTime();
+    const nextTime = new Date(value.replace(/-/g, "/")).getTime();
+    if (Number.isFinite(nextTime) && (!Number.isFinite(currentTime) || nextTime > currentTime)) return value;
+    return currentLatest;
+  }, updatedValues[0]);
+
+  return formatBazaarPageUpdatedAt(latest);
+}
+
 function renderHomeBazaarChangeRanking() {
   if (!homeBazaarChangeRankingSection || !homeBazaarChangeRankingWrap) return;
   if (appMode !== "home") return;
@@ -10432,6 +10451,12 @@ function renderHomeBazaarChangeRanking() {
       homeBazaarChangeRankingSort === "down"
         ? "前日比で下落率が大きい素材を10件表示しています。"
         : "前日比で上昇率が高い素材を10件表示しています。";
+  }
+  if (homeBazaarChangeRankingUpdatedAt) {
+    const updatedAtText = hasLoadedBazaarPrices ? getHomeBazaarLatestUpdatedAtText() : "";
+    homeBazaarChangeRankingUpdatedAt.hidden = updatedAtText === "";
+    homeBazaarChangeRankingUpdatedAt.textContent =
+      updatedAtText === "" ? "" : `更新時刻：${updatedAtText}　※価格は更新時刻時点の最安値目安です`;
   }
   if (isBazaarLoading && !hasLoadedBazaarPrices) {
     homeBazaarChangeRankingSection.hidden = false;
