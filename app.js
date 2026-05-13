@@ -1423,6 +1423,184 @@ function getRoutineResetToken(task, now = new Date()) {
   return `manual:${task.id}`;
 }
 
+function getDailyInfoResetDate(now = new Date()) {
+  const resetDate = buildRoutineResetDate(now, 6, 0);
+  if (now < resetDate) {
+    resetDate.setDate(resetDate.getDate() - 1);
+  }
+  return resetDate;
+}
+
+function getPositiveModulo(value, divisor) {
+  return ((value % divisor) + divisor) % divisor;
+}
+
+function formatShortMonthDay(date) {
+  return `${date.getMonth() + 1}/${date.getDate()}`;
+}
+
+function getDaysBetweenResetDates(fromDate, toDate) {
+  const dayMs = 24 * 60 * 60 * 1000;
+  return Math.max(0, Math.round((toDate.getTime() - fromDate.getTime()) / dayMs));
+}
+
+function getDailyInfoTogabitoBosses(now = new Date()) {
+  const resetDate = getDailyInfoResetDate(now);
+  const baseDate = new Date(2026, 4, 10, 6, 0, 0, 0);
+  const daysFromBase = Math.floor((resetDate.getTime() - baseDate.getTime()) / (24 * 60 * 60 * 1000));
+  const shouldFlip = getPositiveModulo(daysFromBase, 2) === 1;
+  const bosses = [
+    { shortName: "ノクゼリア", baseLevel: 1 },
+    { shortName: "ウィリーデ", baseLevel: 2 },
+    { shortName: "フラウソン", baseLevel: 1 },
+    { shortName: "アウルモッド", baseLevel: 2 },
+  ];
+  return bosses.map((boss) => ({
+    ...boss,
+    level: shouldFlip ? (boss.baseLevel === 1 ? 2 : 1) : boss.baseLevel,
+  }));
+}
+
+function getWeeklyReminderText(now = new Date()) {
+  const resetDate = getDailyInfoResetDate(now);
+  if (resetDate.getDay() === 0) return { text: "週課が更新されました", isToday: true };
+  const nextSunday = buildRoutineResetDate(resetDate, 6, 0);
+  nextSunday.setDate(resetDate.getDate() + ((7 - resetDate.getDay()) % 7));
+  if (nextSunday <= resetDate) nextSunday.setDate(nextSunday.getDate() + 7);
+  return { text: `週課更新まであと${getDaysBetweenResetDates(resetDate, nextSunday)}日`, isToday: false };
+}
+
+function getPanigalmReminderText(now = new Date()) {
+  const resetDate = getDailyInfoResetDate(now);
+  const baseDate = new Date(2026, 4, 12, 6, 0, 0, 0);
+  const nextDate = new Date(baseDate);
+  while (nextDate < resetDate) {
+    nextDate.setDate(nextDate.getDate() + 3);
+  }
+  if (nextDate.getTime() === resetDate.getTime()) {
+    return { text: "パニガルムが更新されました", isToday: true };
+  }
+  return { text: `パニガルム更新まであと${getDaysBetweenResetDates(resetDate, nextDate)}日`, isToday: false };
+}
+
+function parseMonthlyResetDaysFromRule(resetRule) {
+  const normalizedRule = normalizeRoutineResetRule(resetRule);
+  if (!normalizedRule.startsWith("monthly_")) return [];
+  const monthlyBase = normalizedRule.replace(/(am|pm)?\d{1,2}(?::?\d{2})?$/i, "").replace(/_+$/, "");
+  return monthlyBase
+    .split("_")
+    .slice(1)
+    .map((value) => Number(value))
+    .filter((value) => Number.isFinite(value) && value > 0)
+    .sort((a, b) => a - b);
+}
+
+function buildMonthlyDailyInfoCandidates(task, resetDate) {
+  const days = parseMonthlyResetDaysFromRule(task.resetRule);
+  if (days.length === 0) return [];
+  const candidates = [];
+  for (let monthOffset = 0; monthOffset <= 2; monthOffset += 1) {
+    const monthDate = new Date(resetDate.getFullYear(), resetDate.getMonth() + monthOffset, 1, 6, 0, 0, 0);
+    days.forEach((day) => {
+      const lastDay = new Date(monthDate.getFullYear(), monthDate.getMonth() + 1, 0).getDate();
+      if (day > lastDay) return;
+      const candidateDate = new Date(monthDate.getFullYear(), monthDate.getMonth(), day, 6, 0, 0, 0);
+      if (candidateDate >= resetDate) {
+        candidates.push(candidateDate);
+      }
+    });
+  }
+  return candidates;
+}
+
+function getMonthlyDailyInfoGroups(now = new Date()) {
+  const resetDate = getDailyInfoResetDate(now);
+  const groupMap = new Map();
+  getRoutineTasksByType("monthly").forEach((task) => {
+    buildMonthlyDailyInfoCandidates(task, resetDate).forEach((candidateDate) => {
+      const key = candidateDate.getTime();
+      if (!groupMap.has(key)) {
+        groupMap.set(key, { date: candidateDate, titles: [] });
+      }
+      const isToday = candidateDate.getTime() === resetDate.getTime();
+      const title =
+        String(task.title || "").includes("ドラクエ10の日") && isToday
+          ? "ドラクエ10の日　本日23:59まで"
+          : task.title;
+      groupMap.get(key).titles.push(title);
+    });
+  });
+
+  return [...groupMap.values()]
+    .sort((a, b) => a.date - b.date)
+    .slice(0, 3)
+    .map((group) => {
+      const daysUntil = getDaysBetweenResetDates(resetDate, group.date);
+      const uniqueTitles = [...new Set(group.titles)];
+      return {
+        ...group,
+        daysUntil,
+        titles: uniqueTitles,
+        isToday: daysUntil === 0,
+      };
+    });
+}
+
+function renderHomeDailyInfo() {
+  if (!homeDailyInfoSection || !homeDailyInfoWrap) return;
+  if (appMode !== "home") return;
+
+  homeDailyInfoSection.hidden = false;
+  if (routineTasksLoadError && routineTasks.length === 0) {
+    homeDailyInfoWrap.innerHTML = `<p class="home-daily-info-status">月課データを読み込めませんでした。</p>`;
+    return;
+  }
+
+  if (!hasLoadedRoutineTasks) {
+    homeDailyInfoWrap.innerHTML = `<p class="home-daily-info-status">読み込み中です。</p>`;
+    if (!isRoutineTasksLoading) void ensureRoutineTasksLoaded();
+    return;
+  }
+
+  const bosses = getDailyInfoTogabitoBosses();
+  const weeklyReminder = getWeeklyReminderText();
+  const panigalmReminder = getPanigalmReminderText();
+  const monthlyGroups = getMonthlyDailyInfoGroups();
+  const monthlyHtml =
+    monthlyGroups.length > 0
+      ? monthlyGroups
+          .map((group) => {
+            const heading = group.isToday
+              ? "本日更新"
+              : `${formatShortMonthDay(group.date)}更新まであと${group.daysUntil}日`;
+            return `<li class="${group.isToday ? "is-today" : ""}"><strong>${escapeHtml(heading)}</strong><span>${escapeHtml(group.titles.join(" / "))}</span></li>`;
+          })
+          .join("")
+      : `<li><span>表示できる月課予定がありません。</span></li>`;
+
+  homeDailyInfoWrap.innerHTML = `
+    <div class="home-daily-info-block">
+      <h3>咎人</h3>
+      <p class="home-daily-info-bosses">
+        ${bosses
+          .map((boss) => `<span>${escapeHtml(boss.shortName)} Lv${boss.level}</span>`)
+          .join("")}
+      </p>
+    </div>
+    <div class="home-daily-info-block">
+      <h3>更新リマインド</h3>
+      <ul class="home-daily-info-reminders">
+        <li class="${weeklyReminder.isToday ? "is-today" : ""}">${escapeHtml(weeklyReminder.text)}</li>
+        <li class="${panigalmReminder.isToday ? "is-today" : ""}">${escapeHtml(panigalmReminder.text)}</li>
+      </ul>
+    </div>
+    <div class="home-daily-info-block home-daily-info-monthly">
+      <h3>月課予定</h3>
+      <ul>${monthlyHtml}</ul>
+    </div>
+  `;
+}
+
 function isRoutineTaskChecked(task) {
   const currentToken = getRoutineResetToken(task);
   return routineTaskCheckedTokens[task.id] === currentToken;
@@ -1882,6 +2060,8 @@ const topUpdateSection = document.getElementById("topUpdateSection");
 const topUpdateList = document.getElementById("topUpdateList");
 const topUpdateViewAllLink = document.getElementById("topUpdateViewAllLink");
 const topQuickAccessSection = document.querySelector(".top-quick-access");
+const homeDailyInfoSection = document.getElementById("homeDailyInfoSection");
+const homeDailyInfoWrap = document.getElementById("homeDailyInfoWrap");
 const homeBazaarChangeRankingSection = document.getElementById("homeBazaarChangeRankingSection");
 const homeBazaarChangeRankingSortSelect = document.getElementById("homeBazaarChangeRankingSortSelect");
 const homeBazaarChangeRankingNote = document.getElementById("homeBazaarChangeRankingNote");
@@ -4443,6 +4623,7 @@ async function ensureRoutineTasksLoaded() {
     } finally {
       isRoutineTasksLoading = false;
       if (activeTabId === "routine") renderRoutineTasks();
+      if (appMode === "home") renderHomeDailyInfo();
     }
   })();
   return routineTasksLoadingPromise;
@@ -8606,6 +8787,7 @@ function applyAppMode() {
   appRoot?.classList.toggle("is-admin-bazaar-mode", isAdminBazaarMode);
   appHeader?.classList.toggle("is-collapsed", !isHomeMode);
   toolSiteSearchDock?.classList.add("is-visible");
+  homeDailyInfoSection?.classList.toggle("is-collapsed", !isHomeMode);
   topQuickAccessSection?.classList.toggle("is-collapsed", !isHomeMode);
   homeBazaarChangeRankingSection?.classList.toggle("is-collapsed", !isHomeMode);
   topUpdateSection?.classList.toggle("is-collapsed", !isHomeMode);
@@ -8613,6 +8795,7 @@ function applyAppMode() {
   mobileBottomNav?.classList.toggle("is-disabled", isHomeMode);
   if (isHomeMode) {
     setMobileBottomNavHidden(false);
+    renderHomeDailyInfo();
     renderHomeBazaarChangeRanking();
   }
   updateHistoryBackButtonVisibility();
