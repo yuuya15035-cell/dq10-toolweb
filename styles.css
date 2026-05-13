@@ -518,8 +518,9 @@ body.is-modal-open {
   margin-bottom: var(--ui-section-vertical-space);
   padding: 10px;
   border: 1px solid #bfa384;
+  border-left: 4px solid #8b6748;
   border-radius: 12px;
-  background: rgba(247, 238, 224, 0.9);
+  background: linear-gradient(180deg, rgba(249, 241, 229, 0.94) 0%, rgba(243, 231, 213, 0.9) 100%);
 }
 
 .top-quick-access.is-collapsed {
@@ -628,10 +629,14 @@ body.is-modal-open {
 
 .home-bazaar-change-ranking {
   margin-bottom: var(--ui-section-vertical-space);
+  border-left: 4px solid #bd8a35;
+  background: linear-gradient(180deg, rgba(255, 248, 229, 0.94) 0%, rgba(246, 232, 197, 0.9) 100%);
 }
 
 .home-daily-info-card {
   margin-bottom: var(--ui-section-vertical-space);
+  border-left: 4px solid #3f8c8a;
+  background: linear-gradient(180deg, rgba(240, 249, 246, 0.92) 0%, rgba(235, 243, 238, 0.88) 100%);
 }
 
 .home-daily-info-card.is-collapsed {
@@ -640,7 +645,7 @@ body.is-modal-open {
 
 .home-daily-info-card h2 {
   margin: 0 0 6px;
-  color: #4f3522;
+  color: #315f60;
   font-size: 0.98rem;
 }
 
@@ -717,7 +722,7 @@ body.is-modal-open {
 .home-bazaar-change-ranking h2 {
   margin: 0;
   font-size: 1rem;
-  color: #4f3522;
+  color: #6a471b;
   white-space: nowrap;
 }
 
