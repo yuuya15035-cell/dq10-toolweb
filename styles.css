@@ -4791,6 +4791,155 @@ button {
   color: #4d3827;
 }
 
+.boss-card-form {
+  display: grid;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.boss-card-note {
+  margin: 0;
+  color: #6a5038;
+  font-size: 0.84rem;
+  line-height: 1.5;
+}
+
+.boss-card-form-grid {
+  display: grid;
+  gap: 10px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.boss-card-form textarea {
+  min-height: 58px;
+  resize: vertical;
+}
+
+.boss-card-form-actions {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.boss-card-form-actions button,
+.boss-card-timer-actions button {
+  border: 1px solid #b48a60;
+  border-radius: 999px;
+  background: linear-gradient(180deg, #f2e3c9 0%, #e2c69f 100%);
+  color: #4c3322;
+  font-weight: 700;
+}
+
+.boss-card-list {
+  display: grid;
+  gap: 8px;
+}
+
+.boss-card-empty {
+  padding: 14px;
+  color: #5c4632;
+}
+
+.boss-card-timer-card {
+  display: grid;
+  gap: 8px;
+  border-color: #d3b58a;
+  background: #fffaf3;
+  padding: 12px;
+}
+
+.boss-card-timer-card.is-soon {
+  border-color: #d29a44;
+  background: #fff4dc;
+  box-shadow: 0 0 0 1px rgba(210, 154, 68, 0.18);
+}
+
+.boss-card-timer-card.is-expired {
+  border-color: #b46a5a;
+  background: #fff0ec;
+  opacity: 0.92;
+}
+
+.boss-card-timer-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+.boss-card-timer-header h3 {
+  margin: 0;
+  color: #3f2b1c;
+  font-size: 1rem;
+  line-height: 1.35;
+}
+
+.boss-card-timer-expiry {
+  margin: 3px 0 0;
+  color: #72543a;
+  font-size: 0.82rem;
+}
+
+.boss-card-timer-status {
+  flex: 0 0 auto;
+  border: 1px solid #c7a57a;
+  border-radius: 999px;
+  padding: 3px 8px;
+  background: #fff8e8;
+  color: #5f442e;
+  font-size: 0.74rem;
+  font-weight: 700;
+}
+
+.boss-card-timer-card.is-soon .boss-card-timer-status {
+  border-color: #c88723;
+  background: #ffe8b6;
+  color: #714611;
+}
+
+.boss-card-timer-card.is-expired .boss-card-timer-status {
+  border-color: #b46a5a;
+  background: #ffd9d2;
+  color: #7a2f24;
+}
+
+.boss-card-timer-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 14px;
+  color: #4d3827;
+  font-size: 0.86rem;
+}
+
+.boss-card-timer-meta strong {
+  color: #302015;
+}
+
+.boss-card-timer-memo {
+  margin: 0;
+  padding: 7px 8px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.55);
+  color: #5d4632;
+  font-size: 0.82rem;
+  line-height: 1.45;
+}
+
+.boss-card-timer-actions {
+  display: flex;
+  justify-content: flex-end;
+}
+
+@media (max-width: 520px) {
+  .boss-card-form-grid {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+
+  .boss-card-timer-card {
+    padding: 10px;
+  }
+}
+
 .equipment-db-type-tabs {
   display: flex;
   gap: 8px;

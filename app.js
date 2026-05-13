@@ -29,12 +29,14 @@ const MEMO_STORAGE_KEY = "dq10_toolweb_memos_v1";
 const MEMO_HINT_STORAGE_KEY = "dq10_toolweb_memo_hint_dismissed_v1";
 const ADMIN_CHECKLIST_STORAGE_KEY = "dq10_toolweb_admin_checklist_v1";
 const ROUTINE_TASKS_STORAGE_KEY = "dq10_toolweb_routine_tasks_v1";
+const BOSS_CARD_TIMER_STORAGE_KEY = "dq10_toolweb_boss_card_timer_v1";
 const RECIPE_FAVORITE_CATEGORY_VALUE = "__favorites__";
 const HOME_FEATURE_DEFINITIONS = [
   { id: "bazaar", tabId: "bazaar", title: "バザー情報", icon: "💰" },
   { id: "profit", tabId: "profit", title: "職人アシスト", icon: "🛠️" },
   { id: "favorites", tabId: "favorites", title: "お気に入り", icon: "📌" },
   { id: "routine", tabId: "routine", title: "日課・週課", icon: "📅" },
+  { id: "boss-card", tabId: "boss-card", title: "ボスカード管理", icon: "⌛" },
   { id: "present-codes", tabId: "present-codes", title: "プレゼント", icon: "🎁" },
   { id: "monster-info", tabId: "monster-info", title: "モンスター情報", icon: "👾" },
   { id: "equipment-db", tabId: "equipment-db", title: "装備データ", icon: "🛡️" },
@@ -51,10 +53,11 @@ const TAB_DOCUMENT_LABELS = Object.freeze({
   orbs: "宝珠情報",
   favorites: "お気に入り",
   routine: "日課・週課",
+  "boss-card": "ボスカード管理",
   "present-codes": "プレゼントのじゅもん",
   "field-farming": "フィールド狩り",
 });
-const DEFAULT_HOME_FEATURE_IDS = Object.freeze(["profit", "bazaar", "favorites", "equipment-db"]);
+const DEFAULT_HOME_FEATURE_IDS = Object.freeze(["profit", "bazaar", "favorites", "boss-card", "equipment-db"]);
 const HOME_FEATURE_ID_SET = new Set(HOME_FEATURE_DEFINITIONS.map((feature) => feature.id));
 const SITE_SEARCH_MAX_RESULTS = 10;
 const SITE_SEARCH_MATCH_RANK = Object.freeze({
@@ -98,6 +101,7 @@ const TAB_IDS = new Set([
   "bazaar",
   "favorites",
   "routine",
+  "boss-card",
   "data",
   "field-farming",
   "orbs",
@@ -1106,7 +1110,9 @@ function loadHomeFeatureState() {
     const normalized = storedIds
       .map((id) => String(id || "").trim())
       .filter((id, index, self) => id !== "" && HOME_FEATURE_ID_SET.has(id) && self.indexOf(id) === index);
-    return normalized.length > 0 ? normalized : [...DEFAULT_HOME_FEATURE_IDS];
+    if (normalized.length === 0) return [...DEFAULT_HOME_FEATURE_IDS];
+    const shouldMigrateBossCard = Number(parsed?.version || 1) < 2 && !normalized.includes("boss-card");
+    return shouldMigrateBossCard ? [...normalized, "boss-card"] : normalized;
   } catch {
     return [...DEFAULT_HOME_FEATURE_IDS];
   }
@@ -1116,7 +1122,7 @@ function saveHomeFeatureState() {
   localStorage.setItem(
     HOME_FEATURES_STORAGE_KEY,
     JSON.stringify({
-      version: 1,
+      version: 2,
       featureIds: homeFeatureIds,
     })
   );
@@ -1949,6 +1955,7 @@ let presentCodesKeyword = "";
 let fieldFarmingKeyword = "";
 let selectedRoutineType = "daily";
 let routineTaskCheckedTokens = {};
+let bossCardTimers = [];
 let siteSearchKeyword = "";
 let homeBazaarChangeRankingSort = "up";
 let isSiteSearchDataLoading = false;
@@ -2142,6 +2149,13 @@ const routineCheckAllButton = getRequiredElementById("routineCheckAllButton");
 const routineClearAllButton = getRequiredElementById("routineClearAllButton");
 const routineResetDescription = getRequiredElementById("routineResetDescription");
 const routineListWrap = getRequiredElementById("routineListWrap");
+const bossCardForm = getRequiredElementById("bossCardForm");
+const bossCardNameInput = getRequiredElementById("bossCardNameInput");
+const bossCardDateInput = getRequiredElementById("bossCardDateInput");
+const bossCardTimeInput = getRequiredElementById("bossCardTimeInput");
+const bossCardCountInput = getRequiredElementById("bossCardCountInput");
+const bossCardMemoInput = getRequiredElementById("bossCardMemoInput");
+const bossCardListWrap = getRequiredElementById("bossCardListWrap");
 const orbListWrap = getRequiredElementById("orbListWrap");
 const orbSearchInput = getRequiredElementById("orbSearchInput");
 const orbCategoryFilterWrap = getRequiredElementById("orbCategoryFilterWrap");
@@ -4803,6 +4817,133 @@ function renderRoutineTasks() {
                   <input type="checkbox" data-routine-task-id="${escapeHtml(task.id)}" ${checked ? "checked" : ""} />
                   <span>${checkLabel}</span>
                 </label>
+              </div>
+            </article>
+          `;
+        })
+        .join("")}
+    </div>
+  `;
+}
+
+function normalizeBossCardTimerEntry(value, index = 0) {
+  const name = String(value?.name || "").trim();
+  const expiry = String(value?.expiry || "").trim();
+  if (!name || !expiry) return null;
+  const parsedExpiry = new Date(expiry);
+  if (Number.isNaN(parsedExpiry.getTime())) return null;
+  const count = Math.max(1, Math.floor(Number(value?.count || 1)));
+  return {
+    id: String(value?.id || `boss-card-${index}-${parsedExpiry.getTime()}`),
+    name,
+    expiry,
+    count,
+    memo: String(value?.memo || "").trim(),
+    createdAt: String(value?.createdAt || ""),
+  };
+}
+
+function loadBossCardTimers() {
+  const raw = localStorage.getItem(BOSS_CARD_TIMER_STORAGE_KEY);
+  if (!raw) return [];
+  try {
+    const parsed = JSON.parse(raw);
+    const entries = Array.isArray(parsed) ? parsed : Array.isArray(parsed?.entries) ? parsed.entries : [];
+    return entries.map(normalizeBossCardTimerEntry).filter(Boolean);
+  } catch {
+    return [];
+  }
+}
+
+function saveBossCardTimers() {
+  localStorage.setItem(
+    BOSS_CARD_TIMER_STORAGE_KEY,
+    JSON.stringify({
+      version: 1,
+      entries: bossCardTimers,
+    })
+  );
+}
+
+function makeBossCardTimerId() {
+  return `boss-card-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+}
+
+function buildBossCardExpiryValue(dateText, timeText) {
+  const date = String(dateText || "").trim();
+  const time = String(timeText || "").trim();
+  if (!date || !time) return "";
+  const parsed = new Date(`${date}T${time}`);
+  return Number.isNaN(parsed.getTime()) ? "" : parsed.toISOString();
+}
+
+function formatBossCardExpiry(expiry) {
+  const date = new Date(expiry);
+  if (Number.isNaN(date.getTime())) return "-";
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  const hours = String(date.getHours()).padStart(2, "0");
+  const minutes = String(date.getMinutes()).padStart(2, "0");
+  return `${year}/${month}/${day} ${hours}:${minutes}`;
+}
+
+function getBossCardTimerStatus(entry, now = new Date()) {
+  const expiry = new Date(entry?.expiry || "");
+  const remainingMs = expiry.getTime() - now.getTime();
+  if (!Number.isFinite(remainingMs) || remainingMs <= 0) return "expired";
+  if (remainingMs <= 24 * 60 * 60 * 1000) return "soon";
+  return "normal";
+}
+
+function formatBossCardRemaining(entry, now = new Date()) {
+  const expiry = new Date(entry?.expiry || "");
+  const remainingMs = expiry.getTime() - now.getTime();
+  if (!Number.isFinite(remainingMs)) return "-";
+  if (remainingMs <= 0) return "期限切れ";
+  const totalMinutes = Math.ceil(remainingMs / 60000);
+  const days = Math.floor(totalMinutes / 1440);
+  const hours = Math.floor((totalMinutes % 1440) / 60);
+  const minutes = totalMinutes % 60;
+  if (days > 0) return `あと${days}日${hours > 0 ? `${hours}時間` : ""}`;
+  if (hours > 0) return `あと${hours}時間${minutes > 0 ? `${minutes}分` : ""}`;
+  return `あと${minutes}分`;
+}
+
+function renderBossCardTimers() {
+  if (!bossCardListWrap) return;
+  const now = new Date();
+  const sortedEntries = [...bossCardTimers].sort((a, b) => {
+    const aTime = new Date(a.expiry).getTime();
+    const bTime = new Date(b.expiry).getTime();
+    return aTime - bTime;
+  });
+  if (sortedEntries.length === 0) {
+    bossCardListWrap.innerHTML = '<div class="card boss-card-empty">登録中のボスカードはありません。</div>';
+    return;
+  }
+  bossCardListWrap.innerHTML = `
+    <div class="boss-card-list">
+      ${sortedEntries
+        .map((entry) => {
+          const status = getBossCardTimerStatus(entry, now);
+          const statusLabel = status === "expired" ? "期限切れ" : status === "soon" ? "24時間以内" : "通常";
+          return `
+            <article class="card boss-card-timer-card is-${status}">
+              <div class="boss-card-timer-header">
+                <div>
+                  <h3>${escapeHtml(entry.name)}</h3>
+                  <p class="boss-card-timer-expiry">${escapeHtml(formatBossCardExpiry(entry.expiry))}</p>
+                </div>
+                <span class="boss-card-timer-status">${escapeHtml(statusLabel)}</span>
+              </div>
+              <div class="boss-card-timer-meta">
+                <span>枚数 <strong>${entry.count}</strong></span>
+                <span>残り <strong>${escapeHtml(formatBossCardRemaining(entry, now))}</strong></span>
+              </div>
+              ${entry.memo ? `<p class="boss-card-timer-memo">${escapeHtml(entry.memo)}</p>` : ""}
+              <div class="boss-card-timer-actions">
+                <button type="button" data-boss-card-delete-id="${escapeHtml(entry.id)}">削除</button>
               </div>
             </article>
           `;
@@ -8916,6 +9057,8 @@ function switchTab(target) {
     renderFieldFarmingRanking();
   } else if (normalizedTarget === "routine") {
     renderRoutineTasks();
+  } else if (normalizedTarget === "boss-card") {
+    renderBossCardTimers();
   } else if (normalizedTarget === "bazaar") {
     renderBazaarPrices();
   } else if (normalizedTarget === "favorites") {
@@ -11660,6 +11803,7 @@ function rerenderAll() {
   renderRecipeAdminList();
   calcAndRenderSummary();
   if (activeTabId === "routine") renderRoutineTasks();
+  if (activeTabId === "boss-card") renderBossCardTimers();
   if (activeTabId === "present-codes") renderPresentCodes();
   if (activeTabId === "field-farming") renderFieldFarmingRanking();
   if (activeTabId === "bazaar") renderBazaarPrices();
@@ -11679,6 +11823,7 @@ function rerenderActiveTabOnly() {
     return;
   }
   if (activeTabId === "routine") renderRoutineTasks();
+  if (activeTabId === "boss-card") renderBossCardTimers();
   if (activeTabId === "present-codes") renderPresentCodes();
   if (activeTabId === "field-farming") renderFieldFarmingRanking();
   if (activeTabId === "bazaar") renderBazaarPrices();
@@ -12567,6 +12712,45 @@ if (routineListWrap) {
   });
 }
 
+if (bossCardForm) {
+  bossCardForm.addEventListener("submit", (event) => {
+    event.preventDefault();
+    const name = String(bossCardNameInput?.value || "").trim();
+    const expiry = buildBossCardExpiryValue(bossCardDateInput?.value, bossCardTimeInput?.value);
+    const count = Math.max(1, Math.floor(Number(bossCardCountInput?.value || 1)));
+    const memo = String(bossCardMemoInput?.value || "").trim();
+    if (!name || !expiry) return;
+    bossCardTimers = [
+      ...bossCardTimers,
+      {
+        id: makeBossCardTimerId(),
+        name,
+        expiry,
+        count,
+        memo,
+        createdAt: new Date().toISOString(),
+      },
+    ];
+    saveBossCardTimers();
+    bossCardForm.reset();
+    if (bossCardCountInput) bossCardCountInput.value = "1";
+    renderBossCardTimers();
+  });
+}
+
+if (bossCardListWrap) {
+  bossCardListWrap.addEventListener("click", (event) => {
+    const target = event.target;
+    if (!(target instanceof Element)) return;
+    const deleteButton = target.closest("[data-boss-card-delete-id]");
+    if (!(deleteButton instanceof HTMLElement) || !bossCardListWrap.contains(deleteButton)) return;
+    const targetId = String(deleteButton.dataset.bossCardDeleteId || "");
+    bossCardTimers = bossCardTimers.filter((entry) => entry.id !== targetId);
+    saveBossCardTimers();
+    renderBossCardTimers();
+  });
+}
+
 window.buildBazaarHistorySnapshotRows = buildBazaarHistorySnapshotRows;
 window.mergeBazaarHistoryLines = mergeBazaarHistoryLines;
 
@@ -12588,6 +12772,7 @@ async function initialize() {
   memoEntries = loadMemoEntries();
   isMemoHintDismissed = loadMemoHintDismissedState();
   routineTaskCheckedTokens = loadRoutineTaskState();
+  bossCardTimers = loadBossCardTimers();
   rebuildMemoEntryIdSet();
   renderMemoList();
   updateMemoDockHintVisibility();
