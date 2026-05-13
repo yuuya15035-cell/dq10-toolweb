@@ -31,6 +31,38 @@ const ADMIN_CHECKLIST_STORAGE_KEY = "dq10_toolweb_admin_checklist_v1";
 const ROUTINE_TASKS_STORAGE_KEY = "dq10_toolweb_routine_tasks_v1";
 const BOSS_CARD_TIMER_STORAGE_KEY = "dq10_toolweb_boss_card_timer_v1";
 const RECIPE_FAVORITE_CATEGORY_VALUE = "__favorites__";
+const BOSS_CARD_NAME_CANDIDATES = Object.freeze([
+  "アトラス",
+  "バズズ",
+  "ベリアル",
+  "悪霊の神々",
+  "ドラゴンガイア",
+  "バラモス",
+  "キングヒドラ",
+  "グラコス",
+  "伝説の三悪魔",
+  "キラーマジンガ",
+  "幻界の四諸侯",
+  "ドン・モグーラ",
+  "暗黒の魔人",
+  "Sキラーマシン",
+  "スライムジェネラル",
+  "死神スライダーク",
+  "ギュメイ将軍",
+  "ゲルニック将軍",
+  "ゴレオン将軍",
+  "帝国三将軍",
+  "ドラゴン",
+  "魔犬レオパルド",
+  "ムドー",
+  "真・幻界諸侯",
+  "アンドレアル",
+  "エビルプリースト",
+  "究極邪教司祭",
+  "結界の守護者たち",
+  "タイムマスター",
+  "人食い火竜",
+]);
 const HOME_FEATURE_DEFINITIONS = [
   { id: "bazaar", tabId: "bazaar", title: "バザー情報", icon: "💰" },
   { id: "profit", tabId: "profit", title: "職人アシスト", icon: "🛠️" },
@@ -2151,8 +2183,8 @@ const routineResetDescription = getRequiredElementById("routineResetDescription"
 const routineListWrap = getRequiredElementById("routineListWrap");
 const bossCardForm = getRequiredElementById("bossCardForm");
 const bossCardNameInput = getRequiredElementById("bossCardNameInput");
-const bossCardDateInput = getRequiredElementById("bossCardDateInput");
-const bossCardTimeInput = getRequiredElementById("bossCardTimeInput");
+const bossCardNameCandidateWrap = getRequiredElementById("bossCardNameCandidateWrap");
+const bossCardRemainingHoursInput = getRequiredElementById("bossCardRemainingHoursInput");
 const bossCardCountInput = getRequiredElementById("bossCardCountInput");
 const bossCardMemoInput = getRequiredElementById("bossCardMemoInput");
 const bossCardListWrap = getRequiredElementById("bossCardListWrap");
@@ -4869,12 +4901,44 @@ function makeBossCardTimerId() {
   return `boss-card-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
 }
 
-function buildBossCardExpiryValue(dateText, timeText) {
-  const date = String(dateText || "").trim();
-  const time = String(timeText || "").trim();
-  if (!date || !time) return "";
-  const parsed = new Date(`${date}T${time}`);
-  return Number.isNaN(parsed.getTime()) ? "" : parsed.toISOString();
+function normalizeBossCardSearchText(value) {
+  return String(value || "")
+    .trim()
+    .normalize("NFKC")
+    .replace(/[ぁ-ん]/g, (char) => String.fromCharCode(char.charCodeAt(0) + 0x60))
+    .toLowerCase();
+}
+
+function getBossCardNameCandidates(keyword) {
+  const normalizedKeyword = normalizeBossCardSearchText(keyword);
+  if (!normalizedKeyword) return [];
+  return BOSS_CARD_NAME_CANDIDATES.filter((name) => normalizeBossCardSearchText(name).includes(normalizedKeyword)).slice(0, 8);
+}
+
+function renderBossCardNameCandidates() {
+  if (!bossCardNameCandidateWrap || !bossCardNameInput) return;
+  const candidates = getBossCardNameCandidates(bossCardNameInput.value);
+  if (candidates.length === 0) {
+    bossCardNameCandidateWrap.hidden = true;
+    bossCardNameCandidateWrap.innerHTML = "";
+    return;
+  }
+  bossCardNameCandidateWrap.innerHTML = candidates
+    .map(
+      (name) =>
+        `<button type="button" class="boss-card-name-candidate" data-boss-card-name-candidate="${escapeHtml(name)}">${escapeHtml(
+          name
+        )}</button>`
+    )
+    .join("");
+  bossCardNameCandidateWrap.hidden = false;
+}
+
+function buildBossCardExpiryFromHours(hoursValue) {
+  const hours = Number(hoursValue);
+  if (!Number.isFinite(hours) || hours <= 0) return "";
+  const expiry = new Date(Date.now() + Math.floor(hours) * 60 * 60 * 1000);
+  return expiry.toISOString();
 }
 
 function formatBossCardExpiry(expiry) {
@@ -4902,6 +4966,8 @@ function formatBossCardRemaining(entry, now = new Date()) {
   if (!Number.isFinite(remainingMs)) return "-";
   if (remainingMs <= 0) return "期限切れ";
   const totalMinutes = Math.ceil(remainingMs / 60000);
+  const totalHours = Math.ceil(remainingMs / (60 * 60 * 1000));
+  if (totalHours >= 24) return `あと${totalHours}時間`;
   const days = Math.floor(totalMinutes / 1440);
   const hours = Math.floor((totalMinutes % 1440) / 60);
   const minutes = totalMinutes % 60;
@@ -12652,6 +12718,10 @@ document.addEventListener("click", (event) => {
     isMaterialSearchCandidateListOpen = false;
     renderMaterialSearchCandidates();
   }
+  const isInsideBossCardNameSearch = Boolean(bossCardNameInput?.contains(target) || bossCardNameCandidateWrap?.contains(target));
+  if (!isInsideBossCardNameSearch && bossCardNameCandidateWrap) {
+    bossCardNameCandidateWrap.hidden = true;
+  }
   const isInsideToolSearch = Boolean(
     toolSiteSearchDock?.contains(target) || toolSiteSearchResultWrap?.contains(target) || toolSiteSearchInput?.contains(target)
   );
@@ -12716,7 +12786,7 @@ if (bossCardForm) {
   bossCardForm.addEventListener("submit", (event) => {
     event.preventDefault();
     const name = String(bossCardNameInput?.value || "").trim();
-    const expiry = buildBossCardExpiryValue(bossCardDateInput?.value, bossCardTimeInput?.value);
+    const expiry = buildBossCardExpiryFromHours(bossCardRemainingHoursInput?.value);
     const count = Math.max(1, Math.floor(Number(bossCardCountInput?.value || 1)));
     const memo = String(bossCardMemoInput?.value || "").trim();
     if (!name || !expiry) return;
@@ -12734,7 +12804,29 @@ if (bossCardForm) {
     saveBossCardTimers();
     bossCardForm.reset();
     if (bossCardCountInput) bossCardCountInput.value = "1";
+    if (bossCardNameCandidateWrap) {
+      bossCardNameCandidateWrap.hidden = true;
+      bossCardNameCandidateWrap.innerHTML = "";
+    }
     renderBossCardTimers();
+  });
+}
+
+if (bossCardNameInput) {
+  bossCardNameInput.addEventListener("input", renderBossCardNameCandidates);
+  bossCardNameInput.addEventListener("focus", renderBossCardNameCandidates);
+}
+
+if (bossCardNameCandidateWrap) {
+  bossCardNameCandidateWrap.addEventListener("click", (event) => {
+    const target = event.target;
+    if (!(target instanceof Element)) return;
+    const button = target.closest("[data-boss-card-name-candidate]");
+    if (!(button instanceof HTMLElement)) return;
+    if (bossCardNameInput) bossCardNameInput.value = String(button.dataset.bossCardNameCandidate || "");
+    bossCardNameCandidateWrap.hidden = true;
+    bossCardNameCandidateWrap.innerHTML = "";
+    bossCardRemainingHoursInput?.focus();
   });
 }
 
