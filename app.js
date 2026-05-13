@@ -30,6 +30,7 @@ const MEMO_HINT_STORAGE_KEY = "dq10_toolweb_memo_hint_dismissed_v1";
 const ADMIN_CHECKLIST_STORAGE_KEY = "dq10_toolweb_admin_checklist_v1";
 const ROUTINE_TASKS_STORAGE_KEY = "dq10_toolweb_routine_tasks_v1";
 const BOSS_CARD_TIMER_STORAGE_KEY = "dq10_toolweb_boss_card_timer_v1";
+const BOSS_CARD_NOTICE_SEEN_STORAGE_KEY = "dq10_toolweb_boss_card_notice_seen_v1";
 const RECIPE_FAVORITE_CATEGORY_VALUE = "__favorites__";
 const BOSS_CARD_NAME_CANDIDATES = Object.freeze([
   "アトラス",
@@ -2101,6 +2102,11 @@ const topUpdateViewAllLink = document.getElementById("topUpdateViewAllLink");
 const topQuickAccessSection = document.querySelector(".top-quick-access");
 const homeDailyInfoSection = document.getElementById("homeDailyInfoSection");
 const homeDailyInfoWrap = document.getElementById("homeDailyInfoWrap");
+const homeBossCardNotice = document.getElementById("homeBossCardNotice");
+const homeBossCardNoticeTitle = document.getElementById("homeBossCardNoticeTitle");
+const homeBossCardNoticeBody = document.getElementById("homeBossCardNoticeBody");
+const homeBossCardNoticeCloseButton = document.getElementById("homeBossCardNoticeCloseButton");
+const homeBossCardNoticeOpenButton = document.getElementById("homeBossCardNoticeOpenButton");
 const homeBazaarChangeRankingSection = document.getElementById("homeBazaarChangeRankingSection");
 const homeBazaarChangeRankingSortSelect = document.getElementById("homeBazaarChangeRankingSortSelect");
 const homeBazaarChangeRankingNote = document.getElementById("homeBazaarChangeRankingNote");
@@ -4976,9 +4982,118 @@ function formatBossCardRemaining(entry, now = new Date()) {
   return `あと${minutes}分`;
 }
 
+function getBossCardNoticeDateText(date = new Date()) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
+function loadBossCardNoticeSeenState() {
+  try {
+    return JSON.parse(localStorage.getItem(BOSS_CARD_NOTICE_SEEN_STORAGE_KEY) || "{}");
+  } catch {
+    return {};
+  }
+}
+
+function saveBossCardNoticeSeenState(dateText = getBossCardNoticeDateText()) {
+  localStorage.setItem(BOSS_CARD_NOTICE_SEEN_STORAGE_KEY, JSON.stringify({ date: dateText }));
+}
+
+function pruneExpiredBossCardTimers(now = new Date()) {
+  const beforeCount = bossCardTimers.length;
+  bossCardTimers = bossCardTimers.filter((entry) => {
+    const expiryTime = new Date(entry?.expiry || "").getTime();
+    return Number.isFinite(expiryTime) && expiryTime > now.getTime();
+  });
+  const removedCount = beforeCount - bossCardTimers.length;
+  if (removedCount > 0) saveBossCardTimers();
+  return removedCount;
+}
+
+function getBossCardNoticeCandidates(now = new Date()) {
+  const maxNoticeMs = 240 * 60 * 60 * 1000;
+  return bossCardTimers
+    .map((entry) => {
+      const expiryTime = new Date(entry?.expiry || "").getTime();
+      const remainingMs = expiryTime - now.getTime();
+      return { entry, expiryTime, remainingMs };
+    })
+    .filter(({ expiryTime, remainingMs }) => Number.isFinite(expiryTime) && remainingMs > 0 && remainingMs <= maxNoticeMs)
+    .sort((a, b) => a.expiryTime - b.expiryTime);
+}
+
+function getBossCardNoticeSummary(candidates) {
+  const nearestHours = Math.ceil((candidates[0]?.remainingMs || 0) / (60 * 60 * 1000));
+  if (nearestHours <= 24) {
+    return { title: "本日で期限が切れるカードがあります", level: "urgent" };
+  }
+  if (nearestHours <= 72) {
+    return { title: "3日以内に期限が切れるカードがあります", level: "high" };
+  }
+  if (nearestHours <= 120) {
+    return { title: "5日以内に期限が切れるカードがあります", level: "medium" };
+  }
+  return { title: "10日以内に期限が切れるカードがあります", level: "low" };
+}
+
+function hideHomeBossCardNotice() {
+  if (!homeBossCardNotice) return;
+  homeBossCardNotice.hidden = true;
+  homeBossCardNotice.classList.add("is-collapsed");
+}
+
+function renderHomeBossCardNotice() {
+  if (!homeBossCardNotice || !homeBossCardNoticeTitle || !homeBossCardNoticeBody) return;
+  if (appMode !== "home") {
+    hideHomeBossCardNotice();
+    return;
+  }
+  const todayText = getBossCardNoticeDateText();
+  const seenState = loadBossCardNoticeSeenState();
+  if (seenState?.date === todayText) {
+    hideHomeBossCardNotice();
+    return;
+  }
+  const now = new Date();
+  pruneExpiredBossCardTimers(now);
+  const candidates = getBossCardNoticeCandidates(now);
+  if (candidates.length === 0) {
+    hideHomeBossCardNotice();
+    return;
+  }
+  const summary = getBossCardNoticeSummary(candidates);
+  const visibleCandidates = candidates.slice(0, 5);
+  const hiddenCount = Math.max(0, candidates.length - visibleCandidates.length);
+
+  homeBossCardNoticeTitle.textContent = summary.title;
+  homeBossCardNotice.classList.remove("is-collapsed", "is-urgent", "is-high", "is-medium", "is-low");
+  homeBossCardNotice.classList.add(`is-${summary.level}`);
+  homeBossCardNotice.hidden = false;
+  homeBossCardNoticeBody.innerHTML = `
+    <ul class="home-boss-card-notice-list">
+      ${visibleCandidates
+        .map(
+          ({ entry }) => `
+            <li>
+              <strong>${escapeHtml(entry.name)}</strong>
+              <span>${Number(entry.count || 1)}枚</span>
+              <span>${escapeHtml(formatBossCardRemaining(entry, now))}</span>
+            </li>
+          `
+        )
+        .join("")}
+    </ul>
+    ${hiddenCount > 0 ? `<p class="home-boss-card-notice-more">ほか${hiddenCount}件</p>` : ""}
+  `;
+  saveBossCardNoticeSeenState(todayText);
+}
+
 function renderBossCardTimers() {
   if (!bossCardListWrap) return;
   const now = new Date();
+  pruneExpiredBossCardTimers(now);
   const sortedEntries = [...bossCardTimers].sort((a, b) => {
     const aTime = new Date(a.expiry).getTime();
     const bTime = new Date(b.expiry).getTime();
@@ -8996,6 +9111,7 @@ function applyAppMode() {
   appHeader?.classList.toggle("is-collapsed", !isHomeMode);
   toolSiteSearchDock?.classList.add("is-visible");
   homeDailyInfoSection?.classList.toggle("is-collapsed", !isHomeMode);
+  if (!isHomeMode) hideHomeBossCardNotice();
   topQuickAccessSection?.classList.toggle("is-collapsed", !isHomeMode);
   homeBazaarChangeRankingSection?.classList.toggle("is-collapsed", !isHomeMode);
   topUpdateSection?.classList.toggle("is-collapsed", !isHomeMode);
@@ -9004,6 +9120,7 @@ function applyAppMode() {
   if (isHomeMode) {
     setMobileBottomNavHidden(false);
     renderHomeDailyInfo();
+    renderHomeBossCardNotice();
     renderHomeBazaarChangeRanking();
   }
   updateHistoryBackButtonVisibility();
@@ -9995,6 +10112,21 @@ if (homeBazaarChangeRankingSortSelect) {
   homeBazaarChangeRankingSortSelect.addEventListener("change", (event) => {
     homeBazaarChangeRankingSort = String(event.target.value || "up") === "down" ? "down" : "up";
     renderHomeBazaarChangeRanking();
+  });
+}
+
+if (homeBossCardNoticeCloseButton) {
+  homeBossCardNoticeCloseButton.addEventListener("click", () => {
+    saveBossCardNoticeSeenState();
+    hideHomeBossCardNotice();
+  });
+}
+
+if (homeBossCardNoticeOpenButton) {
+  homeBossCardNoticeOpenButton.addEventListener("click", () => {
+    saveBossCardNoticeSeenState();
+    hideHomeBossCardNotice();
+    scrollToBlock("boss-card");
   });
 }
 

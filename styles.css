@@ -643,6 +643,92 @@ body.is-modal-open {
   display: none;
 }
 
+.home-boss-card-notice {
+  margin-bottom: var(--ui-section-vertical-space);
+  border-left: 4px solid #b76d3c;
+  background: linear-gradient(180deg, rgba(255, 248, 239, 0.96) 0%, rgba(248, 234, 212, 0.92) 100%);
+}
+
+.home-boss-card-notice.is-collapsed {
+  display: none;
+}
+
+.home-boss-card-notice.is-urgent {
+  border-left-color: #9b3f2d;
+}
+
+.home-boss-card-notice-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 7px;
+}
+
+.home-boss-card-notice h2 {
+  margin: 0;
+  color: #6a3b22;
+  font-size: 0.95rem;
+}
+
+.home-boss-card-notice-close {
+  flex: 0 0 auto;
+  min-width: 30px;
+  min-height: 30px;
+  border: 1px solid rgba(154, 100, 65, 0.42);
+  border-radius: 999px;
+  background: rgba(255, 250, 242, 0.86);
+  color: #6a4329;
+  font-weight: 800;
+}
+
+.home-boss-card-notice-list {
+  display: grid;
+  gap: 5px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.home-boss-card-notice-list li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 8px;
+  padding: 5px 7px;
+  border: 1px solid rgba(184, 148, 112, 0.48);
+  border-radius: 9px;
+  background: rgba(255, 252, 247, 0.72);
+  color: #4f3928;
+  font-size: 0.8rem;
+  line-height: 1.25;
+}
+
+.home-boss-card-notice-list strong {
+  color: #3f2b1d;
+}
+
+.home-boss-card-notice-more {
+  margin: 5px 0 0;
+  color: #6a4a33;
+  font-size: 0.74rem;
+}
+
+.home-boss-card-notice-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 8px;
+}
+
+.home-boss-card-notice-actions button {
+  border: 1px solid rgba(120, 78, 45, 0.42);
+  border-radius: 999px;
+  background: linear-gradient(180deg, #755033 0%, #4f321e 100%);
+  color: #fffaf0;
+  font-size: 0.78rem;
+  font-weight: 800;
+}
+
 .home-daily-info-card h2 {
   margin: 0 0 6px;
   color: #315f60;
