@@ -172,6 +172,8 @@ body.is-modal-open {
 }
 
 .side-menu-item {
+  display: block;
+  box-sizing: border-box;
   width: 100%;
   text-align: left;
   border: 1px solid #89674a;
@@ -181,6 +183,8 @@ body.is-modal-open {
   padding: 12px 14px;
   font-weight: 700;
   border-left: 3px solid var(--accent-gold);
+  text-decoration: none;
+  cursor: pointer;
 }
 
 .side-menu-sub-item {
