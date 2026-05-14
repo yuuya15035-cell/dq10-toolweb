@@ -377,7 +377,8 @@ const CONTENT_DEFINITIONS = [
 const DEFAULT_CONTENT = Object.freeze({
   site_title: "ドラゴンクエスト10支援サイト",
   site_intro: "職人・バザー・モンスター・装備をまとめて確認できます。",
-  site_summary: "",
+  site_summary:
+    "現在、試験運用中のWEBサイトです。不具合や不備がありましたら、お問い合わせよりご連絡いただけると助かります。今後、レイアウト変更や機能追加を行う場合があります。",
   site_notice: "",
   updates_heading: "更新情報",
   tools_heading: "サイト内便利ツール",

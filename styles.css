@@ -234,6 +234,9 @@ body.is-modal-open {
 
 #contentSiteSummary {
   margin-top: 4px;
+  color: rgba(79, 58, 41, 0.82);
+  font-size: 0.78rem;
+  line-height: 1.42;
   white-space: pre-line;
 }
 
