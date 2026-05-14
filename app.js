@@ -1503,11 +1503,12 @@ function getDailyInfoTogabitoBosses(now = new Date()) {
 
 function getWeeklyReminderText(now = new Date()) {
   const resetDate = getDailyInfoResetDate(now);
-  if (resetDate.getDay() === 0) return { text: "週課が更新されました", isToday: true };
+  if (resetDate.getDay() === 0) return { text: "週課が更新されました", isToday: true, daysUntil: 0 };
   const nextSunday = buildRoutineResetDate(resetDate, 6, 0);
   nextSunday.setDate(resetDate.getDate() + ((7 - resetDate.getDay()) % 7));
   if (nextSunday <= resetDate) nextSunday.setDate(nextSunday.getDate() + 7);
-  return { text: `週課更新まであと${getDaysBetweenResetDates(resetDate, nextSunday)}日`, isToday: false };
+  const daysUntil = getDaysBetweenResetDates(resetDate, nextSunday);
+  return { text: `週課更新まであと${daysUntil}日`, isToday: false, daysUntil };
 }
 
 function getPanigalmReminderText(now = new Date()) {
@@ -1518,9 +1519,10 @@ function getPanigalmReminderText(now = new Date()) {
     nextDate.setDate(nextDate.getDate() + 3);
   }
   if (nextDate.getTime() === resetDate.getTime()) {
-    return { text: "パニガルムが更新されました", isToday: true };
+    return { text: "パニガルムが更新されました", isToday: true, daysUntil: 0 };
   }
-  return { text: `パニガルム更新まであと${getDaysBetweenResetDates(resetDate, nextDate)}日`, isToday: false };
+  const daysUntil = getDaysBetweenResetDates(resetDate, nextDate);
+  return { text: `パニガルム更新まであと${daysUntil}日`, isToday: false, daysUntil };
 }
 
 function parseMonthlyResetDaysFromRule(resetRule) {
@@ -1613,7 +1615,8 @@ function renderHomeDailyInfo() {
             const heading = group.isToday
               ? "本日更新"
               : `${formatShortMonthDay(group.date)}更新まであと${group.daysUntil}日`;
-            return `<li class="${group.isToday ? "is-today" : ""}"><strong>${escapeHtml(heading)}</strong><span>${escapeHtml(group.titles.join(" / "))}</span></li>`;
+            const className = group.isToday ? "is-today" : group.daysUntil === 1 ? "is-soon" : "";
+            return `<li class="${className}"><strong>${escapeHtml(heading)}</strong><span>${escapeHtml(group.titles.join(" / "))}</span></li>`;
           })
           .join("")
       : `<li><span>表示できる月課予定がありません。</span></li>`;
@@ -1630,8 +1633,8 @@ function renderHomeDailyInfo() {
     <div class="home-daily-info-block">
       <h3>更新リマインド</h3>
       <ul class="home-daily-info-reminders">
-        <li class="${weeklyReminder.isToday ? "is-today" : ""}">${escapeHtml(weeklyReminder.text)}</li>
-        <li class="${panigalmReminder.isToday ? "is-today" : ""}">${escapeHtml(panigalmReminder.text)}</li>
+        <li class="${weeklyReminder.isToday ? "is-today" : weeklyReminder.daysUntil === 1 ? "is-soon" : ""}">${escapeHtml(weeklyReminder.text)}</li>
+        <li class="${panigalmReminder.isToday ? "is-today" : panigalmReminder.daysUntil === 1 ? "is-soon" : ""}">${escapeHtml(panigalmReminder.text)}</li>
       </ul>
     </div>
     <div class="home-daily-info-block home-daily-info-monthly">

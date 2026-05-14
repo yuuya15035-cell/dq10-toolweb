@@ -828,9 +828,18 @@ body.is-modal-open {
 }
 
 .home-daily-info-reminders .is-today,
+.home-daily-info-reminders .is-soon,
+.home-daily-info-monthly .is-soon strong,
 .home-daily-info-monthly .is-today strong {
   color: #8a4a33;
   font-weight: 800;
+}
+
+.home-daily-info-reminders .is-soon,
+.home-daily-info-monthly .is-soon {
+  padding: 2px 5px;
+  border-radius: 7px;
+  background: rgba(176, 70, 45, 0.1);
 }
 
 .home-daily-info-monthly li {
