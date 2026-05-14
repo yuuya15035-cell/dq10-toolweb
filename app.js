@@ -11,6 +11,7 @@ const BAZAAR_HISTORY_CSV_PATH = "./data/bazaar_prices_history.csv";
 const PRESENT_CODES_CSV_PATH = "./data/datapresent_codes.csv";
 const FIELD_FARMING_CSV_PATH = "./data/field_farming_monsters.csv";
 const ROUTINE_TASKS_CSV_PATH = "./data/routine_tasks.csv";
+const BOSS_CARDS_CSV_PATH = "./data/boss_cards.csv";
 const ORB_DATA_CSV_PATH = "./data/orb_data.csv";
 const MONSTER_DATA_CSV_PATH = "./data/monster_data.csv";
 const ORB_MONSTERS_CSV_PATH = "./data/orb_monsters.csv";
@@ -1989,6 +1990,7 @@ let fieldFarmingKeyword = "";
 let selectedRoutineType = "daily";
 let routineTaskCheckedTokens = {};
 let bossCardTimers = [];
+let bossCardNameCandidateRecords = [];
 let siteSearchKeyword = "";
 let homeBazaarChangeRankingSort = "up";
 let isSiteSearchDataLoading = false;
@@ -4911,14 +4913,58 @@ function normalizeBossCardSearchText(value) {
   return String(value || "")
     .trim()
     .normalize("NFKC")
+    .replace(/[\s\u3000]/g, "")
     .replace(/[ぁ-ん]/g, (char) => String.fromCharCode(char.charCodeAt(0) + 0x60))
     .toLowerCase();
+}
+
+function createBossCardNameCandidateRecord(cardName, reading = "", category = "") {
+  const name = String(cardName || "").trim();
+  if (!name) return null;
+  const normalizedVariants = new Set(
+    [name, reading, name.replace(/カード$/u, ""), name.replace(/強カード$/u, ""), name.replace(/強$/u, "")]
+      .map(normalizeBossCardSearchText)
+      .filter(Boolean)
+  );
+  return {
+    name,
+    reading: String(reading || "").trim(),
+    category: String(category || "").trim(),
+    searchKeys: Array.from(normalizedVariants),
+  };
+}
+
+async function loadBossCardNameCandidateRecords() {
+  try {
+    const lines = await fetchCsvLines(BOSS_CARDS_CSV_PATH);
+    const headers = parseCsvLine(lines[0]).map((header) => String(header || "").replace(/^\uFEFF/, "").trim());
+    const nameIndex = headers.indexOf("card_name");
+    const readingIndex = headers.indexOf("reading");
+    const categoryIndex = headers.indexOf("category");
+    if (nameIndex < 0) throw new Error("boss_cards.csv に card_name 列がありません");
+    return lines
+      .slice(1)
+      .map((line) => {
+        const row = parseCsvLine(line);
+        return createBossCardNameCandidateRecord(row[nameIndex], readingIndex >= 0 ? row[readingIndex] : "", categoryIndex >= 0 ? row[categoryIndex] : "");
+      })
+      .filter(Boolean);
+  } catch (error) {
+    console.warn("boss_cards.csv の読み込みに失敗したため固定候補を使用します", error);
+    return BOSS_CARD_NAME_CANDIDATES.map((name) => createBossCardNameCandidateRecord(name)).filter(Boolean);
+  }
 }
 
 function getBossCardNameCandidates(keyword) {
   const normalizedKeyword = normalizeBossCardSearchText(keyword);
   if (!normalizedKeyword) return [];
-  return BOSS_CARD_NAME_CANDIDATES.filter((name) => normalizeBossCardSearchText(name).includes(normalizedKeyword)).slice(0, 8);
+  const records = bossCardNameCandidateRecords.length
+    ? bossCardNameCandidateRecords
+    : BOSS_CARD_NAME_CANDIDATES.map((name) => createBossCardNameCandidateRecord(name)).filter(Boolean);
+  return records
+    .filter((record) => record.searchKeys.some((key) => key.includes(normalizedKeyword)))
+    .map((record) => record.name)
+    .slice(0, 10);
 }
 
 function renderBossCardNameCandidates() {
@@ -12997,6 +13043,7 @@ async function initialize() {
   isMemoHintDismissed = loadMemoHintDismissedState();
   routineTaskCheckedTokens = loadRoutineTaskState();
   bossCardTimers = loadBossCardTimers();
+  bossCardNameCandidateRecords = await loadBossCardNameCandidateRecords();
   rebuildMemoEntryIdSet();
   renderMemoList();
   updateMemoDockHintVisibility();
