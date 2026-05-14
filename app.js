@@ -381,7 +381,7 @@ const DEFAULT_CONTENT = Object.freeze({
   site_notice: "",
   updates_heading: "更新情報",
   tools_heading: "サイト内便利ツール",
-  tools_intro: "各カードをクリックすると対象ページへ移動できます。",
+  tools_intro: "左上メニューから各ページへ移動できます。よく使うページは「ホームに追加」すると、このエリアに表示されてすぐ開けます。",
   menu_hint: "",
   ui_settings_heading: "UI設定",
   ui_settings_note: "スライダーや入力で見た目を調整できます。変更はすぐ反映されます。",
