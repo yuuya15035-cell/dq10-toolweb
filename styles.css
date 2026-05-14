@@ -1846,6 +1846,15 @@ body.is-modal-open {
   color: #4f3a29;
 }
 
+.field-farming-description-card {
+  margin: 0 0 12px;
+  padding: 12px 14px;
+  border: 1px solid rgba(183, 138, 85, 0.78);
+  border-radius: 12px;
+  background: rgba(252, 246, 235, 0.94);
+  box-shadow: 0 3px 10px rgba(70, 48, 30, 0.08);
+}
+
 .field-farming-beginner-note {
   color: #5c4027;
 }
