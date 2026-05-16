@@ -1642,6 +1642,35 @@ body.is-modal-open {
 .monster-info-nav-link:hover {
   background: #f3e7d7;
 }
+.monster-info-modal .memo-target-header {
+  align-items: center;
+  flex-wrap: wrap;
+  padding-right: 0;
+}
+.monster-info-modal-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-left: auto;
+}
+.monster-info-modal-actions .memo-add-button {
+  position: static;
+  top: auto;
+  right: auto;
+}
+.monster-info-share-link {
+  border: 1px solid #c7ad8d;
+  border-radius: 999px;
+  background: #fff8ec;
+  color: #3f2a1a;
+  cursor: pointer;
+  font-size: 0.82rem;
+  font-weight: 700;
+  padding: 4px 10px;
+}
+.monster-info-share-link:hover {
+  background: #f3e7d7;
+}
 .equipment-db-monster-link-list {
   display: inline-flex;
   flex-wrap: wrap;

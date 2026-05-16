@@ -5508,6 +5508,12 @@ function renderMonsterInfoCards() {
   monsterInfoTypeFilterSelect.innerHTML = `<option value="">すべて</option>${types.map((type) => `<option value="${escapeHtml(type)}" ${selectedMonsterInfoType === type ? "selected" : ""}>${escapeHtml(type)}</option>`).join("")}`;
   updateMonsterInfoClearButtonVisibility();
   const filtered = getSortedMonsterDetailEntries(getFilteredMonsterDetailEntries());
+  if (!filtered.length) {
+    monsterInfoListWrap.innerHTML = `<p class="card monster-info-empty">該当するモンスターが見つかりませんでした。</p>`;
+    decorateMemoAddButtons(monsterInfoListWrap);
+    updateDocumentMetadata();
+    return;
+  }
   monsterInfoListWrap.innerHTML = `<div class="monster-info-grid">${filtered.map((entry) => {
     const firstHabitat = entry.habitats[0] || "-";
     const remain = Math.max(entry.habitats.length - 1, 0);
@@ -5949,7 +5955,10 @@ function openMonsterInfoDetailModal(entry) {
     .join("");
   monsterInfoModalBody.innerHTML = `<div class="memo-target-header">
         <h3>${escapeHtml(entry.name)}</h3>
-        <button type="button" class="memo-add-button" data-memo-monster-id="${escapeHtml(entry.id)}">＋メモ</button>
+        <div class="monster-info-modal-actions">
+          <button type="button" class="monster-info-share-link" data-monster-share-name="${escapeHtml(entry.name)}">リンクをコピー</button>
+          <button type="button" class="memo-add-button" data-memo-monster-id="${escapeHtml(entry.id)}">＋メモ</button>
+        </div>
       </div>
       <p class="monster-info-modal-type monster-info-modal-type-${escapeHtml(getMonsterTypeThemeClass(entry.type))}">${buildMonsterTypeLabelHtml(entry.type)}</p>
       <p>経験値：${escapeHtml(entry.exp)} / ゴールド：${escapeHtml(entry.gold)}</p>
@@ -5968,6 +5977,22 @@ function openMonsterInfoDetailModal(entry) {
   });
   monsterInfoModalDialog?.focus();
   updateDocumentMetadata();
+}
+
+async function copyMonsterShareUrl(monsterName) {
+  const normalizedName = String(monsterName || "").trim();
+  if (!normalizedName) return;
+  const shareUrl = getMonsterShareUrl(normalizedName);
+  if (!navigator.clipboard?.writeText) {
+    showMemoToast("リンクをコピーできませんでした");
+    return;
+  }
+  try {
+    await navigator.clipboard.writeText(shareUrl);
+    showMemoToast("リンクをコピーしました");
+  } catch (error) {
+    showMemoToast("リンクをコピーできませんでした");
+  }
 }
 
 function activateEquipmentDbCard(entryId) {
@@ -9410,6 +9435,13 @@ function getMonsterUrl(monsterName) {
   return buildFeatureRouteUrl("monster-info", params);
 }
 
+function getMonsterShareUrl(monsterName) {
+  const params = new URLSearchParams();
+  const normalizedName = String(monsterName || "").trim();
+  if (normalizedName) params.set("q", normalizedName);
+  return new URL(buildFeatureRouteUrl("monster-info", params), "https://dq10tools.com").href;
+}
+
 function getOrbUrl(orbName) {
   const params = new URLSearchParams();
   const normalizedName = String(orbName || "").trim();
@@ -9720,7 +9752,7 @@ function applyAppRouteFromUrl() {
     selectedOrbCategory = "";
     expandedOrbId = "";
   }
-  const directMonsterNameParam = String(tab === "monster-info" ? params.get("name") || "" : "").trim();
+  const directMonsterNameParam = String(tab === "monster-info" ? params.get("name") || params.get("q") || "" : "").trim();
   const monsterSearchParam = String(params.get("monsterSearch") || directMonsterNameParam).trim();
   if (monsterSearchParam) {
     monsterInfoSearchKeyword = monsterSearchParam;
@@ -10037,6 +10069,13 @@ if (monsterInfoModalBody) {
       const entry = monsterDetailEntryById.get(String(memoButton.dataset.memoMonsterId || ""));
       addMemoEntry(createMonsterMemoEntry(entry));
       closeMonsterInfoModal();
+      return;
+    }
+    const shareButton = target.closest("[data-monster-share-name]");
+    if (shareButton && monsterInfoModalBody.contains(shareButton)) {
+      event.preventDefault();
+      event.stopPropagation();
+      void copyMonsterShareUrl(String(shareButton.dataset.monsterShareName || ""));
       return;
     }
     const orbButton = target.closest("[data-monster-orb-name]");

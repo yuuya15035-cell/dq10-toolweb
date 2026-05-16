@@ -1,27 +1,18 @@
-﻿<!doctype html>
-<html lang="ja" data-entry-title="装備情報｜DQ10ツール" data-entry-description="DQ10の装備情報ページを開きます。" data-entry-loading="装備情報を読み込み中です…" data-entry-load-failed="ページを読み込めませんでした。下のリンクをお試しください。" data-entry-fallback-label="トップページを開く" data-entry-fallback="../?tab=equipment-db">
+<!doctype html>
+<html lang="ja" data-entry-title="装備情報｜DQ10ツール" data-entry-description="武器・防具の性能、セット効果、職人レシピ、白宝箱、推定原価を確認できます。" data-entry-loading="装備情報を読み込み中です…" data-entry-fallback="../">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>装備情報｜DQ10ツール</title>
-  <meta name="description" content="DQ10の装備情報ページを開きます。">
+  <meta name="description" content="武器・防具の性能、セット効果、職人レシピ、白宝箱、推定原価を確認できます。">
   <link rel="canonical" href="https://dq10tools.com/equipment/">
-  <style>
-    body { margin: 0; min-height: 100vh; display: grid; place-items: center; font-family: sans-serif; background: #f7efe3; color: #4b3624; }
-    main { padding: 16px; text-align: center; }
-    #entryPageStatus { margin: 0; font-size: 0.96rem; line-height: 1.5; }
-    #entryPageFallbackLink { color: #7b4a22; font-weight: 700; }
-    #entryPageFallbackLink[hidden] { display: none; }
-    .entry-page-fallback { margin: 10px 0 0; }
-  </style>
-  <script src="../public/entry-loader.js" defer></script>
+  <style>body{margin:0;min-height:100vh;display:grid;place-items:center;font-family:"Yu Gothic","Hiragino Sans",Meiryo,sans-serif;color:#4b3523;background:radial-gradient(circle at 50% 26%,rgba(255,250,238,.92) 0%,rgba(244,226,194,.78) 46%,rgba(215,183,134,.62) 100%),#ead4ad}.entry-page-shell{width:min(760px,100%);box-sizing:border-box;padding:18px}.entry-page-card{border:1px solid rgba(145,94,45,.5);border-radius:16px;background:rgba(255,250,240,.94);box-shadow:0 10px 26px rgba(73,48,26,.14);padding:20px 22px}.entry-page-kicker{margin:0 0 6px;font-size:.82rem;color:#8a633f;font-weight:700}h1{margin:0 0 10px;font-size:clamp(1.35rem,5vw,2rem);color:#3a2415}.entry-page-description{margin:0;line-height:1.75}.entry-page-note,.entry-page-status{margin:10px 0 0;color:#72563a;font-size:.86rem;line-height:1.6}.entry-page-links{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}.entry-page-links a,#entryPageFallbackLink{display:inline-flex;align-items:center;min-height:34px;padding:6px 12px;border:1px solid rgba(145,94,45,.42);border-radius:999px;color:#4b2f1c;background:rgba(255,246,226,.96);text-decoration:none;font-weight:700}</style>
 </head>
-<body>
-  <main>
-    <p id="entryPageStatus">装備情報を読み込み中です…</p>
-    <p class="entry-page-fallback"><a id="entryPageFallbackLink" href="../?tab=equipment-db" hidden>トップページを開く</a></p>
-  </main>
-</body>
-</html>
-
-
+<body><main class="entry-page-shell"><section class="entry-page-card">
+  <p class="entry-page-kicker">DQ10ツール</p><h1>装備情報</h1>
+  <p class="entry-page-description">武器・防具の性能、セット効果、職人レシピ、白宝箱、推定原価を確認できます。</p>
+  <p class="entry-page-note">装備名検索や白宝箱ドロップモンスター検索から目的の装備を探せます。</p>
+  <p id="entryPageStatus" class="entry-page-status">装備情報を読み込み中です…</p>
+  <nav class="entry-page-links" aria-label="関連ページ"><a href="/craft/">職人アシスト</a><a href="/monster/">モンスター情報</a></nav>
+  <p class="entry-page-fallback"><a id="entryPageFallbackLink" href="../" hidden>トップページを開く</a></p>
+</section></main><script src="../public/entry-loader.js" defer></script></body></html>
