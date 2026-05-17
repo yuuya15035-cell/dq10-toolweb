@@ -6,6 +6,8 @@ const CSV_PATH = path.join(ROOT_DIR, "data", "monster_detail_data.csv");
 const OUTPUT_BASE_DIR = path.join(ROOT_DIR, "monster");
 const SITEMAP_PATH = path.join(ROOT_DIR, "sitemap.xml");
 const SITE_ORIGIN = "https://dq10tools.com";
+const MATERIAL_BASE_DIR = path.join(ROOT_DIR, "bazaar");
+const EQUIPMENT_BASE_DIR = path.join(ROOT_DIR, "equipment");
 
 const GENERATED_MARKER = "generated-by: scripts/generate-monster-pages.js";
 
@@ -75,11 +77,54 @@ function toMonsterQueryUrl(monsterName) {
   return `${SITE_ORIGIN}/monster/?q=${encodeURIComponent(monsterName)}`;
 }
 
-function renderListSection(label, values) {
+function toBazaarItemUrl(itemName) {
+  const params = new URLSearchParams();
+  params.set("tab", "bazaar");
+  params.set("item", itemName);
+  return `${SITE_ORIGIN}/bazaar/?${params.toString()}`;
+}
+
+function toEquipmentSearchUrl(equipmentName) {
+  const params = new URLSearchParams();
+  params.set("tab", "equipment-db");
+  params.set("equipmentSearch", equipmentName);
+  return `${SITE_ORIGIN}/equipment/?${params.toString()}`;
+}
+
+function toOrbSearchUrl(orbName) {
+  const params = new URLSearchParams();
+  params.set("tab", "orbs");
+  params.set("orbSearch", orbName);
+  return `${SITE_ORIGIN}/orb/?${params.toString()}`;
+}
+
+function hasGeneratedPage(baseDir, pageName) {
+  return fs.existsSync(path.join(baseDir, pageName, "index.html"));
+}
+
+function renderLinkedValue(value, href) {
+  const escapedValue = escapeHtml(value);
+  if (!href) return escapedValue;
+  return `<a href="${escapeHtml(href)}">${escapedValue}</a>`;
+}
+
+function getDropHref(itemName) {
+  if (!itemName) return "";
+  if (hasGeneratedPage(MATERIAL_BASE_DIR, itemName)) return `${SITE_ORIGIN}/bazaar/${encodeURIComponent(itemName)}/`;
+  return toBazaarItemUrl(itemName);
+}
+
+function getWhiteBoxHref(equipmentName) {
+  if (!equipmentName) return "";
+  if (hasGeneratedPage(EQUIPMENT_BASE_DIR, equipmentName)) return `${SITE_ORIGIN}/equipment/${encodeURIComponent(equipmentName)}/`;
+  return toEquipmentSearchUrl(equipmentName);
+}
+
+function renderListSection(label, values, getHref = () => "") {
   if (!values.length) {
     return `<li><strong>${escapeHtml(label)}：</strong>なし</li>`;
   }
-  return `<li><strong>${escapeHtml(label)}：</strong>${values.map((value) => escapeHtml(value)).join(" / ")}</li>`;
+  return `<li><strong>${escapeHtml(label)}：</strong>${values.map((value) => renderLinkedValue(value, getHref(value))).join(" / ")}</li>`;
 }
 
 function countFilledFields(row) {
@@ -254,10 +299,10 @@ function buildMonsterPageHtml(row, outputName = "") {
 
     <section class="card">
       <ul>
-        ${renderListSection("通常ドロップ", normalDrop ? [normalDrop] : [])}
-        ${renderListSection("レアドロップ", rareDrop ? [rareDrop] : [])}
-        ${renderListSection("白宝箱", whiteBoxValues)}
-        ${renderListSection("宝珠", orbValues)}
+        ${renderListSection("通常ドロップ", normalDrop ? [normalDrop] : [], getDropHref)}
+        ${renderListSection("レアドロップ", rareDrop ? [rareDrop] : [], getDropHref)}
+        ${renderListSection("白宝箱", whiteBoxValues, getWhiteBoxHref)}
+        ${renderListSection("宝珠", orbValues, toOrbSearchUrl)}
         ${renderListSection("生息地", habitatValues)}
       </ul>
       <div class="actions">

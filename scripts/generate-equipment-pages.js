@@ -10,6 +10,8 @@ const OUTPUT_BASE_DIR = path.join(ROOT_DIR, "equipment");
 const SITEMAP_PATH = path.join(ROOT_DIR, "sitemap.xml");
 const SITE_ORIGIN = "https://dq10tools.com";
 const GENERATED_MARKER = "generated-by: scripts/generate-equipment-pages.js";
+const MATERIAL_BASE_DIR = path.join(ROOT_DIR, "bazaar");
+const MONSTER_BASE_DIR = path.join(ROOT_DIR, "monster");
 
 function readText(filePath, encoding = "utf8") {
   const bytes = fs.readFileSync(filePath);
@@ -103,6 +105,35 @@ function toCraftUrl(equipmentName) {
 
 function toMaterialUrl(materialName) {
   return `${SITE_ORIGIN}/bazaar/${encodeURIComponent(materialName)}/`;
+}
+
+function toBazaarSearchUrl(materialName) {
+  const params = new URLSearchParams();
+  params.set("tab", "bazaar");
+  params.set("item", materialName);
+  return `${SITE_ORIGIN}/bazaar/?${params.toString()}`;
+}
+
+function toMonsterUrl(monsterName) {
+  return `${SITE_ORIGIN}/monster/${encodeURIComponent(monsterName)}/`;
+}
+
+function toMonsterSearchUrl(monsterName) {
+  return `${SITE_ORIGIN}/monster/?q=${encodeURIComponent(monsterName)}`;
+}
+
+function hasGeneratedPage(baseDir, pageName) {
+  return fs.existsSync(path.join(baseDir, pageName, "index.html"));
+}
+
+function getMaterialHref(materialName) {
+  if (!materialName) return "";
+  return hasGeneratedPage(MATERIAL_BASE_DIR, materialName) ? toMaterialUrl(materialName) : toBazaarSearchUrl(materialName);
+}
+
+function getMonsterHref(monsterName) {
+  if (!monsterName) return "";
+  return hasGeneratedPage(MONSTER_BASE_DIR, monsterName) ? toMonsterUrl(monsterName) : toMonsterSearchUrl(monsterName);
 }
 
 function countFilledFields(row) {
@@ -277,7 +308,7 @@ function buildRecipeItems(recipe, bazaarPrices) {
     } else {
       estimatedCost += unitPrice * quantity;
     }
-    return `<li><span><a href="${escapeHtml(toMaterialUrl(materialName))}">${escapeHtml(materialName)}</a> x ${escapeHtml(quantity)}</span><span>${unitPrice === undefined ? "単価なし" : `${formatNumber(unitPrice)}G`}</span></li>`;
+    return `<li><span><a href="${escapeHtml(getMaterialHref(materialName))}">${escapeHtml(materialName)}</a> x ${escapeHtml(quantity)}</span><span>${unitPrice === undefined ? "単価なし" : `${formatNumber(unitPrice)}G`}</span></li>`;
   });
   return {
     html: `<ul class="material-list">${items.join("")}</ul>`,
@@ -289,9 +320,11 @@ function buildRecipeItems(recipe, bazaarPrices) {
 function buildWhiteBoxHtml(entries) {
   if (!entries.length) return `<p class="empty">白宝箱ドロップなし</p>`;
   const items = entries.map((entry) => {
-    const monsters = entry.monsters.length ? entry.monsters.join(" / ") : "なし";
+    const monsters = entry.monsters.length
+      ? entry.monsters.map((monsterName) => `<a href="${escapeHtml(getMonsterHref(monsterName))}">${escapeHtml(monsterName)}</a>`).join(" / ")
+      : "なし";
     const itemLabel = entry.itemName ? `${entry.itemName}${entry.itemSlot ? `（${entry.itemSlot}）` : ""}` : "";
-    return `<li>${itemLabel ? `<span class="sub-label">${escapeHtml(itemLabel)}</span><br>` : ""}${escapeHtml(monsters)}</li>`;
+    return `<li>${itemLabel ? `<span class="sub-label">${escapeHtml(itemLabel)}</span><br>` : ""}${monsters}</li>`;
   });
   return `<ul>${items.join("")}</ul>`;
 }
