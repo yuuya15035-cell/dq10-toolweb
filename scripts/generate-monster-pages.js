@@ -374,8 +374,9 @@ function buildMonsterPageHtml(row, outputName = "") {
       }
     }
   </style>
+  <link rel="stylesheet" href="/assets/individual-page.css" />
 </head>
-<body>
+<body data-individual-type="モンスター" data-individual-name="${escapeHtml(monsterName)}">
   ${renderCommonNav()}
   <main>
     <section class="card">
@@ -404,6 +405,7 @@ function buildMonsterPageHtml(row, outputName = "") {
       <p class="note">最新の絞り込みや関連リンクは、モンスター情報ページで確認できます。</p>
     </section>
   </main>
+  <script src="/assets/individual-page.js" defer></script>
 </body>
 </html>
 `;

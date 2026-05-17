@@ -407,8 +407,9 @@ function buildEquipmentPageHtml(equipment, context) {
     .button:hover, .button:focus-visible { background: #fff7eb; }
     @media (max-width: 640px) { main { width: min(100% - 20px, 760px); padding-top: 18px; } .card { padding: 15px 14px 14px; border-radius: 14px; } .actions { flex-direction: column; } .button { width: 100%; } .material-list li { align-items: flex-start; flex-direction: column; gap: 2px; } }
   </style>
+  <link rel="stylesheet" href="/assets/individual-page.css" />
 </head>
-<body>
+<body data-individual-type="装備" data-individual-name="${escapeHtml(equipmentName)}">
   ${renderCommonNav()}
   <main>
     <section class="card">
@@ -450,6 +451,7 @@ function buildEquipmentPageHtml(equipment, context) {
       <p class="note">最新の絞り込みや関連リンクは、装備情報ページで確認できます。</p>
     </section>
   </main>
+  <script src="/assets/individual-page.js" defer></script>
 </body>
 </html>
 `;

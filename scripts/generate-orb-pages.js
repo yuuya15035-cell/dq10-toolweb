@@ -199,8 +199,9 @@ function buildOrbPageHtml(entry) {
       .button { width: 100%; }
     }
   </style>
+  <link rel="stylesheet" href="/assets/individual-page.css" />
 </head>
-<body>
+<body data-individual-type="宝珠" data-individual-name="${escapeHtml(entry.orbName)}">
   ${renderCommonNav()}
   <main>
     <section class="card">
@@ -222,6 +223,7 @@ function buildOrbPageHtml(entry) {
       <p class="note">最新の絞り込みや関連リンクは、宝珠情報ページで確認できます。</p>
     </section>
   </main>
+  <script src="/assets/individual-page.js" defer></script>
 </body>
 </html>
 `;

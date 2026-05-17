@@ -253,8 +253,9 @@ function buildRecipePageHtml(recipe, context) {
     .button:hover, .button:focus-visible { background: #fff7eb; }
     @media (max-width: 640px) { main { width: min(100% - 20px, 820px); padding-top: 18px; } .card { padding: 15px 14px 14px; border-radius: 14px; } .actions { flex-direction: column; } .button { width: 100%; } }
   </style>
+  <link rel="stylesheet" href="/assets/individual-page.css" />
 </head>
-<body>
+<body data-individual-type="レシピ" data-individual-name="${escapeHtml(equipmentName)}">
   ${renderCommonNav()}
   <main>
     <section class="card">
@@ -285,6 +286,7 @@ function buildRecipePageHtml(recipe, context) {
       <p class="note">最新の素材価格や利益目安は、職人アシストで確認できます。</p>
     </section>
   </main>
+  <script src="/assets/individual-page.js" defer></script>
 </body>
 </html>
 `;
