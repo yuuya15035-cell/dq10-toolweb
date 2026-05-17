@@ -3,20 +3,14 @@ const path = require("path");
 
 const ROOT_DIR = path.resolve(__dirname, "..");
 const CSV_PATH = path.join(ROOT_DIR, "data", "monster_detail_data.csv");
-const MONSTER_NAME_CSV_PATH = path.join(ROOT_DIR, "data", "monster_data.csv");
 const OUTPUT_BASE_DIR = path.join(ROOT_DIR, "monster");
+const SITEMAP_PATH = path.join(ROOT_DIR, "sitemap.xml");
 const SITE_ORIGIN = "https://dq10tools.com";
-
-const TARGET_MONSTERS = [
-  "スライム",
-  "キラーマシン",
-  "ドラキー",
-  "ばくだん岩",
-];
 
 const OUTPUT_NAME_BY_MONSTER_NAME = new Map([
   ["ばくだん岩", "ばくだんいわ"],
 ]);
+const GENERATED_MARKER = "generated-by: scripts/generate-monster-pages.js";
 
 function readCsvRows(csvPath) {
   const text = fs.readFileSync(csvPath, "utf8").replace(/^\uFEFF/, "");
@@ -91,6 +85,23 @@ function renderListSection(label, values) {
   return `<li><strong>${escapeHtml(label)}：</strong>${values.map((value) => escapeHtml(value)).join(" / ")}</li>`;
 }
 
+function countFilledFields(row) {
+  return [
+    "monster_type",
+    "exp",
+    "gold",
+    "normal_drop",
+    "rare_drop",
+    "white_box",
+    "orbs",
+    "habitats",
+  ].reduce((count, key) => count + (String(row[key] || "").trim() ? 1 : 0), 0);
+}
+
+function getOutputName(monsterName) {
+  return OUTPUT_NAME_BY_MONSTER_NAME.get(monsterName) || monsterName;
+}
+
 function buildMonsterPageHtml(row, outputName = "") {
   const monsterName = String(row.monster_name || "").trim();
   const pageName = String(outputName || monsterName).trim();
@@ -109,6 +120,7 @@ function buildMonsterPageHtml(row, outputName = "") {
   return `<!doctype html>
 <html lang="ja">
 <head>
+  <!-- ${GENERATED_MARKER} -->
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>${escapeHtml(monsterName)}｜モンスター情報｜DQ10ツール</title>
@@ -255,7 +267,7 @@ function buildMonsterPageHtml(row, outputName = "") {
         <a class="button" href="${escapeHtml(queryUrl)}">モンスター情報ページで詳細を開く</a>
         <a class="button" href="${SITE_ORIGIN}/monster/">モンスター一覧へ戻る</a>
       </div>
-      <p class="note">このページは検索導線向けの個別ページです。最新の絞り込みや関連リンクは本体ページからも確認できます。</p>
+      <p class="note">最新の絞り込みや関連リンクは、モンスター情報ページで確認できます。</p>
     </section>
   </main>
 </body>
@@ -278,48 +290,89 @@ function writeMonsterPage(row, outputName = "") {
   return outputPath;
 }
 
-function main() {
-  const detailRows = readCsvRows(CSV_PATH);
-  const monsterNameRows = readCsvRows(MONSTER_NAME_CSV_PATH);
+function collectMonsterRows(detailRows) {
   const rowByName = new Map();
-  monsterNameRows.forEach((row) => {
-    const monsterName = String(row.monster_name || "").trim();
-    if (!monsterName) return;
-    rowByName.set(monsterName, {
-      monster_name: monsterName,
-      monster_type: String(row.monster_type || "").trim(),
-      exp: "",
-      gold: "",
-      normal_drop: "",
-      rare_drop: "",
-      white_box: "",
-      orbs: "",
-      habitats: "",
-    });
-  });
   detailRows.forEach((row) => {
     const monsterName = String(row.monster_name || "").trim();
     if (!monsterName) return;
-    rowByName.set(monsterName, row);
-  });
-  const written = [];
-  TARGET_MONSTERS.forEach((monsterName) => {
-    const row = rowByName.get(monsterName);
-    if (!row) {
-      console.warn(`[skip] ${monsterName} が ${path.relative(ROOT_DIR, CSV_PATH)} / ${path.relative(ROOT_DIR, MONSTER_NAME_CSV_PATH)} に見つかりませんでした。`);
-      return;
+    const current = rowByName.get(monsterName);
+    if (!current || countFilledFields(row) >= countFilledFields(current)) {
+      rowByName.set(monsterName, row);
     }
-    const outputPath = writeMonsterPage(row, OUTPUT_NAME_BY_MONSTER_NAME.get(monsterName));
-    if (outputPath) written.push(outputPath);
   });
+  return rowByName;
+}
+
+function removeOldGeneratedPages(expectedOutputNames) {
+  if (!fs.existsSync(OUTPUT_BASE_DIR)) return [];
+  const removed = [];
+  const expected = new Set(expectedOutputNames);
+  fs.readdirSync(OUTPUT_BASE_DIR, { withFileTypes: true }).forEach((entry) => {
+    if (!entry.isDirectory() || expected.has(entry.name)) return;
+    const indexPath = path.join(OUTPUT_BASE_DIR, entry.name, "index.html");
+    if (!fs.existsSync(indexPath)) return;
+    const html = fs.readFileSync(indexPath, "utf8");
+    if (!html.includes(GENERATED_MARKER)) return;
+    const dirPath = path.join(OUTPUT_BASE_DIR, entry.name);
+    fs.rmSync(dirPath, { recursive: true, force: true });
+    removed.push(dirPath);
+  });
+  return removed;
+}
+
+function escapeXml(value) {
+  return String(value || "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&apos;");
+}
+
+function updateSitemap(monsterUrls) {
+  if (!fs.existsSync(SITEMAP_PATH)) return { added: 0 };
+  const sitemap = fs.readFileSync(SITEMAP_PATH, "utf8");
+  const existingLocs = new Set(
+    Array.from(sitemap.matchAll(/<loc>([^<]+)<\/loc>/g), (match) => match[1])
+  );
+  const additions = monsterUrls
+    .filter((url) => !existingLocs.has(url))
+    .map((url) => `  <url>\n    <loc>${escapeXml(url)}</loc>\n  </url>`);
+  if (!additions.length) return { added: 0 };
+  const nextSitemap = sitemap.replace(
+    /<\/urlset>\s*$/,
+    `${additions.join("\n")}\n</urlset>\n`
+  );
+  fs.writeFileSync(SITEMAP_PATH, nextSitemap, "utf8");
+  return { added: additions.length };
+}
+
+function main() {
+  const detailRows = readCsvRows(CSV_PATH);
+  const rowByName = collectMonsterRows(detailRows);
+  const rows = Array.from(rowByName.values());
+  const expectedOutputNames = rows.map((row) => getOutputName(String(row.monster_name || "").trim()));
+  const removed = removeOldGeneratedPages(expectedOutputNames);
+  const written = [];
+  const monsterUrls = [];
+  rows.forEach((row) => {
+    const monsterName = String(row.monster_name || "").trim();
+    const outputName = getOutputName(monsterName);
+    const outputPath = writeMonsterPage(row, outputName);
+    if (outputPath) {
+      written.push(outputPath);
+      monsterUrls.push(toCanonicalUrl(outputName));
+    }
+  });
+  const sitemapResult = updateSitemap(monsterUrls);
   if (!written.length) {
     console.log("個別ページは生成されませんでした。");
     return;
   }
-  console.log("生成したモンスター個別ページ:");
-  written.forEach((filePath) => {
-    console.log(`- ${path.relative(ROOT_DIR, filePath)}`);
-  });
+  console.log(`生成したモンスター個別ページ: ${written.length}件`);
+  console.log(`同名重複をまとめた件数: ${Math.max(detailRows.filter((row) => String(row.monster_name || "").trim()).length - rows.length, 0)}件`);
+  console.log(`削除した古い生成ページ: ${removed.length}件`);
+  console.log(`sitemap.xml への追加URL: ${sitemapResult.added}件`);
 }
 
 main();
