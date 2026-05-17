@@ -9313,6 +9313,9 @@ function switchToHomeMode(options = {}) {
   }
   appMode = "home";
   tabContents.forEach((tab) => tab.classList.remove("active"));
+  tabContents.forEach((tab) => {
+    tab.hidden = true;
+  });
   applyAppMode();
   updateMobileBottomNavState();
   navigateByAppParams({ tab: "", equipmentId: "", materialKey: "" }, { replace: true });
@@ -9345,7 +9348,11 @@ function switchTab(target) {
   applyAppMode();
   updateMobileBottomNavState();
   tabButtons.forEach((btn) => btn.classList.toggle("active", btn.dataset.tab === normalizedTarget));
-  tabContents.forEach((tab) => tab.classList.toggle("active", tab.id === normalizedTarget));
+  tabContents.forEach((tab) => {
+    const isActive = tab.id === normalizedTarget;
+    tab.classList.toggle("active", isActive);
+    tab.hidden = !isActive;
+  });
   if (normalizedTarget === "present-codes") {
     renderPresentCodes();
   } else if (normalizedTarget === "field-farming") {
