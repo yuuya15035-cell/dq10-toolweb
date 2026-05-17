@@ -1642,22 +1642,6 @@ body.is-modal-open {
 .monster-info-nav-link:hover {
   background: #f3e7d7;
 }
-.monster-info-modal .memo-target-header {
-  align-items: center;
-  flex-wrap: wrap;
-  padding-right: 0;
-}
-.monster-info-modal-actions {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  margin-left: auto;
-}
-.monster-info-modal-actions .memo-add-button {
-  position: static;
-  top: auto;
-  right: auto;
-}
 .monster-info-share-link {
   border: 1px solid #c7ad8d;
   border-radius: 999px;
@@ -1670,6 +1654,13 @@ body.is-modal-open {
 }
 .monster-info-share-link:hover {
   background: #f3e7d7;
+}
+.monster-info-modal-footer-actions {
+  display: flex;
+  justify-content: center;
+  margin-top: 14px;
+  padding-top: 10px;
+  border-top: 1px solid rgba(199, 173, 141, 0.55);
 }
 .equipment-db-monster-link-list {
   display: inline-flex;

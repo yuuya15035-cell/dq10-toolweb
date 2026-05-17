@@ -5955,10 +5955,7 @@ function openMonsterInfoDetailModal(entry) {
     .join("");
   monsterInfoModalBody.innerHTML = `<div class="memo-target-header">
         <h3>${escapeHtml(entry.name)}</h3>
-        <div class="monster-info-modal-actions">
-          <button type="button" class="monster-info-share-link" data-monster-share-name="${escapeHtml(entry.name)}">リンクをコピー</button>
-          <button type="button" class="memo-add-button" data-memo-monster-id="${escapeHtml(entry.id)}">＋メモ</button>
-        </div>
+        <button type="button" class="memo-add-button" data-memo-monster-id="${escapeHtml(entry.id)}">＋メモ</button>
       </div>
       <p class="monster-info-modal-type monster-info-modal-type-${escapeHtml(getMonsterTypeThemeClass(entry.type))}">${buildMonsterTypeLabelHtml(entry.type)}</p>
       <p>経験値：${escapeHtml(entry.exp)} / ゴールド：${escapeHtml(entry.gold)}</p>
@@ -5966,7 +5963,10 @@ function openMonsterInfoDetailModal(entry) {
       <div class="monster-drop-rare">${buildMonsterDropHtml("レアドロップ", entry.rareDrop, { modal: true })}</div>
       <div><p>白宝箱</p><div class="monster-info-chip-list">${buildMonsterWhiteBoxLinksHtml(entry.whiteBoxList)}</div></div>
       <div><p>宝珠 / オーブ</p><div class="monster-info-chip-list">${buildMonsterOrbLinksHtml(entry.orbList)}</div></div>
-      <div><p>生息地</p><ul class="monster-info-habitat-list">${habitatsHtml || "<li>なし</li>"}</ul></div>`;
+      <div><p>生息地</p><ul class="monster-info-habitat-list">${habitatsHtml || "<li>なし</li>"}</ul></div>
+      <div class="monster-info-modal-footer-actions">
+        <button type="button" class="monster-info-share-link" data-monster-share-name="${escapeHtml(entry.name)}">このモンスターのリンクをコピー</button>
+      </div>`;
   decorateMemoAddButtons(monsterInfoModalBody);
   monsterInfoModalOverlay.hidden = false;
   monsterInfoModalDialog.scrollTop = 0;
