@@ -79,24 +79,15 @@ function toMonsterQueryUrl(monsterName) {
 }
 
 function toBazaarItemUrl(itemName) {
-  const params = new URLSearchParams();
-  params.set("tab", "bazaar");
-  params.set("item", itemName);
-  return `${SITE_ORIGIN}/bazaar/?${params.toString()}`;
+  return `${SITE_ORIGIN}/bazaar/?q=${encodeURIComponent(itemName)}`;
 }
 
 function toEquipmentSearchUrl(equipmentName) {
-  const params = new URLSearchParams();
-  params.set("tab", "equipment-db");
-  params.set("equipmentSearch", equipmentName);
-  return `${SITE_ORIGIN}/equipment/?${params.toString()}`;
+  return `${SITE_ORIGIN}/equipment/?q=${encodeURIComponent(equipmentName)}`;
 }
 
 function toOrbSearchUrl(orbName) {
-  const params = new URLSearchParams();
-  params.set("tab", "orbs");
-  params.set("orbSearch", orbName);
-  return `${SITE_ORIGIN}/orb/?${params.toString()}`;
+  return `${SITE_ORIGIN}/orb/?q=${encodeURIComponent(orbName)}`;
 }
 
 function toOrbUrl(orbName) {

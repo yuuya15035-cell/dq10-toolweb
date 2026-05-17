@@ -108,10 +108,7 @@ function toMaterialUrl(materialName) {
 }
 
 function toBazaarSearchUrl(materialName) {
-  const params = new URLSearchParams();
-  params.set("tab", "bazaar");
-  params.set("item", materialName);
-  return `${SITE_ORIGIN}/bazaar/?${params.toString()}`;
+  return `${SITE_ORIGIN}/bazaar/?q=${encodeURIComponent(materialName)}`;
 }
 
 function toMonsterUrl(monsterName) {
