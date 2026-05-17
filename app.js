@@ -90,6 +90,7 @@ const TAB_DOCUMENT_LABELS = Object.freeze({
   "boss-card": "ボスカード管理",
   "present-codes": "プレゼントのじゅもん",
   "field-farming": "フィールド狩り",
+  "white-boxes": "白宝箱",
 });
 const DEFAULT_HOME_FEATURE_IDS = Object.freeze(["profit", "bazaar", "favorites", "boss-card", "equipment-db"]);
 const HOME_FEATURE_ID_SET = new Set(HOME_FEATURE_DEFINITIONS.map((feature) => feature.id));
@@ -109,7 +110,7 @@ const ENTRY_ROUTE_SEGMENT_TO_TAB = Object.freeze({
   equipment: "equipment-db",
   orb: "orbs",
   favorites: "favorites",
-  whitebox: "equipment-db",
+  whitebox: "white-boxes",
   "admin-bazaar": "bazaar-admin",
 });
 const LEGACY_QUERY_TAB_ALIASES = Object.freeze({
@@ -120,8 +121,8 @@ const LEGACY_QUERY_TAB_ALIASES = Object.freeze({
   monster: "monster-info",
   equipment: "equipment-db",
   orb: "orbs",
-  whitebox: "equipment-db",
-  "white-boxes": "equipment-db",
+  whitebox: "white-boxes",
+  "white-boxes": "white-boxes",
 });
 const ENTRY_ROUTE_TAB_TO_SEGMENT = new Map();
 Object.entries(ENTRY_ROUTE_SEGMENT_TO_TAB).forEach(([segment, tab]) => {
@@ -138,6 +139,7 @@ const TAB_IDS = new Set([
   "boss-card",
   "data",
   "field-farming",
+  "white-boxes",
   "orbs",
   "equipment-db",
   "monster-info",
@@ -9765,6 +9767,16 @@ function getDocumentDescriptionMeta() {
   return document.querySelector('meta[name="description"]');
 }
 
+function getRobotsMeta() {
+  let robotsMeta = document.querySelector('meta[name="robots"]');
+  if (!robotsMeta) {
+    robotsMeta = document.createElement("meta");
+    robotsMeta.setAttribute("name", "robots");
+    document.head.appendChild(robotsMeta);
+  }
+  return robotsMeta;
+}
+
 function getDefaultTabDocumentDescription(tabId) {
   switch (String(tabId || "").trim()) {
     case "bazaar":
@@ -9779,6 +9791,16 @@ function getDefaultTabDocumentDescription(tabId) {
       return "装備の素材、原価、職人アシスト計算を確認できるDQ10ツールです。";
     case "field-farming":
       return "フィールド狩りのおすすめモンスターとドロップ相場を確認できるDQ10ツールです。";
+    case "white-boxes":
+      return "白宝箱で入手できる装備と、落とすモンスターを確認できるDQ10ツールです。";
+    case "routine":
+      return "DQ10の日課・週課・月課のチェック状態と更新目安を確認できるDQ10ツールです。";
+    case "present-codes":
+      return "DQ10のプレゼントのじゅもんと期限を確認できるDQ10ツールです。";
+    case "favorites":
+      return "よく見る素材・装備・レシピをこの端末に保存して確認できるDQ10ツールです。";
+    case "boss-card":
+      return "DQ10のボスカード期限を端末内に保存して確認できるDQ10ツールです。";
     default:
       return DEFAULT_DOCUMENT_DESCRIPTION;
   }
@@ -9830,6 +9852,10 @@ function getActiveDocumentTargetName() {
 
 function updateDocumentMetadata() {
   const descriptionMeta = getDocumentDescriptionMeta();
+  const robotsMeta = getRobotsMeta();
+  if (robotsMeta) {
+    robotsMeta.setAttribute("content", activeTabId === "bazaar-admin" ? "noindex,nofollow" : "index,follow");
+  }
   if (appMode !== "tool") {
     document.title = DEFAULT_DOCUMENT_TITLE;
     if (descriptionMeta) descriptionMeta.setAttribute("content", DEFAULT_DOCUMENT_DESCRIPTION);
