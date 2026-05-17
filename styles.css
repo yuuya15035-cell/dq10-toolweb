@@ -341,6 +341,14 @@ body.is-modal-open {
   display: none !important;
 }
 
+body.ads-disabled .ad-slot,
+.ad-slot.ad-disabled {
+  display: none !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  border: 0 !important;
+}
+
 .ad-slot-label {
   margin: 0 0 6px;
   font-size: 0.74rem;
