@@ -9,6 +9,7 @@ const OUTPUT_BASE_DIR = path.join(ROOT_DIR, "bazaar");
 const SITEMAP_PATH = path.join(ROOT_DIR, "sitemap.xml");
 const SITE_ORIGIN = "https://dq10tools.com";
 const GENERATED_MARKER = "generated-by: scripts/generate-material-pages.js";
+const MONSTER_BASE_DIR = path.join(ROOT_DIR, "monster");
 
 function readText(filePath, encoding = "utf8") {
   const bytes = fs.readFileSync(filePath);
@@ -107,6 +108,19 @@ function toMonsterUrl(monsterName) {
   return `${SITE_ORIGIN}/monster/${encodeURIComponent(monsterName)}/`;
 }
 
+function toMonsterSearchUrl(monsterName) {
+  return `${SITE_ORIGIN}/monster/?q=${encodeURIComponent(monsterName)}`;
+}
+
+function hasGeneratedPage(baseDir, pageName) {
+  return fs.existsSync(path.join(baseDir, pageName, "index.html"));
+}
+
+function getMonsterHref(monsterName) {
+  if (!monsterName) return "";
+  return hasGeneratedPage(MONSTER_BASE_DIR, monsterName) ? toMonsterUrl(monsterName) : toMonsterSearchUrl(monsterName);
+}
+
 function renderCommonNav() {
   return `<nav class="page-menu" aria-label="サイト内メニュー">
     <details>
@@ -191,7 +205,7 @@ function buildMonsterHtml(entries) {
   const items = entries
     .slice()
     .sort((a, b) => String(a.monsterName).localeCompare(String(b.monsterName), "ja"))
-    .map((entry) => `<li><a href="${escapeHtml(toMonsterUrl(entry.monsterName))}">${escapeHtml(entry.monsterName)}</a><span>${escapeHtml(entry.dropType)}</span></li>`);
+    .map((entry) => `<li><a href="${escapeHtml(getMonsterHref(entry.monsterName))}">${escapeHtml(entry.monsterName)}</a><span>${escapeHtml(entry.dropType)}</span></li>`);
   return `<ul class="link-list">${items.join("")}</ul>`;
 }
 

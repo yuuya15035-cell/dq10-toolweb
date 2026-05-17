@@ -8,6 +8,7 @@ const SITEMAP_PATH = path.join(ROOT_DIR, "sitemap.xml");
 const SITE_ORIGIN = "https://dq10tools.com";
 const MATERIAL_BASE_DIR = path.join(ROOT_DIR, "bazaar");
 const EQUIPMENT_BASE_DIR = path.join(ROOT_DIR, "equipment");
+const ORB_BASE_DIR = path.join(ROOT_DIR, "orb");
 
 const GENERATED_MARKER = "generated-by: scripts/generate-monster-pages.js";
 
@@ -98,6 +99,10 @@ function toOrbSearchUrl(orbName) {
   return `${SITE_ORIGIN}/orb/?${params.toString()}`;
 }
 
+function toOrbUrl(orbName) {
+  return `${SITE_ORIGIN}/orb/${encodeURIComponent(orbName)}/`;
+}
+
 function hasGeneratedPage(baseDir, pageName) {
   return fs.existsSync(path.join(baseDir, pageName, "index.html"));
 }
@@ -118,6 +123,12 @@ function getWhiteBoxHref(equipmentName) {
   if (!equipmentName) return "";
   if (hasGeneratedPage(EQUIPMENT_BASE_DIR, equipmentName)) return `${SITE_ORIGIN}/equipment/${encodeURIComponent(equipmentName)}/`;
   return toEquipmentSearchUrl(equipmentName);
+}
+
+function getOrbHref(orbName) {
+  if (!orbName) return "";
+  if (hasGeneratedPage(ORB_BASE_DIR, orbName)) return toOrbUrl(orbName);
+  return toOrbSearchUrl(orbName);
 }
 
 function renderCommonNav() {
@@ -382,7 +393,7 @@ function buildMonsterPageHtml(row, outputName = "") {
         ${renderListSection("通常ドロップ", normalDrop ? [normalDrop] : [], getDropHref)}
         ${renderListSection("レアドロップ", rareDrop ? [rareDrop] : [], getDropHref)}
         ${renderListSection("白宝箱", whiteBoxValues, getWhiteBoxHref)}
-        ${renderListSection("宝珠", orbValues, toOrbSearchUrl)}
+        ${renderListSection("宝珠", orbValues, getOrbHref)}
         ${renderListSection("生息地", habitatValues)}
       </ul>
       <div class="actions">

@@ -107,6 +107,10 @@ function toEquipmentUrl(equipmentName) {
   return `${SITE_ORIGIN}/equipment/${encodeURIComponent(equipmentName)}/`;
 }
 
+function toEquipmentSearchUrl(equipmentName) {
+  return `${SITE_ORIGIN}/equipment/?q=${encodeURIComponent(equipmentName)}`;
+}
+
 function toCraftUrl(equipmentName) {
   const params = new URLSearchParams();
   params.set("q", equipmentName);
@@ -273,7 +277,7 @@ function buildRecipePageHtml(recipe, context) {
       </div>
       <p class="note">推定原価：${formatPrice(materialResult.estimatedCost)}G${materialResult.missingPriceCount ? "（単価なし素材あり）" : ""}</p>
       <div class="actions">
-        ${equipmentPageExists ? `<a class="button" href="${escapeHtml(toEquipmentUrl(equipmentName))}">装備詳細ページを開く</a>` : ""}
+        <a class="button" href="${escapeHtml(equipmentPageExists ? toEquipmentUrl(equipmentName) : toEquipmentSearchUrl(equipmentName))}">装備詳細ページを開く</a>
         <a class="button" href="${escapeHtml(craftUrl)}">職人アシストで開く</a>
         <a class="button" href="${SITE_ORIGIN}/craft/">レシピ一覧へ戻る</a>
         <a class="button" href="${SITE_ORIGIN}/">ホームに戻る</a>

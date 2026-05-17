@@ -9242,15 +9242,15 @@ function clampNumber(value, min, max) {
   return Math.min(Math.max(value, min), max);
 }
 
-function createAdSlotElement(slotName, labelText = "スポンサーリンク") {
+function createAdSlotElement(slotName, labelText = "") {
   const wrapper = document.createElement("section");
   wrapper.className = `ad-slot ${slotName}`;
   wrapper.dataset.adSlot = slotName;
-  wrapper.setAttribute("aria-label", "広告枠");
+  wrapper.setAttribute("aria-label", "ad slot");
   wrapper.innerHTML = `
     <p class="ad-slot-label">${labelText}</p>
     <div class="ad-slot-placeholder" aria-hidden="true">
-      <span class="ad-slot-placeholder-text">広告コード掲載予定</span>
+      <span class="ad-slot-placeholder-text"></span>
     </div>
   `;
   return wrapper;

@@ -337,6 +337,10 @@ body.is-modal-open {
   background: rgba(248, 241, 229, 0.72);
 }
 
+.ad-slot {
+  display: none !important;
+}
+
 .ad-slot-label {
   margin: 0 0 6px;
   font-size: 0.74rem;
