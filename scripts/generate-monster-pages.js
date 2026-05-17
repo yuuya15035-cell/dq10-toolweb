@@ -7,9 +7,6 @@ const OUTPUT_BASE_DIR = path.join(ROOT_DIR, "monster");
 const SITEMAP_PATH = path.join(ROOT_DIR, "sitemap.xml");
 const SITE_ORIGIN = "https://dq10tools.com";
 
-const OUTPUT_NAME_BY_MONSTER_NAME = new Map([
-  ["ばくだん岩", "ばくだんいわ"],
-]);
 const GENERATED_MARKER = "generated-by: scripts/generate-monster-pages.js";
 
 function readCsvRows(csvPath) {
@@ -99,7 +96,7 @@ function countFilledFields(row) {
 }
 
 function getOutputName(monsterName) {
-  return OUTPUT_NAME_BY_MONSTER_NAME.get(monsterName) || monsterName;
+  return monsterName;
 }
 
 function buildMonsterPageHtml(row, outputName = "") {
@@ -330,21 +327,30 @@ function escapeXml(value) {
 }
 
 function updateSitemap(monsterUrls) {
-  if (!fs.existsSync(SITEMAP_PATH)) return { added: 0 };
+  if (!fs.existsSync(SITEMAP_PATH)) return { added: 0, removed: 0 };
   const sitemap = fs.readFileSync(SITEMAP_PATH, "utf8");
-  const existingLocs = new Set(
-    Array.from(sitemap.matchAll(/<loc>([^<]+)<\/loc>/g), (match) => match[1])
-  );
+  const expectedMonsterUrls = new Set(monsterUrls);
+  const staleMonsterUrlPattern = /  <url>\r?\n    <loc>(https:\/\/dq10tools\.com\/monster\/(?!<\/loc>)[^<]+)<\/loc>\r?\n  <\/url>\r?\n/g;
+  let removed = 0;
+  const sitemapWithoutStaleUrls = sitemap.replace(staleMonsterUrlPattern, (block, loc) => {
+    if (expectedMonsterUrls.has(loc)) return block;
+    removed += 1;
+    return "";
+  });
+  const existingLocs = new Set(Array.from(
+    sitemapWithoutStaleUrls.matchAll(/<loc>([^<]+)<\/loc>/g),
+    (match) => match[1]
+  ));
   const additions = monsterUrls
     .filter((url) => !existingLocs.has(url))
     .map((url) => `  <url>\n    <loc>${escapeXml(url)}</loc>\n  </url>`);
-  if (!additions.length) return { added: 0 };
-  const nextSitemap = sitemap.replace(
+  if (!additions.length && !removed) return { added: 0, removed: 0 };
+  const nextSitemap = sitemapWithoutStaleUrls.replace(
     /<\/urlset>\s*$/,
     `${additions.join("\n")}\n</urlset>\n`
   );
   fs.writeFileSync(SITEMAP_PATH, nextSitemap, "utf8");
-  return { added: additions.length };
+  return { added: additions.length, removed };
 }
 
 function main() {
@@ -373,6 +379,7 @@ function main() {
   console.log(`同名重複をまとめた件数: ${Math.max(detailRows.filter((row) => String(row.monster_name || "").trim()).length - rows.length, 0)}件`);
   console.log(`削除した古い生成ページ: ${removed.length}件`);
   console.log(`sitemap.xml への追加URL: ${sitemapResult.added}件`);
+  console.log(`sitemap.xml から削除した古いURL: ${sitemapResult.removed}件`);
 }
 
 main();
