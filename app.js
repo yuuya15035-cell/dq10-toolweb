@@ -9715,7 +9715,7 @@ function applyAppRouteFromUrl() {
   const profitEntryType = String(params.get("profitEntryType") || "").trim();
   const profitArmorSetName = String(params.get("profitArmorSetName") || "").trim();
   const profitArmorPart = String(params.get("profitArmorPart") || "").trim();
-  const profitEquipmentName = String(params.get("profitEquipmentName") || (tab === "profit" ? params.get("equipment") || "" : "")).trim();
+  const profitEquipmentName = String(params.get("profitEquipmentName") || (tab === "profit" ? params.get("equipment") || params.get("q") || "" : "")).trim();
   const profitEquipmentType = String(params.get("profitEquipmentType") || "").trim();
   clearProfitArmorSetContext();
   if (profitEntryType === PROFIT_EQUIPMENT_NAVIGATION_TYPES.armorSet && profitArmorSetName) {

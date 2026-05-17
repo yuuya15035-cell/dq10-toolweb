@@ -99,8 +99,8 @@ function toBazaarUrl(materialName) {
   return `${SITE_ORIGIN}/bazaar/?${params.toString()}`;
 }
 
-function toEquipmentUrl(equipmentName) {
-  return `${SITE_ORIGIN}/equipment/${encodeURIComponent(equipmentName)}/`;
+function toRecipeUrl(equipmentName) {
+  return `${SITE_ORIGIN}/recipe/${encodeURIComponent(equipmentName)}/`;
 }
 
 function toMonsterUrl(monsterName) {
@@ -162,7 +162,7 @@ function buildRecipeHtml(entries) {
   const items = entries
     .slice()
     .sort((a, b) => String(a.equipmentName).localeCompare(String(b.equipmentName), "ja"))
-    .map((entry) => `<li><a href="${escapeHtml(toEquipmentUrl(entry.equipmentName))}">${escapeHtml(entry.equipmentName)}</a><span>${escapeHtml(entry.quantity)}個</span></li>`);
+    .map((entry) => `<li><a href="${escapeHtml(toRecipeUrl(entry.equipmentName))}">${escapeHtml(entry.equipmentName)}</a><span>${escapeHtml(entry.quantity)}個</span></li>`);
   return `<ul class="link-list">${items.join("")}</ul>`;
 }
 
