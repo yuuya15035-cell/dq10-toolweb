@@ -3977,6 +3977,7 @@ function buildArmorSetDetailModalHtml(entry) {
   const stats = buildEquipmentDbStatsHtml(entry);
   const meaningfulTraits = getMeaningfulEquipmentTraits(entry);
   const whiteBoxDrops = Array.isArray(entry?.whiteBoxArmorDropsBySlot) ? entry.whiteBoxArmorDropsBySlot : [];
+  const individualPageUrl = getEquipmentIndividualPageUrl(entry?.equipmentName || "");
   const whiteBoxHtml =
     entry?.whiteBoxHasDrop && whiteBoxDrops.length > 0
       ? `<div class="equipment-db-armor-drop-list">${whiteBoxDrops
@@ -4033,7 +4034,8 @@ function buildArmorSetDetailModalHtml(entry) {
     <div class="equipment-db-detail-section">
       <p class="equipment-db-traits-title">白宝箱ドロップモンスター</p>
       ${whiteBoxHtml}
-    </div>`;
+    </div>
+    ${buildIndividualPageActionLink("個別ページを開く", individualPageUrl)}`;
 }
 
 function closeArmorSetDetailModal() {
@@ -5998,7 +6000,8 @@ function openMonsterInfoDetailModal(entry) {
       <div><p>生息地</p><ul class="monster-info-habitat-list">${habitatsHtml || "<li>なし</li>"}</ul></div>
       <div class="monster-info-modal-footer-actions">
         <button type="button" class="monster-info-share-link" data-monster-share-name="${escapeHtml(entry.name)}">このモンスターのリンクをコピー</button>
-      </div>`;
+      </div>
+      ${buildIndividualPageActionLink("個別ページを開く", getMonsterIndividualPageUrl(entry.name))}`;
   decorateMemoAddButtons(monsterInfoModalBody);
   monsterInfoModalOverlay.hidden = false;
   monsterInfoModalDialog.scrollTop = 0;
@@ -6213,6 +6216,7 @@ function renderEquipmentDbCards() {
                         <p class="equipment-db-traits-title">白宝箱ドロップモンスター</p>
                         ${isArmor ? armorWhiteBoxDropHtml : weaponWhiteBoxDropHtml}
                       </div>
+                      ${buildIndividualPageActionLink("個別ページを開く", getEquipmentIndividualPageUrl(entry.equipmentName))}
                     </div>
                   </article>
                 `;
@@ -8349,6 +8353,7 @@ async function openBazaarDetailModal(materialKey) {
       <h4 class="bazaar-detail-related-title">この素材を落とすモンスター</h4>
       ${relatedMonstersHtml}
     </section>
+    ${buildIndividualPageActionLink("個別ページを開く", getBazaarIndividualPageUrl(row.materialName))}
   `;
   decorateMemoAddButtons(bazaarDetailModalBody);
 
@@ -9493,6 +9498,63 @@ function getCraftUrl(equipmentName) {
   const normalizedName = String(equipmentName || "").trim();
   if (normalizedName) params.set("equipment", normalizedName);
   return buildFeatureRouteUrl("profit", params);
+}
+
+function buildStaticIndividualPageUrl(segment, itemName) {
+  const normalizedName = String(itemName || "").trim();
+  if (!segment || !normalizedName) return "";
+  return `${getProjectBasePath()}/${segment}/${encodeURIComponent(normalizedName)}/`;
+}
+
+function buildDirectSearchFallbackUrl(segment, queryKey, itemName) {
+  const normalizedName = String(itemName || "").trim();
+  if (!segment || !queryKey || !normalizedName) return "";
+  const params = new URLSearchParams();
+  params.set(queryKey, normalizedName);
+  return `${getProjectBasePath()}/${segment}/?${params.toString()}`;
+}
+
+function buildIndividualPageActionLink(label, url) {
+  const normalizedUrl = String(url || "").trim();
+  if (!normalizedUrl) return "";
+  return `
+    <div class="individual-page-action">
+      <a class="individual-page-link" href="${escapeHtml(normalizedUrl)}">${escapeHtml(label || "個別ページを開く")}</a>
+    </div>
+  `;
+}
+
+function getMonsterIndividualPageUrl(monsterName) {
+  const normalizedName = String(monsterName || "").trim();
+  if (!normalizedName) return "";
+  return monsterDetailEntryByName.has(normalizedName)
+    ? buildStaticIndividualPageUrl("monster", normalizedName)
+    : buildDirectSearchFallbackUrl("monster", "q", normalizedName);
+}
+
+function getEquipmentIndividualPageUrl(equipmentName) {
+  const normalizedName = String(equipmentName || "").trim();
+  if (!normalizedName) return "";
+  return equipmentDbEntryByName.has(normalizedName)
+    ? buildStaticIndividualPageUrl("equipment", normalizedName)
+    : buildDirectSearchFallbackUrl("equipment", "q", normalizedName);
+}
+
+function getBazaarIndividualPageUrl(materialName) {
+  const normalizedName = String(materialName || "").trim();
+  if (!normalizedName) return "";
+  return bazaarRowByMaterialName.has(normalizedName)
+    ? buildStaticIndividualPageUrl("bazaar", normalizedName)
+    : buildDirectSearchFallbackUrl("bazaar", "q", normalizedName);
+}
+
+function getRecipeIndividualPageUrl(equipmentName) {
+  const normalizedName = String(equipmentName || "").trim();
+  if (!normalizedName) return "";
+  const hasRecipe = (state.equipments || []).some((equipment) => String(equipment?.name || "").trim() === normalizedName);
+  return hasRecipe
+    ? buildStaticIndividualPageUrl("recipe", normalizedName)
+    : buildDirectSearchFallbackUrl("craft", "q", normalizedName);
 }
 
 function getFieldFarmingUrl() {
@@ -11675,7 +11737,8 @@ function normalizeProductionCountInput() {
 function renderRecipeTable() {
   if (!recipeTableWrap) return;
 
-  if (!getSelectedEquipment()) {
+  const selectedEquipment = getSelectedEquipment();
+  if (!selectedEquipment) {
     recipeTableWrap.innerHTML = "<p>装備を選ぶと必要素材が表示されます。</p>";
     return;
   }
@@ -11812,6 +11875,7 @@ function renderRecipeTable() {
     <div class="recipe-cards-mobile">
       ${htmlRows.map((row) => row.card).join("")}
     </div>
+    ${buildIndividualPageActionLink("個別ページを開く", getRecipeIndividualPageUrl(selectedEquipment.name))}
   `;
 
   // 利益計算画面でだけ有効な一時単価の変更ハンドラ。

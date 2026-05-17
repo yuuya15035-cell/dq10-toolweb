@@ -1726,6 +1726,31 @@ body.is-modal-open {
   padding-top: 10px;
   border-top: 1px solid rgba(199, 173, 141, 0.55);
 }
+.individual-page-action {
+  display: flex;
+  justify-content: center;
+  margin-top: 12px;
+  padding-top: 10px;
+  border-top: 1px solid rgba(199, 173, 141, 0.45);
+}
+.individual-page-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 34px;
+  border: 1px solid rgba(114, 85, 56, 0.28);
+  border-radius: 999px;
+  background: #fffaf1;
+  color: #4a3524;
+  font-size: 0.78rem;
+  font-weight: 700;
+  line-height: 1.2;
+  padding: 6px 12px;
+  text-decoration: none;
+}
+.individual-page-link:hover {
+  background: #f3e7d7;
+}
 .equipment-db-monster-link-list {
   display: inline-flex;
   flex-wrap: wrap;
