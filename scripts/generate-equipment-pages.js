@@ -101,6 +101,10 @@ function toCraftUrl(equipmentName) {
   return `${SITE_ORIGIN}/craft/?${params.toString()}`;
 }
 
+function toMaterialUrl(materialName) {
+  return `${SITE_ORIGIN}/bazaar/${encodeURIComponent(materialName)}/`;
+}
+
 function countFilledFields(row) {
   return [
     "equipment_group",
@@ -273,7 +277,7 @@ function buildRecipeItems(recipe, bazaarPrices) {
     } else {
       estimatedCost += unitPrice * quantity;
     }
-    return `<li><span>${escapeHtml(materialName)} x ${escapeHtml(quantity)}</span><span>${unitPrice === undefined ? "単価なし" : `${formatNumber(unitPrice)}G`}</span></li>`;
+    return `<li><span><a href="${escapeHtml(toMaterialUrl(materialName))}">${escapeHtml(materialName)}</a> x ${escapeHtml(quantity)}</span><span>${unitPrice === undefined ? "単価なし" : `${formatNumber(unitPrice)}G`}</span></li>`;
   });
   return {
     html: `<ul class="material-list">${items.join("")}</ul>`,
