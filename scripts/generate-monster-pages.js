@@ -1,0 +1,319 @@
+const fs = require("fs");
+const path = require("path");
+
+const ROOT_DIR = path.resolve(__dirname, "..");
+const CSV_PATH = path.join(ROOT_DIR, "data", "monster_detail_data.csv");
+const MONSTER_NAME_CSV_PATH = path.join(ROOT_DIR, "data", "monster_data.csv");
+const OUTPUT_BASE_DIR = path.join(ROOT_DIR, "monster");
+const SITE_ORIGIN = "https://dq10tools.com";
+
+const TARGET_MONSTERS = [
+  "アンドレアル",
+  "バズズ",
+  "プチバズズ",
+  "バズズ強",
+];
+
+function readCsvRows(csvPath) {
+  const text = fs.readFileSync(csvPath, "utf8").replace(/^\uFEFF/, "");
+  const lines = text.split(/\r?\n/).filter((line) => line.trim() !== "");
+  if (!lines.length) return [];
+  const headers = parseCsvLine(lines.shift());
+  return lines.map((line) => {
+    const values = parseCsvLine(line);
+    const row = {};
+    headers.forEach((header, index) => {
+      row[String(header || "").trim()] = String(values[index] || "").trim();
+    });
+    return row;
+  });
+}
+
+function parseCsvLine(line) {
+  const values = [];
+  let current = "";
+  let inQuotes = false;
+  for (let i = 0; i < line.length; i += 1) {
+    const char = line[i];
+    const next = line[i + 1];
+    if (char === '"') {
+      if (inQuotes && next === '"') {
+        current += '"';
+        i += 1;
+      } else {
+        inQuotes = !inQuotes;
+      }
+      continue;
+    }
+    if (char === "," && !inQuotes) {
+      values.push(current);
+      current = "";
+      continue;
+    }
+    current += char;
+  }
+  values.push(current);
+  return values;
+}
+
+function splitPipeValues(value) {
+  return String(value || "")
+    .split("｜")
+    .map((entry) => entry.trim())
+    .filter(Boolean);
+}
+
+function escapeHtml(value) {
+  return String(value || "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/\"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
+function toCanonicalUrl(monsterName) {
+  return `${SITE_ORIGIN}/monster/${encodeURIComponent(monsterName)}/`;
+}
+
+function toMonsterQueryUrl(monsterName) {
+  return `${SITE_ORIGIN}/monster/?q=${encodeURIComponent(monsterName)}`;
+}
+
+function renderListSection(label, values) {
+  if (!values.length) {
+    return `<li><strong>${escapeHtml(label)}：</strong>なし</li>`;
+  }
+  return `<li><strong>${escapeHtml(label)}：</strong>${values.map((value) => escapeHtml(value)).join(" / ")}</li>`;
+}
+
+function buildMonsterPageHtml(row) {
+  const monsterName = String(row.monster_name || "").trim();
+  const type = String(row.monster_type || "").trim();
+  const exp = String(row.exp || "").trim();
+  const gold = String(row.gold || "").trim();
+  const normalDrop = String(row.normal_drop || "").trim();
+  const rareDrop = String(row.rare_drop || "").trim();
+  const whiteBoxValues = splitPipeValues(row.white_box);
+  const orbValues = splitPipeValues(row.orbs);
+  const habitatValues = splitPipeValues(row.habitats);
+  const canonicalUrl = toCanonicalUrl(monsterName);
+  const queryUrl = toMonsterQueryUrl(monsterName);
+  const description = `${monsterName}の通常ドロップ、レアドロップ、白宝箱、宝珠、生息地、経験値、ゴールドを確認できます。DQ10ツールのモンスター情報ページです。`;
+
+  return `<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>${escapeHtml(monsterName)}｜モンスター情報｜DQ10ツール</title>
+  <meta name="description" content="${escapeHtml(description)}" />
+  <link rel="canonical" href="${escapeHtml(canonicalUrl)}" />
+  <meta property="og:title" content="${escapeHtml(monsterName)}｜モンスター情報｜DQ10ツール" />
+  <meta property="og:description" content="${escapeHtml(description)}" />
+  <meta property="og:url" content="${escapeHtml(canonicalUrl)}" />
+  <meta property="og:type" content="article" />
+  <style>
+    :root {
+      color-scheme: light;
+      --bg: #ead9ba;
+      --bg-soft: #f5ead4;
+      --card: rgba(255, 249, 240, 0.96);
+      --border: rgba(145, 105, 57, 0.32);
+      --text: #3c2a1f;
+      --sub: #6b5646;
+      --accent: #7a4c25;
+      --link: #80501f;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: "Yu Gothic UI", "Hiragino Sans", sans-serif;
+      background: radial-gradient(circle at top, #f6eddc 0%, var(--bg-soft) 44%, var(--bg) 100%);
+      color: var(--text);
+      line-height: 1.7;
+    }
+    main {
+      width: min(760px, calc(100% - 28px));
+      margin: 0 auto;
+      padding: 28px 0 44px;
+    }
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      box-shadow: 0 10px 24px rgba(73, 48, 24, 0.08);
+      padding: 18px 18px 16px;
+      margin-bottom: 16px;
+    }
+    h1 {
+      margin: 0 0 8px;
+      font-size: clamp(1.55rem, 4vw, 2rem);
+      line-height: 1.25;
+      color: #2f2117;
+    }
+    .lead {
+      margin: 0;
+      color: var(--sub);
+      font-size: 0.98rem;
+    }
+    .meta {
+      margin: 12px 0 0;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+    .meta span {
+      display: inline-flex;
+      align-items: center;
+      min-height: 30px;
+      padding: 4px 10px;
+      border-radius: 999px;
+      background: rgba(155, 119, 63, 0.08);
+      border: 1px solid rgba(155, 119, 63, 0.18);
+      font-size: 0.88rem;
+      color: #5a3b22;
+    }
+    ul {
+      margin: 0;
+      padding-left: 1.15rem;
+    }
+    li + li { margin-top: 7px; }
+    .actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 14px;
+    }
+    .button {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 38px;
+      padding: 8px 14px;
+      border-radius: 999px;
+      border: 1px solid rgba(145, 105, 57, 0.3);
+      background: rgba(255, 249, 240, 0.98);
+      color: var(--link);
+      text-decoration: none;
+      font-weight: 700;
+      font-size: 0.92rem;
+    }
+    .button:hover,
+    .button:focus-visible {
+      background: #fff7eb;
+    }
+    .note {
+      font-size: 0.85rem;
+      color: var(--sub);
+      margin-top: 10px;
+    }
+    @media (max-width: 640px) {
+      main {
+        width: min(100% - 20px, 760px);
+        padding-top: 18px;
+      }
+      .card {
+        padding: 15px 14px 14px;
+        border-radius: 14px;
+      }
+      .actions {
+        flex-direction: column;
+      }
+      .button {
+        width: 100%;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <section class="card">
+      <h1>${escapeHtml(monsterName)}</h1>
+      <p class="lead">通常ドロップ・レアドロップ・白宝箱・宝珠・生息地・経験値・ゴールドを確認できるモンスター個別ページです。</p>
+      <div class="meta">
+        ${type ? `<span>${escapeHtml(type)}</span>` : ""}
+        ${exp ? `<span>経験値 ${escapeHtml(exp)}</span>` : ""}
+        ${gold ? `<span>ゴールド ${escapeHtml(gold)}</span>` : ""}
+      </div>
+    </section>
+
+    <section class="card">
+      <ul>
+        ${renderListSection("通常ドロップ", normalDrop ? [normalDrop] : [])}
+        ${renderListSection("レアドロップ", rareDrop ? [rareDrop] : [])}
+        ${renderListSection("白宝箱", whiteBoxValues)}
+        ${renderListSection("宝珠", orbValues)}
+        ${renderListSection("生息地", habitatValues)}
+      </ul>
+      <div class="actions">
+        <a class="button" href="${escapeHtml(queryUrl)}">モンスター情報ページで詳細を開く</a>
+        <a class="button" href="${SITE_ORIGIN}/monster/">モンスター一覧へ戻る</a>
+      </div>
+      <p class="note">このページは検索導線向けの個別ページです。最新の絞り込みや関連リンクは本体ページからも確認できます。</p>
+    </section>
+  </main>
+</body>
+</html>
+`;
+}
+
+function ensureDirectory(dirPath) {
+  fs.mkdirSync(dirPath, { recursive: true });
+}
+
+function writeMonsterPage(row) {
+  const monsterName = String(row.monster_name || "").trim();
+  if (!monsterName) return null;
+  const monsterDir = path.join(OUTPUT_BASE_DIR, monsterName);
+  ensureDirectory(monsterDir);
+  const outputPath = path.join(monsterDir, "index.html");
+  fs.writeFileSync(outputPath, buildMonsterPageHtml(row), "utf8");
+  return outputPath;
+}
+
+function main() {
+  const detailRows = readCsvRows(CSV_PATH);
+  const monsterNameRows = readCsvRows(MONSTER_NAME_CSV_PATH);
+  const rowByName = new Map();
+  monsterNameRows.forEach((row) => {
+    const monsterName = String(row.monster_name || "").trim();
+    if (!monsterName) return;
+    rowByName.set(monsterName, {
+      monster_name: monsterName,
+      monster_type: String(row.monster_type || "").trim(),
+      exp: "",
+      gold: "",
+      normal_drop: "",
+      rare_drop: "",
+      white_box: "",
+      orbs: "",
+      habitats: "",
+    });
+  });
+  detailRows.forEach((row) => {
+    const monsterName = String(row.monster_name || "").trim();
+    if (!monsterName) return;
+    rowByName.set(monsterName, row);
+  });
+  const written = [];
+  TARGET_MONSTERS.forEach((monsterName) => {
+    const row = rowByName.get(monsterName);
+    if (!row) {
+      console.warn(`[skip] ${monsterName} が ${path.relative(ROOT_DIR, CSV_PATH)} / ${path.relative(ROOT_DIR, MONSTER_NAME_CSV_PATH)} に見つかりませんでした。`);
+      return;
+    }
+    const outputPath = writeMonsterPage(row);
+    if (outputPath) written.push(outputPath);
+  });
+  if (!written.length) {
+    console.log("個別ページは生成されませんでした。");
+    return;
+  }
+  console.log("生成したモンスター個別ページ:");
+  written.forEach((filePath) => {
+    console.log(`- ${path.relative(ROOT_DIR, filePath)}`);
+  });
+}
+
+main();
