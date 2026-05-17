@@ -1,10 +1,10 @@
 <!doctype html>
-<html lang="ja" data-entry-title="モンスター情報｜DQ10ツール" data-entry-description="DQ10のモンスター情報を、ドロップ・白宝箱・宝珠・生息地・経験値・ゴールドから確認できます。" data-entry-loading="モンスター情報を読み込み中です…" data-entry-fallback="../">
+<html lang="ja" data-entry-title="モンスター情報｜DQ10ツール" data-entry-description="DQ10のモンスター情報を、通常ドロップ・レアドロップ・白宝箱・宝珠・生息地・経験値・ゴールドから確認できます。" data-entry-loading="モンスター情報を読み込み中です…" data-entry-fallback="../">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>モンスター情報｜DQ10ツール</title>
-  <meta name="description" content="DQ10のモンスター情報を、ドロップ・白宝箱・宝珠・生息地・経験値・ゴールドから確認できます。">
+  <meta name="description" content="DQ10のモンスター情報を、通常ドロップ・レアドロップ・白宝箱・宝珠・生息地・経験値・ゴールドから確認できます。">
   <link rel="canonical" href="https://dq10tools.com/monster/">
   <style>
     body{margin:0;min-height:100vh;display:grid;place-items:center;font-family:"Yu Gothic","Hiragino Sans",Meiryo,sans-serif;color:#4b3523;background:radial-gradient(circle at 50% 26%,rgba(255,250,238,.92) 0%,rgba(244,226,194,.78) 46%,rgba(215,183,134,.62) 100%),#ead4ad}.entry-page-shell{width:min(760px,100%);box-sizing:border-box;padding:18px}.entry-page-card{border:1px solid rgba(145,94,45,.5);border-radius:16px;background:rgba(255,250,240,.94);box-shadow:0 10px 26px rgba(73,48,26,.14);padding:20px 22px}.entry-page-kicker{margin:0 0 6px;font-size:.82rem;color:#8a633f;font-weight:700}h1{margin:0 0 10px;font-size:clamp(1.35rem,5vw,2rem);color:#3a2415}.entry-page-description{margin:0;line-height:1.75}.entry-page-note,.entry-page-status{margin:10px 0 0;color:#72563a;font-size:.86rem;line-height:1.6}.entry-page-links{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}.entry-page-links a,#entryPageFallbackLink{display:inline-flex;align-items:center;min-height:34px;padding:6px 12px;border:1px solid rgba(145,94,45,.42);border-radius:999px;color:#4b2f1c;background:rgba(255,246,226,.96);text-decoration:none;font-weight:700}
@@ -14,8 +14,15 @@
   <main class="entry-page-shell"><section class="entry-page-card">
     <p class="entry-page-kicker">DQ10ツール</p>
     <h1>モンスター情報</h1>
-    <p class="entry-page-description">DQ10のモンスター情報を、ドロップ・白宝箱・宝珠・生息地・経験値・ゴールドから確認できます。</p>
-    <p class="entry-page-note">モンスター名の個別URLにも対応しています。例：/monster/?q=アンドレアル</p>
+    <p class="entry-page-description">DQ10のモンスター情報を、通常ドロップ・レアドロップ・白宝箱・宝珠・生息地・経験値・ゴールドから確認できます。</p>
+    <p class="entry-page-note">モンスター名を指定した個別表示にも対応しています。例：/monster/?q=アンドレアル</p>
+    <p class="entry-page-note">サンプルリンク：</p>
+    <nav class="entry-page-links" aria-label="モンスター個別リンク">
+      <a href="/monster/?q=アンドレアル">アンドレアル</a>
+      <a href="/monster/?q=バズズ">バズズ</a>
+      <a href="/monster/?q=プチバズズ">プチバズズ</a>
+      <a href="/monster/?q=バズズ強">バズズ強</a>
+    </nav>
     <p id="entryPageStatus" class="entry-page-status">モンスター情報を読み込み中です…</p>
     <nav class="entry-page-links" aria-label="関連ページ"><a href="/bazaar/">バザー価格一覧</a><a href="/orb/">宝珠情報</a><a href="/equipment/">装備情報</a></nav>
     <p class="entry-page-fallback"><a id="entryPageFallbackLink" href="../" hidden>トップページを開く</a></p>
