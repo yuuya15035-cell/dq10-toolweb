@@ -2544,6 +2544,72 @@ button {
   color: #d93025;
 }
 
+.craft-ideal-card {
+  width: fit-content;
+  max-width: 100%;
+  margin: 10px auto 12px;
+  padding: 10px 12px;
+  border: 1px solid rgba(145, 94, 45, 0.42);
+  border-radius: 10px;
+  background: rgba(255, 248, 235, 0.92);
+}
+
+.craft-ideal-tolerance {
+  margin: 0 0 8px;
+  color: #4b2f1c;
+  font-size: 0.9rem;
+  font-weight: 700;
+  text-align: center;
+}
+
+.craft-ideal-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(56px, 1fr));
+  gap: 0;
+  width: min(240px, calc(100vw - 56px));
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  border: 1px solid rgba(94, 60, 30, 0.55);
+  background: rgba(122, 80, 38, 0.18);
+}
+
+.craft-ideal-grid-cell {
+  position: relative;
+  display: grid;
+  place-items: center;
+  min-height: 48px;
+  border-right: 1px solid rgba(94, 60, 30, 0.45);
+  border-bottom: 1px solid rgba(94, 60, 30, 0.45);
+  background: rgba(255, 252, 244, 0.96);
+  color: #2f1d12;
+  font-size: 1rem;
+  font-weight: 800;
+  line-height: 1.1;
+}
+
+.craft-ideal-grid-cell:nth-child(3n) {
+  border-right: 0;
+}
+
+.craft-ideal-grid-cell:nth-last-child(-n + 3) {
+  border-bottom: 0;
+}
+
+.craft-ideal-grid-cell::before {
+  content: counter(list-item);
+  position: absolute;
+  top: 3px;
+  left: 5px;
+  color: rgba(75, 47, 28, 0.5);
+  font-size: 0.62rem;
+  font-weight: 700;
+}
+
+.craft-ideal-grid-cell.is-unused {
+  background: rgba(235, 224, 207, 0.55);
+}
+
 .grid-2 {
   display: grid;
   gap: 8px;
