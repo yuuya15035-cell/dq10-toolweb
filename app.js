@@ -2224,6 +2224,9 @@ const monsterInfoSearchInput = getRequiredElementById("monsterInfoSearchInput");
 const monsterInfoTypeFilterSelect = getRequiredElementById("monsterInfoTypeFilterSelect");
 const monsterInfoSortSelect = getRequiredElementById("monsterInfoSortSelect");
 const monsterInfoClearFiltersButton = getRequiredElementById("monsterInfoClearFiltersButton");
+const monsterInfoLinkDirectory = document.getElementById("monsterInfoLinkDirectory");
+const monsterInfoLinkDirectorySummary = document.getElementById("monsterInfoLinkDirectorySummary");
+const monsterInfoLinkDirectoryList = document.getElementById("monsterInfoLinkDirectoryList");
 const monsterInfoListWrap = getRequiredElementById("monsterInfoListWrap");
 const monsterInfoModalOverlay = getRequiredElementById("monsterInfoModalOverlay");
 const monsterInfoModalDialog = getRequiredElementById("monsterInfoModalDialog");
@@ -5488,10 +5491,12 @@ function renderMonsterInfoCards() {
     monsterInfoSortSelect.value = selectedMonsterInfoSort;
   }
   if (isMonsterInfoDataLoading && !hasLoadedMonsterInfoData) {
+    renderMonsterInfoLinkDirectory();
     monsterInfoListWrap.innerHTML = `<p class="card">読み込み中です。しばらくお待ちください。</p>`;
     return;
   }
   if (!monsterDetailEntries.length) {
+    renderMonsterInfoLinkDirectory();
     monsterInfoListWrap.innerHTML = monsterInfoLoadError ? `<p class="card">モンスターデータを読み込めませんでした。</p>` : `<p class="card">表示できるデータがありません。</p>`;
     return;
   }
@@ -5507,6 +5512,7 @@ function renderMonsterInfoCards() {
   }
   monsterInfoTypeFilterSelect.innerHTML = `<option value="">すべて</option>${types.map((type) => `<option value="${escapeHtml(type)}" ${selectedMonsterInfoType === type ? "selected" : ""}>${escapeHtml(type)}</option>`).join("")}`;
   updateMonsterInfoClearButtonVisibility();
+  renderMonsterInfoLinkDirectory();
   const filtered = getSortedMonsterDetailEntries(getFilteredMonsterDetailEntries());
   if (!filtered.length) {
     monsterInfoListWrap.innerHTML = `<p class="card monster-info-empty">該当するモンスターが見つかりませんでした。</p>`;
@@ -5558,6 +5564,32 @@ function renderMonsterInfoCards() {
   }
   decorateMemoAddButtons(monsterInfoListWrap);
   updateDocumentMetadata();
+}
+
+function renderMonsterInfoLinkDirectory() {
+  if (!monsterInfoLinkDirectory || !monsterInfoLinkDirectorySummary || !monsterInfoLinkDirectoryList) return;
+  if (isMonsterInfoDataLoading && !hasLoadedMonsterInfoData) {
+    monsterInfoLinkDirectory.hidden = true;
+    monsterInfoLinkDirectoryList.innerHTML = "";
+    return;
+  }
+  const names = Array.from(
+    new Set(
+      (monsterDetailEntries || [])
+        .map((entry) => String(entry?.name || "").trim())
+        .filter(Boolean)
+    )
+  ).sort((a, b) => a.localeCompare(b, "ja"));
+  if (!names.length) {
+    monsterInfoLinkDirectory.hidden = true;
+    monsterInfoLinkDirectoryList.innerHTML = "";
+    return;
+  }
+  monsterInfoLinkDirectory.hidden = false;
+  monsterInfoLinkDirectorySummary.textContent = `モンスター個別リンク一覧（${names.length}件）`;
+  monsterInfoLinkDirectoryList.innerHTML = names
+    .map((name) => `<a class="monster-link-directory-item" href="${escapeHtml(getMonsterShareUrl(name))}">${escapeHtml(name)}</a>`)
+    .join("");
 }
 
 function renderWhiteBoxCards() {
