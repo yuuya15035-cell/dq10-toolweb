@@ -462,8 +462,10 @@ function buildEquipmentPageHtml(entry, context) {
   const canonicalUrl = toCanonicalUrl(equipmentName);
   const craftUrl = toCraftUrl(equipmentName);
   const description = `${equipmentName}の性能、基礎効果、セット効果、必要素材、白宝箱、推定原価を確認できます。DQ10ツールの装備情報ページです。`;
-  const traits = Array.isArray(entry.traits) ? entry.traits : [];
   const isArmor = isArmorSetEntry(entry) || isArmorPartEntry(entry);
+  const setEntry = setName ? context.equipmentByName.get(setName) : null;
+  const displayEntry = isArmor && setEntry ? setEntry : entry;
+  const traits = Array.isArray(displayEntry.traits) ? displayEntry.traits : [];
 
   return `<!doctype html>
 <html lang="ja">
@@ -526,10 +528,10 @@ function buildEquipmentPageHtml(entry, context) {
     </section>
     <section class="card">
       <h2>性能</h2>
-      ${buildStatItems(entry)}
+      ${buildStatItems(displayEntry)}
     </section>
     <section class="card">
-      <h2>${isArmorSetEntry(entry) ? "セット効果" : "基礎効果・特性"}</h2>
+      <h2>${isArmor ? "基本性能" : "基礎効果・特性"}</h2>
       ${traits.length ? `<ul>${traits.map((trait) => `<li>${escapeHtml(trait)}</li>`).join("")}</ul>` : `<p class="empty">基礎効果・特性情報なし</p>`}
     </section>
     ${buildSetPartsHtml(setName, setPartEntries)}
