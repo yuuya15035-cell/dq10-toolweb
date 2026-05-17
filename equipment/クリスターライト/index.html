@@ -15,30 +15,27 @@
     :root { color-scheme: light; --bg: #ead9ba; --bg-soft: #f5ead4; --card: rgba(255, 249, 240, 0.96); --border: rgba(145, 105, 57, 0.32); --text: #3c2a1f; --sub: #6b5646; --link: #80501f; }
     * { box-sizing: border-box; }
     body { margin: 0; font-family: "Yu Gothic UI", "Hiragino Sans", sans-serif; background: radial-gradient(circle at top, #f6eddc 0%, var(--bg-soft) 44%, var(--bg) 100%); color: var(--text); line-height: 1.7; }
-    main { width: min(760px, calc(100% - 28px)); margin: 0 auto; padding: 76px 0 44px; }
-    .page-menu { position: fixed; top: 12px; left: 12px; z-index: 20; }
-    .page-menu details { position: relative; }
-    .page-menu summary { width: 44px; height: 44px; display: inline-flex; flex-direction: column; align-items: center; justify-content: center; gap: 5px; border: 1px solid rgba(145, 105, 57, 0.34); border-radius: 12px; background: rgba(255, 249, 240, 0.98); box-shadow: 0 8px 18px rgba(73, 48, 24, 0.12); cursor: pointer; list-style: none; }
-    .page-menu summary::-webkit-details-marker { display: none; }
-    .page-menu summary span { width: 20px; height: 2px; border-radius: 999px; background: #5a3b22; }
-    .page-menu-panel { position: absolute; top: 52px; left: 0; width: min(78vw, 260px); display: grid; gap: 2px; padding: 10px; border: 1px solid rgba(145, 105, 57, 0.32); border-radius: 14px; background: rgba(255, 249, 240, 0.98); box-shadow: 0 12px 28px rgba(73, 48, 24, 0.16); }
-    .page-menu-panel a { min-height: 38px; display: flex; align-items: center; padding: 6px 10px; border-radius: 9px; color: var(--link); text-decoration: none; font-weight: 700; font-size: 0.92rem; }
-    .page-menu-panel a:hover, .page-menu-panel a:focus-visible { background: rgba(155, 119, 63, 0.1); }
+    main { width: min(860px, calc(100% - 28px)); margin: 0 auto; padding: 76px 0 44px; }
     .card { background: var(--card); border: 1px solid var(--border); border-radius: 16px; box-shadow: 0 10px 24px rgba(73, 48, 24, 0.08); padding: 18px 18px 16px; margin-bottom: 16px; }
     h1 { margin: 0 0 8px; font-size: clamp(1.55rem, 4vw, 2rem); line-height: 1.25; color: #2f2117; }
     h2 { margin: 0 0 10px; font-size: 1.05rem; color: #3a2415; }
-    .lead, .empty, .note { margin: 0; color: var(--sub); font-size: 0.94rem; }
+    .lead, .empty, .note, .recipe-meta { margin: 0; color: var(--sub); font-size: 0.94rem; }
     .meta { margin: 12px 0 0; display: flex; flex-wrap: wrap; gap: 8px; }
     .meta span { display: inline-flex; align-items: center; min-height: 30px; padding: 4px 10px; border-radius: 999px; background: rgba(155, 119, 63, 0.08); border: 1px solid rgba(155, 119, 63, 0.18); font-size: 0.88rem; color: #5a3b22; }
     ul { margin: 0; padding-left: 1.15rem; }
     li + li { margin-top: 7px; }
-    .material-list { list-style: none; padding-left: 0; }
-    .material-list li { display: flex; justify-content: space-between; gap: 12px; border-bottom: 1px solid rgba(145, 105, 57, 0.18); padding: 6px 0; }
-    .sub-label { color: var(--sub); font-size: 0.86rem; }
+    .part-list { list-style: none; padding-left: 0; display: grid; gap: 7px; }
+    .part-list li { display: flex; justify-content: space-between; gap: 12px; border-bottom: 1px solid rgba(145, 105, 57, 0.18); padding: 6px 0; }
+    .part-list span, .sub-label { color: var(--sub); font-size: 0.86rem; }
+    .table-wrap { overflow-x: auto; margin-top: 10px; }
+    table { width: 100%; border-collapse: collapse; min-width: 560px; }
+    th, td { border-bottom: 1px solid rgba(145, 105, 57, 0.18); padding: 8px 6px; text-align: left; }
+    th { color: var(--sub); font-size: 0.88rem; }
+    a { color: var(--link); font-weight: 700; }
     .actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 14px; }
     .button { display: inline-flex; align-items: center; justify-content: center; min-height: 38px; padding: 8px 14px; border-radius: 999px; border: 1px solid rgba(145, 105, 57, 0.3); background: rgba(255, 249, 240, 0.98); color: var(--link); text-decoration: none; font-weight: 700; font-size: 0.92rem; }
     .button:hover, .button:focus-visible { background: #fff7eb; }
-    @media (max-width: 640px) { main { width: min(100% - 20px, 760px); padding-top: 18px; } .card { padding: 15px 14px 14px; border-radius: 14px; } .actions { flex-direction: column; } .button { width: 100%; } .material-list li { align-items: flex-start; flex-direction: column; gap: 2px; } }
+    @media (max-width: 640px) { main { width: min(100% - 20px, 860px); padding-top: 18px; } .card { padding: 15px 14px 14px; border-radius: 14px; } .actions { flex-direction: column; } .button { width: 100%; } .part-list li { flex-direction: column; gap: 2px; } }
   </style>
   <link rel="stylesheet" href="/assets/individual-page.css" />
 </head>
@@ -63,15 +60,16 @@
   <main>
     <section class="card">
       <h1>クリスターライト</h1>
-      <p class="lead">性能・基礎効果・セット効果・必要素材・白宝箱・推定原価を確認できる装備個別ページです。</p>
+      <p class="lead">性能、レシピ、必要素材、推定原価、白宝箱をまとめて確認できる装備個別ページです。</p>
       <div class="meta">
         <span>ブーメラン</span>
         <span>weapon</span>
-        <span>レベル 132</span>
+        <span>Lv132</span>
+        
       </div>
       <div class="actions">
-        <a class="button" href="https://dq10tools.com/equipment/?tab=equipment-db&amp;equipmentSearch=%E3%82%AF%E3%83%AA%E3%82%B9%E3%82%BF%E3%83%BC%E3%83%A9%E3%82%A4%E3%83%88">装備情報ページで詳細を開く</a>
-        <a class="button" href="https://dq10tools.com/craft/?equipment=%E3%82%AF%E3%83%AA%E3%82%B9%E3%82%BF%E3%83%BC%E3%83%A9%E3%82%A4%E3%83%88">職人アシストで開く</a>
+        <a class="button" href="https://dq10tools.com/equipment/?q=%E3%82%AF%E3%83%AA%E3%82%B9%E3%82%BF%E3%83%BC%E3%83%A9%E3%82%A4%E3%83%88">装備情報ページで詳細を開く</a>
+        <a class="button" href="https://dq10tools.com/craft/?q=%E3%82%AF%E3%83%AA%E3%82%B9%E3%82%BF%E3%83%BC%E3%83%A9%E3%82%A4%E3%83%88">職人アシストで開く</a>
         <a class="button" href="https://dq10tools.com/equipment/">装備一覧へ戻る</a>
       </div>
     </section>
@@ -83,17 +81,32 @@
       <h2>基礎効果・特性</h2>
       <ul><li>特技のダメージ+20(試合無効)</li><li>コマンド間隔-0.5秒</li></ul>
     </section>
-    <section class="card">
-      <h2>必要素材</h2>
-      <ul class="material-list"><li><span><a href="https://dq10tools.com/bazaar/%E3%82%BC%E3%83%BC%E3%83%A9%E3%82%BA%E3%83%9E%E9%89%B1%E7%9F%B3/">ゼーラズマ鉱石</a> x 30</span><span>11,250G</span></li><li><span><a href="https://dq10tools.com/bazaar/%E3%83%88%E3%82%AC%E3%83%AA%E3%82%A2%E3%81%AE%E3%81%97%E3%81%9A%E3%81%8F/">トガリアのしずく</a> x 6</span><span>7,400G</span></li><li><span><a href="https://dq10tools.com/bazaar/%E6%B0%B7%E3%81%AE%E3%81%91%E3%81%A3%E3%81%97%E3%82%87%E3%81%86/">氷のけっしょう</a> x 18</span><span>240G</span></li><li><span><a href="https://dq10tools.com/bazaar/%E3%81%93%E3%82%93%E3%81%98%E3%81%8D%E3%81%AE%E9%9B%B2/">こんじきの雲</a> x 3</span><span>8,000G</span></li><li><span><a href="https://dq10tools.com/bazaar/%E8%B6%85%E3%82%88%E3%81%86%E3%81%9B%E3%81%84%E3%81%AE%E3%81%B2%E3%81%A0%E3%81%AD/">超ようせいのひだね</a> x 9</span><span>100,000G</span></li></ul>
+    
+    
+        <section class="card">
+          <h2>クリスターライトのレシピ</h2>
+          
+      <p class="recipe-meta">武器職人 / ブーメラン / Lv132 / Lv132</p>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>素材名</th><th>必要数</th><th>素材単価</th><th>小計</th></tr></thead>
+          <tbody><tr><td><a href="https://dq10tools.com/bazaar/%E3%82%BC%E3%83%BC%E3%83%A9%E3%82%BA%E3%83%9E%E9%89%B1%E7%9F%B3/">ゼーラズマ鉱石</a></td><td>30</td><td>11,250G</td><td>337,500G</td></tr><tr><td><a href="https://dq10tools.com/bazaar/%E3%83%88%E3%82%AC%E3%83%AA%E3%82%A2%E3%81%AE%E3%81%97%E3%81%9A%E3%81%8F/">トガリアのしずく</a></td><td>6</td><td>7,400G</td><td>44,400G</td></tr><tr><td><a href="https://dq10tools.com/bazaar/%E6%B0%B7%E3%81%AE%E3%81%91%E3%81%A3%E3%81%97%E3%82%87%E3%81%86/">氷のけっしょう</a></td><td>18</td><td>240G</td><td>4,320G</td></tr><tr><td><a href="https://dq10tools.com/bazaar/%E3%81%93%E3%82%93%E3%81%98%E3%81%8D%E3%81%AE%E9%9B%B2/">こんじきの雲</a></td><td>3</td><td>8,000G</td><td>24,000G</td></tr><tr><td><a href="https://dq10tools.com/bazaar/%E8%B6%85%E3%82%88%E3%81%86%E3%81%9B%E3%81%84%E3%81%AE%E3%81%B2%E3%81%A0%E3%81%AD/">超ようせいのひだね</a></td><td>9</td><td>100,000G</td><td>900,000G</td></tr></tbody>
+        </table>
+      </div>
       <p class="note">推定原価：1,310,220G</p>
-    </section>
+    
+        </section>
+      
+    
     <section class="card">
       <h2>白宝箱</h2>
       <ul><li><span class="sub-label">クリスターライト（ブーメラン）</span><br>なし</li></ul>
+    </section>
+  
+    <section class="card">
       <div class="actions">
-        <a class="button" href="https://dq10tools.com/equipment/?tab=equipment-db&amp;equipmentSearch=%E3%82%AF%E3%83%AA%E3%82%B9%E3%82%BF%E3%83%BC%E3%83%A9%E3%82%A4%E3%83%88">装備情報ページで詳細を開く</a>
-        <a class="button" href="https://dq10tools.com/craft/?equipment=%E3%82%AF%E3%83%AA%E3%82%B9%E3%82%BF%E3%83%BC%E3%83%A9%E3%82%A4%E3%83%88">職人アシストで開く</a>
+        <a class="button" href="https://dq10tools.com/equipment/?q=%E3%82%AF%E3%83%AA%E3%82%B9%E3%82%BF%E3%83%BC%E3%83%A9%E3%82%A4%E3%83%88">装備情報ページで詳細を開く</a>
+        <a class="button" href="https://dq10tools.com/craft/?q=%E3%82%AF%E3%83%AA%E3%82%B9%E3%82%BF%E3%83%BC%E3%83%A9%E3%82%A4%E3%83%88">職人アシストで開く</a>
         <a class="button" href="https://dq10tools.com/equipment/">装備一覧へ戻る</a>
         <a class="button" href="https://dq10tools.com/">ホームに戻る</a>
       </div>

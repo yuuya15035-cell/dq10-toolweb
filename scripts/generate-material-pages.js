@@ -10,6 +10,8 @@ const SITEMAP_PATH = path.join(ROOT_DIR, "sitemap.xml");
 const SITE_ORIGIN = "https://dq10tools.com";
 const GENERATED_MARKER = "generated-by: scripts/generate-material-pages.js";
 const MONSTER_BASE_DIR = path.join(ROOT_DIR, "monster");
+const EQUIPMENT_BASE_DIR = path.join(ROOT_DIR, "equipment");
+const RECIPE_BASE_DIR = path.join(ROOT_DIR, "recipe");
 
 function readText(filePath, encoding = "utf8") {
   const bytes = fs.readFileSync(filePath);
@@ -104,6 +106,14 @@ function toRecipeUrl(equipmentName) {
   return `${SITE_ORIGIN}/recipe/${encodeURIComponent(equipmentName)}/`;
 }
 
+function toEquipmentUrl(equipmentName) {
+  return `${SITE_ORIGIN}/equipment/${encodeURIComponent(equipmentName)}/`;
+}
+
+function toCraftUrl(equipmentName) {
+  return `${SITE_ORIGIN}/craft/?q=${encodeURIComponent(equipmentName)}`;
+}
+
 function toMonsterUrl(monsterName) {
   return `${SITE_ORIGIN}/monster/${encodeURIComponent(monsterName)}/`;
 }
@@ -119,6 +129,13 @@ function hasGeneratedPage(baseDir, pageName) {
 function getMonsterHref(monsterName) {
   if (!monsterName) return "";
   return hasGeneratedPage(MONSTER_BASE_DIR, monsterName) ? toMonsterUrl(monsterName) : toMonsterSearchUrl(monsterName);
+}
+
+function getUsageHref(equipmentName) {
+  if (!equipmentName) return "";
+  if (hasGeneratedPage(EQUIPMENT_BASE_DIR, equipmentName)) return toEquipmentUrl(equipmentName);
+  if (hasGeneratedPage(RECIPE_BASE_DIR, equipmentName)) return toRecipeUrl(equipmentName);
+  return toCraftUrl(equipmentName);
 }
 
 function renderCommonNav() {
@@ -196,7 +213,7 @@ function buildRecipeHtml(entries) {
   const items = entries
     .slice()
     .sort((a, b) => String(a.equipmentName).localeCompare(String(b.equipmentName), "ja"))
-    .map((entry) => `<li><a href="${escapeHtml(toRecipeUrl(entry.equipmentName))}">${escapeHtml(entry.equipmentName)}</a><span>${escapeHtml(entry.quantity)}個</span></li>`);
+    .map((entry) => `<li><a href="${escapeHtml(getUsageHref(entry.equipmentName))}">${escapeHtml(entry.equipmentName)}</a><span>${escapeHtml(entry.quantity)}個</span></li>`);
   return `<ul class="link-list">${items.join("")}</ul>`;
 }
 

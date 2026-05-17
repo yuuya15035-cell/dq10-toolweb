@@ -15,30 +15,27 @@
     :root { color-scheme: light; --bg: #ead9ba; --bg-soft: #f5ead4; --card: rgba(255, 249, 240, 0.96); --border: rgba(145, 105, 57, 0.32); --text: #3c2a1f; --sub: #6b5646; --link: #80501f; }
     * { box-sizing: border-box; }
     body { margin: 0; font-family: "Yu Gothic UI", "Hiragino Sans", sans-serif; background: radial-gradient(circle at top, #f6eddc 0%, var(--bg-soft) 44%, var(--bg) 100%); color: var(--text); line-height: 1.7; }
-    main { width: min(760px, calc(100% - 28px)); margin: 0 auto; padding: 76px 0 44px; }
-    .page-menu { position: fixed; top: 12px; left: 12px; z-index: 20; }
-    .page-menu details { position: relative; }
-    .page-menu summary { width: 44px; height: 44px; display: inline-flex; flex-direction: column; align-items: center; justify-content: center; gap: 5px; border: 1px solid rgba(145, 105, 57, 0.34); border-radius: 12px; background: rgba(255, 249, 240, 0.98); box-shadow: 0 8px 18px rgba(73, 48, 24, 0.12); cursor: pointer; list-style: none; }
-    .page-menu summary::-webkit-details-marker { display: none; }
-    .page-menu summary span { width: 20px; height: 2px; border-radius: 999px; background: #5a3b22; }
-    .page-menu-panel { position: absolute; top: 52px; left: 0; width: min(78vw, 260px); display: grid; gap: 2px; padding: 10px; border: 1px solid rgba(145, 105, 57, 0.32); border-radius: 14px; background: rgba(255, 249, 240, 0.98); box-shadow: 0 12px 28px rgba(73, 48, 24, 0.16); }
-    .page-menu-panel a { min-height: 38px; display: flex; align-items: center; padding: 6px 10px; border-radius: 9px; color: var(--link); text-decoration: none; font-weight: 700; font-size: 0.92rem; }
-    .page-menu-panel a:hover, .page-menu-panel a:focus-visible { background: rgba(155, 119, 63, 0.1); }
+    main { width: min(860px, calc(100% - 28px)); margin: 0 auto; padding: 76px 0 44px; }
     .card { background: var(--card); border: 1px solid var(--border); border-radius: 16px; box-shadow: 0 10px 24px rgba(73, 48, 24, 0.08); padding: 18px 18px 16px; margin-bottom: 16px; }
     h1 { margin: 0 0 8px; font-size: clamp(1.55rem, 4vw, 2rem); line-height: 1.25; color: #2f2117; }
     h2 { margin: 0 0 10px; font-size: 1.05rem; color: #3a2415; }
-    .lead, .empty, .note { margin: 0; color: var(--sub); font-size: 0.94rem; }
+    .lead, .empty, .note, .recipe-meta { margin: 0; color: var(--sub); font-size: 0.94rem; }
     .meta { margin: 12px 0 0; display: flex; flex-wrap: wrap; gap: 8px; }
     .meta span { display: inline-flex; align-items: center; min-height: 30px; padding: 4px 10px; border-radius: 999px; background: rgba(155, 119, 63, 0.08); border: 1px solid rgba(155, 119, 63, 0.18); font-size: 0.88rem; color: #5a3b22; }
     ul { margin: 0; padding-left: 1.15rem; }
     li + li { margin-top: 7px; }
-    .material-list { list-style: none; padding-left: 0; }
-    .material-list li { display: flex; justify-content: space-between; gap: 12px; border-bottom: 1px solid rgba(145, 105, 57, 0.18); padding: 6px 0; }
-    .sub-label { color: var(--sub); font-size: 0.86rem; }
+    .part-list { list-style: none; padding-left: 0; display: grid; gap: 7px; }
+    .part-list li { display: flex; justify-content: space-between; gap: 12px; border-bottom: 1px solid rgba(145, 105, 57, 0.18); padding: 6px 0; }
+    .part-list span, .sub-label { color: var(--sub); font-size: 0.86rem; }
+    .table-wrap { overflow-x: auto; margin-top: 10px; }
+    table { width: 100%; border-collapse: collapse; min-width: 560px; }
+    th, td { border-bottom: 1px solid rgba(145, 105, 57, 0.18); padding: 8px 6px; text-align: left; }
+    th { color: var(--sub); font-size: 0.88rem; }
+    a { color: var(--link); font-weight: 700; }
     .actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 14px; }
     .button { display: inline-flex; align-items: center; justify-content: center; min-height: 38px; padding: 8px 14px; border-radius: 999px; border: 1px solid rgba(145, 105, 57, 0.3); background: rgba(255, 249, 240, 0.98); color: var(--link); text-decoration: none; font-weight: 700; font-size: 0.92rem; }
     .button:hover, .button:focus-visible { background: #fff7eb; }
-    @media (max-width: 640px) { main { width: min(100% - 20px, 760px); padding-top: 18px; } .card { padding: 15px 14px 14px; border-radius: 14px; } .actions { flex-direction: column; } .button { width: 100%; } .material-list li { align-items: flex-start; flex-direction: column; gap: 2px; } }
+    @media (max-width: 640px) { main { width: min(100% - 20px, 860px); padding-top: 18px; } .card { padding: 15px 14px 14px; border-radius: 14px; } .actions { flex-direction: column; } .button { width: 100%; } .part-list li { flex-direction: column; gap: 2px; } }
   </style>
   <link rel="stylesheet" href="/assets/individual-page.css" />
 </head>
@@ -63,15 +60,16 @@
   <main>
     <section class="card">
       <h1>まもりセット</h1>
-      <p class="lead">性能・基礎効果・セット効果・必要素材・白宝箱・推定原価を確認できる装備個別ページです。</p>
+      <p class="lead">セット情報、各部位のレシピ、白宝箱をまとめて確認できる装備個別ページです。</p>
       <div class="meta">
         <span>防具セット</span>
         <span>armor</span>
-        <span>レベル 28</span>
+        <span>Lv28</span>
+        
       </div>
       <div class="actions">
-        <a class="button" href="https://dq10tools.com/equipment/?tab=equipment-db&amp;equipmentSearch=%E3%81%BE%E3%82%82%E3%82%8A%E3%82%BB%E3%83%83%E3%83%88">装備情報ページで詳細を開く</a>
-        <a class="button" href="https://dq10tools.com/craft/?equipment=%E3%81%BE%E3%82%82%E3%82%8A%E3%82%BB%E3%83%83%E3%83%88">職人アシストで開く</a>
+        <a class="button" href="https://dq10tools.com/equipment/?q=%E3%81%BE%E3%82%82%E3%82%8A%E3%82%BB%E3%83%83%E3%83%88">装備情報ページで詳細を開く</a>
+        <a class="button" href="https://dq10tools.com/craft/?q=%E3%81%BE%E3%82%82%E3%82%8A%E3%82%BB%E3%83%83%E3%83%88">職人アシストで開く</a>
         <a class="button" href="https://dq10tools.com/equipment/">装備一覧へ戻る</a>
       </div>
     </section>
@@ -81,19 +79,79 @@
     </section>
     <section class="card">
       <h2>セット効果</h2>
-      <p class="empty">セット効果なし</p>
+      <p class="empty">基礎効果・特性情報なし</p>
     </section>
+    
     <section class="card">
-      <h2>必要素材</h2>
-      <p class="empty">必要素材なし</p>
-      <p class="note">推定原価：なし</p>
+      <h2>同じセットの部位</h2>
+      <ul class="part-list">
+        <li><span>頭</span><a href="https://dq10tools.com/equipment/%E3%81%BE%E3%82%82%E3%82%8A%E3%81%AE%E3%81%BC%E3%81%86%E3%81%97/">まもりのぼうし</a></li><li><span>からだ上</span><a href="https://dq10tools.com/equipment/%E3%81%BE%E3%82%82%E3%82%8A%E3%81%AE%E3%83%AD%E3%83%BC%E3%83%96/">まもりのローブ</a></li><li><span>からだ下</span><a href="https://dq10tools.com/equipment/%E3%81%BE%E3%82%82%E3%82%8A%E3%81%AE%E3%83%AD%E3%83%BC%E3%83%96%E4%B8%8B/">まもりのローブ下</a></li><li><span>腕</span><a href="https://dq10tools.com/equipment/%E3%81%BE%E3%82%82%E3%82%8A%E3%81%AE%E3%82%B0%E3%83%AD%E3%83%BC%E3%83%96/">まもりのグローブ</a></li><li><span>足</span><a href="https://dq10tools.com/equipment/%E3%81%BE%E3%82%82%E3%82%8A%E3%81%AE%E3%81%8F%E3%81%A4/">まもりのくつ</a></li>
+      </ul>
     </section>
+  
+    
+        <section class="card">
+          <h2>まもりのぼうしのレシピ</h2>
+          
+      <p class="recipe-meta">裁縫職人 / 頭 / Lv28 / Lv14</p>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>素材名</th><th>必要数</th><th>素材単価</th><th>小計</th></tr></thead>
+          <tbody><tr><td><a href="https://dq10tools.com/bazaar/%E3%82%B7%E3%83%AB%E3%82%AF%E8%8D%89/">シルク草</a></td><td>1</td><td>240G</td><td>240G</td></tr><tr><td><a href="https://dq10tools.com/bazaar/%E3%82%AB%E3%83%81%E3%82%B3%E3%83%81%E3%81%8F%E3%82%8B%E3%81%BF/">カチコチくるみ</a></td><td>1</td><td>220G</td><td>220G</td></tr><tr><td><a href="https://dq10tools.com/bazaar/%E8%8A%B1%E3%81%AE%E3%81%BF%E3%81%A4/">花のみつ</a></td><td>1</td><td>180G</td><td>180G</td></tr></tbody>
+        </table>
+      </div>
+      <p class="note">推定原価：640G</p>
+    
+        </section>
+      
+        <section class="card">
+          <h2>まもりのローブのレシピ</h2>
+          
+      <p class="recipe-meta">裁縫職人 / からだ上 / Lv28 / Lv16</p>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>素材名</th><th>必要数</th><th>素材単価</th><th>小計</th></tr></thead>
+          <tbody><tr><td><a href="https://dq10tools.com/bazaar/%E3%82%B7%E3%83%AB%E3%82%AF%E8%8D%89/">シルク草</a></td><td>1</td><td>240G</td><td>240G</td></tr><tr><td><a href="https://dq10tools.com/bazaar/%E3%82%AB%E3%83%81%E3%82%B3%E3%83%81%E3%81%8F%E3%82%8B%E3%81%BF/">カチコチくるみ</a></td><td>1</td><td>220G</td><td>220G</td></tr><tr><td><a href="https://dq10tools.com/bazaar/%E3%81%8D%E3%82%88%E3%82%81%E3%81%AE%E6%B0%B4/">きよめの水</a></td><td>1</td><td>100G</td><td>100G</td></tr></tbody>
+        </table>
+      </div>
+      <p class="note">推定原価：560G</p>
+    
+        </section>
+      
+        <section class="card">
+          <h2>まもりのローブ下のレシピ</h2>
+          <p class="empty">レシピ情報なし</p>
+        </section>
+      
+        <section class="card">
+          <h2>まもりのグローブのレシピ</h2>
+          <p class="empty">レシピ情報なし</p>
+        </section>
+      
+        <section class="card">
+          <h2>まもりのくつのレシピ</h2>
+          
+      <p class="recipe-meta">裁縫職人 / 足 / Lv28 / Lv14</p>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>素材名</th><th>必要数</th><th>素材単価</th><th>小計</th></tr></thead>
+          <tbody><tr><td><a href="https://dq10tools.com/bazaar/%E3%82%B7%E3%83%AB%E3%82%AF%E8%8D%89/">シルク草</a></td><td>1</td><td>240G</td><td>240G</td></tr><tr><td><a href="https://dq10tools.com/bazaar/%E3%82%AB%E3%83%81%E3%82%B3%E3%83%81%E3%81%8F%E3%82%8B%E3%81%BF/">カチコチくるみ</a></td><td>1</td><td>220G</td><td>220G</td></tr><tr><td><a href="https://dq10tools.com/bazaar/%E3%82%B5%E3%83%90%E3%83%B3%E3%83%8A%E3%82%A6%E3%83%83%E3%83%89/">サバンナウッド</a></td><td>1</td><td>280G</td><td>280G</td></tr></tbody>
+        </table>
+      </div>
+      <p class="note">推定原価：740G</p>
+    
+        </section>
+      
+    
     <section class="card">
       <h2>白宝箱</h2>
       <ul><li><span class="sub-label">まもりのぼうし（頭）</span><br>なし</li><li><span class="sub-label">まもりのローブ（からだ上）</span><br><a href="https://dq10tools.com/monster/%E3%82%B1%E3%83%80%E3%83%A2%E3%83%B3/">ケダモン</a> / <a href="https://dq10tools.com/monster/?q=%E3%83%94%E3%83%B3%E3%82%AF%E3%83%9C%E3%83%B3%E3%83%9C%E3%83%B3">ピンクボンボン</a></li><li><span class="sub-label">まもりのローブ下（からだ下）</span><br>なし</li><li><span class="sub-label">まもりのグローブ（腕）</span><br>なし</li><li><span class="sub-label">まもりのくつ（足）</span><br>なし</li></ul>
+    </section>
+  
+    <section class="card">
       <div class="actions">
-        <a class="button" href="https://dq10tools.com/equipment/?tab=equipment-db&amp;equipmentSearch=%E3%81%BE%E3%82%82%E3%82%8A%E3%82%BB%E3%83%83%E3%83%88">装備情報ページで詳細を開く</a>
-        <a class="button" href="https://dq10tools.com/craft/?equipment=%E3%81%BE%E3%82%82%E3%82%8A%E3%82%BB%E3%83%83%E3%83%88">職人アシストで開く</a>
+        <a class="button" href="https://dq10tools.com/equipment/?q=%E3%81%BE%E3%82%82%E3%82%8A%E3%82%BB%E3%83%83%E3%83%88">装備情報ページで詳細を開く</a>
+        <a class="button" href="https://dq10tools.com/craft/?q=%E3%81%BE%E3%82%82%E3%82%8A%E3%82%BB%E3%83%83%E3%83%88">職人アシストで開く</a>
         <a class="button" href="https://dq10tools.com/equipment/">装備一覧へ戻る</a>
         <a class="button" href="https://dq10tools.com/">ホームに戻る</a>
       </div>
