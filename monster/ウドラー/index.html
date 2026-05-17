@@ -34,7 +34,66 @@
     main {
       width: min(760px, calc(100% - 28px));
       margin: 0 auto;
-      padding: 28px 0 44px;
+      padding: 76px 0 44px;
+    }
+    .page-menu {
+      position: fixed;
+      top: 12px;
+      left: 12px;
+      z-index: 20;
+    }
+    .page-menu details {
+      position: relative;
+    }
+    .page-menu summary {
+      width: 44px;
+      height: 44px;
+      display: inline-flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 5px;
+      border: 1px solid rgba(145, 105, 57, 0.34);
+      border-radius: 12px;
+      background: rgba(255, 249, 240, 0.98);
+      box-shadow: 0 8px 18px rgba(73, 48, 24, 0.12);
+      cursor: pointer;
+      list-style: none;
+    }
+    .page-menu summary::-webkit-details-marker { display: none; }
+    .page-menu summary span {
+      width: 20px;
+      height: 2px;
+      border-radius: 999px;
+      background: #5a3b22;
+    }
+    .page-menu-panel {
+      position: absolute;
+      top: 52px;
+      left: 0;
+      width: min(78vw, 260px);
+      display: grid;
+      gap: 2px;
+      padding: 10px;
+      border: 1px solid rgba(145, 105, 57, 0.32);
+      border-radius: 14px;
+      background: rgba(255, 249, 240, 0.98);
+      box-shadow: 0 12px 28px rgba(73, 48, 24, 0.16);
+    }
+    .page-menu-panel a {
+      min-height: 38px;
+      display: flex;
+      align-items: center;
+      padding: 6px 10px;
+      border-radius: 9px;
+      color: var(--link);
+      text-decoration: none;
+      font-weight: 700;
+      font-size: 0.92rem;
+    }
+    .page-menu-panel a:hover,
+    .page-menu-panel a:focus-visible {
+      background: rgba(155, 119, 63, 0.1);
     }
     .card {
       background: var(--card);
@@ -125,6 +184,23 @@
   </style>
 </head>
 <body>
+  <nav class="page-menu" aria-label="サイト内メニュー">
+    <details>
+      <summary aria-label="メニューを開く"><span></span><span></span><span></span></summary>
+      <div class="page-menu-panel">
+        <a href="https://dq10tools.com/">ホーム</a>
+        <a href="https://dq10tools.com/craft/">職人アシスト</a>
+        <a href="https://dq10tools.com/bazaar/">バザー価格一覧</a>
+        <a href="https://dq10tools.com/monster/">モンスター情報</a>
+        <a href="https://dq10tools.com/equipment/">装備</a>
+        <a href="https://dq10tools.com/orb/">宝珠</a>
+        <a href="https://dq10tools.com/routine/">日課・週課</a>
+        <a href="https://dq10tools.com/field-farming/">フィールド狩り</a>
+        <a href="https://dq10tools.com/present-codes/">プレゼントのじゅもん</a>
+        <a href="https://dq10tools.com/about/">このサイトについて</a>
+      </div>
+    </details>
+  </nav>
   <main>
     <section class="card">
       <h1>ウドラー</h1>
@@ -147,6 +223,7 @@
       <div class="actions">
         <a class="button" href="https://dq10tools.com/monster/?q=%E3%82%A6%E3%83%89%E3%83%A9%E3%83%BC">モンスター情報ページで詳細を開く</a>
         <a class="button" href="https://dq10tools.com/monster/">モンスター一覧へ戻る</a>
+        <a class="button" href="https://dq10tools.com/">ホームに戻る</a>
       </div>
       <p class="note">最新の絞り込みや関連リンクは、モンスター情報ページで確認できます。</p>
     </section>

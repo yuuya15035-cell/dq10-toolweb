@@ -107,6 +107,26 @@ function toMonsterUrl(monsterName) {
   return `${SITE_ORIGIN}/monster/${encodeURIComponent(monsterName)}/`;
 }
 
+function renderCommonNav() {
+  return `<nav class="page-menu" aria-label="サイト内メニュー">
+    <details>
+      <summary aria-label="メニューを開く"><span></span><span></span><span></span></summary>
+      <div class="page-menu-panel">
+        <a href="${SITE_ORIGIN}/">ホーム</a>
+        <a href="${SITE_ORIGIN}/craft/">職人アシスト</a>
+        <a href="${SITE_ORIGIN}/bazaar/">バザー価格一覧</a>
+        <a href="${SITE_ORIGIN}/monster/">モンスター情報</a>
+        <a href="${SITE_ORIGIN}/equipment/">装備</a>
+        <a href="${SITE_ORIGIN}/orb/">宝珠</a>
+        <a href="${SITE_ORIGIN}/routine/">日課・週課</a>
+        <a href="${SITE_ORIGIN}/field-farming/">フィールド狩り</a>
+        <a href="${SITE_ORIGIN}/present-codes/">プレゼントのじゅもん</a>
+        <a href="${SITE_ORIGIN}/about/">このサイトについて</a>
+      </div>
+    </details>
+  </nav>`;
+}
+
 function collectBazaarRows(rows) {
   const byName = new Map();
   rows.forEach((row) => {
@@ -200,7 +220,15 @@ function buildMaterialPageHtml(row, context) {
     :root { color-scheme: light; --bg: #ead9ba; --bg-soft: #f5ead4; --card: rgba(255, 249, 240, 0.96); --border: rgba(145, 105, 57, 0.32); --text: #3c2a1f; --sub: #6b5646; --link: #80501f; }
     * { box-sizing: border-box; }
     body { margin: 0; font-family: "Yu Gothic UI", "Hiragino Sans", sans-serif; background: radial-gradient(circle at top, #f6eddc 0%, var(--bg-soft) 44%, var(--bg) 100%); color: var(--text); line-height: 1.7; }
-    main { width: min(760px, calc(100% - 28px)); margin: 0 auto; padding: 28px 0 44px; }
+    main { width: min(760px, calc(100% - 28px)); margin: 0 auto; padding: 76px 0 44px; }
+    .page-menu { position: fixed; top: 12px; left: 12px; z-index: 20; }
+    .page-menu details { position: relative; }
+    .page-menu summary { width: 44px; height: 44px; display: inline-flex; flex-direction: column; align-items: center; justify-content: center; gap: 5px; border: 1px solid rgba(145, 105, 57, 0.34); border-radius: 12px; background: rgba(255, 249, 240, 0.98); box-shadow: 0 8px 18px rgba(73, 48, 24, 0.12); cursor: pointer; list-style: none; }
+    .page-menu summary::-webkit-details-marker { display: none; }
+    .page-menu summary span { width: 20px; height: 2px; border-radius: 999px; background: #5a3b22; }
+    .page-menu-panel { position: absolute; top: 52px; left: 0; width: min(78vw, 260px); display: grid; gap: 2px; padding: 10px; border: 1px solid rgba(145, 105, 57, 0.32); border-radius: 14px; background: rgba(255, 249, 240, 0.98); box-shadow: 0 12px 28px rgba(73, 48, 24, 0.16); }
+    .page-menu-panel a { min-height: 38px; display: flex; align-items: center; padding: 6px 10px; border-radius: 9px; color: var(--link); text-decoration: none; font-weight: 700; font-size: 0.92rem; }
+    .page-menu-panel a:hover, .page-menu-panel a:focus-visible { background: rgba(155, 119, 63, 0.1); }
     .card { background: var(--card); border: 1px solid var(--border); border-radius: 16px; box-shadow: 0 10px 24px rgba(73, 48, 24, 0.08); padding: 18px 18px 16px; margin-bottom: 16px; }
     h1 { margin: 0 0 8px; font-size: clamp(1.55rem, 4vw, 2rem); line-height: 1.25; color: #2f2117; }
     h2 { margin: 0 0 10px; font-size: 1.05rem; color: #3a2415; }
@@ -220,6 +248,7 @@ function buildMaterialPageHtml(row, context) {
   </style>
 </head>
 <body>
+  ${renderCommonNav()}
   <main>
     <section class="card">
       <h1>${escapeHtml(materialName)}</h1>
@@ -249,6 +278,7 @@ function buildMaterialPageHtml(row, context) {
       <div class="actions">
         <a class="button" href="${escapeHtml(bazaarUrl)}">バザー価格一覧ページで詳細を開く</a>
         <a class="button" href="${SITE_ORIGIN}/bazaar/">バザー価格一覧へ戻る</a>
+        <a class="button" href="${SITE_ORIGIN}/">ホームに戻る</a>
       </div>
       <p class="note">最新の価格や関連リンクは、バザー価格一覧ページで確認できます。</p>
     </section>
