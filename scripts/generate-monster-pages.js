@@ -8,11 +8,15 @@ const OUTPUT_BASE_DIR = path.join(ROOT_DIR, "monster");
 const SITE_ORIGIN = "https://dq10tools.com";
 
 const TARGET_MONSTERS = [
-  "アンドレアル",
-  "バズズ",
-  "プチバズズ",
-  "バズズ強",
+  "スライム",
+  "キラーマシン",
+  "ドラキー",
+  "ばくだん岩",
 ];
+
+const OUTPUT_NAME_BY_MONSTER_NAME = new Map([
+  ["ばくだん岩", "ばくだんいわ"],
+]);
 
 function readCsvRows(csvPath) {
   const text = fs.readFileSync(csvPath, "utf8").replace(/^\uFEFF/, "");
@@ -87,8 +91,9 @@ function renderListSection(label, values) {
   return `<li><strong>${escapeHtml(label)}：</strong>${values.map((value) => escapeHtml(value)).join(" / ")}</li>`;
 }
 
-function buildMonsterPageHtml(row) {
+function buildMonsterPageHtml(row, outputName = "") {
   const monsterName = String(row.monster_name || "").trim();
+  const pageName = String(outputName || monsterName).trim();
   const type = String(row.monster_type || "").trim();
   const exp = String(row.exp || "").trim();
   const gold = String(row.gold || "").trim();
@@ -97,7 +102,7 @@ function buildMonsterPageHtml(row) {
   const whiteBoxValues = splitPipeValues(row.white_box);
   const orbValues = splitPipeValues(row.orbs);
   const habitatValues = splitPipeValues(row.habitats);
-  const canonicalUrl = toCanonicalUrl(monsterName);
+  const canonicalUrl = toCanonicalUrl(pageName);
   const queryUrl = toMonsterQueryUrl(monsterName);
   const description = `${monsterName}の通常ドロップ、レアドロップ、白宝箱、宝珠、生息地、経験値、ゴールドを確認できます。DQ10ツールのモンスター情報ページです。`;
 
@@ -262,13 +267,14 @@ function ensureDirectory(dirPath) {
   fs.mkdirSync(dirPath, { recursive: true });
 }
 
-function writeMonsterPage(row) {
+function writeMonsterPage(row, outputName = "") {
   const monsterName = String(row.monster_name || "").trim();
   if (!monsterName) return null;
-  const monsterDir = path.join(OUTPUT_BASE_DIR, monsterName);
+  const pageName = String(outputName || monsterName).trim();
+  const monsterDir = path.join(OUTPUT_BASE_DIR, pageName);
   ensureDirectory(monsterDir);
   const outputPath = path.join(monsterDir, "index.html");
-  fs.writeFileSync(outputPath, buildMonsterPageHtml(row), "utf8");
+  fs.writeFileSync(outputPath, buildMonsterPageHtml(row, pageName), "utf8");
   return outputPath;
 }
 
@@ -303,7 +309,7 @@ function main() {
       console.warn(`[skip] ${monsterName} が ${path.relative(ROOT_DIR, CSV_PATH)} / ${path.relative(ROOT_DIR, MONSTER_NAME_CSV_PATH)} に見つかりませんでした。`);
       return;
     }
-    const outputPath = writeMonsterPage(row);
+    const outputPath = writeMonsterPage(row, OUTPUT_NAME_BY_MONSTER_NAME.get(monsterName));
     if (outputPath) written.push(outputPath);
   });
   if (!written.length) {
