@@ -349,30 +349,6 @@ body.ads-disabled .ad-slot,
   border: 0 !important;
 }
 
-.page-intro-card {
-  border: 1px solid rgba(128, 86, 45, 0.22);
-  background: #fffdf8;
-  box-shadow: 0 8px 20px rgba(87, 55, 27, 0.08);
-}
-
-.page-intro-card h2,
-.page-intro-card h3 {
-  margin-top: 0;
-  margin-bottom: 8px;
-  color: #4a2d18;
-  font-size: 1.05rem;
-}
-
-.page-intro-card p {
-  margin: 6px 0 0;
-  color: #4a4038;
-  line-height: 1.65;
-}
-
-.site-purpose-card {
-  margin-top: 12px;
-}
-
 .ad-slot-label {
   margin: 0 0 6px;
   font-size: 0.74rem;
