@@ -9133,6 +9133,47 @@ function renderUpdatesEditorPanel() {
 function setAdminModeEnabled(enabled) {
   isAdminModeEnabled = enabled;
   localStorage.setItem(ADMIN_MODE_STORAGE_KEY, enabled ? "1" : "0");
+  const shouldExposeAdminText = enabled || isDirectBazaarAdminRoute();
+  if (!shouldExposeAdminText) {
+    if (adminFabToggleButton) adminFabToggleButton.textContent = "";
+    if (adminFabPanel) adminFabPanel.removeAttribute("aria-label");
+    adminFabPanel?.querySelector(".admin-fab-note") && (adminFabPanel.querySelector(".admin-fab-note").textContent = "");
+    const pinLabel = adminPinGate?.querySelector("label span");
+    if (pinLabel) pinLabel.textContent = "";
+    if (adminPinInput) adminPinInput.placeholder = "";
+    [
+      adminPinUnlockButton,
+      adminOpenManageModeButton,
+      adminOpenUiSettingsButton,
+      adminOpenContentEditorButton,
+      adminToggleContentEditModeButton,
+      adminOpenUpdatesEditorButton,
+      adminOpenBazaarAdminButton,
+      adminExportUiSettingsButton,
+      adminExportContentButton,
+      adminExportUpdatesButton,
+      adminLockButton,
+      uiSettingsResetButton,
+      uiSettingsExportButton,
+      contentEditorResetButton,
+      contentEditorExportButton,
+      updatesEditorAddButton,
+      updatesEditorResetButton,
+      updatesEditorExportButton,
+    ].forEach((button) => {
+      if (button) button.textContent = "";
+    });
+    ["ui-settings", "content-editor", "updates-editor", "bazaar-admin", "data"].forEach((id) => {
+      const section = document.getElementById(id);
+      section?.removeAttribute("aria-label");
+      section?.querySelectorAll("h2, h3, p.helper-text, .ui-settings-note, label span").forEach((element) => {
+        element.textContent = "";
+      });
+    });
+    if (adminActionList) adminActionList.hidden = true;
+    if (adminPinGate) adminPinGate.hidden = true;
+    return;
+  }
   if (adminFabToggleButton) adminFabToggleButton.textContent = "管理者メニュー";
   if (adminFabPanel) adminFabPanel.setAttribute("aria-label", "管理者メニュー");
   adminFabPanel?.querySelector(".admin-fab-note") && (adminFabPanel.querySelector(".admin-fab-note").textContent = "※簡易PIN保護です。本番用の強固な認証ではありません。");

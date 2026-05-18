@@ -1,4 +1,5 @@
 User-agent: *
 Allow: /
+Disallow: /admin-bazaar/
 
 Sitemap: https://dq10tools.com/sitemap.xml
