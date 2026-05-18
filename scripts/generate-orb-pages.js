@@ -8,6 +8,13 @@ const MONSTER_BASE_DIR = path.join(ROOT_DIR, "monster");
 const SITEMAP_PATH = path.join(ROOT_DIR, "sitemap.xml");
 const SITE_ORIGIN = "https://dq10tools.com";
 const GENERATED_MARKER = "generated-by: scripts/generate-orb-pages.js";
+const GA4_TAG = `<script async src="https://www.googletagmanager.com/gtag/js?id=G-Y1XSJ8S4MT"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag("js", new Date());
+    gtag("config", "G-Y1XSJ8S4MT");
+  </script>`;
 
 function readCsvRows(filePath) {
   const text = fs.readFileSync(filePath, "utf8").replace(/^\uFEFF/, "");
@@ -157,6 +164,7 @@ function buildOrbPageHtml(entry) {
   <!-- ${GENERATED_MARKER} -->
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  ${GA4_TAG}
   <title>${escapeHtml(entry.orbName)}｜宝珠情報｜DQ10ツール</title>
   <meta name="description" content="${escapeHtml(description)}" />
   <link rel="canonical" href="${escapeHtml(canonicalUrl)}" />

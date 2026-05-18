@@ -9,6 +9,13 @@ const OUTPUT_BASE_DIR = path.join(ROOT_DIR, "bazaar");
 const SITEMAP_PATH = path.join(ROOT_DIR, "sitemap.xml");
 const SITE_ORIGIN = "https://dq10tools.com";
 const GENERATED_MARKER = "generated-by: scripts/generate-material-pages.js";
+const GA4_TAG = `<script async src="https://www.googletagmanager.com/gtag/js?id=G-Y1XSJ8S4MT"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag("js", new Date());
+    gtag("config", "G-Y1XSJ8S4MT");
+  </script>`;
 const MONSTER_BASE_DIR = path.join(ROOT_DIR, "monster");
 const EQUIPMENT_BASE_DIR = path.join(ROOT_DIR, "equipment");
 const RECIPE_BASE_DIR = path.join(ROOT_DIR, "recipe");
@@ -237,6 +244,7 @@ function buildMaterialPageHtml(row, context) {
   <!-- ${GENERATED_MARKER} -->
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  ${GA4_TAG}
   <title>${escapeHtml(materialName)}｜バザー価格・素材情報｜DQ10ツール</title>
   <meta name="description" content="${escapeHtml(description)}" />
   <link rel="canonical" href="${escapeHtml(canonicalUrl)}" />

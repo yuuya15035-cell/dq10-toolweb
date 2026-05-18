@@ -10,6 +10,13 @@ const OUTPUT_BASE_DIR = path.join(ROOT_DIR, "equipment");
 const SITEMAP_PATH = path.join(ROOT_DIR, "sitemap.xml");
 const SITE_ORIGIN = "https://dq10tools.com";
 const GENERATED_MARKER = "generated-by: scripts/generate-equipment-pages.js";
+const GA4_TAG = `<script async src="https://www.googletagmanager.com/gtag/js?id=G-Y1XSJ8S4MT"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag("js", new Date());
+    gtag("config", "G-Y1XSJ8S4MT");
+  </script>`;
 const MATERIAL_BASE_DIR = path.join(ROOT_DIR, "bazaar");
 const MONSTER_BASE_DIR = path.join(ROOT_DIR, "monster");
 let expectedEquipmentNames = new Set();
@@ -473,6 +480,7 @@ function buildEquipmentPageHtml(entry, context) {
   <!-- ${GENERATED_MARKER} -->
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  ${GA4_TAG}
   <title>${escapeHtml(equipmentName)}｜装備情報｜DQ10ツール</title>
   <meta name="description" content="${escapeHtml(description)}" />
   <link rel="canonical" href="${escapeHtml(canonicalUrl)}" />
