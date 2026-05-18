@@ -7543,6 +7543,61 @@ body.memo-panel-open {
   padding: 16px 16px 14px;
 }
 
+.about-page-main {
+  padding-bottom: 10px;
+}
+
+.about-breadcrumb {
+  margin-bottom: 12px;
+}
+
+.about-title-card {
+  margin-bottom: 14px;
+}
+
+.about-title-card p:last-child,
+.about-section-card p:last-child {
+  margin-bottom: 0;
+}
+
+.about-section-grid {
+  display: grid;
+  gap: 12px;
+}
+
+.about-section-card h2 {
+  margin-top: 0;
+}
+
+.about-feature-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  gap: 8px;
+  margin: 10px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.about-feature-list li {
+  min-height: 40px;
+  padding: 9px 11px;
+  border: 1px solid rgba(196, 166, 132, 0.82);
+  border-radius: 10px;
+  background: rgba(255, 250, 242, 0.78);
+  font-weight: 700;
+}
+
+.about-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.about-actions .info-page-link {
+  margin-top: 0;
+}
+
 .info-page-breadcrumb {
   margin: 0 0 8px;
   color: #6a4f3a;

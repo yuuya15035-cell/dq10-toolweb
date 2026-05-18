@@ -10,46 +10,83 @@
   <link rel="stylesheet" href="../styles.css">
 </head>
 <body class="info-page-body">
-  <main class="info-page">
-    <nav class="info-breadcrumb" aria-label="パンくず"><a href="../">ホーム</a> &gt; このサイトについて</nav>
-    <section class="info-card">
-      <h1>このサイトについて</h1>
-      <p>DQ10ツールは、ドラゴンクエストXを遊ぶときに確認したい情報を、できるだけ軽くまとめて見られるようにした個人運営の支援サイトです。</p>
+  <main class="info-page-main about-page-main">
+    <nav class="info-page-breadcrumb about-breadcrumb" aria-label="パンくず"><a href="../">ホーム</a> &gt; このサイトについて</nav>
+
+    <section class="info-page-card about-title-card">
+      <h1 class="info-page-title">このサイトについて</h1>
+      <p class="info-page-lead">DQ10ツールは、ドラゴンクエストXを遊ぶときに確認したい情報を、できるだけ軽くまとめて見られるようにした個人運営の支援サイトです。</p>
       <p>バザー価格、職人アシスト、モンスター情報、装備情報、宝珠、白宝箱、日課・週課・月課チェックなどを横断して確認できます。</p>
-
-      <h2>サイトの目的</h2>
-      <p>日々のプレイ中に「素材はいくらか」「この装備の素材は何か」「どのモンスターが落とすか」を調べる手間を減らすことを目的にしています。</p>
-      <p>公式情報の代わりではなく、ゲーム内確認を補助するための参考ツールとしてご利用ください。</p>
-
-      <h2>主な機能</h2>
-      <ul>
-        <li>バザー価格一覧：素材やアイテムの価格、前日比、更新日時を確認できます。</li>
-        <li>職人アシスト：装備ごとの必要素材、素材単価、推定原価、利益目安を確認できます。</li>
-        <li>モンスター情報：通常ドロップ、レアドロップ、白宝箱、宝珠、生息地などを確認できます。</li>
-        <li>装備情報：武器・防具の性能、セット効果、レシピ、白宝箱ドロップ情報を確認できます。</li>
-        <li>宝珠・白宝箱：宝珠の効果や入手モンスター、白宝箱装備の入手先を探せます。</li>
-        <li>お気に入り・メモ：よく見る項目や気になる情報を、この端末のブラウザに保存できます。</li>
-      </ul>
-
-      <h2>データ更新について</h2>
-      <p>掲載しているデータは、公開情報やゲーム内で確認した内容をもとに手作業で整理しています。更新のタイミングによって、ゲーム内の最新状況と差異が出る場合があります。</p>
-      <p>バザー価格は手作業確認による参考値です。実際の購入・販売前には、ゲーム内の旅人バザーで最新価格をご確認ください。</p>
-
-      <h2 id="privacy">保存機能とプライバシー</h2>
-      <p>お気に入り、メモ、日課・週課・月課チェック、ボスカード管理などの一部機能では、ブラウザのlocalStorageを使用します。</p>
-      <p>保存内容は利用中の端末内に保存されます。別端末には引き継がれず、ブラウザデータを削除すると消える場合があります。</p>
-      <p>お問い合わせ対応やサイト改善、広告配信、アクセス状況の確認のため、必要な範囲で外部サービスを利用する場合があります。</p>
-
-      <h2 id="terms">非公式サイトであること</h2>
-      <p>このサイトは個人が制作・運営している非公式の支援サイトです。ドラゴンクエストX公式サイトおよび株式会社スクウェア・エニックス様とは関係ありません。</p>
-      <p>ゲーム内画像・名称・データ等の権利は各権利者に帰属します。掲載内容の正確性には注意していますが、誤り、更新遅れ、仕様変更などによって損害が発生した場合でも責任を負いかねます。</p>
-
-      <h2 id="contact">お問い合わせ</h2>
-      <p>不具合、掲載内容の修正依頼、ご意見などがありましたら、以下のフォームまたはXよりご連絡ください。</p>
-      <p><a class="info-button" href="https://forms.gle/GFHNuTwW8TzVwyUb7" target="_blank" rel="noopener noreferrer">お問い合わせフォームを開く</a></p>
-      <p class="info-note">X：<a href="https://x.com/DQ10TOOL" target="_blank" rel="noopener noreferrer">@DQ10TOOL</a></p>
-      <p class="info-actions"><a class="info-button secondary" href="../">トップページに戻る</a></p>
     </section>
+
+    <div class="about-section-grid">
+      <section class="info-page-card about-section-card">
+        <h2>サイトの目的</h2>
+        <p>日々のプレイ中に「素材はいくらか」「この装備の素材は何か」「どのモンスターが落とすか」を調べる手間を減らすことを目的にしています。</p>
+        <p>公式情報の代わりではなく、ゲーム内確認を補助するための参考ツールとしてご利用ください。</p>
+      </section>
+
+      <section class="info-page-card about-section-card">
+        <h2>主な機能</h2>
+        <ul class="about-feature-list">
+          <li>バザー価格一覧</li>
+          <li>職人アシスト</li>
+          <li>モンスター情報</li>
+          <li>装備情報</li>
+          <li>宝珠・白宝箱</li>
+          <li>日課・週課・月課チェック</li>
+          <li>お気に入り・メモ</li>
+        </ul>
+      </section>
+
+      <section class="info-page-card about-section-card">
+        <h2>データ更新について</h2>
+        <p>掲載しているデータは、公開情報やゲーム内で確認した内容をもとに手作業で整理しています。更新のタイミングによって、ゲーム内の最新状況と差異が出る場合があります。</p>
+        <p>バザー価格は手作業確認による参考値です。実際の購入・販売前には、ゲーム内の旅人バザーで最新価格をご確認ください。</p>
+      </section>
+
+      <section class="info-page-card about-section-card" id="privacy">
+        <h2>保存機能とプライバシー</h2>
+        <p>お気に入り、メモ、日課・週課・月課チェック、ボスカード管理などの一部機能では、ブラウザのlocalStorageを使用します。</p>
+        <p>保存内容は利用中の端末内に保存されます。別端末には引き継がれず、ブラウザデータを削除すると消える場合があります。</p>
+        <p>お問い合わせ対応やサイト改善、広告配信、アクセス状況の確認のため、必要な範囲で外部サービスを利用する場合があります。</p>
+      </section>
+
+      <section class="info-page-card about-section-card">
+        <h2>非公式サイトであること</h2>
+        <p>このサイトは個人が制作・運営している非公式の支援サイトです。ドラゴンクエストX公式サイトおよび株式会社スクウェア・エニックス様とは関係ありません。</p>
+        <p>ゲーム内画像・名称・データ等の権利は各権利者に帰属します。</p>
+      </section>
+
+      <section class="info-page-card about-section-card" id="terms">
+        <h2>利用上の注意・免責事項</h2>
+        <p>掲載内容の正確性には注意していますが、誤り、更新遅れ、仕様変更などが含まれる場合があります。</p>
+        <p>掲載している価格・情報は参考用です。最新かつ正確な内容は、ゲーム内および公式情報もあわせてご確認ください。</p>
+      </section>
+
+      <section class="info-page-card about-section-card" id="contact">
+        <h2>お問い合わせ</h2>
+        <p>不具合、掲載内容の修正依頼、ご意見などがありましたら、以下のフォームまたはXよりご連絡ください。</p>
+        <div class="about-actions">
+          <a class="info-page-link" href="https://forms.gle/GFHNuTwW8TzVwyUb7" target="_blank" rel="noopener noreferrer">お問い合わせフォームを開く</a>
+          <a class="info-page-link" href="https://x.com/DQ10TOOL" target="_blank" rel="noopener noreferrer">Xで連絡する</a>
+          <a class="info-page-link about-home-link" href="../">ホームに戻る</a>
+        </div>
+      </section>
+    </div>
   </main>
+
+  <footer class="site-footer" aria-label="権利表記">
+    <div class="site-footer-inner">
+      <nav class="site-footer-links" aria-label="フッターリンク">
+        <a href="/about/">このサイトについて</a>
+        <a href="/about/#contact">お問い合わせ</a>
+        <a href="/about/#privacy">プライバシーポリシー</a>
+        <a href="/about/#terms">利用上の注意・免責事項</a>
+      </nav>
+      <p class="site-footer-contact">お問い合わせ: <a href="https://forms.gle/GFHNuTwW8TzVwyUb7" target="_blank" rel="noopener noreferrer">Googleフォーム</a> / X: <a href="https://x.com/DQ10TOOL" target="_blank" rel="noopener noreferrer">@DQ10TOOL</a></p>
+      <p class="site-footer-disclaimer">このサイトはドラゴンクエストXの非公式支援ツールです。株式会社スクウェア・エニックス様とは関係のない個人運営サイトです。掲載している価格・情報は参考用で、手作業更新を含むためゲーム内や公式情報と差異が出る場合があります。</p>
+    </div>
+  </footer>
 </body>
 </html>
