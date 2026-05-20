@@ -3,6 +3,54 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <style>
+      body.is-app-loading {
+        min-height: 100vh;
+        margin: 0;
+        overflow: hidden;
+        background: radial-gradient(circle at top, #fff8ea 0%, #f2dfbd 52%, #d7b27a 100%);
+        color: #4a2d18;
+        font-family: "Yu Gothic", "Hiragino Sans", Meiryo, sans-serif;
+      }
+      body.is-app-loading > :not(#appLoadingScreen) {
+        visibility: hidden;
+      }
+      #appLoadingScreen {
+        position: fixed;
+        inset: 0;
+        z-index: 9999;
+        display: grid;
+        place-items: center;
+        padding: 18px;
+        box-sizing: border-box;
+        background: radial-gradient(circle at top, rgba(255, 248, 234, 0.96) 0%, rgba(242, 223, 189, 0.94) 52%, rgba(215, 178, 122, 0.96) 100%);
+      }
+      body:not(.is-app-loading) #appLoadingScreen {
+        display: none;
+      }
+      .app-loading-card {
+        width: min(320px, 100%);
+        padding: 18px 20px;
+        border: 1px solid rgba(126, 82, 42, 0.34);
+        border-radius: 14px;
+        background: rgba(255, 250, 240, 0.96);
+        box-shadow: 0 12px 28px rgba(73, 48, 26, 0.14);
+        text-align: center;
+      }
+      .app-loading-title {
+        margin: 0 0 6px;
+        color: #3a2415;
+        font-size: 1.05rem;
+        font-weight: 700;
+        line-height: 1.4;
+      }
+      .app-loading-note {
+        margin: 0;
+        color: #72563a;
+        font-size: 0.86rem;
+        line-height: 1.6;
+      }
+    </style>
       <script async src="https://www.googletagmanager.com/gtag/js?id=G-Y1XSJ8S4MT"></script>
   <script>
     window.dataLayer = window.dataLayer || [];
@@ -28,7 +76,23 @@
     <meta name="description" content="DQ10向けのバザー価格、職人アシスト、日課・週課チェック、メモ機能などをまとめて使える支援ツールサイトです。" />
     <link rel="stylesheet" href="styles.css" />
   </head>
-  <body class="ads-disabled">
+  <body class="ads-disabled is-app-loading">
+    <div id="appLoadingScreen" role="status" aria-live="polite">
+      <div class="app-loading-card">
+        <p class="app-loading-title">DQ10ツールを読み込み中…</p>
+        <p class="app-loading-note">冒険の準備をしています</p>
+      </div>
+    </div>
+    <script>
+      window.__dq10InitialLoadingFallback = setTimeout(function () {
+        if (document.body) {
+          document.body.classList.remove("is-app-loading");
+          document.body.classList.add("is-app-ready");
+        }
+        var loading = document.getElementById("appLoadingScreen");
+        if (loading) loading.hidden = true;
+      }, 5000);
+    </script>
     <main class="app">
       <button id="menuToggleButton" class="hamburger-button" type="button" aria-label="メニューを開く" aria-expanded="false" aria-controls="sideMenu">
         <span aria-hidden="true">≡</span>

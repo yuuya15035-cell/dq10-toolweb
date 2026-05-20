@@ -13413,7 +13413,25 @@ async function initialize() {
   prefetchDataForTab(activeTabId);
 }
 
-initialize();
+function finishInitialLoading() {
+  if (window.__dq10InitialLoadingFallback) {
+    clearTimeout(window.__dq10InitialLoadingFallback);
+    window.__dq10InitialLoadingFallback = null;
+  }
+  document.body.classList.remove("is-app-loading");
+  document.body.classList.add("is-app-ready");
+  const loadingScreen = document.getElementById("appLoadingScreen");
+  if (loadingScreen) loadingScreen.hidden = true;
+}
+
+initialize()
+  .then(() => {
+    finishInitialLoading();
+  })
+  .catch((error) => {
+    console.error("初期化に失敗しました", error);
+    finishInitialLoading();
+  });
 
 
 
