@@ -2919,7 +2919,7 @@ function parsePresentCodesFromLines(lines) {
     const linkType = rawLinkType === "url" ? "url" : "code";
     const url = urlIndex >= 0 ? String(row[urlIndex] || "").trim() : "";
     const note = noteIndex >= 0 ? String(row[noteIndex] || "").trim() : "";
-    if (!code || !reward || !expiresAt) continue;
+    if (!code || !reward) continue;
     rows.push({ code, reward, expiresAt, linkType, url, note });
   }
   return rows;
@@ -7383,6 +7383,62 @@ function formatPresentCodeReward(rewardText) {
     .join("<br>");
 }
 
+function getPresentCodeExpiryStatus(expiresAt, baseDate = new Date()) {
+  const rawValue = String(expiresAt || "").trim();
+  if (rawValue === "終了未定") {
+    return {
+      label: "終了未定",
+      isExpired: false,
+      sortGroup: 0,
+      sortTime: Number.MAX_SAFE_INTEGER,
+    };
+  }
+  if (rawValue === "") {
+    return {
+      label: "期限未設定",
+      isExpired: false,
+      sortGroup: 0,
+      sortTime: Number.MAX_SAFE_INTEGER - 1,
+    };
+  }
+
+  const match = rawValue.match(/^(\d{4})[\/.-](\d{1,2})[\/.-](\d{1,2})$/);
+  if (!match) {
+    return {
+      label: rawValue,
+      isExpired: false,
+      sortGroup: 0,
+      sortTime: Number.MAX_SAFE_INTEGER - 2,
+    };
+  }
+
+  const year = Number(match[1]);
+  const month = Number(match[2]);
+  const day = Number(match[3]);
+  const expiryDate = new Date(year, month - 1, day);
+  if (
+    expiryDate.getFullYear() !== year ||
+    expiryDate.getMonth() !== month - 1 ||
+    expiryDate.getDate() !== day
+  ) {
+    return {
+      label: rawValue,
+      isExpired: false,
+      sortGroup: 0,
+      sortTime: Number.MAX_SAFE_INTEGER - 2,
+    };
+  }
+
+  const expiredAt = new Date(year, month - 1, day + 1, 0, 0, 0, 0);
+  const isExpired = baseDate.getTime() >= expiredAt.getTime();
+  return {
+    label: isExpired ? "期限切れ" : `${month}/${day}まで`,
+    isExpired,
+    sortGroup: isExpired ? 1 : 0,
+    sortTime: expiredAt.getTime(),
+  };
+}
+
 function getOrbFilteredRows() {
   const normalizedKeyword = String(orbSearchKeyword || "").trim().toLowerCase();
   return (orbEntries || []).filter((row) => {
@@ -7544,13 +7600,29 @@ function renderPresentCodes() {
           .includes(normalizedKeyword)
       )
     : presentCodes;
+  const now = new Date();
+  const displayRows = filteredCodes
+    .map((row, index) => ({
+      row,
+      index,
+      expiryStatus: getPresentCodeExpiryStatus(row.expiresAt, now),
+    }))
+    .sort((a, b) => {
+      if (a.expiryStatus.sortGroup !== b.expiryStatus.sortGroup) {
+        return a.expiryStatus.sortGroup - b.expiryStatus.sortGroup;
+      }
+      if (a.expiryStatus.sortTime !== b.expiryStatus.sortTime) {
+        return a.expiryStatus.sortTime - b.expiryStatus.sortTime;
+      }
+      return a.index - b.index;
+    });
 
   presentCodeListWrap.innerHTML = `
     <div class="present-code-list">
-      ${filteredCodes
+      ${displayRows
         .map(
-          (row) => `
-            <article class="present-code-card${row.linkType === "url" ? " is-url" : ""}">
+          ({ row, expiryStatus }) => `
+            <article class="present-code-card${row.linkType === "url" ? " is-url" : ""}${expiryStatus.isExpired ? " is-expired" : ""}">
               <p class="present-code-label">${getPresentCodePrimaryLabel(row)}</p>
               <p class="present-code-name">
                 <a
@@ -7568,7 +7640,7 @@ function renderPresentCodes() {
               <p class="present-code-label">報酬</p>
               <p class="present-code-reward">${formatPresentCodeReward(row.reward)}</p>
               <p class="present-code-label">期限</p>
-              <p class="present-code-expire">${row.expiresAt}</p>
+              <p class="present-code-expire${expiryStatus.isExpired ? " is-expired" : ""}">${escapeHtml(expiryStatus.label)}</p>
               ${
                 row.note
                   ? `
