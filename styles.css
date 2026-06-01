@@ -1259,6 +1259,67 @@ body.ads-disabled .ad-slot,
   gap: 10px;
 }
 
+.craft-record-counter-card {
+  display: grid;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+
+.craft-record-counter-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.craft-record-counter-header h3,
+.craft-record-counter-header p,
+.craft-record-daily-summary h3,
+.craft-record-today-card h3 {
+  margin: 0;
+}
+
+.craft-record-counter-header p {
+  color: #6d5138;
+  font-size: 0.86rem;
+  line-height: 1.55;
+}
+
+.craft-record-work-time-status {
+  min-width: min(100%, 280px);
+  padding: 8px 10px;
+  border-radius: 10px;
+  background: rgba(123, 83, 43, 0.08);
+  color: #4c3624;
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
+.craft-record-count-buttons {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.craft-record-count-button,
+.craft-record-counter-actions button {
+  min-height: 44px;
+  padding: 9px 10px;
+  font-weight: 700;
+}
+
+.craft-record-count-button.is-star3 {
+  border-color: rgba(156, 101, 36, 0.72);
+  background: linear-gradient(180deg, rgba(255, 235, 170, 0.98), rgba(224, 169, 80, 0.94));
+  color: #3d2615;
+}
+
+.craft-record-counter-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
 .craft-record-form-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(132px, 1fr));
@@ -1322,6 +1383,65 @@ body.ads-disabled .ad-slot,
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(132px, 1fr));
   gap: 9px;
+}
+
+.craft-record-today-card {
+  margin: 0 0 10px;
+}
+
+.craft-record-today-card h3,
+.craft-record-daily-summary h3 {
+  color: #3c2718;
+  font-size: 1rem;
+}
+
+.craft-record-daily-summary {
+  margin: 0 0 10px;
+}
+
+.craft-record-daily-list {
+  display: grid;
+  gap: 10px;
+  margin-top: 8px;
+}
+
+.craft-record-daily-card {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+}
+
+.craft-record-daily-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.craft-record-daily-header h4 {
+  margin: 0;
+}
+
+.craft-record-variance {
+  display: inline-flex;
+  align-items: center;
+  min-height: 26px;
+  padding: 4px 8px;
+  border-radius: 999px;
+  background: rgba(123, 83, 43, 0.08);
+  color: #5b4530;
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.craft-record-variance.is-up {
+  background: rgba(197, 123, 30, 0.16);
+  color: #75430d;
+}
+
+.craft-record-variance.is-down {
+  background: rgba(87, 109, 154, 0.14);
+  color: #3c4d76;
 }
 
 .craft-record-list {
@@ -1400,6 +1520,22 @@ body.ads-disabled .ad-slot,
   color: #5d4734;
   font-size: 0.86rem;
   line-height: 1.55;
+}
+
+@media (max-width: 560px) {
+  .craft-record-counter-header {
+    display: grid;
+  }
+
+  .craft-record-count-buttons {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .craft-record-count-button.is-star3 {
+    grid-column: span 2;
+    min-height: 52px;
+    font-size: 1rem;
+  }
 }
 
 .monster-info-grid {

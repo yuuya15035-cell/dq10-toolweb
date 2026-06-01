@@ -2004,6 +2004,10 @@ let presentCodesKeyword = "";
 let craftRecords = [];
 let selectedCraftRecordPeriod = "30";
 let selectedCraftRecordItemName = "";
+let craftRecordCountHistory = [];
+let craftRecordWorkStartTime = "";
+let craftRecordWorkEndTime = "";
+let craftRecordTimerIntervalId = null;
 let fieldFarmingKeyword = "";
 let selectedRoutineType = "daily";
 let routineTaskCheckedTokens = {};
@@ -2219,9 +2223,17 @@ const craftRecordImportButton = getRequiredElementById("craftRecordImportButton"
 const craftRecordImportInput = getRequiredElementById("craftRecordImportInput");
 const craftRecordClearButton = getRequiredElementById("craftRecordClearButton");
 const craftRecordSummaryWrap = getRequiredElementById("craftRecordSummaryWrap");
+const craftRecordTodaySummaryWrap = getRequiredElementById("craftRecordTodaySummaryWrap");
 const craftRecordPeriodSelect = getRequiredElementById("craftRecordPeriodSelect");
 const craftRecordItemFilterSelect = getRequiredElementById("craftRecordItemFilterSelect");
+const craftRecordDailySummaryWrap = getRequiredElementById("craftRecordDailySummaryWrap");
 const craftRecordListWrap = getRequiredElementById("craftRecordListWrap");
+const craftRecordCountButtons = document.querySelectorAll("[data-craft-record-count-star]");
+const craftRecordUndoCountButton = getRequiredElementById("craftRecordUndoCountButton");
+const craftRecordResetCountButton = getRequiredElementById("craftRecordResetCountButton");
+const craftRecordWorkStartButton = getRequiredElementById("craftRecordWorkStartButton");
+const craftRecordWorkEndButton = getRequiredElementById("craftRecordWorkEndButton");
+const craftRecordWorkTimeStatus = getRequiredElementById("craftRecordWorkTimeStatus");
 const fieldFarmingListWrap = getRequiredElementById("fieldFarmingListWrap");
 const routineTypeTabButtons = Array.from(document.querySelectorAll("[data-routine-type]"));
 const routineProgressText = getRequiredElementById("routineProgressText");
@@ -6391,6 +6403,9 @@ function normalizeCraftRecord(record) {
       : totalCount > 0
         ? legacyTotalSales / totalCount
         : legacyTotalSales;
+  const startTime = normalizeCraftRecordDateTime(record?.startTime ?? record?.start_time);
+  const endTime = normalizeCraftRecordDateTime(record?.endTime ?? record?.end_time);
+  const durationSeconds = toNonNegativeInteger(record?.durationSeconds ?? record?.duration_seconds) || getCraftRecordDurationSecondsBetween(startTime, endTime);
   return {
     id: String(record?.id || createRecordId("craft-record")),
     date: normalizeCraftRecordDate(record?.date),
@@ -6402,6 +6417,9 @@ function normalizeCraftRecord(record) {
     star3: toNonNegativeInteger(record?.star3),
     unitCost,
     unitSales,
+    startTime,
+    endTime,
+    durationSeconds,
     memo: String(record?.memo || "").trim(),
     createdAt: String(record?.createdAt || new Date().toISOString()),
   };
@@ -6426,6 +6444,28 @@ function parseCraftRecordDate(value) {
   return date;
 }
 
+function normalizeCraftRecordDateTime(value) {
+  const text = String(value || "").trim();
+  if (!text) return "";
+  const date = new Date(text);
+  if (!Number.isFinite(date.getTime())) return "";
+  return date.toISOString();
+}
+
+function getCraftRecordDurationSecondsBetween(startTime, endTime) {
+  if (!startTime || !endTime) return 0;
+  const start = new Date(startTime);
+  const end = new Date(endTime);
+  if (!Number.isFinite(start.getTime()) || !Number.isFinite(end.getTime())) return 0;
+  return Math.max(0, Math.round((end.getTime() - start.getTime()) / 1000));
+}
+
+function getCraftRecordCurrentWorkDurationSeconds() {
+  if (!craftRecordWorkStartTime) return 0;
+  const endTime = craftRecordWorkEndTime || new Date().toISOString();
+  return getCraftRecordDurationSecondsBetween(craftRecordWorkStartTime, endTime);
+}
+
 function getCraftRecordStarTotal(record) {
   return toNonNegativeInteger(record?.star0) + toNonNegativeInteger(record?.star1) + toNonNegativeInteger(record?.star2) + toNonNegativeInteger(record?.star3);
 }
@@ -6444,6 +6484,35 @@ function getCraftRecordFee(record) {
 
 function getCraftRecordProfit(record) {
   return getCraftRecordTotalSales(record) - getCraftRecordTotalCost(record) - getCraftRecordFee(record);
+}
+
+function getCraftRecordDurationSeconds(record) {
+  return toNonNegativeInteger(record?.durationSeconds) || getCraftRecordDurationSecondsBetween(record?.startTime, record?.endTime);
+}
+
+function formatCraftRecordDuration(seconds) {
+  const totalSeconds = toNonNegativeInteger(seconds);
+  if (totalSeconds <= 0) return "-";
+  const hours = Math.floor(totalSeconds / 3600);
+  const minutes = Math.floor((totalSeconds % 3600) / 60);
+  const restSeconds = totalSeconds % 60;
+  if (hours > 0) return `${hours}時間${minutes}分${restSeconds}秒`;
+  if (minutes > 0) return `${minutes}分${restSeconds}秒`;
+  return `${restSeconds}秒`;
+}
+
+function formatCraftRecordSecondsPerItem(durationSeconds, totalCount) {
+  const count = toNonNegativeInteger(totalCount);
+  const seconds = toNonNegativeInteger(durationSeconds);
+  if (seconds <= 0 || count <= 0) return "-";
+  return formatCraftRecordDuration(Math.round(seconds / count));
+}
+
+function formatCraftRecordProfitRate(profit, durationSeconds, minutes) {
+  const seconds = toNonNegativeInteger(durationSeconds);
+  if (seconds <= 0) return "-";
+  const profitValue = Number(profit);
+  return formatGold(((Number.isFinite(profitValue) ? profitValue : 0) / seconds) * 60 * minutes);
 }
 
 function getCraftRecordPeriodStart(period, now = new Date()) {
@@ -6493,15 +6562,192 @@ function summarizeCraftRecords(records) {
       summary.totalCost += getCraftRecordTotalCost(record);
       summary.fee += getCraftRecordFee(record);
       summary.profit += getCraftRecordProfit(record);
+      summary.durationSeconds += getCraftRecordDurationSeconds(record);
       return summary;
     },
-    { totalCount: 0, star0: 0, star1: 0, star2: 0, star3: 0, totalSales: 0, totalCost: 0, fee: 0, profit: 0 }
+    { totalCount: 0, star0: 0, star1: 0, star2: 0, star3: 0, totalSales: 0, totalCost: 0, fee: 0, profit: 0, durationSeconds: 0 }
   );
 }
 
 function formatPercent(numerator, denominator) {
   if (!Number.isFinite(numerator) || !Number.isFinite(denominator) || denominator <= 0) return "0.0%";
   return `${((numerator / denominator) * 100).toFixed(1)}%`;
+}
+
+function formatCraftRecordTimeLabel(value) {
+  const date = new Date(value);
+  if (!Number.isFinite(date.getTime())) return "-";
+  return date.toLocaleTimeString("ja-JP", { hour: "2-digit", minute: "2-digit", second: "2-digit" });
+}
+
+function getCraftRecordFormRecord() {
+  return normalizeCraftRecord({
+    date: craftRecordDateInput?.value,
+    itemName: craftRecordItemInput?.value,
+    totalCount: craftRecordTotalInput?.value,
+    star0: craftRecordStar0Input?.value,
+    star1: craftRecordStar1Input?.value,
+    star2: craftRecordStar2Input?.value,
+    star3: craftRecordStar3Input?.value,
+    unitCost: craftRecordCostInput?.value,
+    unitSales: craftRecordSalesInput?.value,
+    startTime: craftRecordWorkStartTime,
+    endTime: craftRecordWorkEndTime,
+    durationSeconds: getCraftRecordCurrentWorkDurationSeconds(),
+    memo: craftRecordMemoInput?.value,
+  });
+}
+
+function updateCraftRecordWorkTimeStatus() {
+  if (!craftRecordWorkTimeStatus) return;
+  const durationSeconds = getCraftRecordCurrentWorkDurationSeconds();
+  const formRecord = getCraftRecordFormRecord();
+  const profit = getCraftRecordProfit(formRecord);
+  const startLabel = craftRecordWorkStartTime ? `開始 ${formatCraftRecordTimeLabel(craftRecordWorkStartTime)}` : "開始 -";
+  const endLabel = craftRecordWorkEndTime ? `終了 ${formatCraftRecordTimeLabel(craftRecordWorkEndTime)}` : "終了 -";
+  craftRecordWorkTimeStatus.textContent = `作業時間：${formatCraftRecordDuration(durationSeconds)} / 1個あたり：${formatCraftRecordSecondsPerItem(durationSeconds, formRecord.totalCount)} / 30分利益：${formatCraftRecordProfitRate(profit, durationSeconds, 30)} / 時給換算：${formatCraftRecordProfitRate(profit, durationSeconds, 60)}（${startLabel} / ${endLabel}）`;
+}
+
+function setCraftRecordTimerActive(isActive) {
+  if (craftRecordTimerIntervalId !== null) {
+    clearInterval(craftRecordTimerIntervalId);
+    craftRecordTimerIntervalId = null;
+  }
+  if (isActive) {
+    craftRecordTimerIntervalId = window.setInterval(updateCraftRecordWorkTimeStatus, 1000);
+  }
+}
+
+function resetCraftRecordWorkState() {
+  craftRecordWorkStartTime = "";
+  craftRecordWorkEndTime = "";
+  setCraftRecordTimerActive(false);
+  updateCraftRecordWorkTimeStatus();
+}
+
+function setCraftRecordInputValue(input, value) {
+  if (!input) return;
+  input.value = String(Math.max(0, toNonNegativeInteger(value)));
+}
+
+function incrementCraftRecordStar(star) {
+  const starInputMap = {
+    0: craftRecordStar0Input,
+    1: craftRecordStar1Input,
+    2: craftRecordStar2Input,
+    3: craftRecordStar3Input,
+  };
+  const input = starInputMap[star];
+  if (!input || !craftRecordTotalInput) return;
+  setCraftRecordInputValue(input, toNonNegativeInteger(input.value) + 1);
+  setCraftRecordInputValue(craftRecordTotalInput, toNonNegativeInteger(craftRecordTotalInput.value) + 1);
+  craftRecordCountHistory.push(star);
+  updateCraftRecordWarning();
+  updateCraftRecordWorkTimeStatus();
+}
+
+function undoCraftRecordCount() {
+  const star = craftRecordCountHistory.pop();
+  if (star === undefined) return;
+  const starInputMap = {
+    0: craftRecordStar0Input,
+    1: craftRecordStar1Input,
+    2: craftRecordStar2Input,
+    3: craftRecordStar3Input,
+  };
+  const input = starInputMap[star];
+  if (input) setCraftRecordInputValue(input, toNonNegativeInteger(input.value) - 1);
+  if (craftRecordTotalInput) setCraftRecordInputValue(craftRecordTotalInput, toNonNegativeInteger(craftRecordTotalInput.value) - 1);
+  updateCraftRecordWarning();
+  updateCraftRecordWorkTimeStatus();
+}
+
+function resetCraftRecordCountInputs() {
+  craftRecordCountHistory = [];
+  [craftRecordTotalInput, craftRecordStar0Input, craftRecordStar1Input, craftRecordStar2Input, craftRecordStar3Input].forEach((input) => {
+    if (input) input.value = "0";
+  });
+  updateCraftRecordWarning();
+  updateCraftRecordWorkTimeStatus();
+}
+
+function getTodayCraftRecords() {
+  const today = formatDateAsIsoText(new Date());
+  return craftRecords.filter((record) => record.date === today && (!selectedCraftRecordItemName || record.itemName === selectedCraftRecordItemName));
+}
+
+function renderCraftRecordTodaySummary() {
+  if (!craftRecordTodaySummaryWrap) return;
+  const summary = summarizeCraftRecords(getTodayCraftRecords());
+  craftRecordTodaySummaryWrap.innerHTML = `
+    <section class="card craft-record-today-card">
+      <h3>今日の集計</h3>
+      <div class="craft-record-summary-grid">
+        <section class="card craft-record-summary-card is-primary"><span>今日の作成数</span><strong>${summary.totalCount.toLocaleString("ja-JP")}</strong></section>
+        <section class="card craft-record-summary-card is-primary"><span>今日の星3率</span><strong>${formatPercent(summary.star3, summary.totalCount)}</strong></section>
+        <section class="card craft-record-summary-card is-primary"><span>今日の純利益</span><strong>${formatGold(summary.profit)}</strong></section>
+        <section class="card craft-record-summary-card"><span>今日の総売上</span><strong>${formatGold(summary.totalSales)}</strong></section>
+        <section class="card craft-record-summary-card"><span>今日の総原価</span><strong>${formatGold(summary.totalCost)}</strong></section>
+        <section class="card craft-record-summary-card"><span>今日の総手数料</span><strong>${formatGold(summary.fee)}</strong></section>
+        <section class="card craft-record-summary-card"><span>今日の作業時間</span><strong>${formatCraftRecordDuration(summary.durationSeconds)}</strong></section>
+        <section class="card craft-record-summary-card"><span>今日の30分利益</span><strong>${formatCraftRecordProfitRate(summary.profit, summary.durationSeconds, 30)}</strong></section>
+        <section class="card craft-record-summary-card"><span>今日の時給換算</span><strong>${formatCraftRecordProfitRate(summary.profit, summary.durationSeconds, 60)}</strong></section>
+        <section class="card craft-record-summary-card"><span>今日の1個あたり</span><strong>${formatCraftRecordSecondsPerItem(summary.durationSeconds, summary.totalCount)}</strong></section>
+      </div>
+    </section>
+  `;
+}
+
+function getCraftRecordVarianceLabel(summary, baselineSummary) {
+  if (!selectedCraftRecordItemName || !baselineSummary || summary.totalCount <= 0 || baselineSummary.totalCount <= 0) return "";
+  const dailyRate = summary.star3 / summary.totalCount;
+  const baselineRate = baselineSummary.star3 / baselineSummary.totalCount;
+  const diff = (dailyRate - baselineRate) * 100;
+  if (diff >= 5) return `<span class="craft-record-variance is-up">上振れ +${diff.toFixed(1)}%</span>`;
+  if (diff <= -5) return `<span class="craft-record-variance is-down">下振れ ${diff.toFixed(1)}%</span>`;
+  return `<span class="craft-record-variance">平均付近</span>`;
+}
+
+function renderCraftRecordDailySummary(records) {
+  if (!craftRecordDailySummaryWrap) return;
+  const groups = new Map();
+  records.forEach((record) => {
+    if (!record.date) return;
+    if (!groups.has(record.date)) groups.set(record.date, []);
+    groups.get(record.date).push(record);
+  });
+  const baselineSummary = selectedCraftRecordItemName
+    ? summarizeCraftRecords(craftRecords.filter((record) => record.itemName === selectedCraftRecordItemName))
+    : null;
+  const rows = Array.from(groups.entries())
+    .sort((a, b) => String(b[0]).localeCompare(String(a[0])))
+    .map(([date, dateRecords]) => {
+      const summary = summarizeCraftRecords(dateRecords);
+      return `
+        <article class="card craft-record-daily-card">
+          <div class="craft-record-daily-header"><h4>${escapeHtml(date)}</h4>${getCraftRecordVarianceLabel(summary, baselineSummary)}</div>
+          <div class="craft-record-card-stats">
+            <span>作成 ${summary.totalCount.toLocaleString("ja-JP")}</span>
+            <span>星3率 ${formatPercent(summary.star3, summary.totalCount)}</span>
+            <span>星2率 ${formatPercent(summary.star2, summary.totalCount)}</span>
+            <span>星1率 ${formatPercent(summary.star1, summary.totalCount)}</span>
+            <span>星0率 ${formatPercent(summary.star0, summary.totalCount)}</span>
+          </div>
+          <div class="craft-record-card-money">
+            <strong>純利益 ${formatGold(summary.profit)}</strong>
+            <span>作業時間 ${formatCraftRecordDuration(summary.durationSeconds)}</span>
+            <span>30分利益 ${formatCraftRecordProfitRate(summary.profit, summary.durationSeconds, 30)}</span>
+            <span>時給換算 ${formatCraftRecordProfitRate(summary.profit, summary.durationSeconds, 60)}</span>
+          </div>
+        </article>
+      `;
+    });
+  craftRecordDailySummaryWrap.innerHTML = `
+    <section class="craft-record-daily-summary">
+      <h3>日別集計</h3>
+      ${rows.length > 0 ? `<div class="craft-record-daily-list">${rows.join("")}</div>` : `<p class="card craft-record-empty">この条件の日別集計はまだありません。</p>`}
+    </section>
+  `;
 }
 
 function updateCraftRecordWarning() {
@@ -6517,6 +6763,8 @@ function updateCraftRecordWarning() {
 }
 
 function buildCraftRecordFromForm() {
+  const startTime = craftRecordWorkStartTime;
+  const endTime = craftRecordWorkEndTime || (craftRecordWorkStartTime ? new Date().toISOString() : "");
   return normalizeCraftRecord({
     id: createRecordId("craft-record"),
     date: craftRecordDateInput?.value,
@@ -6528,6 +6776,9 @@ function buildCraftRecordFromForm() {
     star3: craftRecordStar3Input?.value,
     unitCost: craftRecordCostInput?.value,
     unitSales: craftRecordSalesInput?.value,
+    startTime,
+    endTime,
+    durationSeconds: getCraftRecordDurationSecondsBetween(startTime, endTime),
     memo: craftRecordMemoInput?.value,
   });
 }
@@ -6539,6 +6790,8 @@ function clearCraftRecordForm() {
     if (input) input.value = "0";
   });
   if (craftRecordMemoInput) craftRecordMemoInput.value = "";
+  craftRecordCountHistory = [];
+  resetCraftRecordWorkState();
   updateCraftRecordWarning();
 }
 
@@ -6552,6 +6805,7 @@ function renderCraftRecords() {
   }
   renderCraftRecordItemFilter();
   updateCraftRecordWarning();
+  updateCraftRecordWorkTimeStatus();
   const filteredRecords = getFilteredCraftRecords().sort((a, b) => String(b.date).localeCompare(String(a.date)) || String(b.createdAt).localeCompare(String(a.createdAt)));
   const summary = summarizeCraftRecords(filteredRecords);
   const avgProfit = summary.totalCount > 0 ? summary.profit / summary.totalCount : 0;
@@ -6567,8 +6821,14 @@ function renderCraftRecords() {
       <section class="card craft-record-summary-card"><span>総原価</span><strong>${formatGold(summary.totalCost)}</strong></section>
       <section class="card craft-record-summary-card"><span>総手数料</span><strong>${formatGold(summary.fee)}</strong></section>
       <section class="card craft-record-summary-card"><span>平均利益/個</span><strong>${formatGold(avgProfit)}</strong></section>
+      <section class="card craft-record-summary-card"><span>作業時間</span><strong>${formatCraftRecordDuration(summary.durationSeconds)}</strong></section>
+      <section class="card craft-record-summary-card"><span>30分利益</span><strong>${formatCraftRecordProfitRate(summary.profit, summary.durationSeconds, 30)}</strong></section>
+      <section class="card craft-record-summary-card"><span>時給換算</span><strong>${formatCraftRecordProfitRate(summary.profit, summary.durationSeconds, 60)}</strong></section>
+      <section class="card craft-record-summary-card"><span>1個あたり作成時間</span><strong>${formatCraftRecordSecondsPerItem(summary.durationSeconds, summary.totalCount)}</strong></section>
     </div>
   `;
+  renderCraftRecordTodaySummary();
+  renderCraftRecordDailySummary(filteredRecords);
   if (filteredRecords.length === 0) {
     craftRecordListWrap.innerHTML = `<p class="card craft-record-empty">この期間の職人記録はまだありません。</p>`;
     return;
@@ -6582,6 +6842,7 @@ function renderCraftRecords() {
           const totalCost = getCraftRecordTotalCost(record);
           const totalSales = getCraftRecordTotalSales(record);
           const fee = getCraftRecordFee(record);
+          const durationSeconds = getCraftRecordDurationSeconds(record);
           return `
             <article class="card craft-record-card${hasMismatch ? " has-warning" : ""}">
               <div class="craft-record-card-header">
@@ -6605,6 +6866,10 @@ function renderCraftRecords() {
                 <span>総売上 ${formatGold(totalSales)}</span>
                 <span>手数料 ${formatGold(fee)}</span>
                 <strong>純利益 ${formatGold(getCraftRecordProfit(record))}</strong>
+                <span>作業時間 ${formatCraftRecordDuration(durationSeconds)}</span>
+                <span>30分利益 ${formatCraftRecordProfitRate(getCraftRecordProfit(record), durationSeconds, 30)}</span>
+                <span>時給換算 ${formatCraftRecordProfitRate(getCraftRecordProfit(record), durationSeconds, 60)}</span>
+                <span>1個あたり ${formatCraftRecordSecondsPerItem(durationSeconds, record.totalCount)}</span>
               </div>
               ${hasMismatch ? `<p class="craft-record-card-warning">作成数と星合計が一致していません（星合計: ${starTotal}）。</p>` : ""}
               ${record.memo ? `<p class="craft-record-card-memo">${escapeHtml(record.memo)}</p>` : ""}
@@ -6617,7 +6882,7 @@ function renderCraftRecords() {
 }
 
 function exportCraftRecordsCsv() {
-  const headers = ["id", "date", "item_name", "total_count", "star0", "star1", "star2", "star3", "unit_cost", "unit_sales", "memo", "created_at"];
+  const headers = ["id", "date", "item_name", "total_count", "star0", "star1", "star2", "star3", "unit_cost", "unit_sales", "start_time", "end_time", "duration_seconds", "memo", "created_at"];
   const lines = [headers.join(",")];
   craftRecords.forEach((record) => {
     lines.push(
@@ -6632,6 +6897,9 @@ function exportCraftRecordsCsv() {
         record.star3,
         record.unitCost,
         record.unitSales,
+        record.startTime,
+        record.endTime,
+        getCraftRecordDurationSeconds(record),
         record.memo,
         record.createdAt,
       ]
@@ -6669,6 +6937,9 @@ function parseCraftRecordsCsv(text) {
         unitSales: row[getIndex("unit_sales")],
         totalCost: row[getIndex("total_cost")],
         totalSales: row[getIndex("total_sales")],
+        startTime: row[getIndex("start_time")],
+        endTime: row[getIndex("end_time")],
+        durationSeconds: row[getIndex("duration_seconds")],
         memo: row[getIndex("memo")],
         createdAt: row[getIndex("created_at")] || new Date().toISOString(),
       })
@@ -12863,9 +13134,51 @@ if (craftRecordForm) {
   craftRecordStar1Input,
   craftRecordStar2Input,
   craftRecordStar3Input,
+  craftRecordCostInput,
+  craftRecordSalesInput,
 ].forEach((input) => {
-  input?.addEventListener("input", updateCraftRecordWarning);
+  input?.addEventListener("input", () => {
+    updateCraftRecordWarning();
+    updateCraftRecordWorkTimeStatus();
+  });
 });
+
+craftRecordCountButtons.forEach((button) => {
+  button.addEventListener("click", () => {
+    const star = toNonNegativeInteger(button.getAttribute("data-craft-record-count-star"));
+    incrementCraftRecordStar(star);
+  });
+});
+
+if (craftRecordUndoCountButton) {
+  craftRecordUndoCountButton.addEventListener("click", undoCraftRecordCount);
+}
+
+if (craftRecordResetCountButton) {
+  craftRecordResetCountButton.addEventListener("click", resetCraftRecordCountInputs);
+}
+
+if (craftRecordWorkStartButton) {
+  craftRecordWorkStartButton.addEventListener("click", () => {
+    craftRecordWorkStartTime = new Date().toISOString();
+    craftRecordWorkEndTime = "";
+    if (craftRecordDateInput && !craftRecordDateInput.value) craftRecordDateInput.value = formatDateAsIsoText(new Date());
+    setCraftRecordTimerActive(true);
+    updateCraftRecordWorkTimeStatus();
+  });
+}
+
+if (craftRecordWorkEndButton) {
+  craftRecordWorkEndButton.addEventListener("click", () => {
+    if (!craftRecordWorkStartTime) {
+      if (craftRecordWarning) craftRecordWarning.textContent = "先に作業開始を押してください。";
+      return;
+    }
+    craftRecordWorkEndTime = new Date().toISOString();
+    setCraftRecordTimerActive(false);
+    updateCraftRecordWorkTimeStatus();
+  });
+}
 
 if (craftRecordPeriodSelect) {
   craftRecordPeriodSelect.addEventListener("change", () => {
