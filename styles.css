@@ -1318,6 +1318,12 @@ body.ads-disabled .ad-slot,
   padding: 12px;
 }
 
+.craft-record-filter-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(132px, 1fr));
+  gap: 9px;
+}
+
 .craft-record-list {
   display: grid;
   gap: 10px;

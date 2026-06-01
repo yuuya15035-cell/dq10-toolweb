@@ -2003,6 +2003,7 @@ let expandedEquipmentDbId = "";
 let presentCodesKeyword = "";
 let craftRecords = [];
 let selectedCraftRecordPeriod = "30";
+let selectedCraftRecordItemName = "";
 let fieldFarmingKeyword = "";
 let selectedRoutineType = "daily";
 let routineTaskCheckedTokens = {};
@@ -2210,7 +2211,6 @@ const craftRecordStar2Input = getRequiredElementById("craftRecordStar2Input");
 const craftRecordStar3Input = getRequiredElementById("craftRecordStar3Input");
 const craftRecordCostInput = getRequiredElementById("craftRecordCostInput");
 const craftRecordSalesInput = getRequiredElementById("craftRecordSalesInput");
-const craftRecordFeeInput = getRequiredElementById("craftRecordFeeInput");
 const craftRecordMemoInput = getRequiredElementById("craftRecordMemoInput");
 const craftRecordWarning = getRequiredElementById("craftRecordWarning");
 const craftRecordSubmitButton = getRequiredElementById("craftRecordSubmitButton");
@@ -2220,6 +2220,7 @@ const craftRecordImportInput = getRequiredElementById("craftRecordImportInput");
 const craftRecordClearButton = getRequiredElementById("craftRecordClearButton");
 const craftRecordSummaryWrap = getRequiredElementById("craftRecordSummaryWrap");
 const craftRecordPeriodSelect = getRequiredElementById("craftRecordPeriodSelect");
+const craftRecordItemFilterSelect = getRequiredElementById("craftRecordItemFilterSelect");
 const craftRecordListWrap = getRequiredElementById("craftRecordListWrap");
 const fieldFarmingListWrap = getRequiredElementById("fieldFarmingListWrap");
 const routineTypeTabButtons = Array.from(document.querySelectorAll("[data-routine-type]"));
@@ -6368,25 +6369,39 @@ function saveCraftRecords() {
   localStorage.setItem(
     CRAFT_RECORDS_STORAGE_KEY,
     JSON.stringify({
-      version: 1,
+      version: 2,
       records: craftRecords,
     })
   );
 }
 
 function normalizeCraftRecord(record) {
+  const totalCount = toNonNegativeInteger(record?.totalCount ?? record?.total_count);
+  const legacyTotalCost = toNonNegativeNumber(record?.totalCost ?? record?.total_cost);
+  const legacyTotalSales = toNonNegativeNumber(record?.totalSales ?? record?.total_sales);
+  const unitCost =
+    record?.unitCost !== undefined || record?.unit_cost !== undefined
+      ? toNonNegativeNumber(record?.unitCost ?? record?.unit_cost)
+      : totalCount > 0
+        ? legacyTotalCost / totalCount
+        : legacyTotalCost;
+  const unitSales =
+    record?.unitSales !== undefined || record?.unit_sales !== undefined
+      ? toNonNegativeNumber(record?.unitSales ?? record?.unit_sales)
+      : totalCount > 0
+        ? legacyTotalSales / totalCount
+        : legacyTotalSales;
   return {
     id: String(record?.id || createRecordId("craft-record")),
     date: normalizeCraftRecordDate(record?.date),
     itemName: String(record?.itemName || record?.item_name || "").trim(),
-    totalCount: toNonNegativeInteger(record?.totalCount ?? record?.total_count),
+    totalCount,
     star0: toNonNegativeInteger(record?.star0),
     star1: toNonNegativeInteger(record?.star1),
     star2: toNonNegativeInteger(record?.star2),
     star3: toNonNegativeInteger(record?.star3),
-    totalCost: toNonNegativeNumber(record?.totalCost ?? record?.total_cost),
-    totalSales: toNonNegativeNumber(record?.totalSales ?? record?.total_sales),
-    fee: toNonNegativeNumber(record?.fee),
+    unitCost,
+    unitSales,
     memo: String(record?.memo || "").trim(),
     createdAt: String(record?.createdAt || new Date().toISOString()),
   };
@@ -6415,8 +6430,20 @@ function getCraftRecordStarTotal(record) {
   return toNonNegativeInteger(record?.star0) + toNonNegativeInteger(record?.star1) + toNonNegativeInteger(record?.star2) + toNonNegativeInteger(record?.star3);
 }
 
+function getCraftRecordTotalCost(record) {
+  return toNonNegativeInteger(record?.totalCount) * toNonNegativeNumber(record?.unitCost);
+}
+
+function getCraftRecordTotalSales(record) {
+  return toNonNegativeInteger(record?.totalCount) * toNonNegativeNumber(record?.unitSales);
+}
+
+function getCraftRecordFee(record) {
+  return getCraftRecordTotalSales(record) * 0.05;
+}
+
 function getCraftRecordProfit(record) {
-  return toNonNegativeNumber(record?.totalSales) - toNonNegativeNumber(record?.totalCost) - toNonNegativeNumber(record?.fee);
+  return getCraftRecordTotalSales(record) - getCraftRecordTotalCost(record) - getCraftRecordFee(record);
 }
 
 function getCraftRecordPeriodStart(period, now = new Date()) {
@@ -6429,11 +6456,29 @@ function getCraftRecordPeriodStart(period, now = new Date()) {
 
 function getFilteredCraftRecords() {
   const startDate = getCraftRecordPeriodStart(selectedCraftRecordPeriod);
-  if (!startDate) return [...craftRecords];
   return craftRecords.filter((record) => {
+    if (selectedCraftRecordItemName && record.itemName !== selectedCraftRecordItemName) return false;
+    if (!startDate) return true;
     const date = parseCraftRecordDate(record.date);
     return date && date.getTime() >= startDate.getTime();
   });
+}
+
+function getCraftRecordItemNames() {
+  return Array.from(new Set(craftRecords.map((record) => record.itemName).filter(Boolean))).sort((a, b) => a.localeCompare(b, "ja"));
+}
+
+function renderCraftRecordItemFilter() {
+  if (!craftRecordItemFilterSelect) return;
+  const itemNames = getCraftRecordItemNames();
+  if (selectedCraftRecordItemName && !itemNames.includes(selectedCraftRecordItemName)) {
+    selectedCraftRecordItemName = "";
+  }
+  craftRecordItemFilterSelect.innerHTML = [
+    `<option value="">すべて</option>`,
+    ...itemNames.map((itemName) => `<option value="${escapeHtml(itemName)}">${escapeHtml(itemName)}</option>`),
+  ].join("");
+  craftRecordItemFilterSelect.value = selectedCraftRecordItemName;
 }
 
 function summarizeCraftRecords(records) {
@@ -6444,9 +6489,9 @@ function summarizeCraftRecords(records) {
       summary.star1 += toNonNegativeInteger(record.star1);
       summary.star2 += toNonNegativeInteger(record.star2);
       summary.star3 += toNonNegativeInteger(record.star3);
-      summary.totalSales += toNonNegativeNumber(record.totalSales);
-      summary.totalCost += toNonNegativeNumber(record.totalCost);
-      summary.fee += toNonNegativeNumber(record.fee);
+      summary.totalSales += getCraftRecordTotalSales(record);
+      summary.totalCost += getCraftRecordTotalCost(record);
+      summary.fee += getCraftRecordFee(record);
       summary.profit += getCraftRecordProfit(record);
       return summary;
     },
@@ -6481,9 +6526,8 @@ function buildCraftRecordFromForm() {
     star1: craftRecordStar1Input?.value,
     star2: craftRecordStar2Input?.value,
     star3: craftRecordStar3Input?.value,
-    totalCost: craftRecordCostInput?.value,
-    totalSales: craftRecordSalesInput?.value,
-    fee: craftRecordFeeInput?.value,
+    unitCost: craftRecordCostInput?.value,
+    unitSales: craftRecordSalesInput?.value,
     memo: craftRecordMemoInput?.value,
   });
 }
@@ -6491,7 +6535,7 @@ function buildCraftRecordFromForm() {
 function clearCraftRecordForm() {
   if (craftRecordDateInput) craftRecordDateInput.value = formatDateAsIsoText(new Date());
   if (craftRecordItemInput) craftRecordItemInput.value = "";
-  [craftRecordTotalInput, craftRecordStar0Input, craftRecordStar1Input, craftRecordStar2Input, craftRecordStar3Input, craftRecordCostInput, craftRecordSalesInput, craftRecordFeeInput].forEach((input) => {
+  [craftRecordTotalInput, craftRecordStar0Input, craftRecordStar1Input, craftRecordStar2Input, craftRecordStar3Input, craftRecordCostInput, craftRecordSalesInput].forEach((input) => {
     if (input) input.value = "0";
   });
   if (craftRecordMemoInput) craftRecordMemoInput.value = "";
@@ -6506,6 +6550,7 @@ function renderCraftRecords() {
   if (craftRecordPeriodSelect && craftRecordPeriodSelect.value !== selectedCraftRecordPeriod) {
     craftRecordPeriodSelect.value = selectedCraftRecordPeriod;
   }
+  renderCraftRecordItemFilter();
   updateCraftRecordWarning();
   const filteredRecords = getFilteredCraftRecords().sort((a, b) => String(b.date).localeCompare(String(a.date)) || String(b.createdAt).localeCompare(String(a.createdAt)));
   const summary = summarizeCraftRecords(filteredRecords);
@@ -6534,6 +6579,9 @@ function renderCraftRecords() {
         .map((record) => {
           const starTotal = getCraftRecordStarTotal(record);
           const hasMismatch = starTotal !== toNonNegativeInteger(record.totalCount);
+          const totalCost = getCraftRecordTotalCost(record);
+          const totalSales = getCraftRecordTotalSales(record);
+          const fee = getCraftRecordFee(record);
           return `
             <article class="card craft-record-card${hasMismatch ? " has-warning" : ""}">
               <div class="craft-record-card-header">
@@ -6551,10 +6599,12 @@ function renderCraftRecords() {
                 <span>☆0 ${toNonNegativeInteger(record.star0)}</span>
               </div>
               <div class="craft-record-card-money">
-                <span>売上 ${formatGold(record.totalSales)}</span>
-                <span>原価 ${formatGold(record.totalCost)}</span>
-                <span>手数料 ${formatGold(record.fee)}</span>
-                <strong>利益 ${formatGold(getCraftRecordProfit(record))}</strong>
+                <span>原価 ${formatGold(record.unitCost)}</span>
+                <span>1個売上 ${formatGold(record.unitSales)}</span>
+                <span>総原価 ${formatGold(totalCost)}</span>
+                <span>総売上 ${formatGold(totalSales)}</span>
+                <span>手数料 ${formatGold(fee)}</span>
+                <strong>純利益 ${formatGold(getCraftRecordProfit(record))}</strong>
               </div>
               ${hasMismatch ? `<p class="craft-record-card-warning">作成数と星合計が一致していません（星合計: ${starTotal}）。</p>` : ""}
               ${record.memo ? `<p class="craft-record-card-memo">${escapeHtml(record.memo)}</p>` : ""}
@@ -6567,7 +6617,7 @@ function renderCraftRecords() {
 }
 
 function exportCraftRecordsCsv() {
-  const headers = ["id", "date", "item_name", "total_count", "star0", "star1", "star2", "star3", "total_cost", "total_sales", "fee", "memo", "created_at"];
+  const headers = ["id", "date", "item_name", "total_count", "star0", "star1", "star2", "star3", "unit_cost", "unit_sales", "memo", "created_at"];
   const lines = [headers.join(",")];
   craftRecords.forEach((record) => {
     lines.push(
@@ -6580,9 +6630,8 @@ function exportCraftRecordsCsv() {
         record.star1,
         record.star2,
         record.star3,
-        record.totalCost,
-        record.totalSales,
-        record.fee,
+        record.unitCost,
+        record.unitSales,
         record.memo,
         record.createdAt,
       ]
@@ -6616,9 +6665,10 @@ function parseCraftRecordsCsv(text) {
         star1: row[getIndex("star1")],
         star2: row[getIndex("star2")],
         star3: row[getIndex("star3")],
+        unitCost: row[getIndex("unit_cost")],
+        unitSales: row[getIndex("unit_sales")],
         totalCost: row[getIndex("total_cost")],
         totalSales: row[getIndex("total_sales")],
-        fee: row[getIndex("fee")],
         memo: row[getIndex("memo")],
         createdAt: row[getIndex("created_at")] || new Date().toISOString(),
       })
@@ -12820,6 +12870,13 @@ if (craftRecordForm) {
 if (craftRecordPeriodSelect) {
   craftRecordPeriodSelect.addEventListener("change", () => {
     selectedCraftRecordPeriod = String(craftRecordPeriodSelect.value || "30");
+    renderCraftRecords();
+  });
+}
+
+if (craftRecordItemFilterSelect) {
+  craftRecordItemFilterSelect.addEventListener("change", () => {
+    selectedCraftRecordItemName = String(craftRecordItemFilterSelect.value || "");
     renderCraftRecords();
   });
 }
