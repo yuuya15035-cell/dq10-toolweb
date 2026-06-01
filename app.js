@@ -32,6 +32,7 @@ const ADMIN_CHECKLIST_STORAGE_KEY = "dq10_toolweb_admin_checklist_v1";
 const ROUTINE_TASKS_STORAGE_KEY = "dq10_toolweb_routine_tasks_v1";
 const BOSS_CARD_TIMER_STORAGE_KEY = "dq10_toolweb_boss_card_timer_v1";
 const BOSS_CARD_NOTICE_SEEN_STORAGE_KEY = "dq10_toolweb_boss_card_notice_seen_v1";
+const CRAFT_RECORDS_STORAGE_KEY = "dq10_toolweb_craft_records_v1";
 const RECIPE_FAVORITE_CATEGORY_VALUE = "__favorites__";
 const BOSS_CARD_NAME_CANDIDATES = Object.freeze([
   "アトラス",
@@ -68,6 +69,7 @@ const BOSS_CARD_NAME_CANDIDATES = Object.freeze([
 const HOME_FEATURE_DEFINITIONS = [
   { id: "bazaar", tabId: "bazaar", title: "バザー情報", icon: "💰" },
   { id: "profit", tabId: "profit", title: "職人アシスト", icon: "🛠️" },
+  { id: "craft-records", tabId: "craft-records", title: "職人記録", icon: "🧾" },
   { id: "favorites", tabId: "favorites", title: "お気に入り", icon: "📌" },
   { id: "routine", tabId: "routine", title: "日課・週課", icon: "📅" },
   { id: "boss-card", tabId: "boss-card", title: "ボスカード管理", icon: "⌛" },
@@ -81,6 +83,7 @@ const DEFAULT_DOCUMENT_TITLE = "DQ10ツール";
 const DEFAULT_DOCUMENT_DESCRIPTION = "DQ10の職人アシスト、バザー情報、モンスター情報、装備情報、宝珠情報を確認できる支援サイトです。";
 const TAB_DOCUMENT_LABELS = Object.freeze({
   profit: "職人アシスト",
+  "craft-records": "職人記録",
   bazaar: "バザー情報",
   "monster-info": "モンスター情報",
   "equipment-db": "装備情報",
@@ -92,7 +95,7 @@ const TAB_DOCUMENT_LABELS = Object.freeze({
   "field-farming": "フィールド狩り",
   "white-boxes": "白宝箱",
 });
-const DEFAULT_HOME_FEATURE_IDS = Object.freeze(["profit", "bazaar", "favorites", "boss-card", "equipment-db"]);
+const DEFAULT_HOME_FEATURE_IDS = Object.freeze(["profit", "craft-records", "bazaar", "favorites", "boss-card", "equipment-db"]);
 const HOME_FEATURE_ID_SET = new Set(HOME_FEATURE_DEFINITIONS.map((feature) => feature.id));
 const SITE_SEARCH_MAX_RESULTS = 10;
 const SITE_SEARCH_MATCH_RANK = Object.freeze({
@@ -103,6 +106,7 @@ const SITE_SEARCH_MATCH_RANK = Object.freeze({
 const ENTRY_ROUTE_SEGMENT_TO_TAB = Object.freeze({
   bazaar: "bazaar",
   craft: "profit",
+  "craft-records": "craft-records",
   "field-farming": "field-farming",
   routine: "routine",
   "present-codes": "present-codes",
@@ -115,6 +119,7 @@ const ENTRY_ROUTE_SEGMENT_TO_TAB = Object.freeze({
 });
 const LEGACY_QUERY_TAB_ALIASES = Object.freeze({
   craft: "profit",
+  "craft-records": "craft-records",
   "field-farming": "field-farming",
   routine: "routine",
   "present-codes": "present-codes",
@@ -132,6 +137,7 @@ Object.entries(ENTRY_ROUTE_SEGMENT_TO_TAB).forEach(([segment, tab]) => {
 });
 const TAB_IDS = new Set([
   "profit",
+  "craft-records",
   "present-codes",
   "bazaar",
   "favorites",
@@ -1148,8 +1154,11 @@ function loadHomeFeatureState() {
       .map((id) => String(id || "").trim())
       .filter((id, index, self) => id !== "" && HOME_FEATURE_ID_SET.has(id) && self.indexOf(id) === index);
     if (normalized.length === 0) return [...DEFAULT_HOME_FEATURE_IDS];
-    const shouldMigrateBossCard = Number(parsed?.version || 1) < 2 && !normalized.includes("boss-card");
-    return shouldMigrateBossCard ? [...normalized, "boss-card"] : normalized;
+    const version = Number(parsed?.version || 1);
+    let nextIds = normalized;
+    if (version < 2 && !nextIds.includes("boss-card")) nextIds = [...nextIds, "boss-card"];
+    if (version < 3 && !nextIds.includes("craft-records")) nextIds = [...nextIds, "craft-records"];
+    return nextIds;
   } catch {
     return [...DEFAULT_HOME_FEATURE_IDS];
   }
@@ -1159,7 +1168,7 @@ function saveHomeFeatureState() {
   localStorage.setItem(
     HOME_FEATURES_STORAGE_KEY,
     JSON.stringify({
-      version: 2,
+      version: 3,
       featureIds: homeFeatureIds,
     })
   );
@@ -1992,6 +2001,8 @@ let pendingEquipmentDbFocusName = "";
 let pendingEquipmentDbAutoOpenName = "";
 let expandedEquipmentDbId = "";
 let presentCodesKeyword = "";
+let craftRecords = [];
+let selectedCraftRecordPeriod = "30";
 let fieldFarmingKeyword = "";
 let selectedRoutineType = "daily";
 let routineTaskCheckedTokens = {};
@@ -2126,6 +2137,7 @@ const homeModeButton = document.getElementById("homeModeButton");
 const PAGE_AD_SECTION_IDS = [
   "bazaar",
   "profit",
+  "craft-records",
   "favorites",
   "routine",
   "equipment-db",
@@ -2188,6 +2200,27 @@ const bazaarDetailModalCloseButton = getRequiredElementById("bazaarDetailModalCl
 const bazaarDetailModalHandle = getRequiredElementById("bazaarDetailModalHandle");
 const bazaarDetailModalBody = getRequiredElementById("bazaarDetailModalBody");
 const presentCodeListWrap = getRequiredElementById("presentCodeListWrap");
+const craftRecordForm = getRequiredElementById("craftRecordForm");
+const craftRecordDateInput = getRequiredElementById("craftRecordDateInput");
+const craftRecordItemInput = getRequiredElementById("craftRecordItemInput");
+const craftRecordTotalInput = getRequiredElementById("craftRecordTotalInput");
+const craftRecordStar0Input = getRequiredElementById("craftRecordStar0Input");
+const craftRecordStar1Input = getRequiredElementById("craftRecordStar1Input");
+const craftRecordStar2Input = getRequiredElementById("craftRecordStar2Input");
+const craftRecordStar3Input = getRequiredElementById("craftRecordStar3Input");
+const craftRecordCostInput = getRequiredElementById("craftRecordCostInput");
+const craftRecordSalesInput = getRequiredElementById("craftRecordSalesInput");
+const craftRecordFeeInput = getRequiredElementById("craftRecordFeeInput");
+const craftRecordMemoInput = getRequiredElementById("craftRecordMemoInput");
+const craftRecordWarning = getRequiredElementById("craftRecordWarning");
+const craftRecordSubmitButton = getRequiredElementById("craftRecordSubmitButton");
+const craftRecordExportButton = getRequiredElementById("craftRecordExportButton");
+const craftRecordImportButton = getRequiredElementById("craftRecordImportButton");
+const craftRecordImportInput = getRequiredElementById("craftRecordImportInput");
+const craftRecordClearButton = getRequiredElementById("craftRecordClearButton");
+const craftRecordSummaryWrap = getRequiredElementById("craftRecordSummaryWrap");
+const craftRecordPeriodSelect = getRequiredElementById("craftRecordPeriodSelect");
+const craftRecordListWrap = getRequiredElementById("craftRecordListWrap");
 const fieldFarmingListWrap = getRequiredElementById("fieldFarmingListWrap");
 const routineTypeTabButtons = Array.from(document.querySelectorAll("[data-routine-type]"));
 const routineProgressText = getRequiredElementById("routineProgressText");
@@ -6298,6 +6331,309 @@ function escapeCsvValue(value) {
   return `"${text.replace(/"/g, '""')}"`;
 }
 
+function createRecordId(prefix = "record") {
+  if (globalThis.crypto?.randomUUID) return globalThis.crypto.randomUUID();
+  return `${prefix}-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+}
+
+function toNonNegativeInteger(value) {
+  const number = Number(value);
+  if (!Number.isFinite(number) || number < 0) return 0;
+  return Math.floor(number);
+}
+
+function toNonNegativeNumber(value) {
+  const number = Number(value);
+  if (!Number.isFinite(number) || number < 0) return 0;
+  return number;
+}
+
+function loadCraftRecords() {
+  const raw = localStorage.getItem(CRAFT_RECORDS_STORAGE_KEY);
+  if (!raw) return [];
+  try {
+    const parsed = JSON.parse(raw);
+    const records = Array.isArray(parsed?.records) ? parsed.records : parsed;
+    if (!Array.isArray(records)) return [];
+    return records
+      .map(normalizeCraftRecord)
+      .filter((record) => record.date !== "" && record.itemName !== "");
+  } catch (error) {
+    console.warn("職人記録の読み込みに失敗しました", error);
+    return [];
+  }
+}
+
+function saveCraftRecords() {
+  localStorage.setItem(
+    CRAFT_RECORDS_STORAGE_KEY,
+    JSON.stringify({
+      version: 1,
+      records: craftRecords,
+    })
+  );
+}
+
+function normalizeCraftRecord(record) {
+  return {
+    id: String(record?.id || createRecordId("craft-record")),
+    date: normalizeCraftRecordDate(record?.date),
+    itemName: String(record?.itemName || record?.item_name || "").trim(),
+    totalCount: toNonNegativeInteger(record?.totalCount ?? record?.total_count),
+    star0: toNonNegativeInteger(record?.star0),
+    star1: toNonNegativeInteger(record?.star1),
+    star2: toNonNegativeInteger(record?.star2),
+    star3: toNonNegativeInteger(record?.star3),
+    totalCost: toNonNegativeNumber(record?.totalCost ?? record?.total_cost),
+    totalSales: toNonNegativeNumber(record?.totalSales ?? record?.total_sales),
+    fee: toNonNegativeNumber(record?.fee),
+    memo: String(record?.memo || "").trim(),
+    createdAt: String(record?.createdAt || new Date().toISOString()),
+  };
+}
+
+function normalizeCraftRecordDate(value) {
+  const text = String(value || "").trim();
+  if (/^\d{4}-\d{2}-\d{2}$/.test(text)) return text;
+  const slashMatch = text.match(/^(\d{4})[\/.](\d{1,2})[\/.](\d{1,2})$/);
+  if (slashMatch) {
+    return `${slashMatch[1]}-${String(slashMatch[2]).padStart(2, "0")}-${String(slashMatch[3]).padStart(2, "0")}`;
+  }
+  return "";
+}
+
+function parseCraftRecordDate(value) {
+  const normalized = normalizeCraftRecordDate(value);
+  if (!normalized) return null;
+  const [year, month, day] = normalized.split("-").map(Number);
+  const date = new Date(year, month - 1, day);
+  if (date.getFullYear() !== year || date.getMonth() !== month - 1 || date.getDate() !== day) return null;
+  return date;
+}
+
+function getCraftRecordStarTotal(record) {
+  return toNonNegativeInteger(record?.star0) + toNonNegativeInteger(record?.star1) + toNonNegativeInteger(record?.star2) + toNonNegativeInteger(record?.star3);
+}
+
+function getCraftRecordProfit(record) {
+  return toNonNegativeNumber(record?.totalSales) - toNonNegativeNumber(record?.totalCost) - toNonNegativeNumber(record?.fee);
+}
+
+function getCraftRecordPeriodStart(period, now = new Date()) {
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  if (period === "today") return today;
+  if (period === "7") return new Date(today.getFullYear(), today.getMonth(), today.getDate() - 6);
+  if (period === "30") return new Date(today.getFullYear(), today.getMonth(), today.getDate() - 29);
+  return null;
+}
+
+function getFilteredCraftRecords() {
+  const startDate = getCraftRecordPeriodStart(selectedCraftRecordPeriod);
+  if (!startDate) return [...craftRecords];
+  return craftRecords.filter((record) => {
+    const date = parseCraftRecordDate(record.date);
+    return date && date.getTime() >= startDate.getTime();
+  });
+}
+
+function summarizeCraftRecords(records) {
+  return records.reduce(
+    (summary, record) => {
+      summary.totalCount += toNonNegativeInteger(record.totalCount);
+      summary.star0 += toNonNegativeInteger(record.star0);
+      summary.star1 += toNonNegativeInteger(record.star1);
+      summary.star2 += toNonNegativeInteger(record.star2);
+      summary.star3 += toNonNegativeInteger(record.star3);
+      summary.totalSales += toNonNegativeNumber(record.totalSales);
+      summary.totalCost += toNonNegativeNumber(record.totalCost);
+      summary.fee += toNonNegativeNumber(record.fee);
+      summary.profit += getCraftRecordProfit(record);
+      return summary;
+    },
+    { totalCount: 0, star0: 0, star1: 0, star2: 0, star3: 0, totalSales: 0, totalCost: 0, fee: 0, profit: 0 }
+  );
+}
+
+function formatPercent(numerator, denominator) {
+  if (!Number.isFinite(numerator) || !Number.isFinite(denominator) || denominator <= 0) return "0.0%";
+  return `${((numerator / denominator) * 100).toFixed(1)}%`;
+}
+
+function updateCraftRecordWarning() {
+  if (!craftRecordWarning) return true;
+  const total = toNonNegativeInteger(craftRecordTotalInput?.value);
+  const starTotal =
+    toNonNegativeInteger(craftRecordStar0Input?.value) +
+    toNonNegativeInteger(craftRecordStar1Input?.value) +
+    toNonNegativeInteger(craftRecordStar2Input?.value) +
+    toNonNegativeInteger(craftRecordStar3Input?.value);
+  craftRecordWarning.textContent = total !== starTotal ? `作成数と星0〜星3の合計が一致していません（星合計: ${starTotal}）。` : "";
+  return total === starTotal;
+}
+
+function buildCraftRecordFromForm() {
+  return normalizeCraftRecord({
+    id: createRecordId("craft-record"),
+    date: craftRecordDateInput?.value,
+    itemName: craftRecordItemInput?.value,
+    totalCount: craftRecordTotalInput?.value,
+    star0: craftRecordStar0Input?.value,
+    star1: craftRecordStar1Input?.value,
+    star2: craftRecordStar2Input?.value,
+    star3: craftRecordStar3Input?.value,
+    totalCost: craftRecordCostInput?.value,
+    totalSales: craftRecordSalesInput?.value,
+    fee: craftRecordFeeInput?.value,
+    memo: craftRecordMemoInput?.value,
+  });
+}
+
+function clearCraftRecordForm() {
+  if (craftRecordDateInput) craftRecordDateInput.value = formatDateAsIsoText(new Date());
+  if (craftRecordItemInput) craftRecordItemInput.value = "";
+  [craftRecordTotalInput, craftRecordStar0Input, craftRecordStar1Input, craftRecordStar2Input, craftRecordStar3Input, craftRecordCostInput, craftRecordSalesInput, craftRecordFeeInput].forEach((input) => {
+    if (input) input.value = "0";
+  });
+  if (craftRecordMemoInput) craftRecordMemoInput.value = "";
+  updateCraftRecordWarning();
+}
+
+function renderCraftRecords() {
+  if (!craftRecordSummaryWrap || !craftRecordListWrap) return;
+  if (craftRecordDateInput && !craftRecordDateInput.value) {
+    craftRecordDateInput.value = formatDateAsIsoText(new Date());
+  }
+  if (craftRecordPeriodSelect && craftRecordPeriodSelect.value !== selectedCraftRecordPeriod) {
+    craftRecordPeriodSelect.value = selectedCraftRecordPeriod;
+  }
+  updateCraftRecordWarning();
+  const filteredRecords = getFilteredCraftRecords().sort((a, b) => String(b.date).localeCompare(String(a.date)) || String(b.createdAt).localeCompare(String(a.createdAt)));
+  const summary = summarizeCraftRecords(filteredRecords);
+  const avgProfit = summary.totalCount > 0 ? summary.profit / summary.totalCount : 0;
+  craftRecordSummaryWrap.innerHTML = `
+    <div class="craft-record-summary-grid">
+      <section class="card craft-record-summary-card is-primary"><span>総作成数</span><strong>${summary.totalCount.toLocaleString("ja-JP")}</strong></section>
+      <section class="card craft-record-summary-card is-primary"><span>星3率</span><strong>${formatPercent(summary.star3, summary.totalCount)}</strong></section>
+      <section class="card craft-record-summary-card is-primary"><span>総利益</span><strong>${formatGold(summary.profit)}</strong></section>
+      <section class="card craft-record-summary-card"><span>星2率</span><strong>${formatPercent(summary.star2, summary.totalCount)}</strong></section>
+      <section class="card craft-record-summary-card"><span>星1率</span><strong>${formatPercent(summary.star1, summary.totalCount)}</strong></section>
+      <section class="card craft-record-summary-card"><span>星0率</span><strong>${formatPercent(summary.star0, summary.totalCount)}</strong></section>
+      <section class="card craft-record-summary-card"><span>総売上</span><strong>${formatGold(summary.totalSales)}</strong></section>
+      <section class="card craft-record-summary-card"><span>総原価</span><strong>${formatGold(summary.totalCost)}</strong></section>
+      <section class="card craft-record-summary-card"><span>総手数料</span><strong>${formatGold(summary.fee)}</strong></section>
+      <section class="card craft-record-summary-card"><span>平均利益/個</span><strong>${formatGold(avgProfit)}</strong></section>
+    </div>
+  `;
+  if (filteredRecords.length === 0) {
+    craftRecordListWrap.innerHTML = `<p class="card craft-record-empty">この期間の職人記録はまだありません。</p>`;
+    return;
+  }
+  craftRecordListWrap.innerHTML = `
+    <div class="craft-record-list">
+      ${filteredRecords
+        .map((record) => {
+          const starTotal = getCraftRecordStarTotal(record);
+          const hasMismatch = starTotal !== toNonNegativeInteger(record.totalCount);
+          return `
+            <article class="card craft-record-card${hasMismatch ? " has-warning" : ""}">
+              <div class="craft-record-card-header">
+                <div>
+                  <p class="craft-record-date">${escapeHtml(record.date)}</p>
+                  <h3>${escapeHtml(record.itemName)}</h3>
+                </div>
+                <button type="button" class="craft-record-delete-button" data-craft-record-delete-id="${escapeHtml(record.id)}">削除</button>
+              </div>
+              <div class="craft-record-card-stats">
+                <span>作成 ${toNonNegativeInteger(record.totalCount).toLocaleString("ja-JP")}</span>
+                <span>☆3 ${toNonNegativeInteger(record.star3)}</span>
+                <span>☆2 ${toNonNegativeInteger(record.star2)}</span>
+                <span>☆1 ${toNonNegativeInteger(record.star1)}</span>
+                <span>☆0 ${toNonNegativeInteger(record.star0)}</span>
+              </div>
+              <div class="craft-record-card-money">
+                <span>売上 ${formatGold(record.totalSales)}</span>
+                <span>原価 ${formatGold(record.totalCost)}</span>
+                <span>手数料 ${formatGold(record.fee)}</span>
+                <strong>利益 ${formatGold(getCraftRecordProfit(record))}</strong>
+              </div>
+              ${hasMismatch ? `<p class="craft-record-card-warning">作成数と星合計が一致していません（星合計: ${starTotal}）。</p>` : ""}
+              ${record.memo ? `<p class="craft-record-card-memo">${escapeHtml(record.memo)}</p>` : ""}
+            </article>
+          `;
+        })
+        .join("")}
+    </div>
+  `;
+}
+
+function exportCraftRecordsCsv() {
+  const headers = ["id", "date", "item_name", "total_count", "star0", "star1", "star2", "star3", "total_cost", "total_sales", "fee", "memo", "created_at"];
+  const lines = [headers.join(",")];
+  craftRecords.forEach((record) => {
+    lines.push(
+      [
+        record.id,
+        record.date,
+        record.itemName,
+        record.totalCount,
+        record.star0,
+        record.star1,
+        record.star2,
+        record.star3,
+        record.totalCost,
+        record.totalSales,
+        record.fee,
+        record.memo,
+        record.createdAt,
+      ]
+        .map(escapeCsvValue)
+        .join(",")
+    );
+  });
+  const blob = new Blob([`\uFEFF${lines.join("\n")}`], { type: "text/csv;charset=utf-8" });
+  const link = document.createElement("a");
+  link.href = URL.createObjectURL(blob);
+  link.download = `dq10-craft-records-${formatDateAsIsoText(new Date())}.csv`;
+  link.click();
+  URL.revokeObjectURL(link.href);
+}
+
+function parseCraftRecordsCsv(text) {
+  const lines = String(text || "").replace(/^\uFEFF/, "").split(/\r?\n/).filter((line) => line.trim() !== "");
+  if (lines.length <= 1) return [];
+  const headers = parseCsvLine(lines[0]).map((header) => String(header || "").trim());
+  const getIndex = (name) => headers.indexOf(name);
+  return lines
+    .slice(1)
+    .map((line) => parseCsvLine(line))
+    .map((row) =>
+      normalizeCraftRecord({
+        id: row[getIndex("id")] || createRecordId("craft-record"),
+        date: row[getIndex("date")],
+        itemName: row[getIndex("item_name")],
+        totalCount: row[getIndex("total_count")],
+        star0: row[getIndex("star0")],
+        star1: row[getIndex("star1")],
+        star2: row[getIndex("star2")],
+        star3: row[getIndex("star3")],
+        totalCost: row[getIndex("total_cost")],
+        totalSales: row[getIndex("total_sales")],
+        fee: row[getIndex("fee")],
+        memo: row[getIndex("memo")],
+        createdAt: row[getIndex("created_at")] || new Date().toISOString(),
+      })
+    )
+    .filter((record) => record.date !== "" && record.itemName !== "");
+}
+
+function mergeCraftRecords(importedRecords) {
+  const byId = new Map(craftRecords.map((record) => [record.id, record]));
+  importedRecords.forEach((record) => byId.set(record.id, record));
+  craftRecords = Array.from(byId.values());
+  saveCraftRecords();
+  renderCraftRecords();
+}
+
 function buildBazaarHistorySnapshotRows(snapshotDateText) {
   const normalizedDate = normalizeHistoryDateKey(snapshotDateText || formatDateAsIsoText(new Date()));
   return bazaarPrices
@@ -9555,6 +9891,8 @@ function switchTab(target) {
   });
   if (normalizedTarget === "present-codes") {
     renderPresentCodes();
+  } else if (normalizedTarget === "craft-records") {
+    renderCraftRecords();
   } else if (normalizedTarget === "field-farming") {
     renderFieldFarmingRanking();
   } else if (normalizedTarget === "routine") {
@@ -12418,6 +12756,7 @@ function rerenderAll() {
   calcAndRenderSummary();
   if (activeTabId === "routine") renderRoutineTasks();
   if (activeTabId === "boss-card") renderBossCardTimers();
+  if (activeTabId === "craft-records") renderCraftRecords();
   if (activeTabId === "present-codes") renderPresentCodes();
   if (activeTabId === "field-farming") renderFieldFarmingRanking();
   if (activeTabId === "bazaar") renderBazaarPrices();
@@ -12438,6 +12777,7 @@ function rerenderActiveTabOnly() {
   }
   if (activeTabId === "routine") renderRoutineTasks();
   if (activeTabId === "boss-card") renderBossCardTimers();
+  if (activeTabId === "craft-records") renderCraftRecords();
   if (activeTabId === "present-codes") renderPresentCodes();
   if (activeTabId === "field-farming") renderFieldFarmingRanking();
   if (activeTabId === "bazaar") renderBazaarPrices();
@@ -12451,6 +12791,88 @@ function rerenderActiveTabOnly() {
 }
 
 // --- イベント定義 ---
+if (craftRecordForm) {
+  craftRecordForm.addEventListener("submit", (event) => {
+    event.preventDefault();
+    const record = buildCraftRecordFromForm();
+    if (!record.date || !record.itemName) {
+      if (craftRecordWarning) craftRecordWarning.textContent = "日付と商材名を入力してください。";
+      return;
+    }
+    updateCraftRecordWarning();
+    craftRecords = [record, ...craftRecords];
+    saveCraftRecords();
+    clearCraftRecordForm();
+    renderCraftRecords();
+  });
+}
+
+[
+  craftRecordTotalInput,
+  craftRecordStar0Input,
+  craftRecordStar1Input,
+  craftRecordStar2Input,
+  craftRecordStar3Input,
+].forEach((input) => {
+  input?.addEventListener("input", updateCraftRecordWarning);
+});
+
+if (craftRecordPeriodSelect) {
+  craftRecordPeriodSelect.addEventListener("change", () => {
+    selectedCraftRecordPeriod = String(craftRecordPeriodSelect.value || "30");
+    renderCraftRecords();
+  });
+}
+
+if (craftRecordListWrap) {
+  craftRecordListWrap.addEventListener("click", (event) => {
+    const target = event.target;
+    if (!(target instanceof Element)) return;
+    const deleteButton = target.closest("[data-craft-record-delete-id]");
+    if (!(deleteButton instanceof HTMLElement)) return;
+    const targetId = String(deleteButton.dataset.craftRecordDeleteId || "");
+    craftRecords = craftRecords.filter((record) => record.id !== targetId);
+    saveCraftRecords();
+    renderCraftRecords();
+  });
+}
+
+if (craftRecordExportButton) {
+  craftRecordExportButton.addEventListener("click", exportCraftRecordsCsv);
+}
+
+if (craftRecordImportButton) {
+  craftRecordImportButton.addEventListener("click", () => craftRecordImportInput?.click());
+}
+
+if (craftRecordImportInput) {
+  craftRecordImportInput.addEventListener("change", async () => {
+    const file = craftRecordImportInput.files?.[0];
+    if (!file) return;
+    try {
+      const text = await file.text();
+      const importedRecords = parseCraftRecordsCsv(text);
+      mergeCraftRecords(importedRecords);
+      if (craftRecordWarning) craftRecordWarning.textContent = `${importedRecords.length}件を読み込みました。`;
+    } catch (error) {
+      console.error("職人記録CSVの読み込みに失敗しました", error);
+      if (craftRecordWarning) craftRecordWarning.textContent = "CSVを読み込めませんでした。";
+    } finally {
+      craftRecordImportInput.value = "";
+    }
+  });
+}
+
+if (craftRecordClearButton) {
+  craftRecordClearButton.addEventListener("click", () => {
+    if (!craftRecords.length) return;
+    if (!window.confirm("職人記録をすべて削除します。よろしいですか？")) return;
+    craftRecords = [];
+    saveCraftRecords();
+    renderCraftRecords();
+  });
+}
+
 if (equipmentSelect) {
   equipmentSelect.addEventListener("change", (e) => {
     applyProfitEquipmentSelection(e.target.value, { closeCandidates: true });
@@ -13412,6 +13834,7 @@ async function initialize() {
   memoEntries = loadMemoEntries();
   isMemoHintDismissed = loadMemoHintDismissedState();
   routineTaskCheckedTokens = loadRoutineTaskState();
+  craftRecords = loadCraftRecords();
   bossCardTimers = loadBossCardTimers();
   bossCardNameCandidateRecords = await loadBossCardNameCandidateRecords();
   rebuildMemoEntryIdSet();

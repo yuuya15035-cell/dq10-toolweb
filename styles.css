@@ -1254,6 +1254,148 @@ body.ads-disabled .ad-slot,
   display: block;
 }
 
+.craft-record-form {
+  display: grid;
+  gap: 10px;
+}
+
+.craft-record-form-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(132px, 1fr));
+  gap: 9px;
+}
+
+.craft-record-memo-field textarea {
+  min-height: 54px;
+  resize: vertical;
+}
+
+.craft-record-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.craft-record-actions button {
+  min-height: 36px;
+  padding: 7px 12px;
+}
+
+.craft-record-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(138px, 1fr));
+  gap: 10px;
+  margin: 12px 0;
+}
+
+.craft-record-summary-card {
+  margin: 0;
+  padding: 12px;
+}
+
+.craft-record-summary-card span {
+  display: block;
+  margin-bottom: 4px;
+  color: #735236;
+  font-size: 0.74rem;
+  font-weight: 700;
+}
+
+.craft-record-summary-card strong {
+  display: block;
+  color: #3c2718;
+  font-size: 1.08rem;
+  line-height: 1.25;
+}
+
+.craft-record-summary-card.is-primary {
+  border-color: rgba(145, 96, 39, 0.72);
+  background: linear-gradient(180deg, rgba(255, 247, 232, 0.98) 0%, rgba(239, 218, 185, 0.96) 100%);
+}
+
+.craft-record-filter-card {
+  margin: 0 0 10px;
+  padding: 12px;
+}
+
+.craft-record-list {
+  display: grid;
+  gap: 10px;
+}
+
+.craft-record-card {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+}
+
+.craft-record-card.has-warning {
+  border-color: rgba(160, 88, 48, 0.7);
+}
+
+.craft-record-card-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.craft-record-card-header h3,
+.craft-record-date,
+.craft-record-card-warning,
+.craft-record-card-memo {
+  margin: 0;
+}
+
+.craft-record-date {
+  color: #76583d;
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.craft-record-delete-button {
+  min-height: 32px;
+  padding: 5px 10px;
+  font-size: 0.78rem;
+}
+
+.craft-record-card-stats,
+.craft-record-card-money {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.craft-record-card-stats span,
+.craft-record-card-money span,
+.craft-record-card-money strong {
+  display: inline-flex;
+  align-items: center;
+  min-height: 28px;
+  padding: 4px 8px;
+  border-radius: 999px;
+  background: rgba(123, 83, 43, 0.08);
+  color: #4c3624;
+  font-size: 0.8rem;
+}
+
+.craft-record-card-money strong {
+  background: rgba(154, 111, 73, 0.16);
+}
+
+.craft-record-card-warning {
+  color: #8a3d20;
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.craft-record-card-memo,
+.craft-record-empty {
+  color: #5d4734;
+  font-size: 0.86rem;
+  line-height: 1.55;
+}
+
 .monster-info-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
