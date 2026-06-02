@@ -1259,10 +1259,18 @@ body.ads-disabled .ad-slot,
   gap: 10px;
 }
 
+.craft-record-form h3,
+.craft-record-total-card h3,
+.craft-record-list-filter-card h3 {
+  margin: 0;
+  color: #3c2718;
+  font-size: 1rem;
+}
+
 .craft-record-counter-card {
   display: grid;
   gap: 12px;
-  margin-bottom: 10px;
+  margin: 10px 0;
 }
 
 .craft-record-counter-header {
@@ -1346,7 +1354,7 @@ body.ads-disabled .ad-slot,
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(138px, 1fr));
   gap: 10px;
-  margin: 12px 0;
+  margin: 12px 0 0;
 }
 
 .craft-record-summary-card {
@@ -1377,6 +1385,18 @@ body.ads-disabled .ad-slot,
 .craft-record-filter-card {
   margin: 0 0 10px;
   padding: 12px;
+}
+
+.craft-record-total-card,
+.craft-record-list-filter-card {
+  display: grid;
+  gap: 10px;
+  margin: 0 0 10px;
+}
+
+.craft-record-total-card {
+  border-color: rgba(145, 96, 39, 0.72);
+  background: rgba(255, 250, 240, 0.98);
 }
 
 .craft-record-filter-grid {
