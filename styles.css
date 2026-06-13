@@ -3743,6 +3743,7 @@ button {
 
 .bazaar-today-price,
 .bazaar-previous-price,
+.bazaar-listing-count,
 .bazaar-change-rate {
   margin: 0;
 }
@@ -3774,7 +3775,8 @@ button {
   font-size: 0.73rem;
 }
 
-.bazaar-previous-price {
+.bazaar-previous-price,
+.bazaar-listing-count {
   display: flex;
   align-items: baseline;
   gap: 8px;
@@ -4693,7 +4695,8 @@ button {
     font-size: 0.66rem;
   }
 
-  .bazaar-previous-price {
+  .bazaar-previous-price,
+  .bazaar-listing-count {
     gap: 6px;
     font-size: 0.68rem;
   }

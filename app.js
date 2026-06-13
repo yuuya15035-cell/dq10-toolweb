@@ -2605,6 +2605,13 @@ function formatBazaarPriceWithUnit(value) {
   return text === "-" ? "-" : `${text} G`;
 }
 
+function formatBazaarListingCount(value) {
+  if (value === null || value === undefined || String(value).trim() === "") return "-";
+  const parsed = Number(value);
+  if (!Number.isFinite(parsed)) return "-";
+  return `${Math.round(parsed).toLocaleString("ja-JP")}件`;
+}
+
 function formatBazaarChartPrice(value) {
   if (value === null || value === undefined || String(value).trim() === "") return "-";
   const parsed = Number(value);
@@ -2887,7 +2894,8 @@ function parseBazaarPricesFromLines(lines) {
   const updateInfoIndex = headers.indexOf("update_info");
   const commentIndex = headers.indexOf("comment");
   const shopPriceIndex = headers.indexOf("shop_price");
-  const listingCountIndex = headers.indexOf("listing_count");
+  const numberIndex = headers.indexOf("number");
+  const listingCountIndex = numberIndex >= 0 ? numberIndex : headers.indexOf("listing_count");
   const officialUrlIndex = headers.indexOf("official_url");
   if (
     materialNameIndex < 0 ||
@@ -2909,8 +2917,8 @@ function parseBazaarPricesFromLines(lines) {
   if (shopPriceIndex < 0) {
     console.warn("[bazaar_prices.csv] shop_price 列が見つからないため null で補完します");
   }
-  if (listingCountIndex < 0) {
-    console.warn("[bazaar_prices.csv] listing_count 列が見つからないため null で補完します");
+  if (numberIndex < 0 && listingCountIndex < 0) {
+    console.warn("[bazaar_prices.csv] number/listing_count 列が見つからないため null で補完します");
   }
   if (officialUrlIndex < 0) {
     console.warn("[bazaar_prices.csv] official_url 列が見つからないため空文字で補完します");
@@ -7726,6 +7734,7 @@ function renderBazaarPrices() {
             <div class="bazaar-price-stack">
               <p class="bazaar-today-price ${priceVisualToneClass}"><span class="bazaar-price-label">本日</span><strong>${todayPriceHtml}</strong></p>
               <p class="bazaar-previous-price"><span class="bazaar-price-label">前日</span><span class="bazaar-price-sub-value">${formatBazaarPriceWithUnit(row.previousDayPrice)}</span></p>
+              <p class="bazaar-listing-count"><span class="bazaar-price-label">件数</span><span class="bazaar-price-sub-value">${formatBazaarListingCount(row.listingCount)}</span></p>
               <div class="bazaar-meta-row">
                 <p class="bazaar-updated-at"><span class="bazaar-meta-label">更新</span><span>${updatedAtText}</span></p>
                 <p class="bazaar-change-rate"><span class="bazaar-meta-label">前日比</span><span class="bazaar-change-value ${changePresentation.toneClass}">${changePresentation.text}</span>${changeArrowHtml}</p>
