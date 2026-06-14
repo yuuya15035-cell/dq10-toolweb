@@ -7852,6 +7852,16 @@ function formatBazaarEquipmentStarPriceLine(row) {
   return `本日 ${formatBazaarPriceWithUnit(row.todayPrice)}　前日 ${formatBazaarPriceWithUnit(row.previousDayPrice)}`;
 }
 
+function buildBazaarEquipmentStarPriceHtml(row) {
+  if (!row || isBazaarEquipmentListingUnavailable(row)) {
+    return `<span class="bazaar-equipment-price-unavailable">出品なし</span>`;
+  }
+  return `
+    <span class="bazaar-equipment-price-today">本日 ${escapeHtml(formatBazaarPriceWithUnit(row.todayPrice))}</span>
+    <span class="bazaar-equipment-price-previous">前日 ${escapeHtml(formatBazaarPriceWithUnit(row.previousDayPrice))}</span>
+  `;
+}
+
 function getBazaarEquipmentUpdatedAt(card) {
   return formatBazaarUpdatedAt(card?.updatedAt);
 }
@@ -7963,7 +7973,7 @@ function buildBazaarEquipmentCardHtml(card) {
     return `
       <p class="bazaar-equipment-star-row ${row && isBazaarEquipmentListingUnavailable(row) ? "is-unavailable" : ""}">
         <span class="bazaar-equipment-star-label">${getBazaarEquipmentStarLabel(star)}</span>
-        <span>${escapeHtml(formatBazaarEquipmentStarPriceLine(row))}</span>
+        <span class="bazaar-equipment-price-pair">${buildBazaarEquipmentStarPriceHtml(row)}</span>
       </p>
     `;
   }).join("");
@@ -9942,11 +9952,12 @@ function openBazaarEquipmentDetailModal(equipmentKey) {
   const hasHistory = historySeries.some((series) => series.points.length > 0);
   const chartHtml = hasHistory
     ? `
-      <div class="bazaar-detail-modal-chart">${buildBazaarMultiSeriesSparklineSvg(historySeries, {
-        width: 320,
+      <div class="bazaar-detail-modal-chart bazaar-equipment-detail-chart">${buildBazaarMultiSeriesSparklineSvg(historySeries, {
+        width: 340,
         height: 176,
         includeYAxisLabels: true,
-        paddingLeft: 58,
+        paddingLeft: 72,
+        paddingRight: 12,
         pointRadius: 2.4,
       })}</div>
     `
@@ -9956,7 +9967,7 @@ function openBazaarEquipmentDetailModal(equipmentKey) {
     return `
       <p class="bazaar-equipment-modal-star-row ${row && isBazaarEquipmentListingUnavailable(row) ? "is-unavailable" : ""}">
         <span class="bazaar-equipment-star-label">${getBazaarEquipmentStarLabel(star)}</span>
-        <span>${escapeHtml(formatBazaarEquipmentStarPriceLine(row))}</span>
+        <span class="bazaar-equipment-price-pair">${buildBazaarEquipmentStarPriceHtml(row)}</span>
       </p>
     `;
   }).join("");
