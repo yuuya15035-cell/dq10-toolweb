@@ -3264,6 +3264,39 @@ button {
   grid-template-columns: 1fr;
 }
 
+.bazaar-price-tabs {
+  margin-bottom: 8px;
+  display: inline-flex;
+  gap: 4px;
+  padding: 4px;
+  border: 1px solid #cdb99f;
+  border-radius: 10px;
+  background: #f7efe4;
+}
+
+.bazaar-price-tab-button {
+  min-width: 86px;
+  min-height: 36px;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  background: transparent;
+  color: #674b34;
+  font-size: 0.88rem;
+  font-weight: 800;
+}
+
+.bazaar-price-tab-button:hover,
+.bazaar-price-tab-button:focus-visible {
+  border-color: #c7a47c;
+  background: rgba(255, 255, 255, 0.58);
+}
+
+.bazaar-price-tab-button.is-active {
+  border-color: #9d7651;
+  background: #8a6a52;
+  color: #ffffff;
+}
+
 .bazaar-paused-section {
   margin-top: 10px;
   padding: 10px 10px 8px;
@@ -3739,6 +3772,40 @@ button {
 .bazaar-price-stack {
   display: grid;
   gap: 3px;
+}
+
+.bazaar-equipment-star-list {
+  gap: 6px;
+}
+
+.bazaar-equipment-star-row,
+.bazaar-equipment-modal-star-row {
+  margin: 0;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 8px;
+  color: #4a2d18;
+  font-size: 0.9rem;
+  line-height: 1.3;
+}
+
+.bazaar-equipment-star-row.is-unavailable,
+.bazaar-equipment-modal-star-row.is-unavailable {
+  color: #7c644c;
+}
+
+.bazaar-equipment-star-label {
+  min-width: 2.6em;
+  color: #7b5b3d;
+  font-weight: 800;
+  letter-spacing: 0;
+}
+
+.bazaar-equipment-modal-star-list {
+  margin: 10px 0;
+  display: grid;
+  gap: 8px;
 }
 
 .bazaar-today-price,
