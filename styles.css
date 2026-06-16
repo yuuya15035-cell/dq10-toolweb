@@ -1209,6 +1209,7 @@ body.ads-disabled .ad-slot,
   line-height: 1.5;
   color: rgba(255, 247, 234, 0.9);
   font-weight: 500;
+  overflow-wrap: anywhere;
 }
 
 .tab-heading-note br {
@@ -3376,6 +3377,7 @@ button {
   color: #644d39;
   font-size: 0.8rem;
   line-height: 1.45;
+  overflow-wrap: anywhere;
 }
 
 .bazaar-page-note p + p {
