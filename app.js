@@ -188,7 +188,7 @@ const ADMIN_CHECKLIST_GROUPS = Object.freeze([
       {
         id: "bazaar-list-check",
         label: "バザー価格一覧の表示確認",
-        memo: "/bazaar/ を開き、価格・前日比・更新日時が表示されるか確認する",
+        memo: "/bazaar/ を開き、価格・前回比・更新日時が表示されるか確認する",
       },
       {
         id: "bazaar-graph-check",
@@ -7853,7 +7853,7 @@ function getBazaarEquipmentStarLabel(star) {
 
 function formatBazaarEquipmentStarPriceLine(row) {
   if (!row || isBazaarEquipmentListingUnavailable(row)) return "出品なし";
-  return `本日 ${formatBazaarPriceWithUnit(row.todayPrice)}　前日 ${formatBazaarPriceWithUnit(row.previousDayPrice)}`;
+  return `最新 ${formatBazaarPriceWithUnit(row.todayPrice)}　前回 ${formatBazaarPriceWithUnit(row.previousDayPrice)}`;
 }
 
 function buildBazaarEquipmentStarPriceHtml(row) {
@@ -7861,8 +7861,8 @@ function buildBazaarEquipmentStarPriceHtml(row) {
     return `<span class="bazaar-equipment-price-unavailable">出品なし</span>`;
   }
   return `
-    <span class="bazaar-equipment-price-today">本日 ${escapeHtml(formatBazaarPriceWithUnit(row.todayPrice))}</span>
-    <span class="bazaar-equipment-price-previous">前日 ${escapeHtml(formatBazaarPriceWithUnit(row.previousDayPrice))}</span>
+    <span class="bazaar-equipment-price-today">最新 ${escapeHtml(formatBazaarPriceWithUnit(row.todayPrice))}</span>
+    <span class="bazaar-equipment-price-previous">前回 ${escapeHtml(formatBazaarPriceWithUnit(row.previousDayPrice))}</span>
   `;
 }
 
@@ -8503,12 +8503,12 @@ function renderBazaarPrices() {
         >
           <div class="bazaar-primary">
             <div class="bazaar-price-stack">
-              <p class="bazaar-today-price ${priceVisualToneClass}"><span class="bazaar-price-label">本日</span><strong>${todayPriceHtml}</strong></p>
-              <p class="bazaar-previous-price"><span class="bazaar-price-label">前日</span><span class="bazaar-price-sub-value">${formatBazaarPriceWithUnit(row.previousDayPrice)}</span></p>
+              <p class="bazaar-today-price ${priceVisualToneClass}"><span class="bazaar-price-label">最新</span><strong>${todayPriceHtml}</strong></p>
+              <p class="bazaar-previous-price"><span class="bazaar-price-label">前回</span><span class="bazaar-price-sub-value">${formatBazaarPriceWithUnit(row.previousDayPrice)}</span></p>
               <p class="bazaar-listing-count"><span class="bazaar-price-label">件数</span><span class="bazaar-price-sub-value">${formatBazaarListingCount(row.listingCount)}</span></p>
               <div class="bazaar-meta-row">
                 <p class="bazaar-updated-at"><span class="bazaar-meta-label">更新</span><span>${updatedAtText}</span></p>
-                <p class="bazaar-change-rate"><span class="bazaar-meta-label">前日比</span><span class="bazaar-change-value ${changePresentation.toneClass}">${changePresentation.text}</span>${changeArrowHtml}</p>
+                <p class="bazaar-change-rate"><span class="bazaar-meta-label">前回比</span><span class="bazaar-change-value ${changePresentation.toneClass}">${changePresentation.text}</span>${changeArrowHtml}</p>
               </div>
             </div>
             ${priceStatusBadgeHtml}
@@ -9909,7 +9909,7 @@ async function openBazaarDetailModal(materialKey) {
       </button>
     </div>
     <p class="bazaar-detail-modal-updated-at">更新: ${updatedAtText}</p>
-    <p class="bazaar-detail-modal-previous">前日価格: ${formatBazaarPriceWithUnit(row.previousDayPrice)}</p>
+    <p class="bazaar-detail-modal-previous">前回価格: ${formatBazaarPriceWithUnit(row.previousDayPrice)}</p>
     ${monthSelectHtml}
     ${summaryHtml}
     ${chartHtml}
@@ -10127,7 +10127,7 @@ function openFavoriteMaterialModal(materialKey) {
   favoriteMaterialModalBody.innerHTML = `
     <h3 class="favorite-material-modal-title">${row.materialName}</h3>
     <p class="favorite-material-modal-price">現在価格: <strong>${formatBazaarPriceWithUnit(row.displayPrice)}</strong></p>
-    <p class="favorite-material-modal-previous">前日単価: ${formatBazaarPriceWithUnit(row.previousDayPrice)}</p>
+    <p class="favorite-material-modal-previous">前回単価: ${formatBazaarPriceWithUnit(row.previousDayPrice)}</p>
     ${chartHtml}
     <a class="favorite-material-modal-link" href="${getOfficialBazaarUrlByMaterialName(row.materialName)}" target="_blank" rel="noopener noreferrer">公式相場サイトで確認</a>
   `;
@@ -10327,7 +10327,7 @@ function renderFavoriteMaterialsSection() {
               </header>
               <p class="favorite-material-price">現在価格: ${formatBazaarPriceWithUnit(row.displayPrice)}</p>
               <p class="favorite-material-change">
-                前日比:
+                前回比:
                 <span class="favorite-material-change-value ${changePresentation.toneClass}">${changePresentation.text}</span>
                 ${changeArrowHtml}
               </p>
@@ -11474,7 +11474,7 @@ function getRobotsMeta() {
 function getDefaultTabDocumentDescription(tabId) {
   switch (String(tabId || "").trim()) {
     case "bazaar":
-      return "バザー価格、前日比、更新日時を確認できるDQ10ツールです。価格・情報は参考用としてご利用ください。";
+      return "バザー価格、前回比、更新日時を確認できるDQ10ツールです。価格・情報は参考用としてご利用ください。";
     case "monster-info":
       return "モンスターの通常ドロップ、レアドロップ、白宝箱、宝珠、生息地を確認できるDQ10ツールです。";
     case "orbs":
@@ -11505,7 +11505,7 @@ function getTargetDocumentDescription(tabId, targetName) {
   if (!normalizedName) return getDefaultTabDocumentDescription(tabId);
   switch (String(tabId || "").trim()) {
     case "bazaar":
-      return `${normalizedName}のバザー価格、前日比、更新日時を確認できます。`;
+      return `${normalizedName}のバザー価格、前回比、更新日時を確認できます。`;
     case "monster-info":
       return `${normalizedName}の通常ドロップ、レアドロップ、白宝箱、宝珠、生息地を確認できます。`;
     case "orbs":
@@ -12789,8 +12789,8 @@ function renderHomeBazaarChangeRanking() {
   if (homeBazaarChangeRankingNote) {
     homeBazaarChangeRankingNote.textContent =
       homeBazaarChangeRankingSort === "down"
-        ? "前日比で下落率が大きい素材を10件表示しています。"
-        : "前日比で上昇率が高い素材を10件表示しています。";
+        ? "前回比で下落率が大きい素材を10件表示しています。"
+        : "前回比で上昇率が高い素材を10件表示しています。";
   }
   if (homeBazaarChangeRankingUpdatedAt) {
     const updatedAtText = hasLoadedBazaarPrices ? getHomeBazaarLatestUpdatedAtText() : "";
@@ -12832,9 +12832,9 @@ function renderHomeBazaarChangeRanking() {
               <span class="home-bazaar-change-rank">${rank}位</span>
               <span class="home-bazaar-change-main">
                 <strong class="home-bazaar-change-name">${escapeHtml(row.materialName)}</strong>
-                <span class="home-bazaar-change-prices">本日 ${formatGold(row.todayPrice)} / 前日 ${formatGold(row.previousDayPrice)}</span>
+                <span class="home-bazaar-change-prices">最新 ${formatGold(row.todayPrice)} / 前回 ${formatGold(row.previousDayPrice)}</span>
               </span>
-              <span class="home-bazaar-change-rate ${changePresentation.toneClass}">前日比 ${escapeHtml(changePresentation.text)}</span>
+              <span class="home-bazaar-change-rate ${changePresentation.toneClass}">前回比 ${escapeHtml(changePresentation.text)}</span>
             </button>
           `;
         })
