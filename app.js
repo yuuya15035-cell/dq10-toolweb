@@ -415,6 +415,10 @@ const BAZAAR_SORT_OPTIONS = [
   { value: "rate_desc", label: "変動率高い順" },
   { value: "rate_asc", label: "変動率低い順" },
 ];
+const BAZAAR_PRICE_UPDATE_NOTE_HTML = `
+  <p>素材価格は毎日am7:00~23時まで2時間毎に更新します。</p>
+  <p>装備価格は毎日am10:00のみ更新します。</p>
+`;
 const BAZAAR_PRICE_TAB_IDS = new Set(["materials", "equipment"]);
 const BAZAAR_EQUIPMENT_STARS = [2, 3];
 const BAZAAR_CHART_RANGE_DAYS = {
@@ -8143,7 +8147,7 @@ function renderBazaarEquipmentPrices() {
     ${buildBazaarPriceTabsHtml()}
     <div class="bazaar-page-note card">
       <p class="bazaar-page-note-highlight">装備相場は ★★ / ★★★ を同じカード内にまとめて表示しています。</p>
-      <p>出品なしの商品は価格として 0G 扱いにせず、グラフ上の点も表示しません。</p>
+      ${BAZAAR_PRICE_UPDATE_NOTE_HTML}
     </div>
     <div class="bazaar-control-wrap">
       <label class="field bazaar-category-field">
@@ -8545,6 +8549,7 @@ function renderBazaarPrices() {
     ${buildBazaarPriceTabsHtml()}
     <div class="bazaar-page-note card">
       <p class="bazaar-page-note-highlight">グラフをタップすると詳細確認できます。</p>
+      ${BAZAAR_PRICE_UPDATE_NOTE_HTML}
       <p>価格更新中の素材のみ表示しています。更新停止中の商品は下部の「現在価格更新停止中リスト」にまとめています。</p>
       <p>すべて公式サイトを確認して手入力しているため、価格更新対象は絞っています。</p>
     </div>
