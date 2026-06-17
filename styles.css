@@ -3372,6 +3372,25 @@ button {
   background: rgba(247, 239, 228, 0.9);
 }
 
+.bazaar-page-note-top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.bazaar-page-note-text {
+  flex: 1 1 240px;
+  min-width: 0;
+}
+
+.bazaar-page-note-actions {
+  flex: 0 0 auto;
+  display: flex;
+  justify-content: flex-end;
+}
+
 .bazaar-page-note p {
   margin: 0;
   color: #644d39;
@@ -3384,6 +3403,11 @@ button {
   margin-top: 4px;
 }
 
+.bazaar-page-note-top + p,
+.bazaar-page-note-top + .bazaar-refresh-status {
+  margin-top: 6px;
+}
+
 .bazaar-page-note-highlight {
   display: inline-flex;
   align-items: center;
@@ -3392,6 +3416,46 @@ button {
   background: rgba(181, 135, 69, 0.14);
   color: #6a4318;
   font-weight: 800;
+}
+
+.bazaar-refresh-button {
+  min-height: 44px;
+  min-width: 128px;
+  border: 1px solid #9d7651;
+  border-radius: 8px;
+  background: linear-gradient(180deg, #8a6a52 0%, #74543d 100%);
+  color: #ffffff;
+  padding: 10px 14px;
+  font-size: 0.88rem;
+  font-weight: 800;
+  box-shadow: 0 2px 5px rgba(87, 57, 31, 0.14);
+}
+
+.bazaar-refresh-button:hover,
+.bazaar-refresh-button:focus-visible {
+  background: linear-gradient(180deg, #946f52 0%, #684934 100%);
+}
+
+.bazaar-refresh-button:disabled {
+  cursor: wait;
+  opacity: 0.72;
+}
+
+.bazaar-refresh-status {
+  margin-top: 7px;
+  padding: 6px 8px;
+  border-radius: 8px;
+  font-weight: 800;
+}
+
+.bazaar-refresh-status.is-success {
+  background: rgba(83, 132, 91, 0.14);
+  color: #315c38;
+}
+
+.bazaar-refresh-status.is-error {
+  background: rgba(170, 78, 61, 0.14);
+  color: #8a3829;
 }
 
 .bazaar-mini-chart-wrap {
@@ -4667,6 +4731,19 @@ button {
     padding: 7px 8px;
   }
 
+  .bazaar-page-note-top {
+    gap: 7px;
+  }
+
+  .bazaar-page-note-text,
+  .bazaar-page-note-actions {
+    flex-basis: 100%;
+  }
+
+  .bazaar-page-note-actions {
+    justify-content: stretch;
+  }
+
   .bazaar-page-note p {
     font-size: 0.7rem;
     line-height: 1.4;
@@ -4674,6 +4751,17 @@ button {
 
   .bazaar-page-note-highlight {
     padding: 2px 7px;
+  }
+
+  .bazaar-refresh-button {
+    width: 100%;
+    min-height: 44px;
+    font-size: 0.82rem;
+  }
+
+  .bazaar-refresh-status {
+    margin-top: 6px;
+    font-size: 0.72rem;
   }
 
   .bazaar-category-field span,

@@ -786,12 +786,20 @@ function parseEquipmentLevel(value) {
   return parsed;
 }
 
-async function fetchCsvLines(path) {
+function appendCacheBustQuery(url) {
+  if (!url) return url;
+  const separator = String(url).includes("?") ? "&" : "?";
+  return `${url}${separator}_=${Date.now()}`;
+}
+
+async function fetchCsvLines(path, options = {}) {
+  const { cacheBust = false } = options;
   const resolvedPath = resolveProjectScopedResourceUrl(path);
-  const response = await fetch(resolvedPath);
+  const requestPath = cacheBust ? appendCacheBustQuery(resolvedPath) : resolvedPath;
+  const response = await fetch(requestPath, cacheBust ? { cache: "no-store" } : undefined);
   if (!response.ok) {
-    console.error(`[CSV] fetch failed: path=${resolvedPath}, original=${path}, status=${response.status}`);
-    throw new Error(`CSVの読み込みに失敗しました: ${resolvedPath} (${response.status})`);
+    console.error(`[CSV] fetch failed: path=${requestPath}, original=${path}, status=${response.status}`);
+    throw new Error(`CSVの読み込みに失敗しました: ${requestPath} (${response.status})`);
   }
   const bytes = new Uint8Array(await response.arrayBuffer());
   const csvText = decodeCsvText(path, bytes);
@@ -1980,6 +1988,10 @@ let bazaarDetailMonthByMaterialKey = new Map();
 let bazaarRelatedRecipeExpandStateByMaterialKey = new Map();
 let bazaarRelatedMonsterExpandStateByKey = new Map();
 let isBazaarPausedSectionExpanded = false;
+let isBazaarManualRefreshing = false;
+let bazaarManualRefreshMessage = "";
+let bazaarManualRefreshMessageIsError = false;
+let bazaarManualRefreshMessageTimer = null;
 let memoEntries = [];
 let memoEntryIdSet = new Set();
 let memoPanelSwipeState = null;
@@ -4621,13 +4633,13 @@ function buildMonsterDropHtml(label, itemName, options = {}) {
   </p>`;
 }
 
-async function loadBazaarPricesCsv() {
-  const lines = await fetchCsvLines(BAZAAR_CSV_PATH);
+async function loadBazaarPricesCsv(options = {}) {
+  const lines = await fetchCsvLines(BAZAAR_CSV_PATH, options);
   return parseBazaarPricesFromLines(lines);
 }
 
-async function loadBazaarEquipmentPricesCsv() {
-  const lines = await fetchCsvLines(BAZAAR_EQUIPMENT_CSV_PATH);
+async function loadBazaarEquipmentPricesCsv(options = {}) {
+  const lines = await fetchCsvLines(BAZAAR_EQUIPMENT_CSV_PATH, options);
   return parseBazaarEquipmentPricesFromLines(lines);
 }
 
@@ -7351,8 +7363,8 @@ function parseBazaarPriceHistoryFromLines(lines) {
   return historyMap;
 }
 
-async function loadBazaarPriceHistoryCsv() {
-  const lines = await fetchCsvLines(BAZAAR_HISTORY_CSV_PATH);
+async function loadBazaarPriceHistoryCsv(options = {}) {
+  const lines = await fetchCsvLines(BAZAAR_HISTORY_CSV_PATH, options);
   return parseBazaarPriceHistoryFromLines(lines);
 }
 
@@ -7773,6 +7785,128 @@ function renderBazaarMessage(message) {
   attachBazaarPriceTabListeners();
 }
 
+function buildBazaarRefreshStatusHtml() {
+  if (bazaarManualRefreshMessage === "") return "";
+  const statusClass = bazaarManualRefreshMessageIsError ? " is-error" : " is-success";
+  return `<p class="bazaar-refresh-status${statusClass}" role="status">${escapeHtml(bazaarManualRefreshMessage)}</p>`;
+}
+
+function buildBazaarRefreshButtonHtml() {
+  return `
+    <button
+      id="bazaarManualRefreshButton"
+      type="button"
+      class="bazaar-refresh-button"
+      ${isBazaarManualRefreshing ? "disabled" : ""}
+    >
+      ${isBazaarManualRefreshing ? "更新中..." : "最新に更新"}
+    </button>
+  `;
+}
+
+function buildBazaarPageNoteHtml(highlightHtml, bodyHtml = "") {
+  return `
+    <div class="bazaar-page-note card">
+      <div class="bazaar-page-note-top">
+        <div class="bazaar-page-note-text">
+          ${highlightHtml}
+          ${BAZAAR_PRICE_UPDATE_NOTE_HTML}
+        </div>
+        <div class="bazaar-page-note-actions">
+          ${buildBazaarRefreshButtonHtml()}
+        </div>
+      </div>
+      ${bodyHtml}
+      ${buildBazaarRefreshStatusHtml()}
+    </div>
+  `;
+}
+
+function scheduleBazaarManualRefreshMessageClear() {
+  if (bazaarManualRefreshMessageTimer) {
+    clearTimeout(bazaarManualRefreshMessageTimer);
+  }
+  if (bazaarManualRefreshMessage === "") return;
+  bazaarManualRefreshMessageTimer = setTimeout(() => {
+    bazaarManualRefreshMessage = "";
+    bazaarManualRefreshMessageIsError = false;
+    bazaarManualRefreshMessageTimer = null;
+    if (activeTabId === "bazaar") renderBazaarPrices();
+  }, 3200);
+}
+
+function renderBazaarRefreshDependents() {
+  if (activeTabId === "bazaar") renderBazaarPrices();
+  renderHomeBazaarChangeRanking();
+  if (activeTabId === "field-farming") renderFieldFarmingRanking();
+  if (activeTabId === "favorites") renderFavoritesPage();
+  if (activeTabId === "monster-info") renderMonsterInfoCards();
+  if (activeTabId === "profit") {
+    renderRecipeTable();
+    calcAndRenderSummary();
+  }
+  if (activeBazaarDetailModalKey) {
+    if (String(activeBazaarDetailModalKey).startsWith("be:")) {
+      openBazaarEquipmentDetailModal(activeBazaarDetailModalKey);
+    } else {
+      void openBazaarDetailModal(activeBazaarDetailModalKey);
+    }
+  }
+}
+
+async function refreshBazaarPriceData() {
+  if (isBazaarManualRefreshing) return;
+  isBazaarManualRefreshing = true;
+  bazaarManualRefreshMessage = "";
+  bazaarManualRefreshMessageIsError = false;
+  if (bazaarManualRefreshMessageTimer) {
+    clearTimeout(bazaarManualRefreshMessageTimer);
+    bazaarManualRefreshMessageTimer = null;
+  }
+  renderBazaarRefreshDependents();
+
+  try {
+    const [nextBazaarPrices, nextBazaarEquipmentPrices, nextBazaarPriceHistoryByMaterialKey] = await Promise.all([
+      loadBazaarPricesCsv({ cacheBust: true }),
+      loadBazaarEquipmentPricesCsv({ cacheBust: true }),
+      loadBazaarPriceHistoryCsv({ cacheBust: true }),
+    ]);
+
+    bazaarPrices = nextBazaarPrices;
+    bazaarEquipmentPrices = nextBazaarEquipmentPrices;
+    bazaarEquipmentCards = groupBazaarEquipmentRows(bazaarEquipmentPrices);
+    bazaarPriceHistoryByMaterialKey = nextBazaarPriceHistoryByMaterialKey;
+    rebuildBazaarLookupMaps();
+    hasLoadedBazaarPrices = true;
+    hasLoadedBazaarEquipmentPrices = true;
+    hasLoadedBazaarPriceHistory = true;
+    bazaarLoadError = false;
+    bazaarEquipmentLoadError = false;
+    const materialSyncResult = syncMaterialPricesWithBazaar(state.materials, bazaarPrices);
+    state.materials = materialSyncResult.materials;
+    if (materialSyncResult.updatedCount > 0) saveData();
+    hasSyncedMaterialPricesWithBazaar = true;
+    bazaarManualRefreshMessage = "最新データに更新しました";
+    bazaarManualRefreshMessageIsError = false;
+  } catch (error) {
+    console.error("バザー価格データの更新に失敗しました", error);
+    bazaarManualRefreshMessage = "更新に失敗しました。時間をおいて再度お試しください。";
+    bazaarManualRefreshMessageIsError = true;
+  } finally {
+    isBazaarManualRefreshing = false;
+    renderBazaarRefreshDependents();
+    scheduleBazaarManualRefreshMessageClear();
+  }
+}
+
+function attachBazaarManualRefreshListener() {
+  const refreshButton = bazaarListWrap?.querySelector("#bazaarManualRefreshButton");
+  if (!refreshButton) return;
+  refreshButton.addEventListener("click", () => {
+    void refreshBazaarPriceData();
+  });
+}
+
 function switchBazaarPriceTab(tabId) {
   const normalizedTabId = BAZAAR_PRICE_TAB_IDS.has(tabId) ? tabId : "materials";
   activeBazaarPriceTab = normalizedTabId;
@@ -8145,10 +8279,9 @@ function renderBazaarEquipmentPrices() {
 
   bazaarListWrap.innerHTML = `
     ${buildBazaarPriceTabsHtml()}
-    <div class="bazaar-page-note card">
-      <p class="bazaar-page-note-highlight">装備相場は ★★ / ★★★ を同じカード内にまとめて表示しています。</p>
-      ${BAZAAR_PRICE_UPDATE_NOTE_HTML}
-    </div>
+    ${buildBazaarPageNoteHtml(
+      `<p class="bazaar-page-note-highlight">装備相場は ★★ / ★★★ を同じカード内にまとめて表示しています。</p>`
+    )}
     <div class="bazaar-control-wrap">
       <label class="field bazaar-category-field">
         <span>ジャンル切り替え</span>
@@ -8222,6 +8355,7 @@ function renderBazaarEquipmentPrices() {
   `;
 
   attachBazaarPriceTabListeners();
+  attachBazaarManualRefreshListener();
 
   const categorySelect = bazaarListWrap.querySelector("#bazaarEquipmentCategorySelect");
   if (categorySelect) {
@@ -8547,12 +8681,13 @@ function renderBazaarPrices() {
   };
   bazaarListWrap.innerHTML = `
     ${buildBazaarPriceTabsHtml()}
-    <div class="bazaar-page-note card">
-      <p class="bazaar-page-note-highlight">グラフをタップすると詳細確認できます。</p>
-      ${BAZAAR_PRICE_UPDATE_NOTE_HTML}
-      <p>価格更新中の素材のみ表示しています。更新停止中の商品は下部の「現在価格更新停止中リスト」にまとめています。</p>
-      <p>すべて公式サイトを確認して手入力しているため、価格更新対象は絞っています。</p>
-    </div>
+    ${buildBazaarPageNoteHtml(
+      `<p class="bazaar-page-note-highlight">グラフをタップすると詳細確認できます。</p>`,
+      `
+        <p>価格更新中の素材のみ表示しています。更新停止中の商品は下部の「現在価格更新停止中リスト」にまとめています。</p>
+        <p>すべて公式サイトを確認して手入力しているため、価格更新対象は絞っています。</p>
+      `
+    )}
     <div class="bazaar-control-wrap">
       <label class="field bazaar-category-field">
         <span>ジャンル切り替え</span>
@@ -8694,6 +8829,7 @@ function renderBazaarPrices() {
   `;
 
   attachBazaarPriceTabListeners();
+  attachBazaarManualRefreshListener();
 
   const bazaarCategorySelect = bazaarListWrap.querySelector("#bazaarCategorySelect");
   if (bazaarCategorySelect) {
