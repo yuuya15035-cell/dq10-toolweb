@@ -427,6 +427,8 @@ const BAZAAR_CHART_RANGE_DAYS = {
   threeMonths: 90,
 };
 const DEFAULT_BAZAAR_CHART_RANGE_DAYS = BAZAAR_CHART_RANGE_DAYS.month;
+const STEAL_FARMING_CELL_PARALLEL_VERSIONS = new Set(["ver5.0", "ver5.1", "ver5.2", "ver5.3", "ver5.4", "ver5.5"]);
+const STEAL_FARMING_CELL_ITEM_NAMES = ["魔因細胞", "閃魔細胞", "魔因細胞のかけら", "閃魔細胞のかけら"];
 const BAZAAR_DETAIL_MODAL_SWIPE_START_SLOP_PX = 8;
 const BAZAAR_DETAIL_MODAL_SWIPE_CLOSE_THRESHOLD_PX = 96;
 const BAZAAR_DETAIL_MODAL_SWIPE_MAX_TRANSLATE_PX = 220;
@@ -2042,6 +2044,8 @@ let craftRecordWorkStartTime = "";
 let craftRecordWorkEndTime = "";
 let craftRecordTimerIntervalId = null;
 let fieldFarmingKeyword = "";
+let stealFarmingKeyword = "";
+let showStealFarmingCellParallelOnly = false;
 let selectedRoutineType = "daily";
 let routineTaskCheckedTokens = {};
 let bossCardTimers = [];
@@ -5590,6 +5594,7 @@ async function ensureMonsterInfoDataLoaded() {
     } finally {
       isMonsterInfoDataLoading = false;
       if (activeTabId === "monster-info") renderMonsterInfoCards();
+      if (activeTabId === "field-farming") renderFieldFarmingRanking();
     }
   })();
   return monsterInfoDataLoadingPromise;
@@ -5611,6 +5616,7 @@ function prefetchDataForTab(tabId) {
   if (tabId === "field-farming") {
     void ensureBazaarPricesLoaded();
     void ensureFieldFarmingMonstersLoaded();
+    void ensureMonsterInfoDataLoaded();
     return;
   }
   if (tabId === "bazaar") {
@@ -9309,8 +9315,232 @@ function getFieldFarmingPriceByMaterialName() {
   return map;
 }
 
+function formatStealFarmingPrice(value) {
+  return Number.isFinite(value) ? `${Math.round(value).toLocaleString("ja-JP")}G` : "価格未取得";
+}
+
+function normalizeStealFarmingDropName(value) {
+  const normalized = String(value || "").trim();
+  return normalized === "" || normalized === "-" || normalized === "なし" ? "不明" : normalized;
+}
+
+function normalizeStealFarmingVersion(value) {
+  return String(value || "").trim().replace(/\s+/g, "").toLowerCase();
+}
+
+function getStealFarmingCellParallelMapNames() {
+  return Array.from(mapMasterByName.entries())
+    .filter(([, meta]) => STEAL_FARMING_CELL_PARALLEL_VERSIONS.has(normalizeStealFarmingVersion(meta?.version)))
+    .map(([mapName]) => String(mapName || "").trim())
+    .filter((mapName) => mapName !== "");
+}
+
+function isStealFarmingCellParallelAvailable(habitats, cellParallelMapNames) {
+  const habitatNames = Array.isArray(habitats) ? habitats.map((name) => String(name || "").trim()).filter(Boolean) : [];
+  if (habitatNames.length === 0 || cellParallelMapNames.length === 0) return false;
+  return habitatNames.some((habitat) =>
+    cellParallelMapNames.some((mapName) => habitat.includes(mapName) || mapName.includes(habitat))
+  );
+}
+
+function getStealFarmingCellPriceRows(priceByMaterialName) {
+  return STEAL_FARMING_CELL_ITEM_NAMES.map((itemName) => {
+    const price = priceByMaterialName.get(normalizeMaterialNameKey(itemName));
+    return {
+      itemName,
+      price: Number.isFinite(price) ? price : null,
+    };
+  });
+}
+
+function getStealFarmingBazaarUpdatedAtText() {
+  const label = getBazaarPageUpdatedAtLabel(bazaarPrices);
+  return label.replace(/^ページ更新:/, "素材価格更新:");
+}
+
+function buildStealFarmingRankingRows(priceByMaterialName) {
+  const cellParallelMapNames = getStealFarmingCellParallelMapNames();
+  const normalizedKeyword = normalizeSearchKeyword(stealFarmingKeyword);
+  return (monsterDetailEntries || [])
+    .map((monster) => {
+      const normalDrop = normalizeStealFarmingDropName(monster?.normalDrop);
+      const rareDrop = normalizeStealFarmingDropName(monster?.rareDrop);
+      const normalDropPrice = normalDrop === "不明" ? null : priceByMaterialName.get(normalizeMaterialNameKey(normalDrop));
+      const rareDropPrice = rareDrop === "不明" ? null : priceByMaterialName.get(normalizeMaterialNameKey(rareDrop));
+      const safeNormalDropPrice = Number.isFinite(normalDropPrice) ? normalDropPrice : 0;
+      const safeRareDropPrice = Number.isFinite(rareDropPrice) ? rareDropPrice : 0;
+      const habitats = Array.isArray(monster?.habitats) ? monster.habitats.map((name) => String(name || "").trim()).filter(Boolean) : [];
+      const isCellParallelAvailable = isStealFarmingCellParallelAvailable(habitats, cellParallelMapNames);
+      return {
+        id: String(monster?.id || ""),
+        monsterName: String(monster?.name || "").trim() || "不明",
+        habitats,
+        mapText: habitats.length > 0 ? habitats.join("、") : "不明",
+        normalDrop,
+        rareDrop,
+        normalDropPrice: Number.isFinite(normalDropPrice) ? normalDropPrice : null,
+        rareDropPrice: Number.isFinite(rareDropPrice) ? rareDropPrice : null,
+        score: safeNormalDropPrice * 100 + safeRareDropPrice * 25,
+        isCellParallelAvailable,
+        searchText: [monster?.name, normalDrop, rareDrop, habitats.join(" ")].join(" ").toLowerCase(),
+      };
+    })
+    .filter((row) => {
+      if (showStealFarmingCellParallelOnly && !row.isCellParallelAvailable) return false;
+      if (normalizedKeyword === "") return true;
+      return row.searchText.includes(normalizedKeyword);
+    })
+    .sort((a, b) => {
+      if (a.score !== b.score) return b.score - a.score;
+      const normalPriceDiff = (Number.isFinite(b.normalDropPrice) ? b.normalDropPrice : 0) - (Number.isFinite(a.normalDropPrice) ? a.normalDropPrice : 0);
+      if (normalPriceDiff !== 0) return normalPriceDiff;
+      const rarePriceDiff = (Number.isFinite(b.rareDropPrice) ? b.rareDropPrice : 0) - (Number.isFinite(a.rareDropPrice) ? a.rareDropPrice : 0);
+      if (rarePriceDiff !== 0) return rarePriceDiff;
+      return a.monsterName.localeCompare(b.monsterName, "ja");
+    });
+}
+
+function buildStealFarmingCellPriceHtml(cellPriceRows) {
+  return `
+    <div class="steal-farming-cell-price-grid" aria-label="細胞系アイテム価格">
+      ${cellPriceRows
+        .map(
+          (row) => `
+            <p>
+              <span>${escapeHtml(row.itemName)}：</span>
+              <strong>${formatStealFarmingPrice(row.price)}</strong>
+            </p>
+          `
+        )
+        .join("")}
+    </div>
+  `;
+}
+
+function buildStealFarmingRankingSection(priceByMaterialName) {
+  const isStealDataLoading = isMonsterInfoDataLoading && !hasLoadedMonsterInfoData;
+  const isPriceLoading = isBazaarLoading && !hasLoadedBazaarPrices;
+  if (isStealDataLoading || isPriceLoading) {
+    return `
+      <section class="steal-farming-section" aria-label="盗み金策ランキング">
+        <div class="steal-farming-heading-row">
+          <h3>盗み金策ランキング</h3>
+        </div>
+        <p class="card">盗み金策ランキングを読み込み中です。</p>
+      </section>
+    `;
+  }
+
+  if (!hasLoadedMonsterInfoData || monsterInfoLoadError || !Array.isArray(monsterDetailEntries) || monsterDetailEntries.length === 0) {
+    return `
+      <section class="steal-farming-section" aria-label="盗み金策ランキング">
+        <div class="steal-farming-heading-row">
+          <h3>盗み金策ランキング</h3>
+        </div>
+        <p class="card">モンスターデータを読み込めませんでした。時間をおいて再度お試しください。</p>
+      </section>
+    `;
+  }
+
+  const rankedRows = buildStealFarmingRankingRows(priceByMaterialName);
+  const cellPriceRows = getStealFarmingCellPriceRows(priceByMaterialName);
+  const updatedAtText = getStealFarmingBazaarUpdatedAtText();
+
+  return `
+    <section class="steal-farming-section" aria-label="盗み金策ランキング">
+      <div class="steal-farming-heading-row">
+        <div>
+          <h3>盗み金策ランキング</h3>
+          <p class="steal-farming-updated-at">${escapeHtml(updatedAtText)}</p>
+        </div>
+      </div>
+      <div class="steal-farming-filter-card card">
+        <label class="field steal-farming-search-field">
+          <span>検索</span>
+          <input
+            id="stealFarmingSearchInput"
+            type="search"
+            placeholder="モンスター名・ドロップ名・マップ名"
+            value="${escapeHtml(stealFarmingKeyword)}"
+            autocomplete="off"
+            autocapitalize="off"
+            spellcheck="false"
+          />
+        </label>
+        <label class="field inline-field steal-farming-cell-filter-field">
+          <input id="stealFarmingCellOnlyToggle" type="checkbox" ${showStealFarmingCellParallelOnly ? "checked" : ""} />
+          <span>魔因細胞並行可能のみ表示</span>
+        </label>
+      </div>
+      ${
+        rankedRows.length === 0
+          ? `<p class="card">条件に一致するモンスターが見つかりませんでした。</p>`
+          : `
+            <div class="steal-farming-list">
+              ${rankedRows
+                .map((row, index) => {
+                  const cellPriceHtml = row.isCellParallelAvailable ? buildStealFarmingCellPriceHtml(cellPriceRows) : "";
+                  return `
+                    <article class="steal-farming-card">
+                      <p class="steal-farming-rank">${index + 1}位</p>
+                      <h4 class="steal-farming-monster-name">${escapeHtml(row.monsterName)}</h4>
+                      <p class="steal-farming-map"><span>マップ：</span>${escapeHtml(row.mapText)}</p>
+                      <div class="steal-farming-drop-list">
+                        <p>
+                          <span>通常ドロップ：</span>
+                          <strong>${escapeHtml(row.normalDrop)}</strong>
+                          <em>（${formatStealFarmingPrice(row.normalDropPrice)}）</em>
+                        </p>
+                        <p>
+                          <span>レアドロップ：</span>
+                          <strong>${escapeHtml(row.rareDrop)}</strong>
+                          <em>（${formatStealFarmingPrice(row.rareDropPrice)}）</em>
+                        </p>
+                      </div>
+                      <p class="steal-farming-cell-status ${row.isCellParallelAvailable ? "is-available" : "is-unavailable"}">
+                        魔因細胞並行：${row.isCellParallelAvailable ? "可能" : "不可"}
+                      </p>
+                      ${cellPriceHtml}
+                    </article>
+                  `;
+                })
+                .join("")}
+            </div>
+          `
+      }
+    </section>
+  `;
+}
+
+function attachStealFarmingRankingListeners() {
+  const searchInput = fieldFarmingListWrap?.querySelector("#stealFarmingSearchInput");
+  if (searchInput) {
+    searchInput.addEventListener("input", (event) => {
+      stealFarmingKeyword = String(event.target.value || "");
+      renderFieldFarmingRanking();
+      const nextInput = fieldFarmingListWrap?.querySelector("#stealFarmingSearchInput");
+      if (nextInput) {
+        nextInput.focus({ preventScroll: true });
+        const valueLength = String(nextInput.value || "").length;
+        nextInput.setSelectionRange(valueLength, valueLength);
+      }
+    });
+  }
+
+  const cellOnlyToggle = fieldFarmingListWrap?.querySelector("#stealFarmingCellOnlyToggle");
+  if (cellOnlyToggle) {
+    cellOnlyToggle.addEventListener("change", (event) => {
+      showStealFarmingCellParallelOnly = Boolean(event.target.checked);
+      renderFieldFarmingRanking();
+    });
+  }
+}
+
 function renderFieldFarmingRanking() {
   if (!fieldFarmingListWrap) return;
+  if (!hasLoadedMonsterInfoData && !isMonsterInfoDataLoading) {
+    void ensureMonsterInfoDataLoaded();
+  }
   if (isFieldFarmingLoading && !hasLoadedFieldFarmingMonsters) {
     fieldFarmingListWrap.innerHTML = `<p class="card">読み込み中です。しばらくお待ちください。</p>`;
     return;
@@ -9409,7 +9639,9 @@ function renderFieldFarmingRanking() {
         })
         .join("")}
     </div>
+    ${buildStealFarmingRankingSection(priceByMaterialName)}
   `;
+  attachStealFarmingRankingListeners();
 
   fieldFarmingListWrap.querySelectorAll("[data-field-map-row-id]").forEach((button) => {
     button.addEventListener("click", () => {
@@ -9700,6 +9932,7 @@ function applySiteSearchNavigation(entry) {
   }
   if (entry.tabId === "field-farming") {
     fieldFarmingKeyword = keyword;
+    stealFarmingKeyword = keyword;
     switchTab("field-farming");
     navigateByFeatureRoute({ tab: "field-farming", equipmentId: "", materialKey: "" });
     renderFieldFarmingRanking();

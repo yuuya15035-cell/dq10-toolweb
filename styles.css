@@ -2462,6 +2462,150 @@ body.ads-disabled .ad-slot,
   line-height: 1.35;
 }
 
+.steal-farming-section {
+  margin-top: 18px;
+}
+
+.steal-farming-heading-row {
+  margin-bottom: 8px;
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.steal-farming-heading-row h3 {
+  margin: 0;
+  color: #33261c;
+  font-size: 1.08rem;
+}
+
+.steal-farming-updated-at {
+  margin: 3px 0 0;
+  color: #70583f;
+  font-size: 0.78rem;
+  line-height: 1.35;
+}
+
+.steal-farming-filter-card {
+  margin-bottom: 10px;
+  padding: 9px 10px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: end;
+  gap: 10px;
+  background: rgba(252, 246, 235, 0.94);
+}
+
+.steal-farming-search-field {
+  margin-bottom: 0;
+}
+
+.steal-farming-cell-filter-field {
+  min-height: 40px;
+  margin-bottom: 0;
+  align-items: center;
+  white-space: nowrap;
+}
+
+.steal-farming-list {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.steal-farming-card {
+  border: 1px solid #bda282;
+  border-radius: 10px;
+  background: linear-gradient(180deg, #f7ecd9 0%, #ead7bd 100%);
+  box-shadow: 0 3px 10px rgba(70, 45, 24, 0.12);
+  padding: 10px;
+}
+
+.steal-farming-rank {
+  margin: 0 0 4px;
+  color: #7a4422;
+  font-size: 0.84rem;
+  font-weight: 900;
+}
+
+.steal-farming-monster-name {
+  margin: 0;
+  color: #2f2419;
+  font-size: 1rem;
+  line-height: 1.35;
+}
+
+.steal-farming-map,
+.steal-farming-drop-list p,
+.steal-farming-cell-status,
+.steal-farming-cell-price-grid p {
+  margin: 5px 0 0;
+  color: #453629;
+  font-size: 0.84rem;
+  line-height: 1.45;
+}
+
+.steal-farming-map {
+  overflow-wrap: anywhere;
+}
+
+.steal-farming-map span,
+.steal-farming-drop-list span,
+.steal-farming-cell-price-grid span {
+  font-weight: 800;
+  color: #5a3e28;
+}
+
+.steal-farming-drop-list strong {
+  color: #302419;
+}
+
+.steal-farming-drop-list em {
+  color: #7b1f1f;
+  font-style: normal;
+  font-weight: 800;
+}
+
+.steal-farming-cell-status {
+  display: inline-flex;
+  align-items: center;
+  min-height: 28px;
+  border-radius: 999px;
+  padding: 3px 9px;
+  font-weight: 900;
+}
+
+.steal-farming-cell-status.is-available {
+  background: rgba(57, 125, 82, 0.14);
+  color: #2e6841;
+}
+
+.steal-farming-cell-status.is-unavailable {
+  background: rgba(120, 105, 90, 0.14);
+  color: #635241;
+}
+
+.steal-farming-cell-price-grid {
+  margin-top: 7px;
+  display: grid;
+  gap: 4px;
+}
+
+.steal-farming-cell-price-grid p {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 5px 7px;
+  border-radius: 8px;
+  background: rgba(255, 250, 241, 0.68);
+}
+
+.steal-farming-cell-price-grid strong {
+  flex: 0 0 auto;
+  color: #6b2d22;
+}
+
 .field-farming-map-modal-overlay {
   position: fixed;
   inset: 0;
@@ -4624,6 +4768,54 @@ button {
     min-height: 28px;
     padding: 2px 8px;
     font-size: 0.71rem;
+  }
+
+  .steal-farming-section {
+    margin-top: 14px;
+  }
+
+  .steal-farming-heading-row {
+    display: block;
+  }
+
+  .steal-farming-filter-card {
+    grid-template-columns: 1fr;
+    gap: 8px;
+    padding: 8px;
+  }
+
+  .steal-farming-cell-filter-field {
+    min-height: 44px;
+    white-space: normal;
+  }
+
+  .steal-farming-search-field input {
+    min-height: 44px;
+  }
+
+  .steal-farming-list {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+
+  .steal-farming-card {
+    padding: 9px;
+  }
+
+  .steal-farming-monster-name {
+    font-size: 0.96rem;
+  }
+
+  .steal-farming-map,
+  .steal-farming-drop-list p,
+  .steal-farming-cell-status,
+  .steal-farming-cell-price-grid p {
+    font-size: 0.78rem;
+    line-height: 1.4;
+  }
+
+  .steal-farming-cell-price-grid p {
+    align-items: flex-start;
   }
 
   .field-farming-map-modal-overlay {
