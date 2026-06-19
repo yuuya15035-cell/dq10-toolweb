@@ -20,6 +20,7 @@ const WHITE_BOX_CSV_PATH = "./data/white_box.csv";
 const EQUIPMENT_DB_CSV_PATH = "./data/equipment_data.csv";
 const MONSTER_DETAIL_DATA_CSV_PATH = "./data/monster_detail_data.csv";
 const MAP_MASTER_CSV_PATH = "./data/map_master.csv";
+const STEAL_FARMING_EXCLUSIONS_CSV_PATH = "./data/steal_farming_exclusions.csv";
 const UPDATES_JSON_PATH = "./data/updates.json";
 const UI_SETTINGS_JSON_PATH = "./data/ui-settings.json";
 const CONTENT_JSON_PATH = "./data/content.json";
@@ -443,6 +444,7 @@ const STEAL_FARMING_CELL_PARALLEL_VERSIONS = new Set(["ver5.0", "ver5.1", "ver5.
 const STEAL_FARMING_CELL_ITEM_NAMES = ["魔因細胞", "閃魔細胞", "魔因細胞のかけら", "閃魔細胞のかけら"];
 const STEAL_FARMING_MAX_VISIBLE_ROWS = 50;
 const EXCLUDED_STEAL_MONSTERS = ["はぐれメタル", "メタルキング", "ミミック・強"];
+const STEAL_FARMING_EXCLUSION_ACTIVE_VALUES = new Set(["true", "はい", "○", "〇", "1", "済"]);
 const BAZAAR_DETAIL_MODAL_SWIPE_START_SLOP_PX = 8;
 const BAZAAR_DETAIL_MODAL_SWIPE_CLOSE_THRESHOLD_PX = 96;
 const BAZAAR_DETAIL_MODAL_SWIPE_MAX_TRANSLATE_PX = 220;
@@ -2080,6 +2082,7 @@ let hasLoadedOrbData = false;
 let hasLoadedWhiteBoxData = false;
 let hasLoadedEquipmentDbData = false;
 let hasLoadedMonsterInfoData = false;
+let hasLoadedStealFarmingExclusions = false;
 let hasLoadedBazaarPrices = false;
 let hasLoadedBazaarEquipmentPrices = false;
 let hasLoadedBazaarPriceHistory = false;
@@ -2093,6 +2096,7 @@ let orbLoadError = false;
 let whiteBoxLoadError = false;
 let equipmentDbLoadError = false;
 let monsterInfoLoadError = false;
+let stealFarmingExclusionsLoadError = false;
 let hasSyncedMaterialPricesWithBazaar = false;
 let isPresentCodesLoading = false;
 let isFieldFarmingLoading = false;
@@ -2101,6 +2105,7 @@ let isOrbDataLoading = false;
 let isWhiteBoxDataLoading = false;
 let isEquipmentDbDataLoading = false;
 let isMonsterInfoDataLoading = false;
+let isStealFarmingExclusionsLoading = false;
 let isBazaarLoading = false;
 let isBazaarEquipmentLoading = false;
 let isBazaarHistoryLoading = false;
@@ -2113,10 +2118,12 @@ let orbDataLoadingPromise = null;
 let whiteBoxDataLoadingPromise = null;
 let equipmentDbDataLoadingPromise = null;
 let monsterInfoDataLoadingPromise = null;
+let stealFarmingExclusionsLoadingPromise = null;
 let monsterDetailEntries = [];
 let monsterDetailEntryById = new Map();
 let monsterDetailEntryByName = new Map();
 let mapMasterByName = new Map();
+let stealFarmingExcludedMonsterNames = new Set();
 let selectedMonsterInfoType = "";
 let monsterInfoSearchKeyword = "";
 let selectedMonsterInfoSort = "exp_asc";
@@ -5637,6 +5644,57 @@ async function loadMapMasterCsv() {
     byName.set(mapName, { version: String(row[verIndex] || "").trim(), areaGroup: String(row[groupIndex] || "").trim() });
   }
   return byName;
+}
+
+function isStealFarmingExclusionActive(value) {
+  const normalized = String(value ?? "").trim().toLowerCase();
+  return STEAL_FARMING_EXCLUSION_ACTIVE_VALUES.has(normalized);
+}
+
+async function loadStealFarmingExclusionsCsv() {
+  const lines = await fetchCsvLines(STEAL_FARMING_EXCLUSIONS_CSV_PATH);
+  const excludedNames = new Set();
+  if (lines.length <= 1) return excludedNames;
+
+  const headers = parseCsvLine(lines[0]).map((header) => String(header || "").replace(/^\uFEFF/, "").trim());
+  const nameIndex = findHeaderIndex(headers, ["monster_name", "モンスター名", "name"]);
+  const siteExcludeIndex = findHeaderIndex(headers, ["site_exclude", "サイト除外に反映"]);
+  if (nameIndex < 0 || siteExcludeIndex < 0) {
+    throw new Error("steal_farming_exclusions.csv ヘッダーが想定と一致しません");
+  }
+
+  lines.slice(1).forEach((line) => {
+    const row = parseCsvLine(line);
+    const monsterName = String(row[nameIndex] || "").trim();
+    if (!monsterName || !isStealFarmingExclusionActive(row[siteExcludeIndex])) return;
+    excludedNames.add(monsterName);
+  });
+
+  return excludedNames;
+}
+
+async function ensureStealFarmingExclusionsLoaded() {
+  if (hasLoadedStealFarmingExclusions || isStealFarmingExclusionsLoading) return stealFarmingExclusionsLoadingPromise;
+  isStealFarmingExclusionsLoading = true;
+  stealFarmingExclusionsLoadingPromise = (async () => {
+    try {
+      stealFarmingExcludedMonsterNames = await loadStealFarmingExclusionsCsv();
+      hasLoadedStealFarmingExclusions = true;
+      stealFarmingExclusionsLoadError = false;
+      stealFarmingExcludedMonsterNames.forEach((monsterName) => {
+        console.info(`[INFO] 盗み金策ランキング除外: ${monsterName}`);
+      });
+    } catch (error) {
+      console.warn("[WARN] 除外リストを読み込めませんでした。除外なしで盗み金策ランキングを表示します。", error);
+      stealFarmingExcludedMonsterNames = new Set();
+      hasLoadedStealFarmingExclusions = true;
+      stealFarmingExclusionsLoadError = true;
+    } finally {
+      isStealFarmingExclusionsLoading = false;
+      if (activeTabId === "steal-farming") renderFieldFarmingRanking();
+    }
+  })();
+  return stealFarmingExclusionsLoadingPromise;
 }
 
 async function ensureMonsterInfoDataLoaded() {
@@ -9437,11 +9495,19 @@ function getStealFarmingBazaarUpdatedAtText() {
   return label.replace(/^ページ更新:/, "素材価格更新:");
 }
 
+function getStealFarmingExcludedMonsterNameSet() {
+  return new Set([
+    ...EXCLUDED_STEAL_MONSTERS.map((name) => String(name || "").trim()).filter(Boolean),
+    ...Array.from(stealFarmingExcludedMonsterNames || []).map((name) => String(name || "").trim()).filter(Boolean),
+  ]);
+}
+
 function buildStealFarmingRankingRows(priceByMaterialName) {
   const cellParallelMapNames = getStealFarmingCellParallelMapNames();
   const normalizedKeyword = normalizeSearchKeyword(stealFarmingKeyword);
+  const excludedMonsterNames = getStealFarmingExcludedMonsterNameSet();
   return (monsterDetailEntries || [])
-    .filter((monster) => !EXCLUDED_STEAL_MONSTERS.includes(String(monster?.name || "").trim()))
+    .filter((monster) => !excludedMonsterNames.has(String(monster?.name || "").trim()))
     .map((monster) => {
       const normalDrop = normalizeStealFarmingDropName(monster?.normalDrop);
       const rareDrop = normalizeStealFarmingDropName(monster?.rareDrop);
@@ -9505,8 +9571,9 @@ function getStealFarmingRenderWrap() {
 function buildStealFarmingRankingSection(priceByMaterialName, options = {}) {
   const { includeHeading = true } = options;
   const isStealDataLoading = isMonsterInfoDataLoading && !hasLoadedMonsterInfoData;
+  const isExclusionLoading = isStealFarmingExclusionsLoading && !hasLoadedStealFarmingExclusions;
   const isPriceLoading = isBazaarLoading && !hasLoadedBazaarPrices;
-  if (isStealDataLoading || isPriceLoading) {
+  if (isStealDataLoading || isExclusionLoading || isPriceLoading) {
     return `
       <section class="steal-farming-section" aria-label="盗み金策ランキング">
         ${includeHeading ? `<div class="steal-farming-heading-row"><h3>盗み金策ランキング</h3></div>` : ""}
@@ -9623,6 +9690,9 @@ function renderFieldFarmingRanking() {
     if (!stealFarmingPageListWrap) return;
     if (!hasLoadedMonsterInfoData && !isMonsterInfoDataLoading) {
       void ensureMonsterInfoDataLoaded();
+    }
+    if (!hasLoadedStealFarmingExclusions && !isStealFarmingExclusionsLoading) {
+      void ensureStealFarmingExclusionsLoaded();
     }
     if (!hasLoadedBazaarPrices && !isBazaarLoading) {
       void ensureBazaarPricesLoaded();
