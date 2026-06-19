@@ -2297,7 +2297,8 @@ body.ads-disabled .ad-slot,
   line-height: 1.6;
 }
 
-#field-farming .tab-heading-note {
+#steal-farming .tab-heading-note,
+#cell-farming .tab-heading-note {
   color: #4f3a29;
 }
 

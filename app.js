@@ -78,7 +78,8 @@ const HOME_FEATURE_DEFINITIONS = [
   { id: "monster-info", tabId: "monster-info", title: "モンスター情報", icon: "👾" },
   { id: "equipment-db", tabId: "equipment-db", title: "装備データ", icon: "🛡️" },
   { id: "orbs", tabId: "orbs", title: "宝珠", icon: "💎" },
-  { id: "field-farming", tabId: "field-farming", title: "フィールド狩り", icon: "⚔️" },
+  { id: "steal-farming", tabId: "steal-farming", title: "盗み金策", icon: "🗡️" },
+  { id: "cell-farming", tabId: "cell-farming", title: "魔因細胞金策", icon: "⚔️" },
 ];
 const DEFAULT_DOCUMENT_TITLE = "DQ10ツール";
 const DEFAULT_DOCUMENT_DESCRIPTION = "DQ10の職人アシスト、バザー情報、モンスター情報、装備情報、宝珠情報を確認できる支援サイトです。";
@@ -93,7 +94,8 @@ const TAB_DOCUMENT_LABELS = Object.freeze({
   routine: "日課・週課",
   "boss-card": "ボスカード管理",
   "present-codes": "プレゼントのじゅもん",
-  "field-farming": "フィールド狩り",
+  "steal-farming": "盗み金策",
+  "cell-farming": "魔因細胞金策",
   "white-boxes": "白宝箱",
 });
 const DEFAULT_HOME_FEATURE_IDS = Object.freeze(["profit", "craft-records", "bazaar", "favorites", "boss-card", "equipment-db"]);
@@ -108,7 +110,9 @@ const ENTRY_ROUTE_SEGMENT_TO_TAB = Object.freeze({
   bazaar: "bazaar",
   craft: "profit",
   "craft-records": "craft-records",
-  "field-farming": "field-farming",
+  "steal-farming": "steal-farming",
+  "cell-farming": "cell-farming",
+  "field-farming": "cell-farming",
   routine: "routine",
   "present-codes": "present-codes",
   monster: "monster-info",
@@ -121,7 +125,9 @@ const ENTRY_ROUTE_SEGMENT_TO_TAB = Object.freeze({
 const LEGACY_QUERY_TAB_ALIASES = Object.freeze({
   craft: "profit",
   "craft-records": "craft-records",
-  "field-farming": "field-farming",
+  "steal-farming": "steal-farming",
+  "cell-farming": "cell-farming",
+  "field-farming": "cell-farming",
   routine: "routine",
   "present-codes": "present-codes",
   monster: "monster-info",
@@ -145,7 +151,8 @@ const TAB_IDS = new Set([
   "routine",
   "boss-card",
   "data",
-  "field-farming",
+  "steal-farming",
+  "cell-farming",
   "white-boxes",
   "orbs",
   "equipment-db",
@@ -245,8 +252,13 @@ const ADMIN_CHECKLIST_GROUPS = Object.freeze([
         memo: "登録済み項目が残っているか、リンクで移動できるか確認する",
       },
       {
-        id: "field-farming",
-        label: "フィールド狩り",
+        id: "steal-farming",
+        label: "盗み金策",
+        memo: "盗み金策ランキングが上位50件で表示されるか確認する",
+      },
+      {
+        id: "cell-farming",
+        label: "魔因細胞金策",
         memo: "魔因細胞向けモンスターが表示されるか確認する",
       },
       {
@@ -429,6 +441,8 @@ const BAZAAR_CHART_RANGE_DAYS = {
 const DEFAULT_BAZAAR_CHART_RANGE_DAYS = BAZAAR_CHART_RANGE_DAYS.month;
 const STEAL_FARMING_CELL_PARALLEL_VERSIONS = new Set(["ver5.0", "ver5.1", "ver5.2", "ver5.3", "ver5.4", "ver5.5"]);
 const STEAL_FARMING_CELL_ITEM_NAMES = ["魔因細胞", "閃魔細胞", "魔因細胞のかけら", "閃魔細胞のかけら"];
+const STEAL_FARMING_MAX_VISIBLE_ROWS = 50;
+const EXCLUDED_STEAL_MONSTERS = ["はぐれメタル", "メタルキング", "ミミック・強"];
 const BAZAAR_DETAIL_MODAL_SWIPE_START_SLOP_PX = 8;
 const BAZAAR_DETAIL_MODAL_SWIPE_CLOSE_THRESHOLD_PX = 96;
 const BAZAAR_DETAIL_MODAL_SWIPE_MAX_TRANSLATE_PX = 220;
@@ -2146,6 +2160,59 @@ function getRequiredElementById(id) {
   return element;
 }
 
+function createGoldFarmingMenuButton(target, label) {
+  const button = document.createElement("button");
+  button.type = "button";
+  button.className = "side-menu-item side-menu-sub-item";
+  button.dataset.menuTarget = target;
+  button.textContent = label;
+  return button;
+}
+
+function setupGoldFarmingNavigationAndSections() {
+  const legacyMenuButton = document.querySelector('.side-menu-item[data-menu-target="field-farming"]');
+  const goldMenuList = legacyMenuButton?.parentElement;
+  if (goldMenuList && !goldMenuList.querySelector('[data-menu-target="steal-farming"]')) {
+    goldMenuList.insertBefore(createGoldFarmingMenuButton("steal-farming", "盗み金策"), legacyMenuButton);
+    goldMenuList.insertBefore(createGoldFarmingMenuButton("cell-farming", "魔因細胞金策"), legacyMenuButton);
+  }
+  legacyMenuButton?.remove();
+
+  const legacySection = document.getElementById("field-farming");
+  if (legacySection && !document.getElementById("cell-farming")) {
+    legacySection.id = "cell-farming";
+    legacySection.setAttribute("aria-label", "魔因細胞金策ランキング画面");
+    const heading = legacySection.querySelector("h2");
+    if (heading) heading.textContent = "魔因細胞金策ランキング";
+    const note = legacySection.querySelector(".field-farming-description-card");
+    if (note) {
+      note.innerHTML =
+        "魔因細胞・かけら狙いと通常ドロップ価格をもとに、フィールド狩り向けモンスターを表示します。";
+    }
+  }
+
+  if (!document.getElementById("steal-farming")) {
+    const stealSection = document.createElement("section");
+    stealSection.id = "steal-farming";
+    stealSection.className = "tab-content";
+    stealSection.hidden = true;
+    stealSection.setAttribute("aria-label", "盗み金策ランキング画面");
+    stealSection.innerHTML = `
+      <h2>盗み金策ランキング</h2>
+      <p class="tab-heading-note field-farming-description-card">通常ドロップ・レアドロップの現在価格から、盗み金策向けモンスターを上位50件まで表示します。</p>
+      <div id="stealFarmingPageListWrap"></div>
+    `;
+    const referenceSection = document.getElementById("cell-farming") || legacySection;
+    if (referenceSection?.parentElement) {
+      referenceSection.parentElement.insertBefore(stealSection, referenceSection);
+    } else {
+      document.querySelector(".app")?.appendChild(stealSection);
+    }
+  }
+}
+
+setupGoldFarmingNavigationAndSections();
+
 const tabButtons = document.querySelectorAll(".tab-button");
 const tabContents = document.querySelectorAll(".tab-content");
 const menuToggleButton = getRequiredElementById("menuToggleButton");
@@ -2190,7 +2257,8 @@ const PAGE_AD_SECTION_IDS = [
   "monster-info",
   "orbs",
   "present-codes",
-  "field-farming",
+  "steal-farming",
+  "cell-farming",
 ];
 
 const equipmentSelect = getRequiredElementById("equipmentSelect");
@@ -2282,6 +2350,7 @@ const craftRecordWorkStartButton = getRequiredElementById("craftRecordWorkStartB
 const craftRecordWorkEndButton = getRequiredElementById("craftRecordWorkEndButton");
 const craftRecordWorkTimeStatus = getRequiredElementById("craftRecordWorkTimeStatus");
 const fieldFarmingListWrap = getRequiredElementById("fieldFarmingListWrap");
+const stealFarmingPageListWrap = getRequiredElementById("stealFarmingPageListWrap");
 const routineTypeTabButtons = Array.from(document.querySelectorAll("[data-routine-type]"));
 const routineProgressText = getRequiredElementById("routineProgressText");
 const routineCheckAllButton = getRequiredElementById("routineCheckAllButton");
@@ -2721,9 +2790,9 @@ function buildSiteSearchIndex() {
     if (entry.monsterName) {
       entries.push({
         name: entry.monsterName,
-        type: "フィールド狩り",
-        subLabel: "フィールド狩り",
-        tabId: "field-farming",
+        type: "魔因細胞金策",
+        subLabel: "魔因細胞金策",
+        tabId: "cell-farming",
         targetValue: entry.monsterName,
         keywords: commonKeywords,
       });
@@ -2731,9 +2800,9 @@ function buildSiteSearchIndex() {
     if (entry.normalDrop) {
       entries.push({
         name: entry.normalDrop,
-        type: "フィールド狩り",
-        subLabel: "フィールド狩り",
-        tabId: "field-farming",
+        type: "魔因細胞金策",
+        subLabel: "魔因細胞金策",
+        tabId: "cell-farming",
         targetValue: entry.normalDrop,
         keywords: commonKeywords,
       });
@@ -2741,9 +2810,9 @@ function buildSiteSearchIndex() {
     if (entry.rareDrop) {
       entries.push({
         name: entry.rareDrop,
-        type: "フィールド狩り",
-        subLabel: "フィールド狩り",
-        tabId: "field-farming",
+        type: "魔因細胞金策",
+        subLabel: "魔因細胞金策",
+        tabId: "cell-farming",
         targetValue: entry.rareDrop,
         keywords: commonKeywords,
       });
@@ -4711,7 +4780,7 @@ async function ensureBazaarPricesLoaded() {
         renderBazaarPrices();
       }
       renderHomeBazaarChangeRanking();
-      if (activeTabId === "field-farming") renderFieldFarmingRanking();
+      if (isGoldFarmingTab()) renderFieldFarmingRanking();
       if (activeTabId === "favorites") renderFavoritesPage();
       if (activeTabId === "monster-info") renderMonsterInfoCards();
       if (activeTabId === "profit") {
@@ -4781,7 +4850,7 @@ async function ensureFieldFarmingMonstersLoaded() {
       fieldFarmingLoadError = true;
     } finally {
       isFieldFarmingLoading = false;
-      if (activeTabId === "field-farming") renderFieldFarmingRanking();
+      if (isGoldFarmingTab()) renderFieldFarmingRanking();
     }
   })();
   return fieldFarmingLoadingPromise;
@@ -5594,13 +5663,23 @@ async function ensureMonsterInfoDataLoaded() {
     } finally {
       isMonsterInfoDataLoading = false;
       if (activeTabId === "monster-info") renderMonsterInfoCards();
-      if (activeTabId === "field-farming") renderFieldFarmingRanking();
+      if (isGoldFarmingTab()) renderFieldFarmingRanking();
     }
   })();
   return monsterInfoDataLoadingPromise;
 }
 
+function isGoldFarmingTab(tabId = activeTabId) {
+  return tabId === "steal-farming" || tabId === "cell-farming";
+}
+
+function normalizeFeatureTabId(tabId) {
+  const normalized = String(tabId || "").trim();
+  return normalized === "field-farming" ? "cell-farming" : normalized;
+}
+
 function prefetchDataForTab(tabId) {
+  tabId = normalizeFeatureTabId(tabId);
   if (tabId === "profit") {
     void ensureBazaarPricesLoaded();
     return;
@@ -5613,7 +5692,7 @@ function prefetchDataForTab(tabId) {
     void ensurePresentCodesLoaded();
     return;
   }
-  if (tabId === "field-farming") {
+  if (isGoldFarmingTab(tabId)) {
     void ensureBazaarPricesLoaded();
     void ensureFieldFarmingMonstersLoaded();
     void ensureMonsterInfoDataLoaded();
@@ -7844,7 +7923,7 @@ function scheduleBazaarManualRefreshMessageClear() {
 function renderBazaarRefreshDependents() {
   if (activeTabId === "bazaar") renderBazaarPrices();
   renderHomeBazaarChangeRanking();
-  if (activeTabId === "field-farming") renderFieldFarmingRanking();
+      if (isGoldFarmingTab()) renderFieldFarmingRanking();
   if (activeTabId === "favorites") renderFavoritesPage();
   if (activeTabId === "monster-info") renderMonsterInfoCards();
   if (activeTabId === "profit") {
@@ -9362,6 +9441,7 @@ function buildStealFarmingRankingRows(priceByMaterialName) {
   const cellParallelMapNames = getStealFarmingCellParallelMapNames();
   const normalizedKeyword = normalizeSearchKeyword(stealFarmingKeyword);
   return (monsterDetailEntries || [])
+    .filter((monster) => !EXCLUDED_STEAL_MONSTERS.includes(String(monster?.name || "").trim()))
     .map((monster) => {
       const normalDrop = normalizeStealFarmingDropName(monster?.normalDrop);
       const rareDrop = normalizeStealFarmingDropName(monster?.rareDrop);
@@ -9397,7 +9477,8 @@ function buildStealFarmingRankingRows(priceByMaterialName) {
       const rarePriceDiff = (Number.isFinite(b.rareDropPrice) ? b.rareDropPrice : 0) - (Number.isFinite(a.rareDropPrice) ? a.rareDropPrice : 0);
       if (rarePriceDiff !== 0) return rarePriceDiff;
       return a.monsterName.localeCompare(b.monsterName, "ja");
-    });
+    })
+    .slice(0, STEAL_FARMING_MAX_VISIBLE_ROWS);
 }
 
 function buildStealFarmingCellPriceHtml(cellPriceRows) {
@@ -9417,15 +9498,18 @@ function buildStealFarmingCellPriceHtml(cellPriceRows) {
   `;
 }
 
-function buildStealFarmingRankingSection(priceByMaterialName) {
+function getStealFarmingRenderWrap() {
+  return activeTabId === "steal-farming" ? stealFarmingPageListWrap : fieldFarmingListWrap;
+}
+
+function buildStealFarmingRankingSection(priceByMaterialName, options = {}) {
+  const { includeHeading = true } = options;
   const isStealDataLoading = isMonsterInfoDataLoading && !hasLoadedMonsterInfoData;
   const isPriceLoading = isBazaarLoading && !hasLoadedBazaarPrices;
   if (isStealDataLoading || isPriceLoading) {
     return `
       <section class="steal-farming-section" aria-label="盗み金策ランキング">
-        <div class="steal-farming-heading-row">
-          <h3>盗み金策ランキング</h3>
-        </div>
+        ${includeHeading ? `<div class="steal-farming-heading-row"><h3>盗み金策ランキング</h3></div>` : ""}
         <p class="card">盗み金策ランキングを読み込み中です。</p>
       </section>
     `;
@@ -9434,9 +9518,7 @@ function buildStealFarmingRankingSection(priceByMaterialName) {
   if (!hasLoadedMonsterInfoData || monsterInfoLoadError || !Array.isArray(monsterDetailEntries) || monsterDetailEntries.length === 0) {
     return `
       <section class="steal-farming-section" aria-label="盗み金策ランキング">
-        <div class="steal-farming-heading-row">
-          <h3>盗み金策ランキング</h3>
-        </div>
+        ${includeHeading ? `<div class="steal-farming-heading-row"><h3>盗み金策ランキング</h3></div>` : ""}
         <p class="card">モンスターデータを読み込めませんでした。時間をおいて再度お試しください。</p>
       </section>
     `;
@@ -9448,12 +9530,11 @@ function buildStealFarmingRankingSection(priceByMaterialName) {
 
   return `
     <section class="steal-farming-section" aria-label="盗み金策ランキング">
-      <div class="steal-farming-heading-row">
-        <div>
-          <h3>盗み金策ランキング</h3>
-          <p class="steal-farming-updated-at">${escapeHtml(updatedAtText)}</p>
-        </div>
-      </div>
+      ${
+        includeHeading
+          ? `<div class="steal-farming-heading-row"><div><h3>盗み金策ランキング</h3><p class="steal-farming-updated-at">${escapeHtml(updatedAtText)}</p></div></div>`
+          : `<p class="steal-farming-updated-at">${escapeHtml(updatedAtText)}</p>`
+      }
       <div class="steal-farming-filter-card card">
         <label class="field steal-farming-search-field">
           <span>検索</span>
@@ -9513,12 +9594,13 @@ function buildStealFarmingRankingSection(priceByMaterialName) {
 }
 
 function attachStealFarmingRankingListeners() {
-  const searchInput = fieldFarmingListWrap?.querySelector("#stealFarmingSearchInput");
+  const root = getStealFarmingRenderWrap();
+  const searchInput = root?.querySelector("#stealFarmingSearchInput");
   if (searchInput) {
     searchInput.addEventListener("input", (event) => {
       stealFarmingKeyword = String(event.target.value || "");
       renderFieldFarmingRanking();
-      const nextInput = fieldFarmingListWrap?.querySelector("#stealFarmingSearchInput");
+      const nextInput = getStealFarmingRenderWrap()?.querySelector("#stealFarmingSearchInput");
       if (nextInput) {
         nextInput.focus({ preventScroll: true });
         const valueLength = String(nextInput.value || "").length;
@@ -9527,7 +9609,7 @@ function attachStealFarmingRankingListeners() {
     });
   }
 
-  const cellOnlyToggle = fieldFarmingListWrap?.querySelector("#stealFarmingCellOnlyToggle");
+  const cellOnlyToggle = root?.querySelector("#stealFarmingCellOnlyToggle");
   if (cellOnlyToggle) {
     cellOnlyToggle.addEventListener("change", (event) => {
       showStealFarmingCellParallelOnly = Boolean(event.target.checked);
@@ -9537,6 +9619,20 @@ function attachStealFarmingRankingListeners() {
 }
 
 function renderFieldFarmingRanking() {
+  if (activeTabId === "steal-farming") {
+    if (!stealFarmingPageListWrap) return;
+    if (!hasLoadedMonsterInfoData && !isMonsterInfoDataLoading) {
+      void ensureMonsterInfoDataLoaded();
+    }
+    if (!hasLoadedBazaarPrices && !isBazaarLoading) {
+      void ensureBazaarPricesLoaded();
+    }
+    const priceByMaterialName = getFieldFarmingPriceByMaterialName();
+    stealFarmingPageListWrap.innerHTML = buildStealFarmingRankingSection(priceByMaterialName, { includeHeading: false });
+    attachStealFarmingRankingListeners();
+    return;
+  }
+
   if (!fieldFarmingListWrap) return;
   if (!hasLoadedMonsterInfoData && !isMonsterInfoDataLoading) {
     void ensureMonsterInfoDataLoaded();
@@ -9639,9 +9735,7 @@ function renderFieldFarmingRanking() {
         })
         .join("")}
     </div>
-    ${buildStealFarmingRankingSection(priceByMaterialName)}
   `;
-  attachStealFarmingRankingListeners();
 
   fieldFarmingListWrap.querySelectorAll("[data-field-map-row-id]").forEach((button) => {
     button.addEventListener("click", () => {
@@ -9930,14 +10024,13 @@ function applySiteSearchNavigation(entry) {
     document.getElementById("bazaar")?.scrollIntoView({ block: "start", behavior: "smooth" });
     return;
   }
-  if (entry.tabId === "field-farming") {
+  if (entry.tabId === "cell-farming") {
     fieldFarmingKeyword = keyword;
-    stealFarmingKeyword = keyword;
-    switchTab("field-farming");
-    navigateByFeatureRoute({ tab: "field-farming", equipmentId: "", materialKey: "" });
+    switchTab("cell-farming");
+    navigateByFeatureRoute({ tab: "cell-farming", equipmentId: "", materialKey: "" });
     renderFieldFarmingRanking();
     resetSearchUi();
-    document.getElementById("field-farming")?.scrollIntoView({ block: "start", behavior: "smooth" });
+    document.getElementById("cell-farming")?.scrollIntoView({ block: "start", behavior: "smooth" });
     return;
   }
   if (entry.tabId === "present-codes") {
@@ -11472,7 +11565,8 @@ function switchToHomeMode(options = {}) {
 }
 
 function switchTab(target) {
-  const requestedTarget = TAB_IDS.has(target) ? target : "profit";
+  const requestedFeatureTarget = normalizeFeatureTabId(target);
+  const requestedTarget = TAB_IDS.has(requestedFeatureTarget) ? requestedFeatureTarget : "profit";
   const migratedTarget = requestedTarget === "white-boxes" ? "equipment-db" : requestedTarget;
   const normalizedTarget =
     (migratedTarget === "ui-settings" ||
@@ -11505,7 +11599,7 @@ function switchTab(target) {
     renderPresentCodes();
   } else if (normalizedTarget === "craft-records") {
     renderCraftRecords();
-  } else if (normalizedTarget === "field-farming") {
+  } else if (isGoldFarmingTab(normalizedTarget)) {
     renderFieldFarmingRanking();
   } else if (normalizedTarget === "routine") {
     renderRoutineTasks();
@@ -11539,7 +11633,8 @@ function buildAppQueryParams(nextValues = {}) {
   const currentTab = currentParams.get("tab");
   let tab = "";
   if (hasTabValue) {
-    tab = TAB_IDS.has(nextValues.tab) ? nextValues.tab : "";
+    const normalizedNextTab = normalizeFeatureTabId(nextValues.tab);
+    tab = TAB_IDS.has(normalizedNextTab) ? normalizedNextTab : "";
   } else if (TAB_IDS.has(currentTab)) {
     tab = currentTab;
   } else if (appMode === "tool" && TAB_IDS.has(activeTabId)) {
@@ -11597,7 +11692,7 @@ function navigateByAppParams(nextValues = {}, options = {}) {
 }
 
 function navigateByFeatureRoute(nextValues = {}, options = {}) {
-  const tab = String(nextValues.tab || "").trim();
+  const tab = normalizeFeatureTabId(nextValues.tab);
   navigateByAppParams(nextValues, {
     ...options,
     preferEntryRoutePath:
@@ -11608,7 +11703,7 @@ function navigateByFeatureRoute(nextValues = {}, options = {}) {
 }
 
 function buildFeatureRouteUrl(tab, params = new URLSearchParams()) {
-  const normalizedTab = String(tab || "").trim();
+  const normalizedTab = normalizeFeatureTabId(tab);
   const routeSegment = ENTRY_ROUTE_TAB_TO_SEGMENT.get(normalizedTab);
   const pathname = routeSegment ? `${getProjectBasePath()}/${routeSegment}/` : getProjectRootPath();
   const query = params.toString();
@@ -11715,7 +11810,7 @@ function getRecipeIndividualPageUrl(equipmentName) {
 }
 
 function getFieldFarmingUrl() {
-  return buildFeatureRouteUrl("field-farming");
+  return buildFeatureRouteUrl("cell-farming");
 }
 
 function navigateByDirectFeatureQuery(tab, queryKey, queryValue, options = {}) {
@@ -11852,8 +11947,10 @@ function getDefaultTabDocumentDescription(tabId) {
       return "装備情報、白宝箱ドロップモンスター、防具セット詳細を確認できるDQ10ツールです。";
     case "profit":
       return "装備の素材、原価、職人アシスト計算を確認できるDQ10ツールです。";
-    case "field-farming":
-      return "フィールド狩りのおすすめモンスターとドロップ相場を確認できるDQ10ツールです。";
+    case "steal-farming":
+      return "通常ドロップとレアドロップの現在価格から、盗み金策向けモンスターランキングを確認できるDQ10ツールです。";
+    case "cell-farming":
+      return "魔因細胞・かけら狙いと通常ドロップ価格をもとに、フィールド狩り向けモンスターを確認できるDQ10ツールです。";
     case "white-boxes":
       return "白宝箱で入手できる装備と、落とすモンスターを確認できるDQ10ツールです。";
     case "routine":
@@ -12049,10 +12146,9 @@ function applyAppRouteFromUrl() {
 
   pendingBazaarFocusMaterialKey = String(params.get("materialKey") || "").trim();
   if (
-    tab === "field-farming" &&
-    window.location.pathname === getProjectRootPath() &&
-    String(params.get("tab") || "").trim() === "field-farming" &&
-    params.size === 1
+    tab === "cell-farming" &&
+    (String(getEntryRouteContext()?.routeSegment || "") === "field-farming" ||
+      (window.location.pathname === getProjectRootPath() && String(params.get("tab") || "").trim() === "field-farming" && params.size === 1))
   ) {
     syncFieldFarmingUrl({ replace: true });
   }
@@ -12131,13 +12227,14 @@ function handleMobileBottomNavScroll() {
 
 function scrollToBlock(blockId) {
   if (!blockId) return;
-  switchTab(blockId);
+  const normalizedBlockId = normalizeFeatureTabId(blockId);
+  switchTab(normalizedBlockId);
   navigateByFeatureRoute({
-    tab: blockId,
-    equipmentId: blockId === "profit" ? selectedEquipmentId : "",
+    tab: normalizedBlockId,
+    equipmentId: normalizedBlockId === "profit" ? selectedEquipmentId : "",
     materialKey: "",
   });
-  const target = document.getElementById(blockId);
+  const target = document.getElementById(normalizedBlockId);
   if (!target) return;
   window.requestAnimationFrame(() => {
     scrollToToolSection(target);
@@ -14374,7 +14471,7 @@ function rerenderAll() {
   if (activeTabId === "boss-card") renderBossCardTimers();
   if (activeTabId === "craft-records") renderCraftRecords();
   if (activeTabId === "present-codes") renderPresentCodes();
-  if (activeTabId === "field-farming") renderFieldFarmingRanking();
+  if (isGoldFarmingTab()) renderFieldFarmingRanking();
   if (activeTabId === "bazaar") renderBazaarPrices();
   if (activeTabId === "favorites") renderFavoritesPage();
   if (activeTabId === "orbs") renderOrbCards();
@@ -14395,7 +14492,7 @@ function rerenderActiveTabOnly() {
   if (activeTabId === "boss-card") renderBossCardTimers();
   if (activeTabId === "craft-records") renderCraftRecords();
   if (activeTabId === "present-codes") renderPresentCodes();
-  if (activeTabId === "field-farming") renderFieldFarmingRanking();
+  if (isGoldFarmingTab()) renderFieldFarmingRanking();
   if (activeTabId === "bazaar") renderBazaarPrices();
   if (activeTabId === "favorites") renderFavoritesPage();
   if (activeTabId === "orbs") renderOrbCards();
