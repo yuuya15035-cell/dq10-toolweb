@@ -2199,7 +2199,7 @@ function setupGoldFarmingNavigationAndSections() {
     stealSection.setAttribute("aria-label", "盗み金策ランキング画面");
     stealSection.innerHTML = `
       <h2>盗み金策ランキング</h2>
-      <p class="tab-heading-note field-farming-description-card">通常ドロップ・レアドロップの現在価格から、盗み金策向けモンスターを上位50件まで表示します。</p>
+      <p class="tab-heading-note field-farming-description-card">通常ドロップ・レアドロップの現在価格から、盗み金策向けモンスターを上位50件まで表示します。<span class="steal-farming-ranking-caution">※ランキングは価格のみで算出しています。実際の狩りやすさ・出現数・ドロップ率は考慮していません。</span></p>
       <div id="stealFarmingPageListWrap"></div>
     `;
     const referenceSection = document.getElementById("cell-farming") || legacySection;

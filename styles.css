@@ -2311,6 +2311,15 @@ body.ads-disabled .ad-slot,
   box-shadow: 0 3px 10px rgba(70, 48, 30, 0.08);
 }
 
+.steal-farming-ranking-caution {
+  display: block;
+  margin-top: 6px;
+  color: #b42318;
+  font-size: clamp(0.82rem, 2.6vw, 0.9rem);
+  font-weight: 600;
+  line-height: 1.6;
+}
+
 .field-farming-beginner-note {
   color: #5c4027;
 }
