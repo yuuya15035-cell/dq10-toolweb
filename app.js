@@ -3907,26 +3907,6 @@ function renderCrystalSimulator() {
       <h3>計算結果</h3>
       <div id="crystalSimulatorResultWrap">${buildCrystalSimulatorResultHtml()}</div>
     </section>
-    <details class="card crystal-simulator-help">
-      <summary>使い方</summary>
-      <p>装備レベル、できのよさ、価格を入力すると、使い込み度100時の結晶数と利益を計算します。錬金候補は初級錬金の素材原価が安い順に表示します。</p>
-    </details>
-    <details class="card crystal-simulator-help">
-      <summary>データの見方</summary>
-      <p>結晶化利益は「結晶単価 × 結晶数 × 手取り率 - 原価」、バザー出品利益は「出品価格 × 手取り率 - 原価」です。</p>
-    </details>
-    <details class="card crystal-simulator-help">
-      <summary>注意点</summary>
-      <p>結晶数はWeb上の仕様表をもとにした暫定計算です。大成功・失敗・パルプンテ、最新バージョンでの変更、実際の相場差はゲーム内でも確認してください。</p>
-    </details>
-    <details class="card crystal-simulator-help">
-      <summary>関連ツールへのリンク</summary>
-      <div class="crystal-related-links">
-        <button type="button" data-crystal-related-tab="bazaar">バザー価格一覧</button>
-        <button type="button" data-crystal-related-tab="profit">職人アシスト</button>
-        <button type="button" data-crystal-related-tab="equipment-db">装備データ</button>
-      </div>
-    </details>
   `;
 }
 
