@@ -319,10 +319,23 @@
     titleCard.append(button);
   }
 
+  function installPageGuide() {
+    if (window.DQ10PageGuide?.init) {
+      window.DQ10PageGuide.init();
+      return;
+    }
+    if (document.querySelector('script[src="/assets/page-guide.js"]')) return;
+    const script = document.createElement("script");
+    script.src = "/assets/page-guide.js";
+    script.defer = true;
+    document.body.appendChild(script);
+  }
+
   function start() {
     installBottomNav();
     installMemoAddButton();
     installMemoPanel();
+    installPageGuide();
   }
 
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", start);

@@ -12974,6 +12974,9 @@ function applyAppMode() {
   topQuickAccessSection?.classList.toggle("is-collapsed", !isHomeMode);
   homeBazaarChangeRankingSection?.classList.toggle("is-collapsed", !isHomeMode);
   topUpdateSection?.classList.toggle("is-collapsed", !isHomeMode);
+  document.querySelectorAll(".home-page-guide").forEach((guide) => {
+    guide.classList.toggle("is-collapsed", !isHomeMode);
+  });
   homeShortcutNoteBottom?.classList.toggle("is-collapsed", !isHomeMode);
   mobileBottomNav?.classList.toggle("is-disabled", isHomeMode);
   if (isHomeMode) {

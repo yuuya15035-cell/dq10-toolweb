@@ -16,6 +16,14 @@
       .replace(/\"/g, "&quot;");
   }
 
+  function loadPageGuide() {
+    if (document.querySelector('script[src="/assets/page-guide.js"]')) return;
+    const script = document.createElement("script");
+    script.src = "/assets/page-guide.js";
+    script.defer = true;
+    document.body.appendChild(script);
+  }
+
   function upsertMetaTag(html, pattern, replacement, insertAfterHead = false) {
     if (pattern.test(html)) {
       return html.replace(pattern, replacement);
@@ -36,6 +44,8 @@
     fallback.setAttribute("href", fallbackLink);
     fallback.textContent = fallbackLabel;
   }
+
+  loadPageGuide();
 
   fetch("../index.html", { cache: "no-cache" })
     .then((response) => {

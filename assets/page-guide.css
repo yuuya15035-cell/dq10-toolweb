@@ -1,0 +1,83 @@
+.page-guide {
+  margin: 24px 0 12px;
+  padding: 0 12px;
+}
+
+.page-guide.is-collapsed {
+  display: none;
+}
+
+.page-guide details {
+  overflow: hidden;
+  border: 1px solid rgba(145, 105, 57, 0.28);
+  border-radius: 12px;
+  background: rgba(255, 249, 240, 0.68);
+  box-shadow: 0 8px 18px rgba(73, 48, 24, 0.06);
+}
+
+.page-guide summary {
+  min-height: 44px;
+  cursor: pointer;
+  padding: 11px 14px;
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: #6b5646;
+  list-style-position: inside;
+}
+
+.page-guide summary:hover,
+.page-guide summary:focus-visible {
+  background: rgba(145, 105, 57, 0.08);
+}
+
+.page-guide-body {
+  padding: 0 14px 14px;
+  font-size: 0.86rem;
+  line-height: 1.75;
+  color: #5f4936;
+}
+
+.page-guide-body h2,
+.page-guide-body h3 {
+  margin: 14px 0 6px;
+  font-size: 0.95rem;
+  line-height: 1.45;
+  color: #3a2415;
+}
+
+.page-guide-body p {
+  margin: 0 0 10px;
+}
+
+.page-guide-body ul {
+  margin: 4px 0 0;
+  padding-left: 1.2em;
+}
+
+.page-guide-body li + li {
+  margin-top: 4px;
+}
+
+.page-guide-body a {
+  color: inherit;
+  font-weight: 700;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+@media (max-width: 640px) {
+  .page-guide {
+    margin: 20px 0 10px;
+    padding: 0 8px;
+  }
+
+  .page-guide summary {
+    padding: 10px 12px;
+    font-size: 0.88rem;
+  }
+
+  .page-guide-body {
+    padding: 0 12px 12px;
+    font-size: 0.84rem;
+  }
+}
