@@ -264,6 +264,127 @@ body.is-modal-open {
   box-shadow: 0 4px 14px var(--panel-shadow);
 }
 
+.bazaar-update-status-host {
+  margin: 0 0 14px;
+}
+
+.bazaar-update-status-host-home {
+  margin-top: calc(-1 * var(--ui-section-vertical-space) + 6px);
+  margin-bottom: var(--ui-section-vertical-space);
+}
+
+.bazaar-update-status-card {
+  padding: 11px 13px;
+  border: 1px solid rgba(76, 139, 151, 0.58);
+  border-left: 4px solid #2d8792;
+  border-radius: 12px;
+  background: linear-gradient(135deg, rgba(239, 250, 248, 0.96), rgba(252, 246, 233, 0.96));
+  box-shadow: 0 3px 11px rgba(50, 83, 82, 0.1);
+}
+
+.bazaar-update-status-heading {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+
+.bazaar-update-status-heading h3,
+.bazaar-update-status-heading p {
+  margin: 0;
+}
+
+.bazaar-update-status-heading h3 {
+  flex: 0 0 auto;
+  color: #28585d;
+  font-size: 0.98rem;
+}
+
+.bazaar-update-status-heading p {
+  color: #5d4b38;
+  font-size: 0.78rem;
+  line-height: 1.45;
+}
+
+.bazaar-update-status-rows {
+  display: grid;
+  gap: 5px;
+}
+
+.bazaar-update-status-row {
+  display: grid;
+  grid-template-columns: minmax(74px, 0.6fr) minmax(150px, 1.15fr) minmax(170px, 1fr) minmax(170px, 1fr);
+  align-items: center;
+  gap: 7px 12px;
+  padding: 6px 8px;
+  border: 1px solid rgba(78, 129, 137, 0.18);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.68);
+  font-size: 0.82rem;
+}
+
+.bazaar-update-status-type {
+  color: #3b3329;
+}
+
+.bazaar-update-status-schedule {
+  color: #9a541e;
+  font-weight: 700;
+}
+
+.bazaar-update-status-meta {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 6px;
+  white-space: nowrap;
+  color: #6b5b4a;
+}
+
+.bazaar-update-status-meta b {
+  color: #08747c;
+  font-size: 0.91rem;
+  font-variant-numeric: tabular-nums;
+}
+
+@media (max-width: 720px) {
+  .bazaar-update-status-card {
+    padding: 9px 10px;
+  }
+
+  .bazaar-update-status-heading {
+    display: block;
+    margin-bottom: 7px;
+  }
+
+  .bazaar-update-status-heading h3 {
+    margin-bottom: 3px;
+    font-size: 0.92rem;
+  }
+
+  .bazaar-update-status-heading p {
+    font-size: 0.73rem;
+  }
+
+  .bazaar-update-status-row {
+    grid-template-columns: auto 1fr;
+    gap: 3px 8px;
+    padding: 6px 7px;
+    font-size: 0.76rem;
+  }
+
+  .bazaar-update-status-schedule {
+    text-align: right;
+  }
+
+  .bazaar-update-status-meta {
+    gap: 4px;
+  }
+
+  .bazaar-update-status-meta b {
+    font-size: 0.82rem;
+  }
+}
+
 .site-search {
   margin-top: 10px;
   position: relative;

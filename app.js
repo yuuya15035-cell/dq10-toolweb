@@ -403,7 +403,7 @@ const CONTENT_DEFINITIONS = [
 ];
 const DEFAULT_CONTENT = Object.freeze({
   site_title: "ドラゴンクエスト10支援サイト",
-  site_intro: "職人・バザー・モンスター・装備をまとめて確認できます。",
+  site_intro: "素材バザー価格は毎日7:00〜23:00まで2時間ごとに更新。職人原価、結晶化、盗み金策の判断に使えます。",
   site_summary:
     "現在、試験運用中のWEBサイトです。不具合や不備がありましたら、お問い合わせよりご連絡いただけると助かります。今後、レイアウト変更や機能追加を行う場合があります。",
   site_notice: "",
@@ -480,11 +480,14 @@ const BAZAAR_SORT_OPTIONS = [
   { value: "rate_asc", label: "変動率低い順" },
 ];
 const BAZAAR_PRICE_UPDATE_NOTE_HTML = `
-  <p>素材価格は毎日am7:00~23時まで2時間毎に更新します。</p>
-  <p>装備価格は毎日am10:00のみ更新します。</p>
+  <p>素材価格は毎日7:00〜23:00まで2時間ごとに更新しています。</p>
+  <p>装備価格は毎日10:00ごろ更新しています。</p>
+  <p>価格は更新時点の旅人バザー最安値の目安です。購入・販売前にはゲーム内でもご確認ください。</p>
 `;
 const BAZAAR_PRICE_TAB_IDS = new Set(["materials", "equipment"]);
 const BAZAAR_EQUIPMENT_STARS = [2, 3];
+const BAZAAR_MATERIAL_UPDATE_HOURS = Object.freeze([7, 9, 11, 13, 15, 17, 19, 21, 23]);
+const BAZAAR_EQUIPMENT_UPDATE_HOUR = 10;
 const BAZAAR_CHART_RANGE_DAYS = {
   week: 7,
   month: 30,
@@ -2490,7 +2493,6 @@ const saveBazaarHistoryButton = getRequiredElementById("saveBazaarHistoryButton"
 const bazaarHistorySnapshotDateInput = getRequiredElementById("bazaarHistorySnapshotDateInput");
 const bazaarHistorySaveMessage = getRequiredElementById("bazaarHistorySaveMessage");
 const bazaarListWrap = getRequiredElementById("bazaarListWrap");
-const bazaarPageUpdatedAt = document.getElementById("bazaarPageUpdatedAt");
 const bazaarDetailModalOverlay = getRequiredElementById("bazaarDetailModalOverlay");
 const bazaarDetailModalDialog = getRequiredElementById("bazaarDetailModalDialog");
 const bazaarDetailModalCloseButton = getRequiredElementById("bazaarDetailModalCloseButton");
@@ -3966,12 +3968,12 @@ function renderCrystalAutoDataInfoCard() {
           <li><strong>素材原価</strong><span>装備作成タブでは、レシピ素材と素材バザー価格から自動計算</span></li>
           <li><strong>錬金原価</strong><span>初級錬金レシピと素材バザー価格から自動計算</span></li>
         </ul>
-        <p class="crystal-auto-data-note">素材価格は7:00〜23:00の間で2時間ごと、装備価格は1日1回更新しています。自動反映される価格は更新時点の目安です。</p>
+        <p class="crystal-auto-data-note">素材価格は7:00〜23:00まで2時間ごと、装備価格は毎日10:00ごろ更新しています。自動反映される価格は更新時点の目安です。</p>
         <p class="crystal-auto-data-caution">「装備買って結晶化」タブの購入単価は錬金済み装備を買う前提のため手入力です。結晶数も実際の錬金内容に合わせて変更できます。</p>
       </div>
       <details class="crystal-auto-data-mobile">
         <summary>自動反映データについて</summary>
-        <p>結晶単価・結晶数の目安・一部の装備価格を自動反映しています。価格は更新時点の目安です。実際のバザー価格に合わせて手入力で調整できます。</p>
+        <p>結晶単価・結晶数の目安・一部の装備価格を自動反映しています。素材価格は2時間ごと、装備価格は毎日10:00ごろ更新します。実際のバザー価格に合わせて手入力で調整できます。</p>
         <ul class="crystal-auto-data-list">
           <li><strong>結晶単価</strong><span>汗と涙の結晶価格を反映</span></li>
           <li><strong>結晶数</strong><span>装備レベル・できのよさから目安を入力</span></li>
@@ -4472,9 +4474,120 @@ function formatBazaarPageUpdatedAt(rawValue) {
   return `${parsed.getFullYear()}/${String(parsed.getMonth() + 1).padStart(2, "0")}/${String(parsed.getDate()).padStart(2, "0")} ${String(parsed.getHours()).padStart(2, "0")}:${String(parsed.getMinutes()).padStart(2, "0")}`;
 }
 
-function getBazaarPageUpdatedAtLabel(rows) {
-  const firstUpdatedAt = (Array.isArray(rows) ? rows : []).find((row) => String(row?.updatedAt || "").trim() !== "")?.updatedAt || "";
-  return `ページ更新: ${formatBazaarPageUpdatedAt(firstUpdatedAt)}`;
+function parseBazaarStatusDate(rawValue) {
+  const normalized = String(rawValue || "").trim();
+  if (normalized === "") return null;
+  const parsed = new Date(normalized.replace(/-/g, "/"));
+  return Number.isNaN(parsed.getTime()) ? null : parsed;
+}
+
+function getLatestBazaarUpdatedAtValue(rows) {
+  return (Array.isArray(rows) ? rows : []).reduce((latest, row) => {
+    const value = String(row?.updatedAt || "").trim();
+    const date = parseBazaarStatusDate(value);
+    if (!date) return latest;
+    if (!latest || date.getTime() > latest.date.getTime()) return { value, date };
+    return latest;
+  }, null)?.value || "";
+}
+
+function formatBazaarStatusDateTime(rawValue) {
+  const parsed = parseBazaarStatusDate(rawValue);
+  if (!parsed) return "取得なし";
+  return `${String(parsed.getMonth() + 1).padStart(2, "0")}/${String(parsed.getDate()).padStart(2, "0")} ${String(parsed.getHours()).padStart(2, "0")}:${String(parsed.getMinutes()).padStart(2, "0")}`;
+}
+
+function getNextBazaarMaterialUpdate(now = new Date()) {
+  const current = new Date(now);
+  for (const hour of BAZAAR_MATERIAL_UPDATE_HOURS) {
+    const candidate = new Date(current);
+    candidate.setHours(hour, 0, 0, 0);
+    if (candidate.getTime() > current.getTime()) return candidate;
+  }
+  const nextDay = new Date(current);
+  nextDay.setDate(nextDay.getDate() + 1);
+  nextDay.setHours(BAZAAR_MATERIAL_UPDATE_HOURS[0], 0, 0, 0);
+  return nextDay;
+}
+
+function getNextBazaarEquipmentUpdate(now = new Date()) {
+  const current = new Date(now);
+  const candidate = new Date(current);
+  candidate.setHours(BAZAAR_EQUIPMENT_UPDATE_HOUR, 0, 0, 0);
+  if (candidate.getTime() > current.getTime()) return candidate;
+  candidate.setDate(candidate.getDate() + 1);
+  return candidate;
+}
+
+function formatBazaarNextUpdate(targetDate, now = new Date()) {
+  const current = new Date(now);
+  const todayStart = new Date(current.getFullYear(), current.getMonth(), current.getDate()).getTime();
+  const targetStart = new Date(targetDate.getFullYear(), targetDate.getMonth(), targetDate.getDate()).getTime();
+  const dayDiff = Math.round((targetStart - todayStart) / 86400000);
+  const dayLabel = dayDiff === 0 ? "今日" : dayDiff === 1 ? "明日" : `${targetDate.getMonth() + 1}/${targetDate.getDate()}`;
+  return `${dayLabel} ${String(targetDate.getHours()).padStart(2, "0")}:${String(targetDate.getMinutes()).padStart(2, "0")}`;
+}
+
+function getBazaarStatusDescription(context) {
+  const descriptions = {
+    home: "素材バザー価格は毎日7:00〜23:00まで2時間ごとに更新。職人原価、結晶化、盗み金策の判断に使えます。",
+    profit: "販売価格・素材価格の参考値は、バザー価格データをもとにしています。",
+    bazaar: "価格は更新時点の旅人バザー最安値の目安です。購入・販売前にはゲーム内でもご確認ください。",
+    crystal: "結晶装備の購入単価・素材価格は、バザー価格データを参考にしています。",
+    steal: "盗み金策の期待値は、更新時点の素材バザー価格をもとに計算しています。",
+    cell: "魔因細胞・関連アイテムの価格は、更新時点の素材バザー価格を参照しています。",
+  };
+  return descriptions[context] || descriptions.bazaar;
+}
+
+function getBazaarStatusLatestText(type) {
+  if (type === "equipment") {
+    if (bazaarEquipmentLoadError) return "取得できません";
+    if (!hasLoadedBazaarEquipmentPrices) return "読込中…";
+    return formatBazaarStatusDateTime(getLatestBazaarUpdatedAtValue(bazaarEquipmentPrices));
+  }
+  if (bazaarLoadError) return "取得できません";
+  if (!hasLoadedBazaarPrices) return "読込中…";
+  return formatBazaarStatusDateTime(getLatestBazaarUpdatedAtValue(bazaarPrices));
+}
+
+function buildBazaarUpdateStatusRow(type, now = new Date()) {
+  const isEquipment = type === "equipment";
+  const label = isEquipment ? "装備価格" : "素材価格";
+  const schedule = isEquipment ? "毎日10:00ごろ更新" : "7:00〜23:00・2時間ごと";
+  const nextUpdate = isEquipment ? getNextBazaarEquipmentUpdate(now) : getNextBazaarMaterialUpdate(now);
+  return `
+    <div class="bazaar-update-status-row bazaar-update-status-row-${type}">
+      <strong class="bazaar-update-status-type">${label}</strong>
+      <span class="bazaar-update-status-schedule">${schedule}</span>
+      <span class="bazaar-update-status-meta"><span>最終更新</span><b>${escapeHtml(getBazaarStatusLatestText(type))}</b></span>
+      <span class="bazaar-update-status-meta"><span>次回更新</span><b>${escapeHtml(formatBazaarNextUpdate(nextUpdate, now))}</b></span>
+    </div>
+  `;
+}
+
+function buildBazaarUpdateStatusHtml(options = {}) {
+  const scope = options.scope === "material" ? "material" : options.scope === "equipment" ? "equipment" : "both";
+  const now = options.now instanceof Date ? options.now : new Date();
+  const types = scope === "both" ? ["material", "equipment"] : [scope];
+  return `
+    <section class="bazaar-update-status-card" aria-label="バザー価格 更新状況">
+      <div class="bazaar-update-status-heading">
+        <h3>バザー価格 更新状況</h3>
+        <p>${escapeHtml(getBazaarStatusDescription(options.context))}</p>
+      </div>
+      <div class="bazaar-update-status-rows">${types.map((type) => buildBazaarUpdateStatusRow(type, now)).join("")}</div>
+    </section>
+  `;
+}
+
+function renderBazaarUpdateStatuses() {
+  document.querySelectorAll("[data-bazaar-update-status]").forEach((container) => {
+    container.innerHTML = buildBazaarUpdateStatusHtml({
+      context: String(container.dataset.bazaarStatusContext || ""),
+      scope: String(container.dataset.bazaarStatusScope || "both"),
+    });
+  });
 }
 
 function formatBazaarUpdatedAt(rawValue) {
@@ -6307,6 +6420,7 @@ async function ensureBazaarPricesLoaded() {
       bazaarLoadError = true;
     } finally {
       isBazaarLoading = false;
+      renderBazaarUpdateStatuses();
       if (activeTabId === "bazaar") {
         applyPendingBazaarUrlItemIfNeeded();
         renderBazaarPrices();
@@ -6342,6 +6456,7 @@ async function ensureBazaarEquipmentPricesLoaded() {
       bazaarEquipmentLoadError = true;
     } finally {
       isBazaarEquipmentLoading = false;
+      renderBazaarUpdateStatuses();
       if (activeTabId === "bazaar" && activeBazaarPriceTab === "equipment") {
         renderBazaarPrices();
       }
@@ -9518,6 +9633,7 @@ function scheduleBazaarManualRefreshMessageClear() {
 }
 
 function renderBazaarRefreshDependents() {
+  renderBazaarUpdateStatuses();
   if (activeTabId === "bazaar") renderBazaarPrices();
   renderHomeBazaarChangeRanking();
       if (isGoldFarmingTab()) renderFieldFarmingRanking();
@@ -9951,9 +10067,6 @@ function renderBazaarEquipmentPrices() {
   }
 
   const categories = getBazaarEquipmentCategories();
-  if (bazaarPageUpdatedAt) {
-    bazaarPageUpdatedAt.textContent = getBazaarPageUpdatedAtLabel(bazaarEquipmentPrices);
-  }
   if (selectedBazaarEquipmentCategory !== "" && !categories.includes(selectedBazaarEquipmentCategory)) {
     selectedBazaarEquipmentCategory = "";
   }
@@ -10169,9 +10282,6 @@ function renderBazaarPrices() {
         : "現在表示できるデータがありません。"
     );
     return;
-  }
-  if (bazaarPageUpdatedAt) {
-    bazaarPageUpdatedAt.textContent = getBazaarPageUpdatedAtLabel(bazaarPrices);
   }
 
   const categorySet = new Set(
@@ -11033,11 +11143,6 @@ function getStealFarmingCellPriceRows(priceByMaterialName) {
   });
 }
 
-function getStealFarmingBazaarUpdatedAtText() {
-  const label = getBazaarPageUpdatedAtLabel(bazaarPrices);
-  return label.replace(/^ページ更新:/, "素材価格更新:");
-}
-
 function getStealFarmingExcludedMonsterNameSet() {
   return new Set([
     ...EXCLUDED_STEAL_MONSTERS.map((name) => String(name || "").trim()).filter(Boolean),
@@ -11136,15 +11241,9 @@ function buildStealFarmingRankingSection(priceByMaterialName, options = {}) {
 
   const rankedRows = buildStealFarmingRankingRows(priceByMaterialName);
   const cellPriceRows = getStealFarmingCellPriceRows(priceByMaterialName);
-  const updatedAtText = getStealFarmingBazaarUpdatedAtText();
-
   return `
     <section class="steal-farming-section" aria-label="盗み金策ランキング">
-      ${
-        includeHeading
-          ? `<div class="steal-farming-heading-row"><div><h3>盗み金策ランキング</h3><p class="steal-farming-updated-at">${escapeHtml(updatedAtText)}</p></div></div>`
-          : `<p class="steal-farming-updated-at">${escapeHtml(updatedAtText)}</p>`
-      }
+      ${includeHeading ? `<div class="steal-farming-heading-row"><h3>盗み金策ランキング</h3></div>` : ""}
       <div class="steal-farming-filter-card card">
         <label class="field steal-farming-search-field">
           <span>検索</span>
@@ -16126,6 +16225,7 @@ function renderRecipeAdminList() {
 }
 
 function rerenderAll() {
+  renderBazaarUpdateStatuses();
   renderProfitArmorSetAssist();
   renderFilterSelectors();
   renderEquipmentSelectors();
@@ -17516,6 +17616,9 @@ async function initialize() {
   rerenderAll();
   showMemoDockHintIfNeeded();
   prefetchDataForTab(activeTabId);
+  void ensureBazaarPricesLoaded();
+  void ensureBazaarEquipmentPricesLoaded();
+  window.setInterval(renderBazaarUpdateStatuses, 60000);
 }
 
 function finishInitialLoading() {
