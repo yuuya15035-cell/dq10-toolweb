@@ -427,6 +427,36 @@ const PROFIT_EQUIPMENT_NAVIGATION_TYPES = Object.freeze({
   armorSet: "armor_set",
 });
 const PROFIT_ARMOR_PART_ORDER = Object.freeze(["頭", "からだ上", "からだ下", "腕", "足"]);
+const WEAPON_CATEGORY_ORDER = Object.freeze([
+  "片手剣",
+  "両手剣",
+  "短剣",
+  "スティック",
+  "両手杖",
+  "ヤリ",
+  "オノ",
+  "棍",
+  "ツメ",
+  "ムチ",
+  "扇",
+  "ハンマー",
+  "ブーメラン",
+  "弓",
+  "鎌",
+]);
+const WEAPON_CATEGORY_ALIAS_MAP = new Map([
+  ["片手剣系", "片手剣"],
+  ["杖", "両手杖"],
+  ["やり", "ヤリ"],
+  ["槍", "ヤリ"],
+  ["斧", "オノ"],
+  ["おの", "オノ"],
+  ["爪", "ツメ"],
+  ["つめ", "ツメ"],
+  ["鞭", "ムチ"],
+  ["むち", "ムチ"],
+]);
+const WEAPON_CATEGORY_ORDER_INDEX = new Map(WEAPON_CATEGORY_ORDER.map((category, index) => [category, index]));
 const BAZAAR_CATEGORY_ORDER = ["石系", "植物系", "モンスター系", "その他", "消費アイテム"];
 const BAZAAR_SORT_OPTIONS = [
   { value: "standard", label: "標準順" },
@@ -564,25 +594,7 @@ const BAZAAR_DETAIL_MODAL_SWIPE_CLOSE_THRESHOLD_PX = 96;
 const BAZAAR_DETAIL_MODAL_SWIPE_MAX_TRANSLATE_PX = 220;
 const BAZAAR_DETAIL_MODAL_SWIPE_VERTICAL_DOMINANCE_RATIO = 1.15;
 const WHITE_BOX_ARMOR_SLOTS = new Set(["頭", "からだ上", "からだ下", "腕", "足"]);
-const WHITE_BOX_WEAPON_SLOT_ORDER = [
-  "片手剣",
-  "両手剣",
-  "短剣",
-  "スティック",
-  "両手杖",
-  "槍",
-  "斧",
-  "棍",
-  "爪",
-  "ムチ",
-  "扇",
-  "ハンマー",
-  "ブーメラン",
-  "弓",
-  "鎌",
-  "小盾",
-  "大盾",
-];
+const WHITE_BOX_WEAPON_SLOT_ORDER = Object.freeze([...WEAPON_CATEGORY_ORDER, "小盾", "大盾"]);
 const WHITE_BOX_ARMOR_SLOT_ORDER = ["頭", "からだ上", "からだ下", "腕", "足"];
 const imeComposingTargets = new WeakSet();
 const WHITE_BOX_SLOT_NORMALIZE_MAP = new Map([
@@ -2650,6 +2662,24 @@ function formatGold(value) {
   return `${Math.round(value).toLocaleString("ja-JP")} G`;
 }
 
+function normalizeWeaponCategoryName(category) {
+  const normalized = String(category || "").normalize("NFKC").trim();
+  return WEAPON_CATEGORY_ALIAS_MAP.get(normalized) || normalized;
+}
+
+function getWeaponCategorySortOrder(category) {
+  const normalized = normalizeWeaponCategoryName(category);
+  return WEAPON_CATEGORY_ORDER_INDEX.get(normalized) ?? Number.MAX_SAFE_INTEGER;
+}
+
+function compareWeaponCategories(a, b) {
+  const aOrder = getWeaponCategorySortOrder(a);
+  const bOrder = getWeaponCategorySortOrder(b);
+  if (aOrder !== bOrder) return aOrder - bOrder;
+  if (aOrder !== Number.MAX_SAFE_INTEGER) return 0;
+  return String(a || "").localeCompare(String(b || ""), "ja");
+}
+
 function parseGoldInput(value) {
   const normalized = String(value ?? "").replace(/,/g, "").trim();
   if (normalized === "") return 0;
@@ -2845,6 +2875,10 @@ function getCrystalEquipmentSearchCandidates(keyword = crystalEquipmentSearchKey
       const aRank = getSearchMatchRank(a.name, normalizedKeyword);
       const bRank = getSearchMatchRank(b.name, normalizedKeyword);
       if (aRank !== bRank) return aRank - bRank;
+      if (a.equipmentGroup === "weapon" && b.equipmentGroup === "weapon") {
+        const categoryDiff = compareWeaponCategories(a.equipmentType, b.equipmentType);
+        if (categoryDiff !== 0) return categoryDiff;
+      }
       if (a.equipmentLevel !== b.equipmentLevel) return a.equipmentLevel - b.equipmentLevel;
       return a.name.localeCompare(b.name, "ja");
     })
@@ -2994,7 +3028,7 @@ function getWeaponTypesByLevel(level) {
       .map((entry) => String(entry?.equipmentType || "").trim())
       .filter(Boolean)
   );
-  return Array.from(typeSet).sort((a, b) => a.localeCompare(b, "ja"));
+  return Array.from(typeSet).sort(compareWeaponCategories);
 }
 
 function getWeaponsByLevelAndType(level, weaponType) {
@@ -5845,6 +5879,10 @@ function getWhiteBoxTypeBySlot(itemSlot) {
 }
 
 function getWhiteBoxSlotSortOrder(itemSlot, type) {
+  if (type !== "armor") {
+    const weaponOrder = getWeaponCategorySortOrder(itemSlot);
+    if (weaponOrder !== Number.MAX_SAFE_INTEGER) return weaponOrder;
+  }
   const order = type === "armor" ? WHITE_BOX_ARMOR_SLOT_ORDER : WHITE_BOX_WEAPON_SLOT_ORDER;
   const index = order.indexOf(String(itemSlot || "").trim());
   return index >= 0 ? index : Number.MAX_SAFE_INTEGER;
@@ -7530,6 +7568,10 @@ function formatEquipmentDbGuardRate(value) {
 }
 
 function compareEquipmentDbEntries(a, b) {
+  if (selectedEquipmentDbType === "" && a?.equipmentGroup === "weapon" && b?.equipmentGroup === "weapon") {
+    const categoryDiff = compareWeaponCategories(a.equipmentType, b.equipmentType);
+    if (categoryDiff !== 0) return categoryDiff;
+  }
   if (selectedEquipmentDbSort === "level_desc" || selectedEquipmentDbSort === "level_asc") {
     const levelA = Number.isFinite(a?.equipmentLevel) ? a.equipmentLevel : Number.NEGATIVE_INFINITY;
     const levelB = Number.isFinite(b?.equipmentLevel) ? b.equipmentLevel : Number.NEGATIVE_INFINITY;
@@ -7549,7 +7591,7 @@ function getEquipmentDbAvailableTypes(group = selectedEquipmentDbGroup) {
         .map((entry) => String(entry.equipmentType || "").trim())
         .filter((type) => type !== "")
     )
-  ).sort((a, b) => a.localeCompare(b, "ja"));
+  ).sort(group === "weapon" ? compareWeaponCategories : (a, b) => a.localeCompare(b, "ja"));
 }
 
 function getDefaultEquipmentDbType(group = selectedEquipmentDbGroup) {
@@ -9512,7 +9554,7 @@ function getBazaarEquipmentCategories() {
       .map((card) => String(card.itemCategory || "").trim())
       .filter((category) => category !== "")
   );
-  return Array.from(categorySet).sort((a, b) => a.localeCompare(b, "ja"));
+  return Array.from(categorySet).sort(compareWeaponCategories);
 }
 
 function isBazaarEquipmentFavoriteCard(card) {
@@ -9546,6 +9588,10 @@ function getVisibleBazaarEquipmentCards() {
     ? keywordFilteredCards.filter((card) => isBazaarEquipmentFavoriteCard(card))
     : keywordFilteredCards;
   return favoriteFilteredCards.slice().sort((a, b) => {
+    if (selectedBazaarEquipmentCategory === "") {
+      const categoryDiff = compareWeaponCategories(a.itemCategory, b.itemCategory);
+      if (categoryDiff !== 0) return categoryDiff;
+    }
     if (a.sortOrder !== b.sortOrder) return a.sortOrder - b.sortOrder;
     if (a.sourceIndex !== b.sourceIndex) return a.sourceIndex - b.sourceIndex;
     return String(a.itemName || "").localeCompare(String(b.itemName || ""), "ja");
@@ -15217,7 +15263,7 @@ function renderFilterSelectors() {
         .map((e) => e.category)
         .filter(Boolean)
     )
-  );
+  ).sort(compareWeaponCategories);
 
   // 既存選択を崩しにくくするため、毎回再描画して値を戻す流れにしています。
   craftsmanFilterSelect.innerHTML = "";
@@ -15269,6 +15315,8 @@ function isRecipeFavorite(equipment) {
 }
 
 function compareEquipmentsByBaseSort(a, b) {
+  const categoryDiff = compareWeaponCategories(a.category, b.category);
+  if (categoryDiff !== 0) return categoryDiff;
   const aLevel = Number(a.equipmentLevel || 0);
   const bLevel = Number(b.equipmentLevel || 0);
   if (aLevel !== bLevel) return bLevel - aLevel;
