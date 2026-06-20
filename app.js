@@ -3137,7 +3137,7 @@ function getCrystalEquipmentBazaarPrice(equipmentName, star) {
 
 function applyCrystalAutoPrices(options = {}) {
   const { forcePurchase = true, forceCrystal = false } = options;
-  if (forcePurchase) {
+  if (forcePurchase && activeCrystalSimulatorTab !== "buy") {
     crystalSimulatorState.purchasePrice = getCrystalEquipmentBazaarPrice(crystalSimulatorState.equipmentName, crystalSimulatorState.star);
   }
   if (forceCrystal || parseGoldInput(crystalSimulatorState.crystalUnitPrice) <= 0 || crystalSimulatorState.crystalUnitPrice === CRYSTAL_SIMULATOR_DEFAULTS.crystalUnitPrice) {
@@ -3383,23 +3383,24 @@ function renderCrystalEquipmentSelector() {
 
 function renderCrystalAdvancedSettings() {
   return `
-    <details class="crystal-advanced-settings">
-      <summary>詳細設定</summary>
-      <div class="crystal-advanced-settings-body">
-        <label class="crystal-compact-check">
-          <input data-crystal-field="manualEquipmentInput" type="checkbox" ${crystalSimulatorState.manualEquipmentInput ? "checked" : ""} />
-          <span>装備名を手入力する</span>
-        </label>
-        <label class="crystal-compact-check">
-          <input data-crystal-field="overrideCrystalCount" type="checkbox" ${crystalSimulatorState.overrideCrystalCount ? "checked" : ""} />
-          <span>結晶数を手動上書き</span>
-        </label>
-        <label class="field crystal-field ${crystalSimulatorState.overrideCrystalCount ? "" : "is-muted"}">
-          <span>手動結晶数</span>
-          <input data-crystal-field="manualCrystalCount" type="number" min="0" step="1" value="${escapeHtml(crystalSimulatorState.manualCrystalCount)}" ${crystalSimulatorState.overrideCrystalCount ? "" : "disabled"} inputmode="numeric" />
-        </label>
-      </div>
-    </details>
+    <div class="crystal-advanced-settings">
+      <label class="crystal-compact-check">
+        <input data-crystal-field="manualEquipmentInput" type="checkbox" ${crystalSimulatorState.manualEquipmentInput ? "checked" : ""} />
+        <span>装備名を手入力する</span>
+      </label>
+      <label class="crystal-compact-check">
+        <input data-crystal-field="overrideCrystalCount" type="checkbox" ${crystalSimulatorState.overrideCrystalCount ? "checked" : ""} />
+        <span>結晶数を手動上書き</span>
+      </label>
+      ${
+        crystalSimulatorState.overrideCrystalCount
+          ? `<label class="field crystal-field crystal-manual-crystal-field">
+              <span>手動結晶数</span>
+              <input data-crystal-field="manualCrystalCount" type="number" min="0" step="1" value="${escapeHtml(crystalSimulatorState.manualCrystalCount)}" inputmode="numeric" />
+            </label>`
+          : ""
+      }
+    </div>
   `;
 }
 
@@ -3408,8 +3409,9 @@ function renderCrystalInputField(name, label, options = {}) {
   const value = crystalSimulatorState[name] ?? "";
   const min = options.min ?? 0;
   const step = options.step ?? 1;
+  const placeholder = options.placeholder ? ` placeholder="${escapeHtml(options.placeholder)}"` : "";
   const inputMode = type === "number" ? ` inputmode="numeric"` : "";
-  return `<label class="field crystal-field"><span>${escapeHtml(label)}</span><input data-crystal-field="${escapeHtml(name)}" type="${escapeHtml(type)}" min="${min}" step="${step}" value="${escapeHtml(value)}"${inputMode} /></label>`;
+  return `<label class="field crystal-field"><span>${escapeHtml(label)}</span><input data-crystal-field="${escapeHtml(name)}" type="${escapeHtml(type)}" min="${min}" step="${step}" value="${escapeHtml(value)}"${placeholder}${inputMode} /></label>`;
 }
 
 function renderCrystalStarField() {
@@ -3522,6 +3524,11 @@ function switchCrystalSimulatorTab(tabId) {
   if (!CRYSTAL_SIMULATOR_TABS.some((tab) => tab.id === tabId)) return;
   collectCrystalSimulatorFormValues();
   activeCrystalSimulatorTab = tabId;
+  if (activeCrystalSimulatorTab === "buy") {
+    crystalSimulatorState.purchasePrice = 0;
+  } else if (activeCrystalSimulatorTab === "buy-alchemy") {
+    applyCrystalAutoPrices({ forcePurchase: true });
+  }
   renderCrystalSimulator();
 }
 
@@ -3584,8 +3591,9 @@ function renderCrystalSimulatorFormFields() {
   if (activeCrystalSimulatorTab === "buy") {
     return `
       ${renderCrystalEquipmentSelector()}
-      ${renderCrystalInputField("purchasePrice", "購入単価")}
+      ${renderCrystalInputField("purchasePrice", "購入単価", { placeholder: "錬金済み装備の購入価格を入力" })}
       ${renderCrystalStarField()}
+      ${renderCrystalAdvancedSettings()}
       ${renderCrystalInputField("crystalUnitPrice", "結晶単価")}
     `;
   }
@@ -3593,6 +3601,7 @@ function renderCrystalSimulatorFormFields() {
   if (activeCrystalSimulatorTab === "buy-alchemy") {
     return `
       ${renderCrystalCommonFields()}
+      ${renderCrystalAdvancedSettings()}
       ${renderCrystalInputField("purchasePrice", "未錬金装備の購入価格")}
       ${renderAlchemyRecipeSelector()}
       ${renderCrystalInputField("bazaarListingPrice", "バザー出品価格")}
@@ -3601,6 +3610,7 @@ function renderCrystalSimulatorFormFields() {
 
   return `
     ${renderCrystalCommonFields()}
+    ${renderCrystalAdvancedSettings()}
     ${renderCrystalInputField("materialCost", "素材原価")}
     ${renderCrystalInputField("toolCost", "職人道具代")}
     ${renderCrystalInputField("craftCount", "作成個数", { min: 1 })}
@@ -3633,7 +3643,7 @@ function renderCrystalSimulator() {
   }
   getSelectedAlchemyRecipe();
   ensureCrystalEquipmentSelection();
-  applyCrystalAutoPrices({ forcePurchase: parseGoldInput(crystalSimulatorState.purchasePrice) <= 0 });
+  applyCrystalAutoPrices({ forcePurchase: activeCrystalSimulatorTab !== "buy" && parseGoldInput(crystalSimulatorState.purchasePrice) <= 0 });
 
   crystalSimulatorWrap.innerHTML = `
     <div class="crystal-simulator-tabs" role="tablist" aria-label="結晶シミュレーター切り替え">
@@ -3645,7 +3655,6 @@ function renderCrystalSimulator() {
       <div class="crystal-simulator-form-grid">
         ${renderCrystalSimulatorFormFields()}
       </div>
-      ${renderCrystalAdvancedSettings()}
     </section>
     <section class="card crystal-simulator-result-card" aria-live="polite">
       <h3>計算結果</h3>
@@ -15803,7 +15812,7 @@ if (crystalSimulatorWrap) {
 
     if (fieldName === "star") {
       collectCrystalSimulatorFormValues();
-      applyCrystalAutoPrices({ forcePurchase: true });
+      applyCrystalAutoPrices({ forcePurchase: activeCrystalSimulatorTab !== "buy" });
       renderCrystalSimulator();
       return;
     }

@@ -1328,32 +1328,35 @@ body.ads-disabled .ad-slot,
 }
 
 .crystal-advanced-settings {
-  margin-top: 9px;
-  border-top: 1px solid rgba(179, 137, 86, 0.28);
-  padding-top: 8px;
-}
-
-.crystal-advanced-settings summary {
-  cursor: pointer;
-  color: #765a3d;
-  font-size: 0.82rem;
-  font-weight: 700;
-}
-
-.crystal-advanced-settings-body {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 8px;
-  margin-top: 8px;
+  grid-column: 2;
+  align-content: start;
+  gap: 5px;
+  min-width: 0;
 }
 
 .crystal-compact-check {
-  display: flex;
+  display: inline-flex;
   align-items: center;
-  gap: 7px;
-  min-height: 34px;
+  justify-content: flex-start;
+  gap: 5px;
+  min-height: 22px;
   color: #60452e;
-  font-size: 0.82rem;
+  font-size: 0.78rem;
+  line-height: 1.25;
+  width: fit-content;
+  max-width: 100%;
+}
+
+.crystal-compact-check input {
+  flex: 0 0 auto;
+  width: 15px;
+  height: 15px;
+  margin: 0;
+}
+
+.crystal-manual-crystal-field {
+  margin-top: 3px;
 }
 
 .crystal-alchemy-selector {
@@ -8782,9 +8785,12 @@ body.memo-panel-open {
 
   .crystal-simulator-form-grid,
   .crystal-equipment-selector,
-  .crystal-advanced-settings-body,
   .crystal-result-grid {
     grid-template-columns: 1fr;
+  }
+
+  .crystal-advanced-settings {
+    grid-column: auto;
   }
 
   .crystal-alchemy-candidate {
