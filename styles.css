@@ -1255,6 +1255,193 @@ body.ads-disabled .ad-slot,
   display: block;
 }
 
+.crystal-simulator-tabs {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 7px;
+  margin: 0 0 10px;
+}
+
+.crystal-simulator-tab,
+.crystal-related-links button,
+.crystal-alchemy-candidate {
+  border: 1px solid rgba(126, 89, 55, 0.46);
+  border-radius: 8px;
+  background: rgba(255, 248, 234, 0.96);
+  color: #4a301d;
+  font-weight: 700;
+}
+
+.crystal-simulator-tab {
+  min-height: 44px;
+  padding: 8px 7px;
+  font-size: 0.8rem;
+  line-height: 1.25;
+}
+
+.crystal-simulator-tab.is-active {
+  border-color: rgba(81, 113, 91, 0.86);
+  background: linear-gradient(180deg, #7f9c85 0%, #667f70 100%);
+  color: #fff9ed;
+  box-shadow: inset 0 0 0 1px rgba(255, 246, 220, 0.22);
+}
+
+.crystal-simulator-card,
+.crystal-simulator-result-card,
+.crystal-simulator-help {
+  margin-top: 10px;
+}
+
+.crystal-simulator-form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.crystal-field input,
+.crystal-field select {
+  min-width: 0;
+}
+
+.crystal-override-field {
+  align-self: end;
+  min-height: 44px;
+  padding: 8px 10px;
+  background: rgba(255, 251, 242, 0.78);
+}
+
+.crystal-field.is-muted {
+  opacity: 0.62;
+}
+
+.crystal-alchemy-selector {
+  grid-column: 1 / -1;
+  display: grid;
+  gap: 10px;
+}
+
+.crystal-alchemy-candidate-block {
+  display: grid;
+  gap: 6px;
+}
+
+.crystal-alchemy-candidate-block h4 {
+  margin: 0;
+  color: #4b3422;
+  font-size: 0.88rem;
+}
+
+.crystal-alchemy-candidates {
+  display: grid;
+  gap: 7px;
+}
+
+.crystal-alchemy-candidate {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 3px 8px;
+  min-height: 48px;
+  padding: 8px 9px;
+  text-align: left;
+}
+
+.crystal-alchemy-candidate span,
+.crystal-alchemy-candidate em {
+  color: #75553a;
+  font-size: 0.72rem;
+  font-style: normal;
+}
+
+.crystal-alchemy-candidate strong {
+  min-width: 0;
+  overflow-wrap: anywhere;
+  font-size: 0.85rem;
+}
+
+.crystal-alchemy-candidate em {
+  grid-column: 2;
+}
+
+.crystal-alchemy-candidate.is-selected {
+  border-color: rgba(45, 112, 87, 0.82);
+  background: rgba(232, 246, 235, 0.95);
+}
+
+.crystal-simulator-result-card h3 {
+  margin: 0 0 8px;
+  color: #3c2718;
+  font-size: 1rem;
+}
+
+.crystal-result-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.crystal-result-grid p {
+  margin: 0;
+  border: 1px solid rgba(185, 145, 97, 0.38);
+  border-radius: 8px;
+  padding: 8px 9px;
+  background: rgba(255, 252, 244, 0.86);
+  min-width: 0;
+}
+
+.crystal-result-grid span {
+  display: block;
+  margin-bottom: 2px;
+  color: #6f5339;
+  font-size: 0.74rem;
+  line-height: 1.25;
+}
+
+.crystal-result-grid strong {
+  display: block;
+  color: #3a2618;
+  font-size: 0.95rem;
+  overflow-wrap: anywhere;
+}
+
+.crystal-result-grid .is-positive {
+  color: #276749;
+}
+
+.crystal-result-grid .is-negative {
+  color: #a33a2a;
+}
+
+.crystal-simulator-help {
+  padding: 0;
+}
+
+.crystal-simulator-help summary {
+  cursor: pointer;
+  padding: 11px 13px;
+  color: #3d2a1c;
+  font-weight: 800;
+}
+
+.crystal-simulator-help p,
+.crystal-related-links {
+  margin: 0;
+  padding: 0 13px 12px;
+  color: #60452e;
+  font-size: 0.86rem;
+  line-height: 1.65;
+}
+
+.crystal-related-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.crystal-related-links button {
+  min-height: 36px;
+  padding: 6px 11px;
+}
+
 .craft-record-form {
   display: grid;
   gap: 10px;
@@ -8538,6 +8725,34 @@ body.memo-panel-open {
   .monster-info-grid,
   .equipment-db-card-grid {
     row-gap: 7px;
+  }
+}
+
+@media (max-width: 700px) {
+  .crystal-simulator-tabs {
+    grid-template-columns: 1fr;
+  }
+
+  .crystal-simulator-tab {
+    min-height: 40px;
+    font-size: 0.82rem;
+  }
+
+  .crystal-simulator-form-grid,
+  .crystal-result-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .crystal-alchemy-candidate {
+    grid-template-columns: 1fr;
+  }
+
+  .crystal-alchemy-candidate em {
+    grid-column: auto;
+  }
+
+  .crystal-result-grid strong {
+    font-size: 0.92rem;
   }
 }
 
