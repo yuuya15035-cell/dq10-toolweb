@@ -1295,14 +1295,14 @@ body.ads-disabled .ad-slot,
 .crystal-simulator-form-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 10px;
+  gap: 12px 10px;
 }
 
 .crystal-equipment-selector {
   grid-column: 1 / -1;
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 10px;
+  gap: 12px 10px;
 }
 
 .crystal-equipment-name-field {
@@ -1313,6 +1313,12 @@ body.ads-disabled .ad-slot,
 .crystal-field select {
   width: 100%;
   min-width: 0;
+}
+
+.crystal-field {
+  gap: 6px;
+  margin-bottom: 0;
+  padding-top: 1px;
 }
 
 .crystal-override-field {
@@ -1329,16 +1335,36 @@ body.ads-disabled .ad-slot,
 
 .crystal-equipment-search-field {
   grid-column: 1 / -1;
-  position: relative;
+  display: grid;
+  gap: 8px;
   min-width: 0;
+  margin-top: 2px;
+}
+
+.crystal-equipment-search-toggle {
+  justify-self: start;
+  min-height: 28px;
+  width: auto;
+  border: 0;
+  border-radius: 0;
+  padding: 2px 0;
+  background: transparent;
+  color: #654832;
+  font-size: 0.82rem;
+  font-weight: 700;
+  line-height: 1.4;
+  text-align: left;
+  box-shadow: none;
+}
+
+.crystal-equipment-search-panel {
+  display: grid;
+  gap: 7px;
+  min-width: 0;
+  padding-top: 2px;
 }
 
 .crystal-equipment-search-candidates {
-  position: absolute;
-  z-index: 12;
-  top: calc(100% + 4px);
-  left: 0;
-  right: 0;
   display: grid;
   gap: 4px;
   max-height: 280px;

@@ -2184,6 +2184,7 @@ let crystalEquipmentRecipeLoadPromise = null;
 let crystalEquipmentDataCache = null;
 let crystalEquipmentDataLoadPromise = null;
 let crystalEquipmentSearchKeyword = "";
+let isCrystalEquipmentSearchExpanded = false;
 let isCrystalEquipmentSearchCandidateListOpen = false;
 let hasInitializedCrystalCountInput = false;
 let crystalSimulatorState = {
@@ -3155,6 +3156,7 @@ function applyCrystalEquipmentSearchSelection(candidateKey) {
 
   ensureCrystalEquipmentSelection();
   crystalEquipmentSearchKeyword = candidate.name;
+  isCrystalEquipmentSearchExpanded = false;
   isCrystalEquipmentSearchCandidateListOpen = false;
   applyCrystalAutoPrices({ forcePurchase: activeCrystalSimulatorTab !== "buy" });
   applyCrystalCraftMaterialCostIfAvailable();
@@ -3498,7 +3500,6 @@ function renderCrystalEquipmentSelector() {
   ensureCrystalEquipmentSelection();
   return `
     <div class="crystal-equipment-selector">
-      ${renderCrystalEquipmentSearchField()}
       ${renderEquipmentLevelSelect()}
       ${renderEquipmentKindSelect()}
       ${crystalSimulatorState.equipmentKind === "weapon" ? renderWeaponTypeSelect() : renderArmorSeriesSelect()}
@@ -3508,15 +3509,23 @@ function renderCrystalEquipmentSelector() {
 }
 
 function renderCrystalEquipmentSearchField() {
+  const toggleText = `${isCrystalEquipmentSearchExpanded ? "▼" : "▶"} 装備名で検索する`;
   return `
     <div class="crystal-equipment-search-field">
-      <label class="field crystal-field">
-        <span>装備名検索</span>
-        <input data-crystal-equipment-search type="search" value="${escapeHtml(crystalEquipmentSearchKeyword)}" autocomplete="off" placeholder="装備名を入力" />
-      </label>
-      <div class="crystal-equipment-search-candidates" data-crystal-equipment-search-candidates ${isCrystalEquipmentSearchCandidateListOpen && crystalEquipmentSearchKeyword.trim() !== "" ? "" : "hidden"}>
-        ${renderCrystalEquipmentSearchCandidatesHtml()}
-      </div>
+      <button type="button" class="crystal-equipment-search-toggle" data-crystal-equipment-search-toggle aria-expanded="${isCrystalEquipmentSearchExpanded ? "true" : "false"}">${toggleText}</button>
+      ${
+        isCrystalEquipmentSearchExpanded
+          ? `<div class="crystal-equipment-search-panel">
+              <label class="field crystal-field">
+                <span>装備名検索</span>
+                <input data-crystal-equipment-search type="search" value="${escapeHtml(crystalEquipmentSearchKeyword)}" autocomplete="off" placeholder="装備名を入力" />
+              </label>
+              <div class="crystal-equipment-search-candidates" data-crystal-equipment-search-candidates ${isCrystalEquipmentSearchCandidateListOpen && crystalEquipmentSearchKeyword.trim() !== "" ? "" : "hidden"}>
+                ${renderCrystalEquipmentSearchCandidatesHtml()}
+              </div>
+            </div>`
+          : ""
+      }
     </div>
   `;
 }
@@ -3546,7 +3555,7 @@ function renderCrystalEquipmentSearchCandidatesHtml() {
 function renderCrystalEquipmentSearchCandidates() {
   const candidateWrap = crystalSimulatorWrap?.querySelector("[data-crystal-equipment-search-candidates]");
   if (!candidateWrap) return;
-  const shouldShow = isCrystalEquipmentSearchCandidateListOpen && crystalEquipmentSearchKeyword.trim() !== "";
+  const shouldShow = isCrystalEquipmentSearchExpanded && isCrystalEquipmentSearchCandidateListOpen && crystalEquipmentSearchKeyword.trim() !== "";
   candidateWrap.hidden = !shouldShow;
   candidateWrap.innerHTML = shouldShow ? renderCrystalEquipmentSearchCandidatesHtml() : "";
 }
@@ -3736,6 +3745,7 @@ function renderCrystalSimulatorFormFields() {
       ${renderCrystalStarField()}
       ${renderCrystalCountField()}
       ${renderCrystalInputField("crystalUnitPrice", "結晶単価")}
+      ${renderCrystalEquipmentSearchField()}
     `;
   }
 
@@ -3746,6 +3756,7 @@ function renderCrystalSimulatorFormFields() {
       ${renderCrystalInputField("purchasePrice", "未錬金装備の購入価格")}
       ${renderAlchemyRecipeSelector()}
       ${renderCrystalInputField("bazaarListingPrice", "バザー出品価格")}
+      ${renderCrystalEquipmentSearchField()}
     `;
   }
 
@@ -3761,6 +3772,7 @@ function renderCrystalSimulatorFormFields() {
     </label>
     ${renderAlchemyRecipeSelector()}
     ${renderCrystalInputField("bazaarListingPrice", "バザー出品価格")}
+    ${renderCrystalEquipmentSearchField()}
   `;
 }
 
@@ -16001,6 +16013,15 @@ if (crystalSimulatorWrap) {
       crystalSimulatorState.alchemyEffectName = recipe?.effectName || "";
       crystalSimulatorState.alchemyUnitCost = Number(recipe?.unitCost || 0);
       resetCrystalCountToEstimate();
+      renderCrystalSimulator();
+      return;
+    }
+
+    const equipmentSearchToggle = target.closest("[data-crystal-equipment-search-toggle]");
+    if (equipmentSearchToggle instanceof HTMLElement) {
+      collectCrystalSimulatorFormValues();
+      isCrystalEquipmentSearchExpanded = !isCrystalEquipmentSearchExpanded;
+      isCrystalEquipmentSearchCandidateListOpen = isCrystalEquipmentSearchExpanded && crystalEquipmentSearchKeyword !== "";
       renderCrystalSimulator();
       return;
     }
