@@ -2302,6 +2302,8 @@ let activeFieldFarmingMapModalRowId = "";
 // - 値: 画面上で上書きした単価
 // saveData() には含めず、素材価格管理の元データを保護します。
 const temporaryMaterialPrices = new Map();
+const salePriceManualEditRevisionByKey = { star2: 0, star3: 0 };
+let bazaarSalePriceAutoFillRequestId = 0;
 
 function getRequiredElementById(id) {
   const element = document.getElementById(id);
@@ -2619,7 +2621,6 @@ const bazaarAdminListWrap = getRequiredElementById("bazaarAdminListWrap");
 const adminChecklistWrap = getRequiredElementById("adminChecklistWrap");
 const adminChecklistStatus = getRequiredElementById("adminChecklistStatus");
 
-const perCraftToolCostEl = getRequiredElementById("perCraftToolCost");
 const totalMaterialCostEl = getRequiredElementById("totalMaterialCost");
 const profitStar0ValueEl = getRequiredElementById("profitStar0Value");
 const profitStar1ValueEl = getRequiredElementById("profitStar1Value");
@@ -2634,7 +2635,6 @@ const totalProfitStar0ValueEl = getRequiredElementById("totalProfitStar0Value");
 const totalProfitStar1ValueEl = getRequiredElementById("totalProfitStar1Value");
 const totalProfitStar2ValueEl = getRequiredElementById("totalProfitStar2Value");
 const totalProfitStar3ValueEl = getRequiredElementById("totalProfitStar3Value");
-const totalFeeValueEl = getRequiredElementById("totalFeeValue");
 const averageNetSalesValueEl = getRequiredElementById("averageNetSalesValue");
 const totalProfitValueEl = getRequiredElementById("totalProfitValue");
 const profitResetButton = getRequiredElementById("profitResetButton");
@@ -7179,6 +7179,7 @@ function prefetchDataForTab(tabId) {
   tabId = normalizeFeatureTabId(tabId);
   if (tabId === "profit") {
     void ensureBazaarPricesLoaded();
+    void ensureBazaarEquipmentPricesLoaded();
     return;
   }
   if (tabId === "routine") {
@@ -11323,6 +11324,7 @@ function selectProfitEquipment(equipmentId) {
   selectedEquipmentId = targetEquipment.id;
   selectedCraftsman = String(targetEquipment.craftsman || "");
   selectedCategory = String(targetEquipment.category || "");
+  requestBazaarSalePriceAutoFill(targetEquipment.id);
   return true;
 }
 
@@ -14922,6 +14924,7 @@ function applyProfitEquipmentSelection(equipmentId, options = {}) {
   selectedEquipmentId = normalizedEquipmentId;
   clearProfitArmorSetContext();
   void ensureBazaarPricesLoaded();
+  requestBazaarSalePriceAutoFill(normalizedEquipmentId);
   if (activeTabId === "profit") {
     syncProfitEquipmentUrl(selectedEquipmentId);
   }
@@ -15426,6 +15429,59 @@ function getSalePricesForEquipment(equipment) {
   return normalizeSalePrices(equipment?.salePrices, Number(equipment?.salePrice || 0));
 }
 
+function applyBazaarSalePricesToEquipment(equipmentId, options = {}) {
+  const equipment = state.equipments.find((entry) => entry.id === equipmentId);
+  if (!equipment) return false;
+
+  const equipmentName = String(equipment.name || "").trim();
+  const bazaarCard = (bazaarEquipmentCards || []).find(
+    (card) => String(card?.itemName || "").trim() === equipmentName
+  );
+  if (!bazaarCard) return false;
+
+  const salePrices = getSalePricesForEquipment(equipment);
+  let changed = false;
+  [
+    { star: 2, key: "star2" },
+    { star: 3, key: "star3" },
+  ].forEach(({ star, key }) => {
+    if (options.skipKeys?.has(key)) return;
+    const bazaarRow = bazaarCard.starRows?.get(star);
+    const bazaarPrice = Number(bazaarRow?.todayPrice);
+    if (isBazaarEquipmentListingUnavailable(bazaarRow) || !Number.isFinite(bazaarPrice) || bazaarPrice <= 0) return;
+    if (salePrices[key] !== bazaarPrice) changed = true;
+    salePrices[key] = bazaarPrice;
+  });
+
+  if (changed) equipment.salePrices = salePrices;
+  return changed;
+}
+
+function requestBazaarSalePriceAutoFill(equipmentId) {
+  const normalizedEquipmentId = String(equipmentId || "");
+  if (!normalizedEquipmentId) return;
+
+  const requestId = ++bazaarSalePriceAutoFillRequestId;
+  const editRevisions = { ...salePriceManualEditRevisionByKey };
+  const applyIfCurrent = () => {
+    if (requestId !== bazaarSalePriceAutoFillRequestId || selectedEquipmentId !== normalizedEquipmentId) {
+      return;
+    }
+    const skipKeys = new Set(
+      Object.keys(editRevisions).filter((key) => salePriceManualEditRevisionByKey[key] !== editRevisions[key])
+    );
+    if (!applyBazaarSalePricesToEquipment(normalizedEquipmentId, { skipKeys })) return;
+    syncSalePriceInputs({ force: true });
+    calcAndRenderSummary();
+  };
+
+  if (hasLoadedBazaarEquipmentPrices) {
+    applyIfCurrent();
+    return;
+  }
+  void ensureBazaarEquipmentPricesLoaded().then(applyIfCurrent);
+}
+
 function getRecipeRowsForSelectedEquipment() {
   return state.recipes.filter((row) => row.equipmentId === selectedEquipmentId);
 }
@@ -15870,7 +15926,6 @@ function calcAndRenderSummary() {
   const averageNetSales = totalCount > 0 ? (totalSales - totalFee) / totalCount : 0;
   const totalProfit = totalProfitStar0 + totalProfitStar1 + totalProfitStar2 + totalProfitStar3;
 
-  if (perCraftToolCostEl) perCraftToolCostEl.textContent = formatGold(perCraftToolCost);
   if (totalMaterialCostEl) totalMaterialCostEl.textContent = formatGold(perItemMaterialCost);
   if (profitStar0ValueEl) profitStar0ValueEl.textContent = formatGold(profitStar0);
   if (profitStar1ValueEl) profitStar1ValueEl.textContent = formatGold(profitStar1);
@@ -15884,7 +15939,6 @@ function calcAndRenderSummary() {
   if (totalProfitStar1ValueEl) totalProfitStar1ValueEl.textContent = formatGold(totalProfitStar1);
   if (totalProfitStar2ValueEl) totalProfitStar2ValueEl.textContent = formatGold(totalProfitStar2);
   if (totalProfitStar3ValueEl) totalProfitStar3ValueEl.textContent = formatGold(totalProfitStar3);
-  if (totalFeeValueEl) totalFeeValueEl.textContent = formatGold(totalFee);
   if (averageNetSalesValueEl) averageNetSalesValueEl.textContent = formatGold(averageNetSales);
   if (totalProfitValueEl) totalProfitValueEl.textContent = formatGold(totalProfit);
 
@@ -16487,6 +16541,9 @@ if (categoryFilterSelect) {
   { input: salePriceStar3Input, key: "star3" },
 ].forEach(({ input, key }) => {
   if (!input) return;
+  input.addEventListener("input", () => {
+    if (key in salePriceManualEditRevisionByKey) salePriceManualEditRevisionByKey[key] += 1;
+  });
   input.addEventListener("change", (e) => {
     const eq = getSelectedEquipment();
     if (!eq) return;
@@ -16507,6 +16564,7 @@ if (categoryFilterSelect) {
   button.addEventListener("click", () => {
     const eq = getSelectedEquipment();
     if (!eq) return;
+    if (key in salePriceManualEditRevisionByKey) salePriceManualEditRevisionByKey[key] += 1;
     eq.salePrices = getSalePricesForEquipment(eq);
     eq.salePrices[key] = 0;
     input.value = "0";
