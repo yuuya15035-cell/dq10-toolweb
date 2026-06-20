@@ -467,7 +467,7 @@ const CRYSTAL_SIMULATOR_DEFAULTS = Object.freeze({
   craftCount: 1,
 });
 const CRYSTAL_SIMULATOR_FIXED_FEE_RATE = 5;
-const CRYSTAL_EQUIPMENT_ALLOWED_CRAFTSMEN = new Set(["武器職人", "防具職人", "木工職人"]);
+const CRYSTAL_EQUIPMENT_ALLOWED_CRAFTSMEN = new Set(["武器職人", "防具職人", "木工職人", "裁縫職人"]);
 const CRYSTAL_EQUIPMENT_EXCLUDED_CRAFTSMEN = new Set(["ツボ錬金", "ランプ錬金", "道具職人", "調理職人"]);
 const CRYSTAL_EQUIPMENT_EXCLUDED_CATEGORIES = new Set([
   "初級",
@@ -2181,10 +2181,15 @@ let showStealFarmingCellParallelOnly = false;
 let activeCrystalSimulatorTab = "buy";
 let crystalEquipmentRecipeCache = null;
 let crystalEquipmentRecipeLoadPromise = null;
+let crystalEquipmentDataCache = null;
+let crystalEquipmentDataLoadPromise = null;
 let crystalSimulatorState = {
   equipmentName: "",
   equipmentKey: "",
   equipmentSeries: "",
+  equipmentKind: "armor",
+  armorSeriesName: "",
+  weaponType: "",
   equipmentLevel: CRYSTAL_SIMULATOR_DEFAULTS.equipmentLevel,
   manualEquipmentInput: false,
   star: CRYSTAL_SIMULATOR_DEFAULTS.star,
@@ -2756,6 +2761,38 @@ function getCrystalEquipmentList() {
   return Array.isArray(crystalEquipmentRecipeCache) ? crystalEquipmentRecipeCache : getCrystalEquipmentListFallback();
 }
 
+function getCrystalEquipmentDataFallback() {
+  if (Array.isArray(equipmentDbEntries) && equipmentDbEntries.length > 0) {
+    return equipmentDbEntries.filter((entry) => ["weapon", "armor"].includes(String(entry?.equipmentGroup || "").trim()));
+  }
+  return [];
+}
+
+function getCrystalEquipmentData() {
+  return Array.isArray(crystalEquipmentDataCache) ? crystalEquipmentDataCache : getCrystalEquipmentDataFallback();
+}
+
+async function loadEquipmentData() {
+  if (Array.isArray(crystalEquipmentDataCache)) return crystalEquipmentDataCache;
+  if (crystalEquipmentDataLoadPromise) return crystalEquipmentDataLoadPromise;
+
+  crystalEquipmentDataLoadPromise = loadEquipmentDbCsv()
+    .then((entries) => {
+      crystalEquipmentDataCache = (entries || []).filter((entry) => ["weapon", "armor"].includes(String(entry?.equipmentGroup || "").trim()));
+      return crystalEquipmentDataCache;
+    })
+    .catch((error) => {
+      console.warn("[WARN] 結晶シミュレーター用の装備データを読み込めませんでした。", error);
+      crystalEquipmentDataCache = getCrystalEquipmentDataFallback();
+      return crystalEquipmentDataCache;
+    })
+    .finally(() => {
+      crystalEquipmentDataLoadPromise = null;
+    });
+
+  return crystalEquipmentDataLoadPromise;
+}
+
 async function loadEquipmentRecipes() {
   if (Array.isArray(crystalEquipmentRecipeCache)) return crystalEquipmentRecipeCache;
   if (crystalEquipmentRecipeLoadPromise) return crystalEquipmentRecipeLoadPromise;
@@ -2778,14 +2815,129 @@ async function loadEquipmentRecipes() {
 }
 
 function getEquipmentLevels() {
-  const levels = new Set(getCrystalEquipmentList().map((equipment) => equipment.equipmentLevel).filter((level) => Number.isFinite(level)));
+  const levels = new Set(getCrystalEquipmentData().map((equipment) => equipment.equipmentLevel).filter((level) => Number.isFinite(level)));
   levels.add(getCrystalEquipmentLevel(crystalSimulatorState.equipmentLevel));
   return Array.from(levels).sort((a, b) => a - b);
+}
+
+function getEquipmentKindOptions() {
+  return [
+    { value: "armor", label: "防具" },
+    { value: "weapon", label: "武器" },
+  ];
+}
+
+function normalizeEquipmentKind(value) {
+  return value === "weapon" ? "weapon" : "armor";
+}
+
+function normalizeArmorSeriesName(seriesName) {
+  const normalized = String(seriesName || "").trim();
+  if (normalized.endsWith("セット")) return normalized.slice(0, -"セット".length);
+  if (normalized.endsWith("シリーズ")) return normalized.slice(0, -"シリーズ".length);
+  return normalized;
+}
+
+function formatArmorSeriesDisplayName(seriesName) {
+  const baseName = normalizeArmorSeriesName(seriesName);
+  return baseName ? `${baseName}シリーズ` : "";
 }
 
 function filterEquipmentsByLevel(level) {
   const normalizedLevel = getCrystalEquipmentLevel(level);
   return getCrystalEquipmentList().filter((equipment) => equipment.equipmentLevel === normalizedLevel);
+}
+
+function getArmorSeriesByLevel(level) {
+  const normalizedLevel = getCrystalEquipmentLevel(level);
+  return getCrystalEquipmentData()
+    .filter(
+      (entry) =>
+        String(entry?.equipmentGroup || "").trim() === "armor" &&
+        Number(entry?.equipmentLevel) === normalizedLevel &&
+        String(entry?.equipmentType || "").trim() === "防具セット" &&
+        String(entry?.equipmentName || "").trim() !== ""
+    )
+    .map((entry) => ({
+      value: String(entry.equipmentName || "").trim(),
+      label: formatArmorSeriesDisplayName(entry.equipmentName),
+      baseName: normalizeArmorSeriesName(entry.equipmentName),
+    }))
+    .sort((a, b) => a.label.localeCompare(b.label, "ja"));
+}
+
+function detectArmorPartType(equipmentName, category = "") {
+  const normalizedCategory = String(category || "").trim();
+  if (normalizedCategory === "頭") return "head";
+  if (normalizedCategory === "からだ上") return "bodyUpper";
+  if (normalizedCategory === "からだ下") return "bodyLower";
+  if (normalizedCategory === "腕") return "arm";
+  if (normalizedCategory === "足") return "foot";
+  const name = String(equipmentName || "");
+  if (/ハット|ヘルム|キャップ|ぼうし|冠|かぶと|シャプカ|バンド/.test(name)) return "head";
+  if (/からだ上|コート上|ローブ上|ベスト上|スーツ上|よろい上|服上/.test(name)) return "bodyUpper";
+  if (/からだ下|コート下|ローブ下|ズボン|パンツ|スーツ下|よろい下|服下/.test(name)) return "bodyLower";
+  if (/グローブ|こて|うでわ|リスト|腕帯|アーム/.test(name)) return "arm";
+  if (/ブーツ|シューズ|サンダル|くつ|足/.test(name)) return "foot";
+  return "other";
+}
+
+function getArmorPartSortOrder(partType) {
+  return { head: 1, bodyUpper: 2, bodyLower: 3, arm: 4, foot: 5, other: 6 }[partType] || 6;
+}
+
+function sortArmorParts(parts) {
+  return [...(parts || [])].sort((a, b) => {
+    const typeDiff = getArmorPartSortOrder(a.partType) - getArmorPartSortOrder(b.partType);
+    if (typeDiff !== 0) return typeDiff;
+    return String(a.name || "").localeCompare(String(b.name || ""), "ja");
+  });
+}
+
+function getArmorPartsBySeries(level, seriesName) {
+  const normalizedLevel = getCrystalEquipmentLevel(level);
+  const baseName = normalizeArmorSeriesName(seriesName);
+  if (!baseName) return [];
+  const parts = filterEquipmentsByLevel(normalizedLevel)
+    .filter((equipment) => String(equipment.category || "").trim() !== "防具セット" && String(equipment.name || "").includes(baseName))
+    .map((equipment) => ({
+      ...equipment,
+      partType: detectArmorPartType(equipment.name, equipment.category),
+    }));
+  return sortArmorParts(parts);
+}
+
+function getWeaponTypesByLevel(level) {
+  const normalizedLevel = getCrystalEquipmentLevel(level);
+  const typeSet = new Set(
+    getCrystalEquipmentData()
+      .filter((entry) => String(entry?.equipmentGroup || "").trim() === "weapon" && Number(entry?.equipmentLevel) === normalizedLevel)
+      .map((entry) => String(entry?.equipmentType || "").trim())
+      .filter(Boolean)
+  );
+  return Array.from(typeSet).sort((a, b) => a.localeCompare(b, "ja"));
+}
+
+function getWeaponsByLevelAndType(level, weaponType) {
+  const normalizedLevel = getCrystalEquipmentLevel(level);
+  const normalizedType = String(weaponType || "").trim();
+  const weaponMap = new Map();
+  getCrystalEquipmentData()
+    .filter(
+      (entry) =>
+        String(entry?.equipmentGroup || "").trim() === "weapon" &&
+        Number(entry?.equipmentLevel) === normalizedLevel &&
+        String(entry?.equipmentType || "").trim() === normalizedType &&
+        String(entry?.equipmentName || "").trim() !== ""
+    )
+    .forEach((entry) => {
+      const name = String(entry.equipmentName || "").trim();
+      const key = makeCrystalEquipmentKey(name, entry.equipmentLevel);
+      if (!weaponMap.has(key)) {
+        weaponMap.set(key, { key, name, equipmentLevel: entry.equipmentLevel, category: entry.equipmentType, series: name });
+      }
+    });
+  return Array.from(weaponMap.values()).sort((a, b) => a.name.localeCompare(b.name, "ja"));
 }
 
 function getEquipmentSeriesByLevel(level) {
@@ -2812,45 +2964,91 @@ function ensureCrystalEquipmentSelection() {
   if (crystalSimulatorState.manualEquipmentInput) return;
 
   const currentLevel = getCrystalEquipmentLevel(crystalSimulatorState.equipmentLevel);
-  const levelSeries = getEquipmentSeriesByLevel(currentLevel);
-  if (!levelSeries.includes(crystalSimulatorState.equipmentSeries)) {
-    crystalSimulatorState.equipmentSeries = levelSeries[0] || "";
+  crystalSimulatorState.equipmentKind = normalizeEquipmentKind(crystalSimulatorState.equipmentKind);
+
+  if (crystalSimulatorState.equipmentKind === "weapon") {
+    const weaponTypes = getWeaponTypesByLevel(currentLevel);
+    if (!weaponTypes.includes(crystalSimulatorState.weaponType)) {
+      crystalSimulatorState.weaponType = weaponTypes[0] || "";
+    }
+    const weapons = getWeaponsByLevelAndType(currentLevel, crystalSimulatorState.weaponType);
+    const selectedWeapon = weapons.find((weapon) => weapon.key === crystalSimulatorState.equipmentKey) || weapons[0] || null;
+    crystalSimulatorState.equipmentKey = selectedWeapon?.key || "";
+    crystalSimulatorState.equipmentName = selectedWeapon?.name || "";
+    crystalSimulatorState.equipmentSeries = selectedWeapon?.series || "";
+    crystalSimulatorState.equipmentLevel = selectedWeapon?.equipmentLevel ?? currentLevel;
+    return;
   }
 
-  const seriesEquipments = filterEquipmentsByLevelAndSeries(currentLevel, crystalSimulatorState.equipmentSeries);
-  const currentEquipment = seriesEquipments.find((equipment) => equipment.key === crystalSimulatorState.equipmentKey);
-  const selectedEquipment = currentEquipment || seriesEquipments[0] || null;
+  const armorSeries = getArmorSeriesByLevel(currentLevel);
+  if (!armorSeries.some((series) => series.value === crystalSimulatorState.armorSeriesName)) {
+    crystalSimulatorState.armorSeriesName = armorSeries[0]?.value || "";
+  }
 
-  crystalSimulatorState.equipmentKey = selectedEquipment?.key || "";
-  crystalSimulatorState.equipmentName = selectedEquipment?.name || "";
-  crystalSimulatorState.equipmentSeries = selectedEquipment?.series || crystalSimulatorState.equipmentSeries || "";
-  crystalSimulatorState.equipmentLevel = selectedEquipment?.equipmentLevel ?? currentLevel;
+  const armorParts = getArmorPartsBySeries(currentLevel, crystalSimulatorState.armorSeriesName);
+  const selectedArmor = armorParts.find((equipment) => equipment.key === crystalSimulatorState.equipmentKey) || armorParts[0] || null;
+
+  crystalSimulatorState.equipmentKey = selectedArmor?.key || "";
+  crystalSimulatorState.equipmentName = selectedArmor?.name || "";
+  crystalSimulatorState.equipmentSeries = selectedArmor?.series || "";
+  crystalSimulatorState.equipmentLevel = selectedArmor?.equipmentLevel ?? currentLevel;
 }
 
 function onEquipmentLevelChange(level) {
   crystalSimulatorState.equipmentLevel = getCrystalEquipmentLevel(level);
   crystalSimulatorState.equipmentSeries = "";
+  crystalSimulatorState.armorSeriesName = "";
+  crystalSimulatorState.weaponType = "";
   crystalSimulatorState.equipmentKey = "";
   crystalSimulatorState.equipmentName = "";
   ensureCrystalEquipmentSelection();
   applyCrystalAutoPrices();
 }
 
-function onEquipmentSeriesChange(seriesName) {
-  crystalSimulatorState.equipmentSeries = String(seriesName || "").trim();
-  crystalSimulatorState.equipmentKey = "";
-  crystalSimulatorState.equipmentName = "";
+function updateEquipmentSelectors() {
+  crystalSimulatorState.equipmentKind = normalizeEquipmentKind(crystalSimulatorState.equipmentKind);
   ensureCrystalEquipmentSelection();
   applyCrystalAutoPrices();
+}
+
+function onEquipmentKindChange(kind) {
+  crystalSimulatorState.equipmentKind = normalizeEquipmentKind(kind);
+  crystalSimulatorState.armorSeriesName = "";
+  crystalSimulatorState.weaponType = "";
+  crystalSimulatorState.equipmentSeries = "";
+  crystalSimulatorState.equipmentKey = "";
+  crystalSimulatorState.equipmentName = "";
+  updateEquipmentSelectors();
+}
+
+function onArmorSeriesChange(seriesName) {
+  crystalSimulatorState.armorSeriesName = String(seriesName || "").trim();
+  crystalSimulatorState.equipmentKey = "";
+  crystalSimulatorState.equipmentName = "";
+  updateEquipmentSelectors();
+}
+
+function onWeaponTypeChange(weaponType) {
+  crystalSimulatorState.weaponType = String(weaponType || "").trim();
+  crystalSimulatorState.equipmentKey = "";
+  crystalSimulatorState.equipmentName = "";
+  updateEquipmentSelectors();
 }
 
 function onEquipmentNameChange(equipmentKey) {
   crystalSimulatorState.equipmentKey = String(equipmentKey || "");
   const selectedEquipment = getSelectedCrystalEquipment();
-  if (!selectedEquipment) return;
-  crystalSimulatorState.equipmentName = selectedEquipment.name;
-  crystalSimulatorState.equipmentLevel = selectedEquipment.equipmentLevel;
-  crystalSimulatorState.equipmentSeries = selectedEquipment.series || crystalSimulatorState.equipmentSeries;
+  let resolvedEquipment = selectedEquipment;
+  if (!resolvedEquipment && crystalSimulatorState.equipmentKind === "weapon") {
+    resolvedEquipment = getWeaponsByLevelAndType(crystalSimulatorState.equipmentLevel, crystalSimulatorState.weaponType).find((equipment) => equipment.key === crystalSimulatorState.equipmentKey);
+  }
+  if (!resolvedEquipment && crystalSimulatorState.equipmentKind === "armor") {
+    resolvedEquipment = getArmorPartsBySeries(crystalSimulatorState.equipmentLevel, crystalSimulatorState.armorSeriesName).find((equipment) => equipment.key === crystalSimulatorState.equipmentKey);
+  }
+  if (!resolvedEquipment) return;
+  crystalSimulatorState.equipmentName = resolvedEquipment.name;
+  crystalSimulatorState.equipmentLevel = resolvedEquipment.equipmentLevel;
+  crystalSimulatorState.equipmentSeries = resolvedEquipment.series || crystalSimulatorState.equipmentSeries;
   applyCrystalAutoPrices();
 }
 
@@ -3093,17 +3291,48 @@ function renderEquipmentLevelSelect() {
   `;
 }
 
-function renderEquipmentSeriesSelect() {
-  const seriesList = getEquipmentSeriesByLevel(crystalSimulatorState.equipmentLevel);
+function renderEquipmentKindSelect() {
   return `
     <label class="field crystal-field">
-      <span>シリーズ</span>
+      <span>武器 / 防具</span>
+      <select data-crystal-field="equipmentKind">
+        ${getEquipmentKindOptions()
+          .map((option) => `<option value="${option.value}" ${crystalSimulatorState.equipmentKind === option.value ? "selected" : ""}>${escapeHtml(option.label)}</option>`)
+          .join("")}
+      </select>
+    </label>
+  `;
+}
+
+function renderArmorSeriesSelect() {
+  const seriesList = getArmorSeriesByLevel(crystalSimulatorState.equipmentLevel);
+  return `
+    <label class="field crystal-field">
+      <span>防具シリーズ</span>
       <select data-crystal-field="equipmentSeries" ${seriesList.length === 0 ? "disabled" : ""}>
         ${
           seriesList.length === 0
-            ? `<option value="">該当するシリーズがありません</option>`
+            ? `<option value="">該当する防具シリーズがありません</option>`
             : seriesList
-                .map((series) => `<option value="${escapeHtml(series)}" ${crystalSimulatorState.equipmentSeries === series ? "selected" : ""}>${escapeHtml(series)}</option>`)
+                .map((series) => `<option value="${escapeHtml(series.value)}" ${crystalSimulatorState.armorSeriesName === series.value ? "selected" : ""}>${escapeHtml(series.label)}</option>`)
+                .join("")
+        }
+      </select>
+    </label>
+  `;
+}
+
+function renderWeaponTypeSelect() {
+  const weaponTypes = getWeaponTypesByLevel(crystalSimulatorState.equipmentLevel);
+  return `
+    <label class="field crystal-field">
+      <span>武器種</span>
+      <select data-crystal-field="weaponType" ${weaponTypes.length === 0 ? "disabled" : ""}>
+        ${
+          weaponTypes.length === 0
+            ? `<option value="">該当する武器種がありません</option>`
+            : weaponTypes
+                .map((type) => `<option value="${escapeHtml(type)}" ${crystalSimulatorState.weaponType === type ? "selected" : ""}>${escapeHtml(type)}</option>`)
                 .join("")
         }
       </select>
@@ -3112,15 +3341,19 @@ function renderEquipmentSeriesSelect() {
 }
 
 function renderEquipmentNameSelect() {
-  const seriesEquipments = filterEquipmentsByLevelAndSeries(crystalSimulatorState.equipmentLevel, crystalSimulatorState.equipmentSeries);
+  const options =
+    crystalSimulatorState.equipmentKind === "weapon"
+      ? getWeaponsByLevelAndType(crystalSimulatorState.equipmentLevel, crystalSimulatorState.weaponType)
+      : getArmorPartsBySeries(crystalSimulatorState.equipmentLevel, crystalSimulatorState.armorSeriesName);
+  const label = crystalSimulatorState.equipmentKind === "weapon" ? "武器名" : "部位";
   return `
     <label class="field crystal-field crystal-equipment-name-field">
-      <span>部位</span>
-      <select data-crystal-field="equipmentKey" ${seriesEquipments.length === 0 ? "disabled" : ""}>
+      <span>${label}</span>
+      <select data-crystal-field="equipmentKey" ${options.length === 0 ? "disabled" : ""}>
         ${
-          seriesEquipments.length === 0
+          options.length === 0
             ? `<option value="">該当する装備がありません</option>`
-            : seriesEquipments
+            : options
                 .map((equipment) => `<option value="${escapeHtml(equipment.key)}" ${crystalSimulatorState.equipmentKey === equipment.key ? "selected" : ""}>${escapeHtml(equipment.name)}</option>`)
                 .join("")
         }
@@ -3141,7 +3374,8 @@ function renderCrystalEquipmentSelector() {
   return `
     <div class="crystal-equipment-selector">
       ${renderEquipmentLevelSelect()}
-      ${renderEquipmentSeriesSelect()}
+      ${renderEquipmentKindSelect()}
+      ${crystalSimulatorState.equipmentKind === "weapon" ? renderWeaponTypeSelect() : renderArmorSeriesSelect()}
       ${renderEquipmentNameSelect()}
     </div>
   `;
@@ -3253,7 +3487,15 @@ function collectCrystalSimulatorFormValues() {
       return;
     }
     if (key === "equipmentSeries") {
-      onEquipmentSeriesChange(value);
+      onArmorSeriesChange(value);
+      return;
+    }
+    if (key === "equipmentKind") {
+      onEquipmentKindChange(value);
+      return;
+    }
+    if (key === "weaponType") {
+      onWeaponTypeChange(value);
       return;
     }
     if (key === "feeRate") {
@@ -3378,6 +3620,11 @@ function renderCrystalSimulator() {
   }
   if (!hasLoadedBazaarEquipmentPrices && !isBazaarEquipmentLoading) {
     void ensureBazaarEquipmentPricesLoaded();
+  }
+  if (!Array.isArray(crystalEquipmentDataCache) && !crystalEquipmentDataLoadPromise) {
+    void loadEquipmentData().then(() => {
+      if (activeTabId === "crystal-simulator") renderCrystalSimulator();
+    });
   }
   if (!Array.isArray(crystalEquipmentRecipeCache) && !crystalEquipmentRecipeLoadPromise) {
     void loadEquipmentRecipes().then(() => {
@@ -6677,6 +6924,7 @@ function prefetchDataForTab(tabId) {
   if (tabId === "crystal-simulator") {
     void ensureBazaarPricesLoaded();
     void ensureBazaarEquipmentPricesLoaded();
+    void loadEquipmentData();
     void loadEquipmentRecipes();
     return;
   }
@@ -15536,7 +15784,19 @@ if (crystalSimulatorWrap) {
     }
 
     if (fieldName === "equipmentSeries") {
-      onEquipmentSeriesChange(target.value);
+      onArmorSeriesChange(target.value);
+      renderCrystalSimulator();
+      return;
+    }
+
+    if (fieldName === "equipmentKind") {
+      onEquipmentKindChange(target.value);
+      renderCrystalSimulator();
+      return;
+    }
+
+    if (fieldName === "weaponType") {
+      onWeaponTypeChange(target.value);
       renderCrystalSimulator();
       return;
     }
