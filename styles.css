@@ -1321,14 +1321,6 @@ body.ads-disabled .ad-slot,
   padding-top: 1px;
 }
 
-.crystal-override-field {
-  grid-column: 1 / -1;
-  align-self: end;
-  min-height: 44px;
-  padding: 8px 10px;
-  background: rgba(255, 251, 242, 0.78);
-}
-
 .crystal-field.is-muted {
   opacity: 0.62;
 }
@@ -1382,6 +1374,91 @@ body.ads-disabled .ad-slot,
   color: #75553a;
   font-size: 0.72rem;
   line-height: 1.35;
+}
+
+.crystal-material-breakdown {
+  grid-column: 1 / -1;
+  display: grid;
+  gap: 7px;
+  min-width: 0;
+  margin-top: -4px;
+}
+
+.crystal-material-breakdown-toggle,
+.crystal-equipment-search-toggle {
+  cursor: pointer;
+}
+
+.crystal-material-breakdown-toggle {
+  justify-self: start;
+  min-height: 28px;
+  width: auto;
+  border: 0;
+  padding: 2px 0;
+  background: transparent;
+  color: #654832;
+  font-size: 0.82rem;
+  font-weight: 700;
+  line-height: 1.4;
+  text-align: left;
+  box-shadow: none;
+}
+
+.crystal-material-breakdown-warning {
+  margin: 0;
+  color: #9a3b25;
+  font-size: 0.74rem;
+  line-height: 1.4;
+  font-weight: 700;
+}
+
+.crystal-material-breakdown-list {
+  display: grid;
+  gap: 6px;
+}
+
+.crystal-material-breakdown-item {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 5px 8px;
+  border: 1px solid rgba(126, 89, 55, 0.28);
+  border-radius: 8px;
+  padding: 7px 9px;
+  background: rgba(255, 251, 242, 0.78);
+}
+
+.crystal-material-breakdown-item p {
+  margin: 0;
+}
+
+.crystal-material-breakdown-name {
+  min-width: 0;
+  overflow-wrap: anywhere;
+  color: #4b3422;
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+.crystal-material-breakdown-price {
+  display: inline-flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 4px 8px;
+  color: #75553a;
+  font-size: 0.78rem;
+  line-height: 1.35;
+}
+
+.crystal-material-breakdown-item.is-missing-price {
+  background: rgba(255, 241, 232, 0.78);
+}
+
+.crystal-material-breakdown-total {
+  margin: 2px 0 0;
+  color: #4b3422;
+  font-size: 0.84rem;
+  font-weight: 700;
+  text-align: right;
 }
 
 .crystal-alchemy-selector {
@@ -8815,6 +8892,14 @@ body.memo-panel-open {
 
   .crystal-alchemy-candidate {
     grid-template-columns: 1fr;
+  }
+
+  .crystal-material-breakdown-item {
+    grid-template-columns: 1fr;
+  }
+
+  .crystal-material-breakdown-price {
+    justify-content: flex-start;
   }
 
   .crystal-alchemy-candidate em {

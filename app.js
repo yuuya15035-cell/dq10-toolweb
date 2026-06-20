@@ -463,8 +463,6 @@ const CRYSTAL_SIMULATOR_DEFAULTS = Object.freeze({
   purchasePrice: 0,
   bazaarListingPrice: 0,
   materialCost: 0,
-  toolCost: 0,
-  craftCount: 1,
 });
 const CRYSTAL_SIMULATOR_FIXED_FEE_RATE = 5;
 const CRYSTAL_EQUIPMENT_ALLOWED_CRAFTSMEN = new Set(["武器職人", "防具職人", "木工職人", "裁縫職人"]);
@@ -2187,6 +2185,8 @@ let crystalEquipmentSearchKeyword = "";
 let isCrystalEquipmentSearchExpanded = false;
 let isCrystalEquipmentSearchCandidateListOpen = false;
 let hasInitializedCrystalCountInput = false;
+let isCrystalMaterialBreakdownExpanded = false;
+let isCrystalCraftMaterialCostManual = false;
 let crystalSimulatorState = {
   equipmentName: "",
   equipmentKey: "",
@@ -2202,9 +2202,6 @@ let crystalSimulatorState = {
   feeRate: CRYSTAL_SIMULATOR_DEFAULTS.feeRate,
   bazaarListingPrice: CRYSTAL_SIMULATOR_DEFAULTS.bazaarListingPrice,
   materialCost: CRYSTAL_SIMULATOR_DEFAULTS.materialCost,
-  toolCost: CRYSTAL_SIMULATOR_DEFAULTS.toolCost,
-  craftCount: CRYSTAL_SIMULATOR_DEFAULTS.craftCount,
-  prorateToolCost: true,
   alchemyRecipeId: "",
   alchemyEffectName: "",
   alchemyUnitCost: 0,
@@ -3075,6 +3072,7 @@ function ensureCrystalEquipmentSelection() {
 }
 
 function onEquipmentLevelChange(level) {
+  isCrystalCraftMaterialCostManual = false;
   crystalSimulatorState.equipmentLevel = getCrystalEquipmentLevel(level);
   crystalSimulatorState.equipmentSeries = "";
   crystalSimulatorState.armorSeriesName = "";
@@ -3094,6 +3092,7 @@ function updateEquipmentSelectors() {
 }
 
 function onEquipmentKindChange(kind) {
+  isCrystalCraftMaterialCostManual = false;
   crystalSimulatorState.equipmentKind = normalizeEquipmentKind(kind);
   crystalSimulatorState.armorSeriesName = "";
   crystalSimulatorState.weaponType = "";
@@ -3104,6 +3103,7 @@ function onEquipmentKindChange(kind) {
 }
 
 function onArmorSeriesChange(seriesName) {
+  isCrystalCraftMaterialCostManual = false;
   crystalSimulatorState.armorSeriesName = String(seriesName || "").trim();
   crystalSimulatorState.equipmentKey = "";
   crystalSimulatorState.equipmentName = "";
@@ -3111,6 +3111,7 @@ function onArmorSeriesChange(seriesName) {
 }
 
 function onWeaponTypeChange(weaponType) {
+  isCrystalCraftMaterialCostManual = false;
   crystalSimulatorState.weaponType = String(weaponType || "").trim();
   crystalSimulatorState.equipmentKey = "";
   crystalSimulatorState.equipmentName = "";
@@ -3118,6 +3119,7 @@ function onWeaponTypeChange(weaponType) {
 }
 
 function onEquipmentNameChange(equipmentKey) {
+  isCrystalCraftMaterialCostManual = false;
   crystalSimulatorState.equipmentKey = String(equipmentKey || "");
   const selectedEquipment = getSelectedCrystalEquipment();
   let resolvedEquipment = selectedEquipment;
@@ -3140,6 +3142,7 @@ function applyCrystalEquipmentSearchSelection(candidateKey) {
   const candidate = getCrystalEquipmentSearchCandidates(crystalEquipmentSearchKeyword).find((entry) => entry.key === candidateKey);
   if (!candidate) return false;
 
+  isCrystalCraftMaterialCostManual = false;
   crystalSimulatorState.equipmentLevel = getCrystalEquipmentLevel(candidate.equipmentLevel);
   crystalSimulatorState.equipmentKind = candidate.equipmentGroup === "weapon" ? "weapon" : "armor";
   crystalSimulatorState.equipmentName = candidate.name;
@@ -3166,11 +3169,8 @@ function applyCrystalEquipmentSearchSelection(candidateKey) {
 
 function applyCrystalCraftMaterialCostIfAvailable() {
   if (activeCrystalSimulatorTab !== "craft-alchemy") return;
-  const normalizedName = String(crystalSimulatorState.equipmentName || "").trim();
-  if (normalizedName === "") return;
-  const matchedEquipment = (state.equipments || []).find((equipment) => String(equipment?.name || "").trim() === normalizedName);
-  if (!matchedEquipment) return;
-  crystalSimulatorState.materialCost = getRoundedEquipmentMaterialCost(matchedEquipment.id);
+  if (isCrystalCraftMaterialCostManual) return;
+  updateCraftAlchemyCost();
 }
 
 function getCrystalSimulatorFeeRate(value) {
@@ -3259,6 +3259,65 @@ function getCrystalMaterialPriceByName(materialName) {
   const material = (state.materials || []).find((row) => normalizeMaterialNameKey(row?.name) === normalizedName);
   const materialPrice = Number(material?.price || 0);
   return Number.isFinite(materialPrice) ? materialPrice : 0;
+}
+
+function getRecipeByEquipmentName(equipmentName) {
+  const normalizedName = String(equipmentName || "").trim();
+  if (normalizedName === "") return null;
+  const equipment = (state.equipments || []).find((entry) => String(entry?.name || "").trim() === normalizedName);
+  if (!equipment) return null;
+  const rows = (state.recipes || []).filter((row) => row.equipmentId === equipment.id);
+  return rows.length > 0 ? { equipment, rows } : null;
+}
+
+function extractRecipeMaterials(recipe) {
+  if (!recipe?.rows?.length) return [];
+  const materialMap = new Map((state.materials || []).map((material) => [material.id, material]));
+  const groupedMaterials = new Map();
+
+  recipe.rows.forEach((row) => {
+    const material = materialMap.get(row.materialId);
+    const materialName = String(material?.name || "").trim();
+    const quantity = Math.max(0, Number(row.quantity || 0));
+    if (materialName === "" || quantity <= 0) return;
+    const current = groupedMaterials.get(materialName) || { materialName, quantity: 0 };
+    current.quantity += quantity;
+    groupedMaterials.set(materialName, current);
+  });
+
+  return Array.from(groupedMaterials.values()).sort((a, b) => a.materialName.localeCompare(b.materialName, "ja"));
+}
+
+function getMaterialPrice(materialName) {
+  return getCrystalMaterialPriceByName(materialName);
+}
+
+function calculateCraftMaterialCost(equipmentName = crystalSimulatorState.equipmentName) {
+  const recipe = getRecipeByEquipmentName(equipmentName);
+  const materials = extractRecipeMaterials(recipe).map((material) => {
+    const unitPrice = getMaterialPrice(material.materialName);
+    const safeUnitPrice = Number.isFinite(unitPrice) ? Math.max(0, Math.round(unitPrice)) : 0;
+    const subtotal = safeUnitPrice * material.quantity;
+    return {
+      ...material,
+      unitPrice: safeUnitPrice,
+      subtotal,
+      isMissingPrice: safeUnitPrice <= 0,
+    };
+  });
+  const totalCost = materials.reduce((sum, material) => sum + material.subtotal, 0);
+  return {
+    recipe,
+    materials,
+    totalCost,
+    missingMaterials: materials.filter((material) => material.isMissingPrice).map((material) => material.materialName),
+  };
+}
+
+function updateCraftAlchemyCost() {
+  const cost = calculateCraftMaterialCost(crystalSimulatorState.equipmentName);
+  crystalSimulatorState.materialCost = cost.totalCost;
+  return cost;
 }
 
 function getCrystalUnitPriceFromBazaar() {
@@ -3379,9 +3438,7 @@ function calculateBuyAlchemy() {
 function calculateCraftAlchemy() {
   const recipe = getSelectedAlchemyRecipe();
   const star = getStarCount(crystalSimulatorState.star);
-  const craftCount = Math.max(1, Math.floor(parseGoldInput(crystalSimulatorState.craftCount)));
-  const perItemToolCost = crystalSimulatorState.prorateToolCost ? parseGoldInput(crystalSimulatorState.toolCost) / craftCount : 0;
-  const productionCost = parseGoldInput(crystalSimulatorState.materialCost) + perItemToolCost;
+  const productionCost = parseGoldInput(crystalSimulatorState.materialCost);
   const alchemyMaterialCost = (Number(recipe?.unitCost) || 0) * star;
   const totalCost = productionCost + alchemyMaterialCost;
   const crystalCount = getCrystalCountForCurrentState();
@@ -3390,7 +3447,6 @@ function calculateCraftAlchemy() {
   return {
     recipe,
     productionCost,
-    perItemToolCost,
     alchemyMaterialCost,
     totalCost,
     crystalCount,
@@ -3581,6 +3637,46 @@ function renderCrystalCountField() {
   `;
 }
 
+function renderCrystalMaterialBreakdown() {
+  const breakdown = calculateCraftMaterialCost(crystalSimulatorState.equipmentName);
+  const hasMaterials = breakdown.materials.length > 0;
+  const missingText =
+    breakdown.missingMaterials.length > 0
+      ? `<p class="crystal-material-breakdown-warning">価格未取得素材あり: ${escapeHtml(breakdown.missingMaterials.join("、"))}</p>`
+      : "";
+  const toggleText = `${isCrystalMaterialBreakdownExpanded ? "▼" : "▶"} 素材内訳を見る`;
+  return `
+    <div class="crystal-material-breakdown">
+      ${missingText}
+      <button type="button" class="crystal-material-breakdown-toggle" data-crystal-material-breakdown-toggle aria-expanded="${isCrystalMaterialBreakdownExpanded ? "true" : "false"}">${toggleText}</button>
+      ${
+        isCrystalMaterialBreakdownExpanded
+          ? `<div class="crystal-material-breakdown-list">
+              ${
+                hasMaterials
+                  ? breakdown.materials
+                      .map(
+                        (material) => `
+                          <article class="crystal-material-breakdown-item ${material.isMissingPrice ? "is-missing-price" : ""}">
+                            <p class="crystal-material-breakdown-name">${escapeHtml(material.materialName)} × ${escapeHtml(material.quantity)}</p>
+                            <p class="crystal-material-breakdown-price">
+                              <span>${formatCrystalGold(material.unitPrice)}</span>
+                              <span>小計 ${formatCrystalGold(material.subtotal)}</span>
+                            </p>
+                          </article>
+                        `
+                      )
+                      .join("")
+                  : `<p class="site-search-empty assist-search-empty">この装備の素材レシピが見つかりません。</p>`
+              }
+              <p class="crystal-material-breakdown-total">合計: <strong>${formatCrystalGold(breakdown.totalCost)}</strong></p>
+            </div>`
+          : ""
+      }
+    </div>
+  `;
+}
+
 function renderCrystalStarField() {
   return `
     <label class="field crystal-field">
@@ -3678,6 +3774,9 @@ function switchCrystalSimulatorTab(tabId) {
     crystalSimulatorState.purchasePrice = 0;
   } else if (activeCrystalSimulatorTab === "buy-alchemy") {
     applyCrystalAutoPrices({ forcePurchase: true });
+  } else if (activeCrystalSimulatorTab === "craft-alchemy") {
+    isCrystalCraftMaterialCostManual = false;
+    updateCraftAlchemyCost();
   }
   renderCrystalSimulator();
 }
@@ -3715,8 +3814,7 @@ function buildCrystalSimulatorResultHtml() {
   const result = calculateCraftAlchemy();
   return `
     <div class="crystal-result-grid">
-      <p><span>制作原価</span><strong>${formatCrystalGold(result.productionCost)}</strong></p>
-      <p><span>1個あたり道具代</span><strong>${formatCrystalGold(result.perItemToolCost)}</strong></p>
+      <p><span>素材原価</span><strong>${formatCrystalGold(result.productionCost)}</strong></p>
       <p><span>錬金素材原価</span><strong>${formatCrystalGold(result.alchemyMaterialCost)}</strong></p>
       <p><span>総原価</span><strong>${formatCrystalGold(result.totalCost)}</strong></p>
       <p><span>結晶数</span><strong>${result.crystalCount}個</strong></p>
@@ -3764,12 +3862,7 @@ function renderCrystalSimulatorFormFields() {
     ${renderCrystalCommonFields()}
     ${renderCrystalCountField()}
     ${renderCrystalInputField("materialCost", "素材原価")}
-    ${renderCrystalInputField("toolCost", "職人道具代")}
-    ${renderCrystalInputField("craftCount", "作成個数", { min: 1 })}
-    <label class="field inline-field crystal-override-field">
-      <input data-crystal-field="prorateToolCost" type="checkbox" ${crystalSimulatorState.prorateToolCost ? "checked" : ""} />
-      <span>道具代を1個あたりに按分する</span>
-    </label>
+    ${renderCrystalMaterialBreakdown()}
     ${renderAlchemyRecipeSelector()}
     ${renderCrystalInputField("bazaarListingPrice", "バザー出品価格")}
     ${renderCrystalEquipmentSearchField()}
@@ -3797,6 +3890,9 @@ function renderCrystalSimulator() {
   getSelectedAlchemyRecipe();
   ensureCrystalEquipmentSelection();
   applyCrystalAutoPrices({ forcePurchase: activeCrystalSimulatorTab !== "buy" && parseGoldInput(crystalSimulatorState.purchasePrice) <= 0 });
+  if (activeCrystalSimulatorTab === "craft-alchemy" && !isCrystalCraftMaterialCostManual) {
+    updateCraftAlchemyCost();
+  }
 
   crystalSimulatorWrap.innerHTML = `
     <div class="crystal-simulator-tabs" role="tablist" aria-label="結晶シミュレーター切り替え">
@@ -15939,6 +16035,9 @@ if (crystalSimulatorWrap) {
       return;
     }
     if (!event.target.matches("[data-crystal-field]")) return;
+    if (String(event.target.dataset.crystalField || "") === "materialCost") {
+      isCrystalCraftMaterialCostManual = true;
+    }
     renderCrystalSimulatorResult();
   });
 
@@ -15987,6 +16086,9 @@ if (crystalSimulatorWrap) {
     }
 
     collectCrystalSimulatorFormValues();
+    if (fieldName === "materialCost") {
+      isCrystalCraftMaterialCostManual = true;
+    }
     if (fieldName === "alchemyRecipeId") {
       resetCrystalCountToEstimate();
       renderCrystalSimulator();
@@ -16022,6 +16124,14 @@ if (crystalSimulatorWrap) {
       collectCrystalSimulatorFormValues();
       isCrystalEquipmentSearchExpanded = !isCrystalEquipmentSearchExpanded;
       isCrystalEquipmentSearchCandidateListOpen = isCrystalEquipmentSearchExpanded && crystalEquipmentSearchKeyword !== "";
+      renderCrystalSimulator();
+      return;
+    }
+
+    const materialBreakdownToggle = target.closest("[data-crystal-material-breakdown-toggle]");
+    if (materialBreakdownToggle instanceof HTMLElement) {
+      collectCrystalSimulatorFormValues();
+      isCrystalMaterialBreakdownExpanded = !isCrystalMaterialBreakdownExpanded;
       renderCrystalSimulator();
       return;
     }
