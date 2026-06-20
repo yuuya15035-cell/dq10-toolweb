@@ -467,23 +467,23 @@ const CRYSTAL_SIMULATOR_DEFAULTS = Object.freeze({
   craftCount: 1,
 });
 const CRYSTAL_ALCHEMY_RESULT_POINTS = Object.freeze({
-  beginner: { failed: 0, success: 0.5, great: 1 },
-  intermediate: { failed: 0.5, success: 1, great: 2 },
-  advanced: { failed: 2, success: 4, great: 8 },
+  beginner: { failed: 0, success: 0.5, pal: 0.5, great: 1 },
+  intermediate: { failed: 0.5, success: 1, pal: 1, great: 2 },
+  advanced: { failed: 2, success: 4, pal: 4, great: 8 },
 });
 const CRYSTAL_BASE_COUNT_TABLE = Object.freeze([
-  { minLevel: 130, counts: [1, 22, 33, 66] },
-  { minLevel: 120, counts: [1, 21, 31, 63] },
-  { minLevel: 99, counts: [1, 20, 30, 60] },
-  { minLevel: 90, counts: [1, 18, 27, 54] },
-  { minLevel: 80, counts: [1, 16, 24, 48] },
-  { minLevel: 70, counts: [1, 14, 21, 42] },
-  { minLevel: 60, counts: [1, 12, 18, 36] },
-  { minLevel: 50, counts: [1, 8, 12, 24] },
-  { minLevel: 42, counts: [2, 4, 6, 12] },
-  { minLevel: 30, counts: [1, 3, 4, 9] },
-  { minLevel: 21, counts: [1, 2, 3, 6] },
-  { minLevel: 1, counts: [1, 1, 1, 3] },
+  { minLevel: 130, counts: [22, 33, 66] },
+  { minLevel: 120, counts: [21, 31, 63] },
+  { minLevel: 99, counts: [20, 30, 60] },
+  { minLevel: 90, counts: [18, 27, 54] },
+  { minLevel: 80, counts: [16, 24, 48] },
+  { minLevel: 70, counts: [14, 21, 42] },
+  { minLevel: 60, counts: [12, 18, 36] },
+  { minLevel: 50, counts: [8, 12, 24] },
+  { minLevel: 42, counts: [4, 6, 12] },
+  { minLevel: 30, counts: [3, 4, 9] },
+  { minLevel: 21, counts: [2, 3, 6] },
+  { minLevel: 1, counts: [1, 1, 3] },
 ]);
 const BAZAAR_DETAIL_MODAL_SWIPE_START_SLOP_PX = 8;
 const BAZAAR_DETAIL_MODAL_SWIPE_CLOSE_THRESHOLD_PX = 96;
@@ -2605,8 +2605,9 @@ function getCrystalEquipmentLevel(value) {
 function getCrystalBaseCount(equipmentLevel, alchemyCount) {
   const normalizedLevel = getCrystalEquipmentLevel(equipmentLevel);
   const normalizedAlchemyCount = Math.max(0, Math.min(3, Math.floor(Number(alchemyCount) || 0)));
+  if (normalizedAlchemyCount === 0) return 0;
   const matchedRow = CRYSTAL_BASE_COUNT_TABLE.find((row) => normalizedLevel >= row.minLevel) || CRYSTAL_BASE_COUNT_TABLE.at(-1);
-  return matchedRow?.counts?.[normalizedAlchemyCount] ?? 1;
+  return matchedRow?.counts?.[normalizedAlchemyCount - 1] ?? 0;
 }
 
 function getCrystalAlchemyPoint(alchemyGrade = "beginner", alchemyResult = "success") {
@@ -2624,10 +2625,10 @@ function calculateCrystalCount(options = {}) {
   const baseCount = getCrystalBaseCount(options.equipmentLevel, alchemyCount);
   const alchemyPoint = getCrystalAlchemyPoint(options.alchemyGrade, options.alchemyResult);
 
-  // 使い込み度100時の結晶数は「装備Lv帯・錬金数ごとの基礎数 + 錬金内容ごとの追加数」を端数切り捨てで計算。
+  // 使い込み度100時の結晶数は「装備Lv帯・錬金数(+1/+2/+3)ごとの基礎数 + 1か所あたり追加数 * 錬金数」を端数切り捨てで計算。
   // 参照: 極限攻略 https://xn--10-yg4a1a3kyh.jp/dq10_asetonamidano.html
   // 参照: てとファミ村 2026.6.10更新 https://tetofamimura.livedoor.blog/archives/22589025.html
-  // TODO: 公式の最新表を機械取得できないため暫定テーブル方式。Lv132はLv130帯、Lv115はLv99帯として扱う。
+  // TODO: 公式の最新表を機械取得できないためテーブル方式で管理。未掲載の高Lv帯は直近以下のLv帯として扱う。
   return Math.max(0, Math.floor(baseCount + alchemyPoint * alchemyCount));
 }
 
