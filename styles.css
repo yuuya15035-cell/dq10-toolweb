@@ -1327,6 +1327,35 @@ body.ads-disabled .ad-slot,
   opacity: 0.62;
 }
 
+.crystal-advanced-settings {
+  margin-top: 9px;
+  border-top: 1px solid rgba(179, 137, 86, 0.28);
+  padding-top: 8px;
+}
+
+.crystal-advanced-settings summary {
+  cursor: pointer;
+  color: #765a3d;
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+.crystal-advanced-settings-body {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.crystal-compact-check {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  min-height: 34px;
+  color: #60452e;
+  font-size: 0.82rem;
+}
+
 .crystal-alchemy-selector {
   grid-column: 1 / -1;
   display: grid;
@@ -8753,6 +8782,7 @@ body.memo-panel-open {
 
   .crystal-simulator-form-grid,
   .crystal-equipment-selector,
+  .crystal-advanced-settings-body,
   .crystal-result-grid {
     grid-template-columns: 1fr;
   }

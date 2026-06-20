@@ -466,6 +466,82 @@ const CRYSTAL_SIMULATOR_DEFAULTS = Object.freeze({
   toolCost: 0,
   craftCount: 1,
 });
+const CRYSTAL_SIMULATOR_FIXED_FEE_RATE = 5;
+const CRYSTAL_EQUIPMENT_ALLOWED_CRAFTSMEN = new Set(["武器職人", "防具職人", "木工職人"]);
+const CRYSTAL_EQUIPMENT_EXCLUDED_CRAFTSMEN = new Set(["ツボ錬金", "ランプ錬金", "道具職人", "調理職人"]);
+const CRYSTAL_EQUIPMENT_EXCLUDED_CATEGORIES = new Set([
+  "初級",
+  "中級",
+  "上級",
+  "家具",
+  "庭具",
+  "職人道具",
+  "料理",
+  "消費アイテム",
+  "素材",
+  "レシピ",
+  "釣りどうぐ",
+  "ルアー",
+  "ハウジング",
+  "おしゃれ装備",
+]);
+const CRYSTAL_EQUIPMENT_SERIES_SUFFIXES = Object.freeze([
+  "からだ上",
+  "からだ下",
+  "コート上",
+  "コート下",
+  "ローブ上",
+  "ローブ下",
+  "ころも上",
+  "ころも下",
+  "よろい上",
+  "よろい下",
+  "メイル上",
+  "メイル下",
+  "ドレス上",
+  "ドレス下",
+  "スーツ上",
+  "スーツ下",
+  "グローブ",
+  "ガントレット",
+  "アーム",
+  "バングル",
+  "ブーツ",
+  "グリーブ",
+  "シューズ",
+  "サンダル",
+  "ニーソ",
+  "ヘルム",
+  "キャップ",
+  "ハット",
+  "フード",
+  "バンド",
+  "シャプカ",
+  "クラウン",
+  "ティアラ",
+  "マスク",
+  "バイザー",
+  "ベレー",
+  "かぶと",
+  "ぼうし",
+  "うでわ",
+  "リスト",
+  "こて",
+  "ミトン",
+  "ズボン",
+  "ベスト",
+  "ビスチェ",
+  "フリル",
+  "ジャケット",
+  "ボトム",
+  "アーマー上",
+  "アーマー下",
+  "くつ",
+  "頭",
+  "腕",
+  "足",
+  "冠",
+]);
 const CRYSTAL_ALCHEMY_RESULT_POINTS = Object.freeze({
   beginner: { failed: 0, success: 0.5, pal: 0.5, great: 1 },
   intermediate: { failed: 0.5, success: 1, pal: 1, great: 2 },
@@ -2108,6 +2184,7 @@ let crystalEquipmentRecipeLoadPromise = null;
 let crystalSimulatorState = {
   equipmentName: "",
   equipmentKey: "",
+  equipmentSeries: "",
   equipmentLevel: CRYSTAL_SIMULATOR_DEFAULTS.equipmentLevel,
   manualEquipmentInput: false,
   star: CRYSTAL_SIMULATOR_DEFAULTS.star,
@@ -2599,33 +2676,68 @@ function makeCrystalEquipmentKey(equipmentName, equipmentLevel) {
   return `${getCrystalEquipmentLevel(equipmentLevel)}::${String(equipmentName || "").trim()}`;
 }
 
+function isCrystalizableEquipmentRow({ craftsman = "", category = "", equipmentName = "" } = {}) {
+  const normalizedCraftsman = String(craftsman || "").trim();
+  const normalizedCategory = String(category || "").trim();
+  const normalizedEquipmentName = String(equipmentName || "").trim();
+  if (normalizedEquipmentName === "") return false;
+  if (CRYSTAL_EQUIPMENT_EXCLUDED_CRAFTSMEN.has(normalizedCraftsman)) return false;
+  if (CRYSTAL_EQUIPMENT_EXCLUDED_CATEGORIES.has(normalizedCategory)) return false;
+  if (CRYSTAL_EQUIPMENT_ALLOWED_CRAFTSMEN.has(normalizedCraftsman)) return true;
+  return false;
+}
+
+function getCrystalEquipmentSeriesName(equipmentName) {
+  const normalizedName = String(equipmentName || "").trim();
+  if (normalizedName === "") return "";
+  const matchedSuffix = CRYSTAL_EQUIPMENT_SERIES_SUFFIXES.find((suffix) => normalizedName.endsWith(suffix));
+  if (!matchedSuffix) return normalizedName;
+  const seriesName = normalizedName.slice(0, -matchedSuffix.length).replace(/の$/, "").trim();
+  return seriesName || normalizedName;
+}
+
 function extractEquipmentListFromRecipeCsv(sourceRows = []) {
   const equipmentMap = new Map();
 
   if (sourceRows.length > 0 && typeof sourceRows[0] === "string") {
     const headers = parseCsvLine(sourceRows[0]);
+    const craftsmanIndex = headers.indexOf("craftsman");
+    const categoryIndex = headers.indexOf("category");
     const equipmentNameIndex = headers.indexOf("equipmentName");
     const equipmentLevelIndex = headers.indexOf("equipmentLevel");
     if (equipmentNameIndex < 0 || equipmentLevelIndex < 0) return [];
 
     sourceRows.slice(1).forEach((line) => {
       const row = parseCsvLine(line);
+      const craftsman = craftsmanIndex >= 0 ? row[craftsmanIndex] : "";
+      const category = categoryIndex >= 0 ? row[categoryIndex] : "";
       const equipmentName = String(row[equipmentNameIndex] || "").trim();
       const equipmentLevel = parseEquipmentLevel(row[equipmentLevelIndex]);
       if (equipmentName === "" || equipmentLevel === null) return;
+      if (!isCrystalizableEquipmentRow({ craftsman, category, equipmentName })) return;
       const key = makeCrystalEquipmentKey(equipmentName, equipmentLevel);
       if (!equipmentMap.has(key)) {
-        equipmentMap.set(key, { key, name: equipmentName, equipmentLevel });
+        equipmentMap.set(key, {
+          key,
+          name: equipmentName,
+          equipmentLevel,
+          series: getCrystalEquipmentSeriesName(equipmentName),
+          craftsman,
+          category,
+        });
       }
     });
   } else {
     sourceRows.forEach((equipment) => {
       const equipmentName = String(equipment?.name || "").trim();
       const equipmentLevel = parseEquipmentLevel(equipment?.equipmentLevel);
+      const craftsman = String(equipment?.craftsman || "").trim();
+      const category = String(equipment?.category || "").trim();
       if (equipmentName === "" || equipmentLevel === null) return;
+      if (!isCrystalizableEquipmentRow({ craftsman, category, equipmentName })) return;
       const key = makeCrystalEquipmentKey(equipmentName, equipmentLevel);
       if (!equipmentMap.has(key)) {
-        equipmentMap.set(key, { key, name: equipmentName, equipmentLevel });
+        equipmentMap.set(key, { key, name: equipmentName, equipmentLevel, series: getCrystalEquipmentSeriesName(equipmentName), craftsman, category });
       }
     });
   }
@@ -2676,6 +2788,22 @@ function filterEquipmentsByLevel(level) {
   return getCrystalEquipmentList().filter((equipment) => equipment.equipmentLevel === normalizedLevel);
 }
 
+function getEquipmentSeriesByLevel(level) {
+  const seriesMap = new Map();
+  filterEquipmentsByLevel(level).forEach((equipment) => {
+    const series = String(equipment.series || equipment.name || "").trim();
+    if (series !== "" && !seriesMap.has(series)) seriesMap.set(series, series);
+  });
+  return Array.from(seriesMap.values()).sort((a, b) => a.localeCompare(b, "ja"));
+}
+
+function filterEquipmentsByLevelAndSeries(level, seriesName) {
+  const normalizedSeries = String(seriesName || "").trim();
+  return filterEquipmentsByLevel(level)
+    .filter((equipment) => String(equipment.series || equipment.name || "").trim() === normalizedSeries)
+    .sort((a, b) => a.name.localeCompare(b.name, "ja"));
+}
+
 function getSelectedCrystalEquipment() {
   return getCrystalEquipmentList().find((equipment) => equipment.key === crystalSimulatorState.equipmentKey) || null;
 }
@@ -2684,20 +2812,36 @@ function ensureCrystalEquipmentSelection() {
   if (crystalSimulatorState.manualEquipmentInput) return;
 
   const currentLevel = getCrystalEquipmentLevel(crystalSimulatorState.equipmentLevel);
-  const levelEquipments = filterEquipmentsByLevel(currentLevel);
-  const currentEquipment = levelEquipments.find((equipment) => equipment.key === crystalSimulatorState.equipmentKey);
-  const selectedEquipment = currentEquipment || levelEquipments[0] || null;
+  const levelSeries = getEquipmentSeriesByLevel(currentLevel);
+  if (!levelSeries.includes(crystalSimulatorState.equipmentSeries)) {
+    crystalSimulatorState.equipmentSeries = levelSeries[0] || "";
+  }
+
+  const seriesEquipments = filterEquipmentsByLevelAndSeries(currentLevel, crystalSimulatorState.equipmentSeries);
+  const currentEquipment = seriesEquipments.find((equipment) => equipment.key === crystalSimulatorState.equipmentKey);
+  const selectedEquipment = currentEquipment || seriesEquipments[0] || null;
 
   crystalSimulatorState.equipmentKey = selectedEquipment?.key || "";
   crystalSimulatorState.equipmentName = selectedEquipment?.name || "";
+  crystalSimulatorState.equipmentSeries = selectedEquipment?.series || crystalSimulatorState.equipmentSeries || "";
   crystalSimulatorState.equipmentLevel = selectedEquipment?.equipmentLevel ?? currentLevel;
 }
 
 function onEquipmentLevelChange(level) {
   crystalSimulatorState.equipmentLevel = getCrystalEquipmentLevel(level);
+  crystalSimulatorState.equipmentSeries = "";
   crystalSimulatorState.equipmentKey = "";
   crystalSimulatorState.equipmentName = "";
   ensureCrystalEquipmentSelection();
+  applyCrystalAutoPrices();
+}
+
+function onEquipmentSeriesChange(seriesName) {
+  crystalSimulatorState.equipmentSeries = String(seriesName || "").trim();
+  crystalSimulatorState.equipmentKey = "";
+  crystalSimulatorState.equipmentName = "";
+  ensureCrystalEquipmentSelection();
+  applyCrystalAutoPrices();
 }
 
 function onEquipmentNameChange(equipmentKey) {
@@ -2706,6 +2850,8 @@ function onEquipmentNameChange(equipmentKey) {
   if (!selectedEquipment) return;
   crystalSimulatorState.equipmentName = selectedEquipment.name;
   crystalSimulatorState.equipmentLevel = selectedEquipment.equipmentLevel;
+  crystalSimulatorState.equipmentSeries = selectedEquipment.series || crystalSimulatorState.equipmentSeries;
+  applyCrystalAutoPrices();
 }
 
 function getCrystalSimulatorFeeRate(value) {
@@ -2749,8 +2895,8 @@ function calculateCrystalCount(options = {}) {
   return Math.max(0, Math.floor(baseCount + alchemyPoint * alchemyCount));
 }
 
-function getCrystalNetSale(amount, feeRate) {
-  const rate = getCrystalSimulatorFeeRate(feeRate) / 100;
+function getCrystalNetSale(amount) {
+  const rate = CRYSTAL_SIMULATOR_FIXED_FEE_RATE / 100;
   return parseGoldInput(amount) * (1 - rate);
 }
 
@@ -2775,6 +2921,30 @@ function getCrystalMaterialPriceByName(materialName) {
   const material = (state.materials || []).find((row) => normalizeMaterialNameKey(row?.name) === normalizedName);
   const materialPrice = Number(material?.price || 0);
   return Number.isFinite(materialPrice) ? materialPrice : 0;
+}
+
+function getCrystalUnitPriceFromBazaar() {
+  const price = getCrystalMaterialPriceByName("汗と涙の結晶");
+  return price > 0 ? price : CRYSTAL_SIMULATOR_DEFAULTS.crystalUnitPrice;
+}
+
+function getCrystalEquipmentBazaarPrice(equipmentName, star) {
+  const normalizedName = String(equipmentName || "").trim();
+  const normalizedStar = getStarCount(star);
+  if (normalizedName === "" || normalizedStar === 0) return 0;
+  const matchedRow = (bazaarEquipmentPrices || []).find((row) => String(row?.itemName || "").trim() === normalizedName && Number(row?.star) === normalizedStar);
+  const price = Number(matchedRow?.todayPrice);
+  return Number.isFinite(price) ? Math.max(0, Math.round(price)) : 0;
+}
+
+function applyCrystalAutoPrices(options = {}) {
+  const { forcePurchase = true, forceCrystal = false } = options;
+  if (forcePurchase) {
+    crystalSimulatorState.purchasePrice = getCrystalEquipmentBazaarPrice(crystalSimulatorState.equipmentName, crystalSimulatorState.star);
+  }
+  if (forceCrystal || parseGoldInput(crystalSimulatorState.crystalUnitPrice) <= 0 || crystalSimulatorState.crystalUnitPrice === CRYSTAL_SIMULATOR_DEFAULTS.crystalUnitPrice) {
+    crystalSimulatorState.crystalUnitPrice = getCrystalUnitPriceFromBazaar();
+  }
 }
 
 function loadAlchemyRecipes() {
@@ -2841,7 +3011,7 @@ function getCrystalCountForCurrentState() {
 
 function calculateBuyCrystal() {
   const crystalCount = getCrystalCountForCurrentState();
-  const crystalNetSales = getCrystalNetSale(crystalSimulatorState.crystalUnitPrice * crystalCount, crystalSimulatorState.feeRate);
+  const crystalNetSales = getCrystalNetSale(crystalSimulatorState.crystalUnitPrice * crystalCount);
   const purchasePrice = parseGoldInput(crystalSimulatorState.purchasePrice);
   const profit = crystalNetSales - purchasePrice;
   return {
@@ -2860,8 +3030,8 @@ function calculateBuyAlchemy() {
   const alchemyMaterialCost = (Number(recipe?.unitCost) || 0) * star;
   const totalCost = parseGoldInput(crystalSimulatorState.purchasePrice) + alchemyMaterialCost;
   const crystalCount = getCrystalCountForCurrentState();
-  const crystalProfit = getCrystalNetSale(crystalSimulatorState.crystalUnitPrice * crystalCount, crystalSimulatorState.feeRate) - totalCost;
-  const bazaarProfit = getCrystalNetSale(crystalSimulatorState.bazaarListingPrice, crystalSimulatorState.feeRate) - totalCost;
+  const crystalProfit = getCrystalNetSale(crystalSimulatorState.crystalUnitPrice * crystalCount) - totalCost;
+  const bazaarProfit = getCrystalNetSale(crystalSimulatorState.bazaarListingPrice) - totalCost;
   return {
     recipe,
     totalCost,
@@ -2883,8 +3053,8 @@ function calculateCraftAlchemy() {
   const alchemyMaterialCost = (Number(recipe?.unitCost) || 0) * star;
   const totalCost = productionCost + alchemyMaterialCost;
   const crystalCount = getCrystalCountForCurrentState();
-  const crystalProfit = getCrystalNetSale(crystalSimulatorState.crystalUnitPrice * crystalCount, crystalSimulatorState.feeRate) - totalCost;
-  const bazaarProfit = getCrystalNetSale(crystalSimulatorState.bazaarListingPrice, crystalSimulatorState.feeRate) - totalCost;
+  const crystalProfit = getCrystalNetSale(crystalSimulatorState.crystalUnitPrice * crystalCount) - totalCost;
+  const bazaarProfit = getCrystalNetSale(crystalSimulatorState.bazaarListingPrice) - totalCost;
   return {
     recipe,
     productionCost,
@@ -2902,7 +3072,6 @@ function calculateCraftAlchemy() {
 
 function getCrystalStarOptions() {
   return [
-    { value: 0, label: "なし" },
     { value: 1, label: "★" },
     { value: 2, label: "★★" },
     { value: 3, label: "★★★" },
@@ -2924,16 +3093,34 @@ function renderEquipmentLevelSelect() {
   `;
 }
 
+function renderEquipmentSeriesSelect() {
+  const seriesList = getEquipmentSeriesByLevel(crystalSimulatorState.equipmentLevel);
+  return `
+    <label class="field crystal-field">
+      <span>シリーズ</span>
+      <select data-crystal-field="equipmentSeries" ${seriesList.length === 0 ? "disabled" : ""}>
+        ${
+          seriesList.length === 0
+            ? `<option value="">該当するシリーズがありません</option>`
+            : seriesList
+                .map((series) => `<option value="${escapeHtml(series)}" ${crystalSimulatorState.equipmentSeries === series ? "selected" : ""}>${escapeHtml(series)}</option>`)
+                .join("")
+        }
+      </select>
+    </label>
+  `;
+}
+
 function renderEquipmentNameSelect() {
-  const levelEquipments = filterEquipmentsByLevel(crystalSimulatorState.equipmentLevel);
+  const seriesEquipments = filterEquipmentsByLevelAndSeries(crystalSimulatorState.equipmentLevel, crystalSimulatorState.equipmentSeries);
   return `
     <label class="field crystal-field crystal-equipment-name-field">
-      <span>装備名</span>
-      <select data-crystal-field="equipmentKey" ${levelEquipments.length === 0 ? "disabled" : ""}>
+      <span>部位</span>
+      <select data-crystal-field="equipmentKey" ${seriesEquipments.length === 0 ? "disabled" : ""}>
         ${
-          levelEquipments.length === 0
+          seriesEquipments.length === 0
             ? `<option value="">該当する装備がありません</option>`
-            : levelEquipments
+            : seriesEquipments
                 .map((equipment) => `<option value="${escapeHtml(equipment.key)}" ${crystalSimulatorState.equipmentKey === equipment.key ? "selected" : ""}>${escapeHtml(equipment.name)}</option>`)
                 .join("")
         }
@@ -2946,10 +3133,6 @@ function renderCrystalEquipmentSelector() {
   ensureCrystalEquipmentSelection();
   if (crystalSimulatorState.manualEquipmentInput) {
     return `
-      <label class="field inline-field crystal-override-field crystal-equipment-manual-toggle">
-        <input data-crystal-field="manualEquipmentInput" type="checkbox" checked />
-        <span>装備名を手入力する</span>
-      </label>
       ${renderCrystalInputField("equipmentName", "装備名", { type: "text" })}
       ${renderCrystalInputField("equipmentLevel", "装備レベル")}
     `;
@@ -2958,12 +3141,31 @@ function renderCrystalEquipmentSelector() {
   return `
     <div class="crystal-equipment-selector">
       ${renderEquipmentLevelSelect()}
+      ${renderEquipmentSeriesSelect()}
       ${renderEquipmentNameSelect()}
-      <label class="field inline-field crystal-override-field crystal-equipment-manual-toggle">
-        <input data-crystal-field="manualEquipmentInput" type="checkbox" />
-        <span>装備名を手入力する</span>
-      </label>
     </div>
+  `;
+}
+
+function renderCrystalAdvancedSettings() {
+  return `
+    <details class="crystal-advanced-settings">
+      <summary>詳細設定</summary>
+      <div class="crystal-advanced-settings-body">
+        <label class="crystal-compact-check">
+          <input data-crystal-field="manualEquipmentInput" type="checkbox" ${crystalSimulatorState.manualEquipmentInput ? "checked" : ""} />
+          <span>装備名を手入力する</span>
+        </label>
+        <label class="crystal-compact-check">
+          <input data-crystal-field="overrideCrystalCount" type="checkbox" ${crystalSimulatorState.overrideCrystalCount ? "checked" : ""} />
+          <span>結晶数を手動上書き</span>
+        </label>
+        <label class="field crystal-field ${crystalSimulatorState.overrideCrystalCount ? "" : "is-muted"}">
+          <span>手動結晶数</span>
+          <input data-crystal-field="manualCrystalCount" type="number" min="0" step="1" value="${escapeHtml(crystalSimulatorState.manualCrystalCount)}" ${crystalSimulatorState.overrideCrystalCount ? "" : "disabled"} inputmode="numeric" />
+        </label>
+      </div>
+    </details>
   `;
 }
 
@@ -2994,15 +3196,6 @@ function renderCrystalCommonFields() {
     ${renderCrystalEquipmentSelector()}
     ${renderCrystalStarField()}
     ${renderCrystalInputField("crystalUnitPrice", "結晶単価")}
-    ${renderCrystalInputField("feeRate", "手数料率（%）", { step: "0.1" })}
-    <label class="field inline-field crystal-override-field">
-      <input data-crystal-field="overrideCrystalCount" type="checkbox" ${crystalSimulatorState.overrideCrystalCount ? "checked" : ""} />
-      <span>結晶数を手動上書き</span>
-    </label>
-    <label class="field crystal-field ${crystalSimulatorState.overrideCrystalCount ? "" : "is-muted"}">
-      <span>手動結晶数</span>
-      <input data-crystal-field="manualCrystalCount" type="number" min="0" step="1" value="${escapeHtml(crystalSimulatorState.manualCrystalCount)}" ${crystalSimulatorState.overrideCrystalCount ? "" : "disabled"} inputmode="numeric" />
-    </label>
   `;
 }
 
@@ -3059,6 +3252,10 @@ function collectCrystalSimulatorFormValues() {
       onEquipmentNameChange(value);
       return;
     }
+    if (key === "equipmentSeries") {
+      onEquipmentSeriesChange(value);
+      return;
+    }
     if (key === "feeRate") {
       crystalSimulatorState[key] = getCrystalSimulatorFeeRate(value);
       return;
@@ -3093,7 +3290,7 @@ function buildCrystalSimulatorResultHtml() {
       <div class="crystal-result-grid">
         <p><span>結晶数</span><strong>${result.crystalCount}個</strong></p>
         <p><span>結晶売却手取り</span><strong>${formatCrystalGold(result.crystalNetSales)}</strong></p>
-        <p><span>購入価格</span><strong>${formatCrystalGold(result.purchasePrice)}</strong></p>
+        <p><span>購入単価</span><strong>${formatCrystalGold(result.purchasePrice)}</strong></p>
         <p><span>利益</span><strong class="${result.profit >= 0 ? "is-positive" : "is-negative"}">${formatCrystalGold(result.profit)}</strong></p>
         <p><span>利益率</span><strong>${formatCrystalPercent(result.profitRate)}</strong></p>
         <p><span>判定</span><strong>${escapeHtml(result.judgement)}</strong></p>
@@ -3144,8 +3341,10 @@ function renderCrystalSimulatorResult() {
 function renderCrystalSimulatorFormFields() {
   if (activeCrystalSimulatorTab === "buy") {
     return `
-      ${renderCrystalCommonFields()}
-      ${renderCrystalInputField("purchasePrice", "購入価格")}
+      ${renderCrystalEquipmentSelector()}
+      ${renderCrystalInputField("purchasePrice", "購入単価")}
+      ${renderCrystalStarField()}
+      ${renderCrystalInputField("crystalUnitPrice", "結晶単価")}
     `;
   }
 
@@ -3177,6 +3376,9 @@ function renderCrystalSimulator() {
   if (!hasLoadedBazaarPrices && !isBazaarLoading) {
     void ensureBazaarPricesLoaded();
   }
+  if (!hasLoadedBazaarEquipmentPrices && !isBazaarEquipmentLoading) {
+    void ensureBazaarEquipmentPricesLoaded();
+  }
   if (!Array.isArray(crystalEquipmentRecipeCache) && !crystalEquipmentRecipeLoadPromise) {
     void loadEquipmentRecipes().then(() => {
       if (activeTabId === "crystal-simulator") renderCrystalSimulator();
@@ -3184,6 +3386,7 @@ function renderCrystalSimulator() {
   }
   getSelectedAlchemyRecipe();
   ensureCrystalEquipmentSelection();
+  applyCrystalAutoPrices({ forcePurchase: parseGoldInput(crystalSimulatorState.purchasePrice) <= 0 });
 
   crystalSimulatorWrap.innerHTML = `
     <div class="crystal-simulator-tabs" role="tablist" aria-label="結晶シミュレーター切り替え">
@@ -3195,6 +3398,7 @@ function renderCrystalSimulator() {
       <div class="crystal-simulator-form-grid">
         ${renderCrystalSimulatorFormFields()}
       </div>
+      ${renderCrystalAdvancedSettings()}
     </section>
     <section class="card crystal-simulator-result-card" aria-live="polite">
       <h3>計算結果</h3>
@@ -5538,6 +5742,7 @@ async function ensureBazaarEquipmentPricesLoaded() {
       if (activeTabId === "bazaar" && activeBazaarPriceTab === "equipment") {
         renderBazaarPrices();
       }
+      if (activeTabId === "crystal-simulator") renderCrystalSimulator();
     }
   })();
   return bazaarEquipmentLoadingPromise;
@@ -6471,6 +6676,8 @@ function prefetchDataForTab(tabId) {
   }
   if (tabId === "crystal-simulator") {
     void ensureBazaarPricesLoaded();
+    void ensureBazaarEquipmentPricesLoaded();
+    void loadEquipmentRecipes();
     return;
   }
   if (isGoldFarmingTab(tabId)) {
@@ -15324,6 +15531,19 @@ if (crystalSimulatorWrap) {
 
     if (fieldName === "equipmentKey") {
       onEquipmentNameChange(target.value);
+      renderCrystalSimulator();
+      return;
+    }
+
+    if (fieldName === "equipmentSeries") {
+      onEquipmentSeriesChange(target.value);
+      renderCrystalSimulator();
+      return;
+    }
+
+    if (fieldName === "star") {
+      collectCrystalSimulatorFormValues();
+      applyCrystalAutoPrices({ forcePurchase: true });
       renderCrystalSimulator();
       return;
     }
