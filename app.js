@@ -3381,9 +3381,10 @@ function renderCrystalEquipmentSelector() {
   `;
 }
 
-function renderCrystalAdvancedSettings() {
+function renderCrystalAdvancedSettings(options = {}) {
+  const className = options.className ? ` ${options.className}` : "";
   return `
-    <div class="crystal-advanced-settings">
+    <div class="crystal-advanced-settings${className}">
       <label class="crystal-compact-check">
         <input data-crystal-field="manualEquipmentInput" type="checkbox" ${crystalSimulatorState.manualEquipmentInput ? "checked" : ""} />
         <span>装備名を手入力する</span>
@@ -3427,14 +3428,10 @@ function renderCrystalStarField() {
   `;
 }
 
-function renderCrystalStarSettingsField() {
-  return `<div class="crystal-star-settings-field">${renderCrystalStarField()}${renderCrystalAdvancedSettings()}</div>`;
-}
-
 function renderCrystalCommonFields() {
   return `
     ${renderCrystalEquipmentSelector()}
-    ${renderCrystalStarSettingsField()}
+    ${renderCrystalStarField()}
     ${renderCrystalInputField("crystalUnitPrice", "結晶単価")}
   `;
 }
@@ -3579,8 +3576,9 @@ function renderCrystalSimulatorFormFields() {
     return `
       ${renderCrystalEquipmentSelector()}
       ${renderCrystalInputField("purchasePrice", "購入単価", { placeholder: "錬金済み装備の購入価格を入力" })}
-      ${renderCrystalStarSettingsField()}
+      ${renderCrystalStarField()}
       ${renderCrystalInputField("crystalUnitPrice", "結晶単価")}
+      ${renderCrystalAdvancedSettings()}
     `;
   }
 
@@ -3590,6 +3588,7 @@ function renderCrystalSimulatorFormFields() {
       ${renderCrystalInputField("purchasePrice", "未錬金装備の購入価格")}
       ${renderAlchemyRecipeSelector()}
       ${renderCrystalInputField("bazaarListingPrice", "バザー出品価格")}
+      ${renderCrystalAdvancedSettings()}
     `;
   }
 
@@ -3604,6 +3603,7 @@ function renderCrystalSimulatorFormFields() {
     </label>
     ${renderAlchemyRecipeSelector()}
     ${renderCrystalInputField("bazaarListingPrice", "バザー出品価格")}
+    ${renderCrystalAdvancedSettings({ className: "crystal-advanced-settings--end" })}
   `;
 }
 
