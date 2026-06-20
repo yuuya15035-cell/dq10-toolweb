@@ -2183,6 +2183,9 @@ let crystalEquipmentRecipeCache = null;
 let crystalEquipmentRecipeLoadPromise = null;
 let crystalEquipmentDataCache = null;
 let crystalEquipmentDataLoadPromise = null;
+let crystalEquipmentSearchKeyword = "";
+let isCrystalEquipmentSearchCandidateListOpen = false;
+let hasInitializedCrystalCountInput = false;
 let crystalSimulatorState = {
   equipmentName: "",
   equipmentKey: "",
@@ -2191,8 +2194,8 @@ let crystalSimulatorState = {
   armorSeriesName: "",
   weaponType: "",
   equipmentLevel: CRYSTAL_SIMULATOR_DEFAULTS.equipmentLevel,
-  manualEquipmentInput: false,
   star: CRYSTAL_SIMULATOR_DEFAULTS.star,
+  crystalCount: 0,
   purchasePrice: CRYSTAL_SIMULATOR_DEFAULTS.purchasePrice,
   crystalUnitPrice: CRYSTAL_SIMULATOR_DEFAULTS.crystalUnitPrice,
   feeRate: CRYSTAL_SIMULATOR_DEFAULTS.feeRate,
@@ -2204,8 +2207,6 @@ let crystalSimulatorState = {
   alchemyRecipeId: "",
   alchemyEffectName: "",
   alchemyUnitCost: 0,
-  overrideCrystalCount: false,
-  manualCrystalCount: 0,
 };
 let selectedRoutineType = "daily";
 let routineTaskCheckedTokens = {};
@@ -2772,6 +2773,86 @@ function getCrystalEquipmentData() {
   return Array.isArray(crystalEquipmentDataCache) ? crystalEquipmentDataCache : getCrystalEquipmentDataFallback();
 }
 
+function getUniqueCrystalEquipmentDataRows() {
+  const equipmentMap = new Map();
+  getCrystalEquipmentData().forEach((entry) => {
+    const equipmentGroup = String(entry?.equipmentGroup || "").trim();
+    const equipmentName = String(entry?.equipmentName || "").trim();
+    const equipmentType = String(entry?.equipmentType || "").trim();
+    const equipmentLevel = Number(entry?.equipmentLevel);
+    if (!["weapon", "armor"].includes(equipmentGroup) || equipmentName === "" || !Number.isFinite(equipmentLevel)) return;
+    const key = `${equipmentGroup}:${equipmentLevel}:${equipmentType}:${equipmentName}`;
+    if (!equipmentMap.has(key)) {
+      equipmentMap.set(key, { equipmentGroup, equipmentName, equipmentType, equipmentLevel });
+    }
+  });
+  return Array.from(equipmentMap.values());
+}
+
+function getCrystalEquipmentDataEntryByName(equipmentName, equipmentLevel = null) {
+  const normalizedName = String(equipmentName || "").trim();
+  const normalizedLevel = equipmentLevel === null ? null : getCrystalEquipmentLevel(equipmentLevel);
+  if (normalizedName === "") return null;
+  return (
+    getUniqueCrystalEquipmentDataRows().find(
+      (entry) =>
+        entry.equipmentName === normalizedName &&
+        (normalizedLevel === null || Number(entry.equipmentLevel) === normalizedLevel) &&
+        entry.equipmentType !== "防具セット"
+    ) || null
+  );
+}
+
+function findArmorSeriesForCrystalEquipment(equipmentName, equipmentLevel) {
+  const normalizedName = String(equipmentName || "").trim();
+  const normalizedLevel = getCrystalEquipmentLevel(equipmentLevel);
+  if (normalizedName === "") return null;
+  const seriesList = getArmorSeriesByLevel(normalizedLevel)
+    .filter((series) => normalizedName.includes(series.baseName))
+    .sort((a, b) => b.baseName.length - a.baseName.length);
+  return seriesList[0] || null;
+}
+
+function getCrystalEquipmentSearchCandidates(keyword = crystalEquipmentSearchKeyword) {
+  const normalizedKeyword = normalizeSearchKeyword(keyword);
+  if (normalizedKeyword === "") return [];
+
+  const candidates = new Map();
+  getCrystalEquipmentList().forEach((equipment) => {
+    const equipmentName = String(equipment?.name || "").trim();
+    const equipmentLevel = getCrystalEquipmentLevel(equipment?.equipmentLevel);
+    if (equipmentName === "" || !normalizeSearchKeyword(equipmentName).includes(normalizedKeyword)) return;
+
+    const dataEntry = getCrystalEquipmentDataEntryByName(equipmentName, equipmentLevel);
+    const armorSeries = dataEntry ? null : findArmorSeriesForCrystalEquipment(equipmentName, equipmentLevel);
+    if (!dataEntry && !armorSeries) return;
+
+    const equipmentGroup = dataEntry?.equipmentGroup || "armor";
+    const equipmentType = dataEntry?.equipmentType || "防具";
+    const key = makeCrystalEquipmentKey(equipmentName, equipmentLevel);
+    if (!candidates.has(key)) {
+      candidates.set(key, {
+        key,
+        name: equipmentName,
+        equipmentLevel,
+        equipmentGroup,
+        equipmentType,
+        armorSeriesName: armorSeries?.value || "",
+      });
+    }
+  });
+
+  return Array.from(candidates.values())
+    .sort((a, b) => {
+      const aRank = getSearchMatchRank(a.name, normalizedKeyword);
+      const bRank = getSearchMatchRank(b.name, normalizedKeyword);
+      if (aRank !== bRank) return aRank - bRank;
+      if (a.equipmentLevel !== b.equipmentLevel) return a.equipmentLevel - b.equipmentLevel;
+      return a.name.localeCompare(b.name, "ja");
+    })
+    .slice(0, 20);
+}
+
 async function loadEquipmentData() {
   if (Array.isArray(crystalEquipmentDataCache)) return crystalEquipmentDataCache;
   if (crystalEquipmentDataLoadPromise) return crystalEquipmentDataLoadPromise;
@@ -2961,8 +3042,6 @@ function getSelectedCrystalEquipment() {
 }
 
 function ensureCrystalEquipmentSelection() {
-  if (crystalSimulatorState.manualEquipmentInput) return;
-
   const currentLevel = getCrystalEquipmentLevel(crystalSimulatorState.equipmentLevel);
   crystalSimulatorState.equipmentKind = normalizeEquipmentKind(crystalSimulatorState.equipmentKind);
 
@@ -3003,12 +3082,14 @@ function onEquipmentLevelChange(level) {
   crystalSimulatorState.equipmentName = "";
   ensureCrystalEquipmentSelection();
   applyCrystalAutoPrices();
+  resetCrystalCountToEstimate();
 }
 
 function updateEquipmentSelectors() {
   crystalSimulatorState.equipmentKind = normalizeEquipmentKind(crystalSimulatorState.equipmentKind);
   ensureCrystalEquipmentSelection();
   applyCrystalAutoPrices();
+  resetCrystalCountToEstimate();
 }
 
 function onEquipmentKindChange(kind) {
@@ -3050,6 +3131,44 @@ function onEquipmentNameChange(equipmentKey) {
   crystalSimulatorState.equipmentLevel = resolvedEquipment.equipmentLevel;
   crystalSimulatorState.equipmentSeries = resolvedEquipment.series || crystalSimulatorState.equipmentSeries;
   applyCrystalAutoPrices();
+  resetCrystalCountToEstimate();
+  applyCrystalCraftMaterialCostIfAvailable();
+}
+
+function applyCrystalEquipmentSearchSelection(candidateKey) {
+  const candidate = getCrystalEquipmentSearchCandidates(crystalEquipmentSearchKeyword).find((entry) => entry.key === candidateKey);
+  if (!candidate) return false;
+
+  crystalSimulatorState.equipmentLevel = getCrystalEquipmentLevel(candidate.equipmentLevel);
+  crystalSimulatorState.equipmentKind = candidate.equipmentGroup === "weapon" ? "weapon" : "armor";
+  crystalSimulatorState.equipmentName = candidate.name;
+  crystalSimulatorState.equipmentSeries = candidate.name;
+  crystalSimulatorState.equipmentKey = candidate.key;
+
+  if (candidate.equipmentGroup === "weapon") {
+    crystalSimulatorState.weaponType = candidate.equipmentType;
+    crystalSimulatorState.armorSeriesName = "";
+  } else {
+    crystalSimulatorState.weaponType = "";
+    crystalSimulatorState.armorSeriesName = candidate.armorSeriesName || findArmorSeriesForCrystalEquipment(candidate.name, candidate.equipmentLevel)?.value || "";
+  }
+
+  ensureCrystalEquipmentSelection();
+  crystalEquipmentSearchKeyword = candidate.name;
+  isCrystalEquipmentSearchCandidateListOpen = false;
+  applyCrystalAutoPrices({ forcePurchase: activeCrystalSimulatorTab !== "buy" });
+  applyCrystalCraftMaterialCostIfAvailable();
+  resetCrystalCountToEstimate();
+  return true;
+}
+
+function applyCrystalCraftMaterialCostIfAvailable() {
+  if (activeCrystalSimulatorTab !== "craft-alchemy") return;
+  const normalizedName = String(crystalSimulatorState.equipmentName || "").trim();
+  if (normalizedName === "") return;
+  const matchedEquipment = (state.equipments || []).find((equipment) => String(equipment?.name || "").trim() === normalizedName);
+  if (!matchedEquipment) return;
+  crystalSimulatorState.materialCost = getRoundedEquipmentMaterialCost(matchedEquipment.id);
 }
 
 function getCrystalSimulatorFeeRate(value) {
@@ -3078,10 +3197,6 @@ function getCrystalAlchemyPoint(alchemyGrade = "beginner", alchemyResult = "succ
 }
 
 function calculateCrystalCount(options = {}) {
-  if (options.overrideCrystalCount) {
-    return Math.max(0, Math.floor(parseGoldInput(options.manualCrystalCount)));
-  }
-
   const alchemyCount = getAlchemyCountFromStar(options.star);
   const baseCount = getCrystalBaseCount(options.equipmentLevel, alchemyCount);
   const alchemyPoint = getCrystalAlchemyPoint(options.alchemyGrade, options.alchemyResult);
@@ -3091,6 +3206,29 @@ function calculateCrystalCount(options = {}) {
   // 参照: てとファミ村 2026.6.10更新 https://tetofamimura.livedoor.blog/archives/22589025.html
   // TODO: 公式の最新表を機械取得できないためテーブル方式で管理。未掲載の高Lv帯は直近以下のLv帯として扱う。
   return Math.max(0, Math.floor(baseCount + alchemyPoint * alchemyCount));
+}
+
+function getCrystalCountEstimateForCurrentState() {
+  return calculateCrystalCount({
+    equipmentLevel: crystalSimulatorState.equipmentLevel,
+    star: crystalSimulatorState.star,
+    alchemyGrade: "beginner",
+    alchemyResult: "success",
+  });
+}
+
+function resetCrystalCountToEstimate() {
+  crystalSimulatorState.crystalCount = getCrystalCountEstimateForCurrentState();
+  hasInitializedCrystalCountInput = true;
+}
+
+function ensureCrystalCountInputValue() {
+  const parsed = parseGoldInput(crystalSimulatorState.crystalCount);
+  if (!hasInitializedCrystalCountInput || !Number.isFinite(parsed)) {
+    resetCrystalCountToEstimate();
+  } else {
+    crystalSimulatorState.crystalCount = Math.max(0, Math.floor(parsed));
+  }
 }
 
 function getCrystalNetSale(amount) {
@@ -3197,14 +3335,8 @@ function getSelectedAlchemyRecipe() {
 }
 
 function getCrystalCountForCurrentState() {
-  return calculateCrystalCount({
-    equipmentLevel: crystalSimulatorState.equipmentLevel,
-    star: crystalSimulatorState.star,
-    alchemyGrade: "beginner",
-    alchemyResult: "success",
-    overrideCrystalCount: crystalSimulatorState.overrideCrystalCount,
-    manualCrystalCount: crystalSimulatorState.manualCrystalCount,
-  });
+  ensureCrystalCountInputValue();
+  return Math.max(0, Math.floor(parseGoldInput(crystalSimulatorState.crystalCount)));
 }
 
 function calculateBuyCrystal() {
@@ -3364,15 +3496,9 @@ function renderEquipmentNameSelect() {
 
 function renderCrystalEquipmentSelector() {
   ensureCrystalEquipmentSelection();
-  if (crystalSimulatorState.manualEquipmentInput) {
-    return `
-      ${renderCrystalInputField("equipmentName", "装備名", { type: "text" })}
-      ${renderCrystalInputField("equipmentLevel", "装備レベル")}
-    `;
-  }
-
   return `
     <div class="crystal-equipment-selector">
+      ${renderCrystalEquipmentSearchField()}
       ${renderEquipmentLevelSelect()}
       ${renderEquipmentKindSelect()}
       ${crystalSimulatorState.equipmentKind === "weapon" ? renderWeaponTypeSelect() : renderArmorSeriesSelect()}
@@ -3381,28 +3507,48 @@ function renderCrystalEquipmentSelector() {
   `;
 }
 
-function renderCrystalAdvancedSettings(options = {}) {
-  const className = options.className ? ` ${options.className}` : "";
+function renderCrystalEquipmentSearchField() {
   return `
-    <div class="crystal-advanced-settings${className}">
-      <label class="crystal-compact-check">
-        <input data-crystal-field="manualEquipmentInput" type="checkbox" ${crystalSimulatorState.manualEquipmentInput ? "checked" : ""} />
-        <span>装備名を手入力する</span>
+    <div class="crystal-equipment-search-field">
+      <label class="field crystal-field">
+        <span>装備名検索</span>
+        <input data-crystal-equipment-search type="search" value="${escapeHtml(crystalEquipmentSearchKeyword)}" autocomplete="off" placeholder="装備名を入力" />
       </label>
-      <label class="crystal-compact-check">
-        <input data-crystal-field="overrideCrystalCount" type="checkbox" ${crystalSimulatorState.overrideCrystalCount ? "checked" : ""} />
-        <span>結晶数を手動上書き</span>
-      </label>
-      ${
-        crystalSimulatorState.overrideCrystalCount
-          ? `<label class="field crystal-field crystal-manual-crystal-field">
-              <span>手動結晶数</span>
-              <input data-crystal-field="manualCrystalCount" type="number" min="0" step="1" value="${escapeHtml(crystalSimulatorState.manualCrystalCount)}" inputmode="numeric" />
-            </label>`
-          : ""
-      }
+      <div class="crystal-equipment-search-candidates" data-crystal-equipment-search-candidates ${isCrystalEquipmentSearchCandidateListOpen && crystalEquipmentSearchKeyword.trim() !== "" ? "" : "hidden"}>
+        ${renderCrystalEquipmentSearchCandidatesHtml()}
+      </div>
     </div>
   `;
+}
+
+function renderCrystalEquipmentSearchCandidatesHtml() {
+  if (!isCrystalEquipmentSearchCandidateListOpen || crystalEquipmentSearchKeyword.trim() === "") return "";
+  const candidates = getCrystalEquipmentSearchCandidates();
+  if (candidates.length === 0) {
+    return `<p class="site-search-empty assist-search-empty">該当する装備がありません。</p>`;
+  }
+  return candidates
+    .map((candidate) => {
+      const typeLabel = candidate.equipmentGroup === "weapon" ? candidate.equipmentType || "武器" : "防具";
+      return `
+        <button type="button" class="site-search-result-item assist-search-candidate-item" data-crystal-equipment-candidate-key="${escapeHtml(candidate.key)}">
+          <p class="site-search-result-main">${escapeHtml(candidate.name)}</p>
+          <p class="site-search-result-meta">
+            <span class="site-search-chip">Lv${escapeHtml(candidate.equipmentLevel)}</span>
+            <span class="site-search-chip">${escapeHtml(typeLabel)}</span>
+          </p>
+        </button>
+      `;
+    })
+    .join("");
+}
+
+function renderCrystalEquipmentSearchCandidates() {
+  const candidateWrap = crystalSimulatorWrap?.querySelector("[data-crystal-equipment-search-candidates]");
+  if (!candidateWrap) return;
+  const shouldShow = isCrystalEquipmentSearchCandidateListOpen && crystalEquipmentSearchKeyword.trim() !== "";
+  candidateWrap.hidden = !shouldShow;
+  candidateWrap.innerHTML = shouldShow ? renderCrystalEquipmentSearchCandidatesHtml() : "";
 }
 
 function renderCrystalInputField(name, label, options = {}) {
@@ -3413,6 +3559,17 @@ function renderCrystalInputField(name, label, options = {}) {
   const placeholder = options.placeholder ? ` placeholder="${escapeHtml(options.placeholder)}"` : "";
   const inputMode = type === "number" ? ` inputmode="numeric"` : "";
   return `<label class="field crystal-field"><span>${escapeHtml(label)}</span><input data-crystal-field="${escapeHtml(name)}" type="${escapeHtml(type)}" min="${min}" step="${step}" value="${escapeHtml(value)}"${placeholder}${inputMode} /></label>`;
+}
+
+function renderCrystalCountField() {
+  ensureCrystalCountInputValue();
+  return `
+    <label class="field crystal-field crystal-count-field">
+      <span>結晶数</span>
+      <input data-crystal-field="crystalCount" type="number" min="0" step="1" value="${escapeHtml(crystalSimulatorState.crystalCount)}" inputmode="numeric" />
+      <small>装備・星数から目安を自動入力しています。実際の結晶数に合わせて変更できます。</small>
+    </label>
+  `;
 }
 
 function renderCrystalStarField() {
@@ -3469,19 +3626,19 @@ function collectCrystalSimulatorFormValues() {
       return;
     }
     if (key === "equipmentKey") {
-      onEquipmentNameChange(value);
+      crystalSimulatorState.equipmentKey = value;
       return;
     }
     if (key === "equipmentSeries") {
-      onArmorSeriesChange(value);
+      crystalSimulatorState.armorSeriesName = String(value || "").trim();
       return;
     }
     if (key === "equipmentKind") {
-      onEquipmentKindChange(value);
+      crystalSimulatorState.equipmentKind = normalizeEquipmentKind(value);
       return;
     }
     if (key === "weaponType") {
-      onWeaponTypeChange(value);
+      crystalSimulatorState.weaponType = String(value || "").trim();
       return;
     }
     if (key === "feeRate") {
@@ -3577,23 +3734,24 @@ function renderCrystalSimulatorFormFields() {
       ${renderCrystalEquipmentSelector()}
       ${renderCrystalInputField("purchasePrice", "購入単価", { placeholder: "錬金済み装備の購入価格を入力" })}
       ${renderCrystalStarField()}
+      ${renderCrystalCountField()}
       ${renderCrystalInputField("crystalUnitPrice", "結晶単価")}
-      ${renderCrystalAdvancedSettings()}
     `;
   }
 
   if (activeCrystalSimulatorTab === "buy-alchemy") {
     return `
       ${renderCrystalCommonFields()}
+      ${renderCrystalCountField()}
       ${renderCrystalInputField("purchasePrice", "未錬金装備の購入価格")}
       ${renderAlchemyRecipeSelector()}
       ${renderCrystalInputField("bazaarListingPrice", "バザー出品価格")}
-      ${renderCrystalAdvancedSettings()}
     `;
   }
 
   return `
     ${renderCrystalCommonFields()}
+    ${renderCrystalCountField()}
     ${renderCrystalInputField("materialCost", "素材原価")}
     ${renderCrystalInputField("toolCost", "職人道具代")}
     ${renderCrystalInputField("craftCount", "作成個数", { min: 1 })}
@@ -3603,7 +3761,6 @@ function renderCrystalSimulatorFormFields() {
     </label>
     ${renderAlchemyRecipeSelector()}
     ${renderCrystalInputField("bazaarListingPrice", "バザー出品価格")}
-    ${renderCrystalAdvancedSettings({ className: "crystal-advanced-settings--end" })}
   `;
 }
 
@@ -15752,8 +15909,23 @@ function rerenderActiveTabOnly() {
 
 // --- イベント定義 ---
 if (crystalSimulatorWrap) {
+  crystalSimulatorWrap.addEventListener("focusin", (event) => {
+    if (!(event.target instanceof HTMLElement)) return;
+    if (!event.target.matches("[data-crystal-equipment-search]")) return;
+    if (crystalEquipmentSearchKeyword !== "") {
+      isCrystalEquipmentSearchCandidateListOpen = true;
+      renderCrystalEquipmentSearchCandidates();
+    }
+  });
+
   crystalSimulatorWrap.addEventListener("input", (event) => {
     if (!(event.target instanceof HTMLElement)) return;
+    if (event.target.matches("[data-crystal-equipment-search]")) {
+      crystalEquipmentSearchKeyword = event.target.value.trim();
+      isCrystalEquipmentSearchCandidateListOpen = crystalEquipmentSearchKeyword !== "";
+      renderCrystalEquipmentSearchCandidates();
+      return;
+    }
     if (!event.target.matches("[data-crystal-field]")) return;
     renderCrystalSimulatorResult();
   });
@@ -15764,7 +15936,7 @@ if (crystalSimulatorWrap) {
     if (!target.matches("[data-crystal-field]")) return;
     const fieldName = String(target.dataset.crystalField || "");
 
-    if (fieldName === "equipmentLevel" && !crystalSimulatorState.manualEquipmentInput) {
+    if (fieldName === "equipmentLevel") {
       onEquipmentLevelChange(target.value);
       renderCrystalSimulator();
       return;
@@ -15797,12 +15969,14 @@ if (crystalSimulatorWrap) {
     if (fieldName === "star") {
       collectCrystalSimulatorFormValues();
       applyCrystalAutoPrices({ forcePurchase: activeCrystalSimulatorTab !== "buy" });
+      resetCrystalCountToEstimate();
       renderCrystalSimulator();
       return;
     }
 
     collectCrystalSimulatorFormValues();
-    if (fieldName === "alchemyRecipeId" || fieldName === "overrideCrystalCount" || fieldName === "manualEquipmentInput") {
+    if (fieldName === "alchemyRecipeId") {
+      resetCrystalCountToEstimate();
       renderCrystalSimulator();
       return;
     }
@@ -15826,7 +16000,17 @@ if (crystalSimulatorWrap) {
       const recipe = getSelectedAlchemyRecipe();
       crystalSimulatorState.alchemyEffectName = recipe?.effectName || "";
       crystalSimulatorState.alchemyUnitCost = Number(recipe?.unitCost || 0);
+      resetCrystalCountToEstimate();
       renderCrystalSimulator();
+      return;
+    }
+
+    const equipmentCandidateButton = target.closest("[data-crystal-equipment-candidate-key]");
+    if (equipmentCandidateButton instanceof HTMLElement) {
+      collectCrystalSimulatorFormValues();
+      if (applyCrystalEquipmentSearchSelection(String(equipmentCandidateButton.dataset.crystalEquipmentCandidateKey || ""))) {
+        renderCrystalSimulator();
+      }
       return;
     }
 
@@ -16806,6 +16990,13 @@ document.addEventListener("click", (event) => {
   if (!isInsideMaterialSearch && isMaterialSearchCandidateListOpen) {
     isMaterialSearchCandidateListOpen = false;
     renderMaterialSearchCandidates();
+  }
+  const crystalEquipmentSearchInput = crystalSimulatorWrap?.querySelector("[data-crystal-equipment-search]");
+  const crystalEquipmentSearchCandidateWrap = crystalSimulatorWrap?.querySelector("[data-crystal-equipment-search-candidates]");
+  const isInsideCrystalEquipmentSearch = Boolean(crystalEquipmentSearchInput?.contains(target) || crystalEquipmentSearchCandidateWrap?.contains(target));
+  if (!isInsideCrystalEquipmentSearch && isCrystalEquipmentSearchCandidateListOpen) {
+    isCrystalEquipmentSearchCandidateListOpen = false;
+    renderCrystalEquipmentSearchCandidates();
   }
   const isInsideBossCardNameSearch = Boolean(bossCardNameInput?.contains(target) || bossCardNameCandidateWrap?.contains(target));
   if (!isInsideBossCardNameSearch && bossCardNameCandidateWrap) {
