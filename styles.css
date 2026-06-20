@@ -1327,9 +1327,15 @@ body.ads-disabled .ad-slot,
   opacity: 0.62;
 }
 
+.crystal-star-settings-field {
+  display: grid;
+  align-content: start;
+  gap: 6px;
+  min-width: 0;
+}
+
 .crystal-advanced-settings {
   display: grid;
-  grid-column: 2;
   align-content: start;
   gap: 5px;
   min-width: 0;
@@ -1360,7 +1366,6 @@ body.ads-disabled .ad-slot,
 }
 
 .crystal-alchemy-selector {
-  grid-column: 1 / -1;
   display: grid;
   gap: 10px;
 }

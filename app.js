@@ -3427,10 +3427,14 @@ function renderCrystalStarField() {
   `;
 }
 
+function renderCrystalStarSettingsField() {
+  return `<div class="crystal-star-settings-field">${renderCrystalStarField()}${renderCrystalAdvancedSettings()}</div>`;
+}
+
 function renderCrystalCommonFields() {
   return `
     ${renderCrystalEquipmentSelector()}
-    ${renderCrystalStarField()}
+    ${renderCrystalStarSettingsField()}
     ${renderCrystalInputField("crystalUnitPrice", "結晶単価")}
   `;
 }
@@ -3438,15 +3442,6 @@ function renderCrystalCommonFields() {
 function renderAlchemyRecipeSelector() {
   const recipes = loadAlchemyRecipes();
   const selectedRecipe = getSelectedAlchemyRecipe();
-  const tsuboRecipes = getCheapestAlchemyRecipes("tsubo", 3);
-  const lampRecipes = getCheapestAlchemyRecipes("lamp", 3);
-  const renderCandidateButton = (recipe) => `
-    <button type="button" class="crystal-alchemy-candidate ${selectedRecipe?.id === recipe.id ? "is-selected" : ""}" data-crystal-alchemy-id="${escapeHtml(recipe.id)}">
-      <span>${escapeHtml(recipe.typeLabel)}</span>
-      <strong>${escapeHtml(recipe.effectName)}</strong>
-      <em>${formatCrystalGold(recipe.unitCost)} / 回</em>
-    </button>
-  `;
   return `
     <div class="crystal-alchemy-selector">
       <label class="field crystal-field">
@@ -3458,14 +3453,6 @@ function renderAlchemyRecipeSelector() {
             .join("")}
         </select>
       </label>
-      <div class="crystal-alchemy-candidate-block">
-        <h4>ツボ初級 原価が安い上位3件</h4>
-        <div class="crystal-alchemy-candidates">${tsuboRecipes.map(renderCandidateButton).join("") || `<p class="helper-text">候補がありません。</p>`}</div>
-      </div>
-      <div class="crystal-alchemy-candidate-block">
-        <h4>ランプ初級 原価が安い上位3件</h4>
-        <div class="crystal-alchemy-candidates">${lampRecipes.map(renderCandidateButton).join("") || `<p class="helper-text">候補がありません。</p>`}</div>
-      </div>
     </div>
   `;
 }
@@ -3592,8 +3579,7 @@ function renderCrystalSimulatorFormFields() {
     return `
       ${renderCrystalEquipmentSelector()}
       ${renderCrystalInputField("purchasePrice", "購入単価", { placeholder: "錬金済み装備の購入価格を入力" })}
-      ${renderCrystalStarField()}
-      ${renderCrystalAdvancedSettings()}
+      ${renderCrystalStarSettingsField()}
       ${renderCrystalInputField("crystalUnitPrice", "結晶単価")}
     `;
   }
@@ -3601,7 +3587,6 @@ function renderCrystalSimulatorFormFields() {
   if (activeCrystalSimulatorTab === "buy-alchemy") {
     return `
       ${renderCrystalCommonFields()}
-      ${renderCrystalAdvancedSettings()}
       ${renderCrystalInputField("purchasePrice", "未錬金装備の購入価格")}
       ${renderAlchemyRecipeSelector()}
       ${renderCrystalInputField("bazaarListingPrice", "バザー出品価格")}
@@ -3610,7 +3595,6 @@ function renderCrystalSimulatorFormFields() {
 
   return `
     ${renderCrystalCommonFields()}
-    ${renderCrystalAdvancedSettings()}
     ${renderCrystalInputField("materialCost", "素材原価")}
     ${renderCrystalInputField("toolCost", "職人道具代")}
     ${renderCrystalInputField("craftCount", "作成個数", { min: 1 })}
