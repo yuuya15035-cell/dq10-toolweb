@@ -3869,18 +3869,31 @@ function renderCrystalSimulatorFormFields() {
 
 function renderCrystalAutoDataInfoCard() {
   return `
-    <section class="card crystal-auto-data-card" aria-labelledby="crystalAutoDataHeading">
-      <h3 id="crystalAutoDataHeading">自動反映データについて</h3>
-      <p>このページでは、結晶単価・結晶数の目安・一部の装備価格を自動反映しています。</p>
-      <ul class="crystal-auto-data-list">
-        <li><strong>結晶単価</strong><span>素材バザー価格一覧の「汗と涙の結晶」価格を反映</span></li>
-        <li><strong>結晶数</strong><span>装備レベル・できのよさを元に目安数を自動入力</span></li>
-        <li><strong>購入単価</strong><span>有名どころの結晶装備のみ、未錬金★★ / ★★★ の装備バザー価格を反映</span></li>
-        <li><strong>素材原価</strong><span>装備作成タブでは、レシピ素材と素材バザー価格から自動計算</span></li>
-        <li><strong>錬金原価</strong><span>初級錬金レシピと素材バザー価格から自動計算</span></li>
-      </ul>
-      <p class="crystal-auto-data-note">素材価格は7:00〜23:00の間で2時間ごと、装備価格は1日1回更新しています。自動反映される価格は更新時点の目安です。</p>
-      <p class="crystal-auto-data-caution">「装備買って結晶化」タブの購入単価は錬金済み装備を買う前提のため手入力です。結晶数も実際の錬金内容に合わせて変更できます。</p>
+    <section class="card crystal-auto-data-card" aria-label="自動反映データについて">
+      <div class="crystal-auto-data-desktop">
+        <h3>自動反映データについて</h3>
+        <p>このページでは、結晶単価・結晶数の目安・一部の装備価格を自動反映しています。</p>
+        <ul class="crystal-auto-data-list">
+          <li><strong>結晶単価</strong><span>素材バザー価格一覧の「汗と涙の結晶」価格を反映</span></li>
+          <li><strong>結晶数</strong><span>装備レベル・できのよさを元に目安数を自動入力</span></li>
+          <li><strong>購入単価</strong><span>有名どころの結晶装備のみ、未錬金★★ / ★★★ の装備バザー価格を反映</span></li>
+          <li><strong>素材原価</strong><span>装備作成タブでは、レシピ素材と素材バザー価格から自動計算</span></li>
+          <li><strong>錬金原価</strong><span>初級錬金レシピと素材バザー価格から自動計算</span></li>
+        </ul>
+        <p class="crystal-auto-data-note">素材価格は7:00〜23:00の間で2時間ごと、装備価格は1日1回更新しています。自動反映される価格は更新時点の目安です。</p>
+        <p class="crystal-auto-data-caution">「装備買って結晶化」タブの購入単価は錬金済み装備を買う前提のため手入力です。結晶数も実際の錬金内容に合わせて変更できます。</p>
+      </div>
+      <details class="crystal-auto-data-mobile">
+        <summary>自動反映データについて</summary>
+        <p>結晶単価・結晶数の目安・一部の装備価格を自動反映しています。価格は更新時点の目安です。実際のバザー価格に合わせて手入力で調整できます。</p>
+        <ul class="crystal-auto-data-list">
+          <li><strong>結晶単価</strong><span>汗と涙の結晶価格を反映</span></li>
+          <li><strong>結晶数</strong><span>装備レベル・できのよさから目安を入力</span></li>
+          <li><strong>購入単価</strong><span>一部装備の未錬金★★ / ★★★価格を反映</span></li>
+          <li><strong>素材原価</strong><span>レシピ素材と素材価格から計算</span></li>
+          <li><strong>錬金原価</strong><span>初級錬金レシピから計算</span></li>
+        </ul>
+      </details>
     </section>
   `;
 }

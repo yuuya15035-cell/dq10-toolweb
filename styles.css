@@ -1348,6 +1348,10 @@ body.ads-disabled .ad-slot,
   color: #7a442b;
 }
 
+.crystal-auto-data-mobile {
+  display: none;
+}
+
 .crystal-simulator-card,
 .crystal-simulator-result-card,
 .crystal-simulator-help {
@@ -8937,8 +8941,14 @@ body.memo-panel-open {
 }
 
 @media (max-width: 700px) {
+  #crystalSimulatorWrap {
+    display: flex;
+    flex-direction: column;
+  }
+
   .crystal-simulator-tabs {
     grid-template-columns: 1fr;
+    order: 1;
   }
 
   .crystal-simulator-tab {
@@ -8946,13 +8956,48 @@ body.memo-panel-open {
     font-size: 0.82rem;
   }
 
+  .crystal-simulator-card {
+    order: 2;
+  }
+
+  .crystal-simulator-result-card {
+    order: 3;
+  }
+
   .crystal-auto-data-card {
+    order: 4;
+    margin: 10px 0 0;
     padding: 12px;
+  }
+
+  .crystal-auto-data-desktop {
+    display: none;
+  }
+
+  .crystal-auto-data-mobile {
+    display: block;
+  }
+
+  .crystal-auto-data-mobile summary {
+    cursor: pointer;
+    min-height: 38px;
+    color: #5f4936;
+    font-size: 0.86rem;
+    font-weight: 700;
+    line-height: 1.4;
+    list-style-position: inside;
+  }
+
+  .crystal-auto-data-mobile p {
+    margin-top: 7px;
+    font-size: 0.8rem;
+    line-height: 1.6;
   }
 
   .crystal-auto-data-list {
     grid-template-columns: 1fr;
     gap: 5px;
+    margin: 7px 0 0;
   }
 
   .crystal-auto-data-list li {
