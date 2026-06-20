@@ -402,10 +402,10 @@ const CONTENT_DEFINITIONS = [
   { key: "menu_title", label: "サイドメニュー見出し", selector: ".side-menu-header h2" },
 ];
 const DEFAULT_CONTENT = Object.freeze({
-  site_title: "ドラゴンクエスト10支援サイト",
-  site_intro: "素材バザー価格は毎日7:00〜23:00まで2時間ごとに更新。職人原価、結晶化、盗み金策の判断に使えます。",
+  site_title: "ドラゴンクエスト10バザーデータ",
+  site_intro: "素材バザー価格は毎日7:00〜23:00まで2時間ごとに更新。更新時点の価格をもとに、職人原価・結晶化・盗み金策の判断に使えます。",
   site_summary:
-    "現在、試験運用中のWEBサイトです。不具合や不備がありましたら、お問い合わせよりご連絡いただけると助かります。今後、レイアウト変更や機能追加を行う場合があります。",
+    "現在、試験運用中のWEBツールです。\n不具合や不足がありましたら、お問い合わせよりご連絡いただけると助かります。\n今後、レイアウト変更や機能追加を行う場合があります。",
   site_notice: "",
   updates_heading: "更新情報",
   tools_heading: "サイト内便利ツール",
