@@ -1298,8 +1298,21 @@ body.ads-disabled .ad-slot,
   gap: 10px;
 }
 
+.crystal-equipment-selector {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.crystal-equipment-name-field,
+.crystal-equipment-manual-toggle {
+  min-width: 0;
+}
+
 .crystal-field input,
 .crystal-field select {
+  width: 100%;
   min-width: 0;
 }
 
@@ -8739,6 +8752,7 @@ body.memo-panel-open {
   }
 
   .crystal-simulator-form-grid,
+  .crystal-equipment-selector,
   .crystal-result-grid {
     grid-template-columns: 1fr;
   }
