@@ -4581,13 +4581,29 @@ function buildBazaarUpdateStatusHtml(options = {}) {
   `;
 }
 
+function getBazaarUpdateStatusOptionsForCurrentPage() {
+  if (appMode === "home") return { context: "home", scope: "both" };
+  const optionsByTab = {
+    profit: { context: "profit", scope: "both" },
+    bazaar: { context: "bazaar", scope: "both" },
+    "crystal-simulator": { context: "crystal", scope: "both" },
+    "steal-farming": { context: "steal", scope: "material" },
+    "cell-farming": { context: "cell", scope: "material" },
+  };
+  return optionsByTab[activeTabId] || null;
+}
+
 function renderBazaarUpdateStatuses() {
-  document.querySelectorAll("[data-bazaar-update-status]").forEach((container) => {
-    container.innerHTML = buildBazaarUpdateStatusHtml({
-      context: String(container.dataset.bazaarStatusContext || ""),
-      scope: String(container.dataset.bazaarStatusScope || "both"),
-    });
+  const container = document.querySelector("[data-bazaar-update-status-global]");
+  if (!container) return;
+
+  document.querySelectorAll(".bazaar-update-status-card").forEach((card) => {
+    if (!container.contains(card)) card.remove();
   });
+
+  const options = getBazaarUpdateStatusOptionsForCurrentPage();
+  container.hidden = !options;
+  container.innerHTML = options ? buildBazaarUpdateStatusHtml(options) : "";
 }
 
 function formatBazaarUpdatedAt(rawValue) {
@@ -13274,6 +13290,7 @@ function switchToHomeMode(options = {}) {
     tab.hidden = true;
   });
   applyAppMode();
+  renderBazaarUpdateStatuses();
   updateMobileBottomNavState();
   navigateByAppParams({ tab: "", equipmentId: "", materialKey: "" }, { replace: true });
   updateDocumentMetadata();
@@ -13304,6 +13321,7 @@ function switchTab(target) {
   activeTabId = normalizedTarget;
   appMode = "tool";
   applyAppMode();
+  renderBazaarUpdateStatuses();
   updateMobileBottomNavState();
   tabButtons.forEach((btn) => btn.classList.toggle("active", btn.dataset.tab === normalizedTarget));
   tabContents.forEach((tab) => {
@@ -16260,6 +16278,7 @@ function rerenderAll() {
 }
 
 function rerenderActiveTabOnly() {
+  renderBazaarUpdateStatuses();
   if (activeTabId === "profit") {
     rerenderAll();
     return;
