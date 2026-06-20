@@ -426,7 +426,6 @@ const PROFIT_EQUIPMENT_NAVIGATION_TYPES = Object.freeze({
   weapon: "weapon",
   armorSet: "armor_set",
 });
-const PROFIT_ARMOR_PART_ORDER = Object.freeze(["頭", "からだ上", "からだ下", "腕", "足"]);
 const WEAPON_CATEGORY_ORDER = Object.freeze([
   "片手剣",
   "両手剣",
@@ -457,6 +456,23 @@ const WEAPON_CATEGORY_ALIAS_MAP = new Map([
   ["むち", "ムチ"],
 ]);
 const WEAPON_CATEGORY_ORDER_INDEX = new Map(WEAPON_CATEGORY_ORDER.map((category, index) => [category, index]));
+const ARMOR_CATEGORY_ORDER = Object.freeze(["あたま", "からだ上", "からだ下", "腕", "足"]);
+const ARMOR_CATEGORY_ALIAS_MAP = new Map([
+  ["頭", "あたま"],
+  ["アタマ", "あたま"],
+  ["兜", "あたま"],
+  ["体上", "からだ上"],
+  ["体下", "からだ下"],
+  ["うで", "腕"],
+  ["あし", "足"],
+  ["head", "あたま"],
+  ["bodyUpper", "からだ上"],
+  ["bodyLower", "からだ下"],
+  ["arm", "腕"],
+  ["foot", "足"],
+]);
+const ARMOR_CATEGORY_ORDER_INDEX = new Map(ARMOR_CATEGORY_ORDER.map((category, index) => [category, index]));
+const PROFIT_ARMOR_PART_ORDER = Object.freeze(ARMOR_CATEGORY_ORDER.map((category) => (category === "あたま" ? "頭" : category)));
 const BAZAAR_CATEGORY_ORDER = ["石系", "植物系", "モンスター系", "その他", "消費アイテム"];
 const BAZAAR_SORT_OPTIONS = [
   { value: "standard", label: "標準順" },
@@ -593,9 +609,9 @@ const BAZAAR_DETAIL_MODAL_SWIPE_START_SLOP_PX = 8;
 const BAZAAR_DETAIL_MODAL_SWIPE_CLOSE_THRESHOLD_PX = 96;
 const BAZAAR_DETAIL_MODAL_SWIPE_MAX_TRANSLATE_PX = 220;
 const BAZAAR_DETAIL_MODAL_SWIPE_VERTICAL_DOMINANCE_RATIO = 1.15;
-const WHITE_BOX_ARMOR_SLOTS = new Set(["頭", "からだ上", "からだ下", "腕", "足"]);
+const WHITE_BOX_ARMOR_SLOTS = new Set(PROFIT_ARMOR_PART_ORDER);
 const WHITE_BOX_WEAPON_SLOT_ORDER = Object.freeze([...WEAPON_CATEGORY_ORDER, "小盾", "大盾"]);
-const WHITE_BOX_ARMOR_SLOT_ORDER = ["頭", "からだ上", "からだ下", "腕", "足"];
+const WHITE_BOX_ARMOR_SLOT_ORDER = PROFIT_ARMOR_PART_ORDER;
 const imeComposingTargets = new WeakSet();
 const WHITE_BOX_SLOT_NORMALIZE_MAP = new Map([
   ["片手剣", "片手剣"],
@@ -619,6 +635,8 @@ const WHITE_BOX_SLOT_NORMALIZE_MAP = new Map([
   ["鎌", "鎌"],
   ["小盾", "小盾"],
   ["大盾", "大盾"],
+  ["あたま", "頭"],
+  ["アタマ", "頭"],
   ["頭", "頭"],
   ["からだ上", "からだ上"],
   ["からだ下", "からだ下"],
@@ -2680,6 +2698,40 @@ function compareWeaponCategories(a, b) {
   return String(a || "").localeCompare(String(b || ""), "ja");
 }
 
+function normalizeArmorCategoryName(category) {
+  const normalized = String(category || "").normalize("NFKC").trim();
+  return ARMOR_CATEGORY_ALIAS_MAP.get(normalized) || normalized;
+}
+
+function getArmorCategorySortOrder(category) {
+  const normalized = normalizeArmorCategoryName(category);
+  return ARMOR_CATEGORY_ORDER_INDEX.get(normalized) ?? Number.MAX_SAFE_INTEGER;
+}
+
+function compareArmorCategories(a, b) {
+  const aOrder = getArmorCategorySortOrder(a);
+  const bOrder = getArmorCategorySortOrder(b);
+  if (aOrder !== bOrder) return aOrder - bOrder;
+  if (aOrder !== Number.MAX_SAFE_INTEGER) return 0;
+  return String(a || "").localeCompare(String(b || ""), "ja");
+}
+
+function getEquipmentCategorySortOrder(category) {
+  const weaponOrder = getWeaponCategorySortOrder(category);
+  if (weaponOrder !== Number.MAX_SAFE_INTEGER) return weaponOrder;
+  const armorOrder = getArmorCategorySortOrder(category);
+  if (armorOrder !== Number.MAX_SAFE_INTEGER) return WEAPON_CATEGORY_ORDER.length + armorOrder;
+  return Number.MAX_SAFE_INTEGER;
+}
+
+function compareEquipmentCategories(a, b) {
+  const aOrder = getEquipmentCategorySortOrder(a);
+  const bOrder = getEquipmentCategorySortOrder(b);
+  if (aOrder !== bOrder) return aOrder - bOrder;
+  if (aOrder !== Number.MAX_SAFE_INTEGER) return 0;
+  return String(a || "").localeCompare(String(b || ""), "ja");
+}
+
 function parseGoldInput(value) {
   const normalized = String(value ?? "").replace(/,/g, "").trim();
   if (normalized === "") return 0;
@@ -2996,7 +3048,7 @@ function detectArmorPartType(equipmentName, category = "") {
 }
 
 function getArmorPartSortOrder(partType) {
-  return { head: 1, bodyUpper: 2, bodyLower: 3, arm: 4, foot: 5, other: 6 }[partType] || 6;
+  return getArmorCategorySortOrder(partType);
 }
 
 function sortArmorParts(parts) {
@@ -5618,7 +5670,7 @@ function attachWhiteBoxDropsToEquipmentEntries(entries, whiteBoxSummaryByName) {
 }
 
 
-const ARMOR_SET_PART_DISPLAY_ORDER = ["頭", "からだ上", "からだ下", "腕", "足"];
+const ARMOR_SET_PART_DISPLAY_ORDER = PROFIT_ARMOR_PART_ORDER;
 const ARMOR_SET_REPRESENTATIVE_PART_WORDS = [
   "はちまき",
   "クラウン",
@@ -5638,14 +5690,9 @@ const ARMOR_SET_REPRESENTATIVE_PART_WORDS = [
 ];
 
 function normalizeArmorPartCategory(category) {
-  const normalized = String(category || "").trim();
-  if (normalized === "") return "";
-  if (normalized === "頭" || normalized === "アタマ") return "頭";
-  if (normalized === "からだ上" || normalized === "体上") return "からだ上";
-  if (normalized === "からだ下" || normalized === "体下") return "からだ下";
-  if (normalized === "腕" || normalized === "うで") return "腕";
-  if (normalized === "足" || normalized === "あし") return "足";
-  return "";
+  const normalized = normalizeArmorCategoryName(category);
+  if (!ARMOR_CATEGORY_ORDER_INDEX.has(normalized)) return "";
+  return normalized === "あたま" ? "頭" : normalized;
 }
 
 function buildArmorSetRecipeSearchKeys(setName) {
@@ -5879,7 +5926,10 @@ function getWhiteBoxTypeBySlot(itemSlot) {
 }
 
 function getWhiteBoxSlotSortOrder(itemSlot, type) {
-  if (type !== "armor") {
+  if (type === "armor") {
+    const armorOrder = getArmorCategorySortOrder(itemSlot);
+    if (armorOrder !== Number.MAX_SAFE_INTEGER) return armorOrder;
+  } else {
     const weaponOrder = getWeaponCategorySortOrder(itemSlot);
     if (weaponOrder !== Number.MAX_SAFE_INTEGER) return weaponOrder;
   }
@@ -9554,7 +9604,7 @@ function getBazaarEquipmentCategories() {
       .map((card) => String(card.itemCategory || "").trim())
       .filter((category) => category !== "")
   );
-  return Array.from(categorySet).sort(compareWeaponCategories);
+  return Array.from(categorySet).sort(compareEquipmentCategories);
 }
 
 function isBazaarEquipmentFavoriteCard(card) {
@@ -9589,7 +9639,7 @@ function getVisibleBazaarEquipmentCards() {
     : keywordFilteredCards;
   return favoriteFilteredCards.slice().sort((a, b) => {
     if (selectedBazaarEquipmentCategory === "") {
-      const categoryDiff = compareWeaponCategories(a.itemCategory, b.itemCategory);
+      const categoryDiff = compareEquipmentCategories(a.itemCategory, b.itemCategory);
       if (categoryDiff !== 0) return categoryDiff;
     }
     if (a.sortOrder !== b.sortOrder) return a.sortOrder - b.sortOrder;
@@ -15263,7 +15313,7 @@ function renderFilterSelectors() {
         .map((e) => e.category)
         .filter(Boolean)
     )
-  ).sort(compareWeaponCategories);
+  ).sort(compareEquipmentCategories);
 
   // 既存選択を崩しにくくするため、毎回再描画して値を戻す流れにしています。
   craftsmanFilterSelect.innerHTML = "";
@@ -15315,7 +15365,7 @@ function isRecipeFavorite(equipment) {
 }
 
 function compareEquipmentsByBaseSort(a, b) {
-  const categoryDiff = compareWeaponCategories(a.category, b.category);
+  const categoryDiff = compareEquipmentCategories(a.category, b.category);
   if (categoryDiff !== 0) return categoryDiff;
   const aLevel = Number(a.equipmentLevel || 0);
   const bLevel = Number(b.equipmentLevel || 0);
