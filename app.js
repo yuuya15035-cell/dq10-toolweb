@@ -3556,6 +3556,7 @@ function renderCrystalEquipmentSelector() {
   ensureCrystalEquipmentSelection();
   return `
     <div class="crystal-equipment-selector">
+      ${renderCrystalEquipmentSearchField()}
       ${renderEquipmentLevelSelect()}
       ${renderEquipmentKindSelect()}
       ${crystalSimulatorState.equipmentKind === "weapon" ? renderWeaponTypeSelect() : renderArmorSeriesSelect()}
@@ -3843,7 +3844,6 @@ function renderCrystalSimulatorFormFields() {
       ${renderCrystalStarField()}
       ${renderCrystalCountField()}
       ${renderCrystalInputField("crystalUnitPrice", "結晶単価")}
-      ${renderCrystalEquipmentSearchField()}
     `;
   }
 
@@ -3854,7 +3854,6 @@ function renderCrystalSimulatorFormFields() {
       ${renderCrystalInputField("purchasePrice", "未錬金装備の購入価格")}
       ${renderAlchemyRecipeSelector()}
       ${renderCrystalInputField("bazaarListingPrice", "バザー出品価格")}
-      ${renderCrystalEquipmentSearchField()}
     `;
   }
 
@@ -3865,7 +3864,6 @@ function renderCrystalSimulatorFormFields() {
     ${renderCrystalMaterialBreakdown()}
     ${renderAlchemyRecipeSelector()}
     ${renderCrystalInputField("bazaarListingPrice", "バザー出品価格")}
-    ${renderCrystalEquipmentSearchField()}
   `;
 }
 
