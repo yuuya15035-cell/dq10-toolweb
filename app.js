@@ -101,7 +101,7 @@ const TAB_DOCUMENT_LABELS = Object.freeze({
   "cell-farming": "魔因細胞金策",
   "white-boxes": "白宝箱",
 });
-const DEFAULT_HOME_FEATURE_IDS = Object.freeze(["profit", "craft-records", "bazaar", "favorites", "boss-card", "equipment-db"]);
+const DEFAULT_HOME_FEATURE_IDS = Object.freeze(["bazaar", "profit"]);
 const HOME_FEATURE_ID_SET = new Set(HOME_FEATURE_DEFINITIONS.map((feature) => feature.id));
 const SITE_SEARCH_MAX_RESULTS = 10;
 const SITE_SEARCH_MATCH_RANK = Object.freeze({
