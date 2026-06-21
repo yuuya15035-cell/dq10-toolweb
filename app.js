@@ -9251,6 +9251,23 @@ function formatBazaarChartDateLabel(timestamp) {
   return new Intl.DateTimeFormat("ja-JP", { month: "numeric", day: "numeric" }).format(parsed);
 }
 
+function formatBazaarChartTooltipDate(point) {
+  const dateText = String(point?.date || "").trim();
+  const directMatch = dateText.match(/^\d{4}-(\d{2})-(\d{2})$/);
+  if (directMatch) return `${directMatch[1]}/${directMatch[2]}`;
+  const parsed = new Date(point?.timestamp);
+  if (Number.isNaN(parsed.getTime())) return "-";
+  return `${String(parsed.getMonth() + 1).padStart(2, "0")}/${String(parsed.getDate()).padStart(2, "0")}`;
+}
+
+function getBazaarChartPointChangeRate(points, index) {
+  if (!Array.isArray(points) || index <= 0) return null;
+  const previousPrice = Number(points[index - 1]?.price);
+  const currentPrice = Number(points[index]?.price);
+  if (!Number.isFinite(previousPrice) || previousPrice === 0 || !Number.isFinite(currentPrice)) return null;
+  return ((currentPrice - previousPrice) / previousPrice) * 100;
+}
+
 function buildBazaarSparklineSvg(history, options = {}) {
   const width = Number(options.width) || 320;
   const height = Number(options.height) || 108;
@@ -9267,6 +9284,7 @@ function buildBazaarSparklineSvg(history, options = {}) {
   const yAxisTickCount = Math.max(2, Math.min(3, Number(options.yAxisTickCount) || 3));
   const referencePrice = Number(options.referencePrice);
   const hasReferencePrice = Number.isFinite(referencePrice);
+  const interactivePoints = options.interactivePoints === true;
   const points = Array.isArray(history)
     ? history
         .map((item) => ({
@@ -9300,8 +9318,29 @@ function buildBazaarSparklineSvg(history, options = {}) {
   const areaPoints = [`${paddingLeft},${chartBottomY}`, polylinePoints, `${width - paddingRight},${chartBottomY}`].join(" ");
   const pointDots = coords
     .map(
-      (coord) =>
-        `<circle cx="${coord.x.toFixed(2)}" cy="${coord.y.toFixed(2)}" r="${pointRadius}" class="bazaar-mini-chart-point"></circle>`
+      (coord, index) => {
+        if (!interactivePoints) {
+          return `<circle cx="${coord.x.toFixed(2)}" cy="${coord.y.toFixed(2)}" r="${pointRadius}" class="bazaar-mini-chart-point"></circle>`;
+        }
+        const point = points[index];
+        const changeRate = getBazaarChartPointChangeRate(points, index);
+        const dateLabel = formatBazaarChartTooltipDate(point);
+        const priceLabel = `${Math.round(point.price).toLocaleString("ja-JP")} G`;
+        const changeLabel = Number.isFinite(changeRate) ? `前日比 ${changeRate >= 0 ? "+" : ""}${changeRate.toFixed(1)}%` : "";
+        return `<circle
+          cx="${coord.x.toFixed(2)}"
+          cy="${coord.y.toFixed(2)}"
+          r="${pointRadius}"
+          class="bazaar-mini-chart-point bazaar-detail-chart-point"
+          role="button"
+          tabindex="0"
+          data-bazaar-chart-point
+          data-bazaar-chart-date="${escapeHtml(dateLabel)}"
+          data-bazaar-chart-price="${point.price}"
+          data-bazaar-chart-change="${Number.isFinite(changeRate) ? changeRate.toFixed(1) : ""}"
+          aria-label="${escapeHtml([dateLabel, priceLabel, changeLabel].filter(Boolean).join("、"))}"
+        ></circle>`;
+      }
     )
     .join("");
   const latestCoord = coords[coords.length - 1];
@@ -9364,8 +9403,9 @@ function buildBazaarSparklineSvg(history, options = {}) {
   const latestPrice = points[points.length - 1].price;
   const firstPrice = points[0].price;
   const trendClass = latestPrice > firstPrice ? "is-positive" : latestPrice < firstPrice ? "is-negative" : "is-neutral";
+  const accessibilityAttributes = interactivePoints ? `role="group" aria-label="日足価格グラフ"` : `aria-hidden="true" focusable="false"`;
   return `
-    <svg viewBox="0 0 ${width} ${height}" preserveAspectRatio="xMidYMid meet" class="bazaar-mini-chart-svg ${trendClass}" aria-hidden="true" focusable="false">
+    <svg viewBox="0 0 ${width} ${height}" preserveAspectRatio="xMidYMid meet" class="bazaar-mini-chart-svg ${trendClass}" ${accessibilityAttributes}>
       <line x1="${paddingLeft}" y1="${topGridY}" x2="${width - paddingRight}" y2="${topGridY}" class="bazaar-mini-chart-grid-line is-edge"></line>
       <line x1="${paddingLeft}" y1="${middleGridY}" x2="${width - paddingRight}" y2="${middleGridY}" class="bazaar-mini-chart-grid-line"></line>
       <line x1="${paddingLeft}" y1="${bottomGridY}" x2="${width - paddingRight}" y2="${bottomGridY}" class="bazaar-mini-chart-grid-line is-edge"></line>
@@ -12007,6 +12047,49 @@ function resetBazaarDetailModalScrollPosition() {
   if (bazaarDetailModalBody) bazaarDetailModalBody.scrollTop = 0;
 }
 
+function hideBazaarDetailChartTooltip() {
+  const tooltip = bazaarDetailModalBody?.querySelector(".bazaar-detail-chart-tooltip");
+  if (!tooltip) return;
+  tooltip.hidden = true;
+  tooltip.classList.remove("is-below", "is-positive", "is-negative");
+}
+
+function showBazaarDetailChartTooltip(pointElement) {
+  if (!(pointElement instanceof SVGElement)) return;
+  const chart = pointElement.closest(".bazaar-detail-modal-chart");
+  const tooltip = chart?.querySelector(".bazaar-detail-chart-tooltip");
+  if (!chart || !tooltip) return;
+
+  const dateLabel = String(pointElement.dataset.bazaarChartDate || "-");
+  const price = Number(pointElement.dataset.bazaarChartPrice);
+  const changeRate = Number(pointElement.dataset.bazaarChartChange);
+  const hasChangeRate = String(pointElement.dataset.bazaarChartChange || "") !== "" && Number.isFinite(changeRate);
+  const changeClass = hasChangeRate ? (changeRate >= 0 ? "is-positive" : "is-negative") : "";
+  const changeText = hasChangeRate ? `前日比 ${changeRate >= 0 ? "+" : ""}${changeRate.toFixed(1)}%` : "";
+
+  tooltip.innerHTML = `
+    <span>${escapeHtml(dateLabel)}</span>
+    <strong>${Number.isFinite(price) ? `${Math.round(price).toLocaleString("ja-JP")} G` : "-"}</strong>
+    ${changeText ? `<em>${escapeHtml(changeText)}</em>` : ""}
+  `;
+  tooltip.hidden = false;
+  tooltip.classList.remove("is-below", "is-positive", "is-negative");
+  if (changeClass) tooltip.classList.add(changeClass);
+
+  const chartRect = chart.getBoundingClientRect();
+  const pointRect = pointElement.getBoundingClientRect();
+  const pointCenterX = pointRect.left - chartRect.left + pointRect.width / 2;
+  const pointCenterY = pointRect.top - chartRect.top + pointRect.height / 2;
+  const halfTooltipWidth = tooltip.offsetWidth / 2;
+  const clampedLeft = Math.min(
+    Math.max(pointCenterX, halfTooltipWidth + 5),
+    Math.max(halfTooltipWidth + 5, chartRect.width - halfTooltipWidth - 5)
+  );
+  tooltip.style.left = `${clampedLeft}px`;
+  tooltip.style.top = `${pointCenterY}px`;
+  if (pointCenterY < tooltip.offsetHeight + 16) tooltip.classList.add("is-below");
+}
+
 async function openBazaarDetailModal(materialKey) {
   if (!bazaarDetailModalOverlay || !bazaarDetailModalBody) return;
   const row = getBazaarRowByMaterialKey(materialKey);
@@ -12079,9 +12162,10 @@ async function openBazaarDetailModal(materialKey) {
           paddingLeft: 58,
           xAxisLabelCount: 2,
           yAxisTickCount: 4,
-          pointRadius: 2,
+          pointRadius: 3.5,
           referencePrice: previousMonthAverage,
-        })}</div>
+          interactivePoints: true,
+        })}<div class="bazaar-detail-chart-tooltip" role="status" aria-live="polite" hidden></div></div>
       `
       : `<p class="bazaar-detail-modal-chart-empty">表示できる履歴がありません。</p>`;
   const relatedRecipesHtml = buildBazaarRelatedRecipesHtml(row.materialKey, row.materialName);
@@ -12101,6 +12185,8 @@ async function openBazaarDetailModal(materialKey) {
     </div>
     <p class="bazaar-detail-modal-updated-at">更新: ${updatedAtText}</p>
     <p class="bazaar-detail-modal-previous">前回価格: ${formatBazaarPriceWithUnit(row.previousDayPrice)}</p>
+    <p class="bazaar-detail-modal-latest">最新価格: <strong>${formatBazaarPriceWithUnit(row.displayPrice)}</strong></p>
+    <p class="bazaar-detail-modal-data-note">カードの最新価格は2時間ごとの最新バザー価格です。グラフは日ごとの記録価格を表示しているため、最新価格と一致しない場合があります。</p>
     ${monthSelectHtml}
     ${summaryHtml}
     ${chartHtml}
@@ -12109,7 +12195,7 @@ async function openBazaarDetailModal(materialKey) {
     }（${history.length}件）${
       Number.isFinite(previousMonthAverage) ? ` / 破線: 前月平均 ${formatBazaarChartPriceWithUnit(previousMonthAverage)}` : ""
     }</p>
-    <p class="bazaar-detail-modal-latest">最新価格: <strong>${formatBazaarPriceWithUnit(row.displayPrice)}</strong></p>
+    <p class="bazaar-detail-modal-chart-note">グラフは日足価格です。カードの最新価格とは更新タイミングが異なります。</p>
     ${
       row.officialUrl
         ? `<a class="bazaar-detail-modal-link" href="${row.officialUrl}" target="_blank" rel="noopener noreferrer">公式相場で確認</a>`
@@ -14019,9 +14105,42 @@ if (bazaarDetailModalOverlay) {
 }
 
 if (bazaarDetailModalBody) {
+  bazaarDetailModalBody.addEventListener("pointerover", (event) => {
+    const target = event.target;
+    if (!(target instanceof Element)) return;
+    const point = target.closest("[data-bazaar-chart-point]");
+    if (point && bazaarDetailModalBody.contains(point)) showBazaarDetailChartTooltip(point);
+  });
+  bazaarDetailModalBody.addEventListener("pointerout", (event) => {
+    if (event.pointerType !== "mouse") return;
+    const target = event.target;
+    if (!(target instanceof Element) || !target.closest("[data-bazaar-chart-point]")) return;
+    hideBazaarDetailChartTooltip();
+  });
+  bazaarDetailModalBody.addEventListener("focusin", (event) => {
+    const target = event.target;
+    if (!(target instanceof Element)) return;
+    const point = target.closest("[data-bazaar-chart-point]");
+    if (point) showBazaarDetailChartTooltip(point);
+  });
+  bazaarDetailModalBody.addEventListener("keydown", (event) => {
+    if (event.key !== "Enter" && event.key !== " ") return;
+    const target = event.target;
+    if (!(target instanceof Element)) return;
+    const point = target.closest("[data-bazaar-chart-point]");
+    if (!point) return;
+    event.preventDefault();
+    showBazaarDetailChartTooltip(point);
+  });
   bazaarDetailModalBody.addEventListener("click", (event) => {
     const target = event.target;
     if (!(target instanceof Element)) return;
+    const chartPoint = target.closest("[data-bazaar-chart-point]");
+    if (chartPoint && bazaarDetailModalBody.contains(chartPoint)) {
+      showBazaarDetailChartTooltip(chartPoint);
+      return;
+    }
+    hideBazaarDetailChartTooltip();
     const closeButton = target.closest(".bazaar-detail-modal-close");
     if (closeButton && bazaarDetailModalDialog?.contains(closeButton)) {
       event.preventDefault();

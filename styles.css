@@ -5004,6 +5004,24 @@ button {
   font-size: 1.08rem;
 }
 
+.bazaar-detail-modal-data-note,
+.bazaar-detail-modal-chart-note {
+  margin: 6px 0 9px;
+  padding: 7px 9px;
+  border-left: 3px solid #b9854e;
+  border-radius: 6px;
+  background: rgba(248, 239, 224, 0.78);
+  color: #66503c;
+  font-size: 0.76rem;
+  line-height: 1.55;
+}
+
+.bazaar-detail-modal-chart-note {
+  margin-top: 4px;
+  padding-top: 5px;
+  padding-bottom: 5px;
+}
+
 .bazaar-detail-month-summary {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -5033,12 +5051,85 @@ button {
 }
 
 .bazaar-detail-modal-chart {
+  position: relative;
   margin: 10px 0 8px;
   border: 1px solid #c4ac8f;
   border-radius: 10px;
   background: #fffdf8;
   padding: 8px 8px 4px;
   overflow: hidden;
+}
+
+.bazaar-detail-modal-chart .bazaar-detail-chart-point {
+  cursor: pointer;
+  pointer-events: all;
+  stroke: transparent;
+  stroke-width: 10px;
+  outline: none;
+}
+
+.bazaar-detail-modal-chart .bazaar-detail-chart-point:hover,
+.bazaar-detail-modal-chart .bazaar-detail-chart-point:focus {
+  fill: #157f89;
+  stroke: rgba(255, 255, 255, 0.78);
+  stroke-width: 5px;
+}
+
+.bazaar-detail-modal-chart .bazaar-mini-chart-latest-point {
+  pointer-events: none;
+}
+
+.bazaar-detail-chart-tooltip {
+  position: absolute;
+  z-index: 3;
+  min-width: 86px;
+  max-width: 150px;
+  padding: 6px 8px;
+  border: 1px solid #b79b79;
+  border-radius: 8px;
+  background: rgba(255, 253, 248, 0.98);
+  box-shadow: 0 4px 12px rgba(62, 42, 25, 0.18);
+  color: #4b3828;
+  font-size: 0.72rem;
+  line-height: 1.35;
+  text-align: center;
+  pointer-events: none;
+  transform: translate(-50%, calc(-100% - 9px));
+}
+
+.bazaar-detail-chart-tooltip[hidden] {
+  display: none;
+}
+
+.bazaar-detail-chart-tooltip.is-below {
+  transform: translate(-50%, 9px);
+}
+
+.bazaar-detail-chart-tooltip span,
+.bazaar-detail-chart-tooltip strong,
+.bazaar-detail-chart-tooltip em {
+  display: block;
+}
+
+.bazaar-detail-chart-tooltip strong {
+  margin-top: 1px;
+  color: #2d261f;
+  font-size: 0.82rem;
+}
+
+.bazaar-detail-chart-tooltip em {
+  margin-top: 2px;
+  color: #6f5b49;
+  font-size: 0.68rem;
+  font-style: normal;
+}
+
+.bazaar-detail-chart-tooltip.is-positive em {
+  color: #18724f;
+}
+
+.bazaar-detail-chart-tooltip.is-negative em {
+  color: #b23c32;
 }
 
 .bazaar-detail-modal-chart .bazaar-mini-chart-svg {
