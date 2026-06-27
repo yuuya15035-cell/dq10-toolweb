@@ -4746,7 +4746,11 @@ function compareBazaarEquipmentCards(a, b) {
   const categoryDiff = compareEquipmentCategories(a?.itemCategory, b?.itemCategory);
   if (categoryDiff !== 0) return categoryDiff;
 
-  const levelDiff = getBazaarEquipmentLevelSortValue(a) - getBazaarEquipmentLevelSortValue(b);
+  const aHasLevel = Number.isFinite(a?.equipmentLevelNumber);
+  const bHasLevel = Number.isFinite(b?.equipmentLevelNumber);
+  if (aHasLevel !== bHasLevel) return aHasLevel ? -1 : 1;
+
+  const levelDiff = getBazaarEquipmentLevelSortValue(b) - getBazaarEquipmentLevelSortValue(a);
   if (levelDiff !== 0) return levelDiff;
 
   return Number(a?.sourceIndex ?? Number.MAX_SAFE_INTEGER) - Number(b?.sourceIndex ?? Number.MAX_SAFE_INTEGER);
