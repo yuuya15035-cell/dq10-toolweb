@@ -944,11 +944,14 @@ function makeToolId(profession, toolName) {
 }
 
 function parseEquipmentLevel(value) {
-  const normalized = String(value ?? "").trim();
+  const normalized = String(value ?? "").normalize("NFKC").trim();
   if (normalized === "") return null;
   const parsed = Number(normalized);
-  if (!Number.isFinite(parsed)) return null;
-  return parsed;
+  if (Number.isFinite(parsed)) return parsed;
+  const matched = normalized.match(/\d+/);
+  if (!matched) return null;
+  const level = Number(matched[0]);
+  return Number.isFinite(level) ? level : null;
 }
 
 function appendCacheBustQuery(url) {
@@ -4735,14 +4738,29 @@ function isBazaarEquipmentListingUnavailable(row) {
   return !Number.isFinite(row?.todayPrice);
 }
 
+function getBazaarEquipmentLevelSortValue(entry) {
+  return Number.isFinite(entry?.equipmentLevelNumber) ? entry.equipmentLevelNumber : Number.MAX_SAFE_INTEGER;
+}
+
+function compareBazaarEquipmentCards(a, b) {
+  const categoryDiff = compareEquipmentCategories(a?.itemCategory, b?.itemCategory);
+  if (categoryDiff !== 0) return categoryDiff;
+
+  const levelDiff = getBazaarEquipmentLevelSortValue(a) - getBazaarEquipmentLevelSortValue(b);
+  if (levelDiff !== 0) return levelDiff;
+
+  return Number(a?.sourceIndex ?? Number.MAX_SAFE_INTEGER) - Number(b?.sourceIndex ?? Number.MAX_SAFE_INTEGER);
+}
+
 function parseBazaarEquipmentPricesFromLines(lines) {
   if (lines.length <= 1) return [];
 
   const headers = parseCsvLine(lines[0]).map((header) => String(header || "").replace(/^\uFEFF/, "").trim());
   const itemNameIndex = headers.indexOf("item_name");
   const itemCategoryIndex = headers.indexOf("item_category");
-  const sortOrderIndex = headers.indexOf("sort_order");
-  const previousDayPriceIndex = headers.indexOf("previous_day_price");
+  const equipmentLevelIndex = headers.indexOf("equipment_level");
+  const previousDayPriceIndex =
+    headers.indexOf("previous_day_price") >= 0 ? headers.indexOf("previous_day_price") : headers.indexOf("previous_price");
   const starIndex = headers.indexOf("star");
   const numberIndex = headers.indexOf("number");
   const todayPriceIndex = headers.indexOf("today_price");
@@ -4752,7 +4770,7 @@ function parseBazaarEquipmentPricesFromLines(lines) {
   if (
     itemNameIndex < 0 ||
     itemCategoryIndex < 0 ||
-    sortOrderIndex < 0 ||
+    equipmentLevelIndex < 0 ||
     previousDayPriceIndex < 0 ||
     starIndex < 0 ||
     numberIndex < 0 ||
@@ -4770,7 +4788,7 @@ function parseBazaarEquipmentPricesFromLines(lines) {
     .map((row, rowIndex) => {
       const itemName = String(row[itemNameIndex] || "").trim();
       const itemCategory = String(row[itemCategoryIndex] || "").trim();
-      const sortOrderRaw = Number(row[sortOrderIndex]);
+      const equipmentLevel = String(row[equipmentLevelIndex] || "").trim();
       const todayPrice = parseNullableNumber(row[todayPriceIndex]);
       const previousDayPrice = parseNullableNumber(row[previousDayPriceIndex]);
       const star = Number(row[starIndex]);
@@ -4782,7 +4800,8 @@ function parseBazaarEquipmentPricesFromLines(lines) {
         equipmentKey,
         itemName,
         itemCategory,
-        sortOrder: Number.isFinite(sortOrderRaw) ? sortOrderRaw : Number.MAX_SAFE_INTEGER,
+        equipmentLevel,
+        equipmentLevelNumber: parseEquipmentLevel(equipmentLevel),
         previousDayPrice,
         star: Number.isFinite(star) ? star : null,
         listingCount: parseNullableNumber(row[numberIndex]),
@@ -4792,12 +4811,7 @@ function parseBazaarEquipmentPricesFromLines(lines) {
         listingStatus,
       };
     })
-    .filter((row) => row.itemName !== "" && row.itemCategory !== "" && Number.isFinite(row.star))
-    .sort((a, b) => {
-      if (a.sortOrder !== b.sortOrder) return a.sortOrder - b.sortOrder;
-      if (a.sourceIndex !== b.sourceIndex) return a.sourceIndex - b.sourceIndex;
-      return Number(a.star || 0) - Number(b.star || 0);
-    });
+    .filter((row) => row.itemName !== "" && row.itemCategory !== "" && Number.isFinite(row.star));
 
   console.info(`[bazaar_equipment_prices.csv] parsed rows: ${rows.length}`);
   return rows;
@@ -4812,7 +4826,8 @@ function groupBazaarEquipmentRows(rows) {
         equipmentKey,
         itemName: row.itemName,
         itemCategory: row.itemCategory,
-        sortOrder: row.sortOrder,
+        equipmentLevel: row.equipmentLevel,
+        equipmentLevelNumber: row.equipmentLevelNumber,
         sourceIndex: row.sourceIndex,
         officialUrl: row.officialUrl,
         updatedAt: row.updatedAt,
@@ -4821,19 +4836,18 @@ function groupBazaarEquipmentRows(rows) {
       });
     }
     const card = cardMap.get(equipmentKey);
-    card.sortOrder = Math.min(card.sortOrder, row.sortOrder);
     card.sourceIndex = Math.min(card.sourceIndex, row.sourceIndex);
+    if (!Number.isFinite(card.equipmentLevelNumber) && Number.isFinite(row.equipmentLevelNumber)) {
+      card.equipmentLevel = row.equipmentLevel;
+      card.equipmentLevelNumber = row.equipmentLevelNumber;
+    }
     if (!card.officialUrl && row.officialUrl) card.officialUrl = row.officialUrl;
     if (String(row.updatedAt || "") > String(card.updatedAt || "")) card.updatedAt = row.updatedAt;
     if (!Number.isFinite(card.listingCount) && Number.isFinite(row.listingCount)) card.listingCount = row.listingCount;
     card.starRows.set(Number(row.star), row);
   });
 
-  const cards = Array.from(cardMap.values()).sort((a, b) => {
-    if (a.sortOrder !== b.sortOrder) return a.sortOrder - b.sortOrder;
-    if (a.sourceIndex !== b.sourceIndex) return a.sourceIndex - b.sourceIndex;
-    return String(a.itemName || "").localeCompare(String(b.itemName || ""), "ja");
-  });
+  const cards = Array.from(cardMap.values()).sort(compareBazaarEquipmentCards);
   bazaarEquipmentCardByKey = new Map(cards.map((card) => [card.equipmentKey, card]));
   return cards;
 }
@@ -9809,15 +9823,7 @@ function getVisibleBazaarEquipmentCards() {
   const favoriteFilteredCards = showBazaarFavoritesOnly
     ? keywordFilteredCards.filter((card) => isBazaarEquipmentFavoriteCard(card))
     : keywordFilteredCards;
-  return favoriteFilteredCards.slice().sort((a, b) => {
-    if (selectedBazaarEquipmentCategory === "") {
-      const categoryDiff = compareEquipmentCategories(a.itemCategory, b.itemCategory);
-      if (categoryDiff !== 0) return categoryDiff;
-    }
-    if (a.sortOrder !== b.sortOrder) return a.sortOrder - b.sortOrder;
-    if (a.sourceIndex !== b.sourceIndex) return a.sourceIndex - b.sourceIndex;
-    return String(a.itemName || "").localeCompare(String(b.itemName || ""), "ja");
-  });
+  return favoriteFilteredCards.slice().sort(compareBazaarEquipmentCards);
 }
 
 function hasActiveBazaarEquipmentFilters() {
