@@ -9,6 +9,7 @@ const CRAFT_IDEAL_VALUES_CSV_PATH = "./data/craft_ideal_values.csv";
 const BAZAAR_CSV_PATH = "./data/bazaar_prices.csv";
 const BAZAAR_EQUIPMENT_CSV_PATH = "./data/bazaar_equipment_prices.csv";
 const BAZAAR_HISTORY_CSV_PATH = "./data/bazaar_prices_history.csv";
+const BAZAAR_EQUIPMENT_HISTORY_CSV_PATH = "./data/bazaar_equipment_prices_history.csv";
 const PRESENT_CODES_CSV_PATH = "./data/datapresent_codes.csv";
 const FIELD_FARMING_CSV_PATH = "./data/field_farming_monsters.csv";
 const ROUTINE_TASKS_CSV_PATH = "./data/routine_tasks.csv";
@@ -2149,6 +2150,7 @@ let bazaarRowByMaterialKey = new Map();
 let bazaarRowByMaterialName = new Map();
 let bazaarEquipmentCardByKey = new Map();
 let bazaarPriceHistoryByMaterialKey = new Map();
+let bazaarEquipmentPriceHistoryByKey = new Map();
 let selectedBazaarChartRangeDays = DEFAULT_BAZAAR_CHART_RANGE_DAYS;
 let activeBazaarDetailModalKey = "";
 let bazaarDetailModalSwipeState = null;
@@ -2266,6 +2268,7 @@ let hasLoadedStealFarmingExclusions = false;
 let hasLoadedBazaarPrices = false;
 let hasLoadedBazaarEquipmentPrices = false;
 let hasLoadedBazaarPriceHistory = false;
+let hasLoadedBazaarEquipmentPriceHistory = false;
 let hasLoadedCraftIdealValues = false;
 let bazaarLoadError = false;
 let bazaarEquipmentLoadError = false;
@@ -2289,6 +2292,7 @@ let isStealFarmingExclusionsLoading = false;
 let isBazaarLoading = false;
 let isBazaarEquipmentLoading = false;
 let isBazaarHistoryLoading = false;
+let isBazaarEquipmentHistoryLoading = false;
 let isCraftIdealValuesLoading = false;
 let isToolSiteSearchOpen = false;
 let presentCodesLoadingPromise = null;
@@ -2315,6 +2319,7 @@ let activeArmorSetDetailId = "";
 let bazaarLoadingPromise = null;
 let bazaarEquipmentLoadingPromise = null;
 let bazaarHistoryLoadingPromise = null;
+let bazaarEquipmentHistoryLoadingPromise = null;
 let bazaarAdminCsvModel = null;
 let bazaarAdminLastResults = new Map();
 let bazaarAdminPastedTextByRowId = new Map();
@@ -4732,6 +4737,10 @@ function makeBazaarEquipmentKey(itemName, itemCategory) {
   return `be:${String(itemCategory || "").trim()}:${String(itemName || "").trim()}`;
 }
 
+function makeBazaarEquipmentHistoryKey(itemName, star) {
+  return `beh:${String(itemName || "").trim()}:${Number(star)}`;
+}
+
 function isBazaarEquipmentListingUnavailable(row) {
   const listingStatus = String(row?.listingStatus || "").trim();
   if (listingStatus === "出品なし") return true;
@@ -6395,6 +6404,11 @@ async function loadBazaarEquipmentPricesCsv(options = {}) {
   return parseBazaarEquipmentPricesFromLines(lines);
 }
 
+async function loadBazaarEquipmentPriceHistoryCsv(options = {}) {
+  const lines = await fetchCsvLines(BAZAAR_EQUIPMENT_HISTORY_CSV_PATH, options);
+  return parseBazaarEquipmentPriceHistoryFromLines(lines);
+}
+
 async function ensureCraftIdealValuesLoaded() {
   if (hasLoadedCraftIdealValues || isCraftIdealValuesLoading) return craftIdealValuesLoadingPromise;
   isCraftIdealValuesLoading = true;
@@ -6517,6 +6531,27 @@ async function ensureBazaarPriceHistoryLoaded() {
     }
   })();
   return bazaarHistoryLoadingPromise;
+}
+
+async function ensureBazaarEquipmentPriceHistoryLoaded() {
+  if (hasLoadedBazaarEquipmentPriceHistory || isBazaarEquipmentHistoryLoading) return bazaarEquipmentHistoryLoadingPromise;
+  isBazaarEquipmentHistoryLoading = true;
+  bazaarEquipmentHistoryLoadingPromise = (async () => {
+    try {
+      bazaarEquipmentPriceHistoryByKey = await loadBazaarEquipmentPriceHistoryCsv();
+      hasLoadedBazaarEquipmentPriceHistory = true;
+    } catch (error) {
+      console.error(`bazaar_equipment_prices_history.csv の読み込みに失敗しました: path=${BAZAAR_EQUIPMENT_HISTORY_CSV_PATH}`, error);
+      bazaarEquipmentPriceHistoryByKey = new Map();
+    } finally {
+      isBazaarEquipmentHistoryLoading = false;
+      if (activeTabId === "bazaar" && activeBazaarPriceTab === "equipment") renderBazaarPrices();
+      if (String(activeBazaarDetailModalKey || "").startsWith("be:")) {
+        openBazaarEquipmentDetailModal(activeBazaarDetailModalKey);
+      }
+    }
+  })();
+  return bazaarEquipmentHistoryLoadingPromise;
 }
 
 async function ensureFieldFarmingMonstersLoaded() {
@@ -8351,6 +8386,47 @@ function parseBazaarHistoryDate(value) {
   return parsed;
 }
 
+function parseBazaarEquipmentHistoryDate(value) {
+  const normalized = String(value || "").trim();
+  if (normalized === "") return null;
+  const matched = normalized.match(
+    /^(\d{4})[\/\-](\d{1,2})[\/\-](\d{1,2})(?:[ T](\d{1,2})(?::(\d{1,2}))?(?::(\d{1,2}))?)?$/
+  );
+  if (!matched) return parseBazaarHistoryDate(normalized);
+
+  const year = Number(matched[1]);
+  const month = Number(matched[2]);
+  const day = Number(matched[3]);
+  const hour = matched[4] === undefined ? 0 : Number(matched[4]);
+  const minute = matched[5] === undefined ? 0 : Number(matched[5]);
+  const second = matched[6] === undefined ? 0 : Number(matched[6]);
+  if (
+    !Number.isFinite(year) ||
+    !Number.isFinite(month) ||
+    !Number.isFinite(day) ||
+    !Number.isFinite(hour) ||
+    !Number.isFinite(minute) ||
+    !Number.isFinite(second)
+  ) {
+    return null;
+  }
+  if (month < 1 || month > 12 || day < 1 || day > 31) return null;
+  if (hour < 0 || hour > 23 || minute < 0 || minute > 59 || second < 0 || second > 59) return null;
+
+  const parsedUtc = new Date(Date.UTC(year, month - 1, day, hour, minute, second));
+  if (
+    parsedUtc.getUTCFullYear() !== year ||
+    parsedUtc.getUTCMonth() !== month - 1 ||
+    parsedUtc.getUTCDate() !== day ||
+    parsedUtc.getUTCHours() !== hour ||
+    parsedUtc.getUTCMinutes() !== minute ||
+    parsedUtc.getUTCSeconds() !== second
+  ) {
+    return null;
+  }
+  return parsedUtc;
+}
+
 function formatDateAsIsoText(date = new Date()) {
   const year = date.getFullYear();
   const month = String(date.getMonth() + 1).padStart(2, "0");
@@ -9194,6 +9270,57 @@ function parseBazaarPriceHistoryFromLines(lines) {
   return historyMap;
 }
 
+function parseBazaarEquipmentPriceHistoryFromLines(lines) {
+  if (lines.length <= 1) return new Map();
+
+  const headers = parseCsvLine(lines[0]).map((header) => String(header || "").replace(/^\uFEFF/, "").trim());
+  const dateIndex = headers.indexOf("date");
+  const itemNameIndex = headers.indexOf("item_name");
+  const starIndex = headers.indexOf("star");
+  const priceIndex = headers.indexOf("price");
+  const listingStatusIndex = headers.indexOf("listing_status");
+  if (dateIndex < 0 || itemNameIndex < 0 || starIndex < 0 || priceIndex < 0 || listingStatusIndex < 0) {
+    throw new Error("bazaar_equipment_prices_history.csv ヘッダーが想定と一致しません");
+  }
+
+  const historyMap = new Map();
+  lines.slice(1).forEach((line) => {
+    const row = parseCsvLine(line);
+    const itemName = String(row[itemNameIndex] || "").trim();
+    const star = Number(row[starIndex]);
+    const price = parseNullableNumber(row[priceIndex]);
+    const listingStatus = String(row[listingStatusIndex] || "").trim();
+    const parsedDate = parseBazaarEquipmentHistoryDate(row[dateIndex]);
+    if (!itemName || !Number.isFinite(star) || !Number.isFinite(price) || listingStatus === "出品なし" || !parsedDate) return;
+
+    const historyKey = makeBazaarEquipmentHistoryKey(itemName, star);
+    const dateText = parsedDate.toISOString().slice(0, 10);
+    if (!historyMap.has(historyKey)) {
+      historyMap.set(historyKey, []);
+    }
+    historyMap.get(historyKey).push({
+      date: dateText,
+      timestamp: parsedDate.getTime(),
+      price,
+    });
+  });
+
+  historyMap.forEach((rows, historyKey) => {
+    const latestByDate = new Map();
+    rows.forEach((row) => {
+      const existing = latestByDate.get(row.date);
+      if (!existing || Number(row.timestamp) >= Number(existing.timestamp)) {
+        latestByDate.set(row.date, row);
+      }
+    });
+    const sorted = Array.from(latestByDate.values()).sort((a, b) => a.timestamp - b.timestamp);
+    historyMap.set(historyKey, sorted);
+  });
+
+  console.info(`[bazaar_equipment_prices_history.csv] parsed series: ${historyMap.size}`);
+  return historyMap;
+}
+
 async function loadBazaarPriceHistoryCsv(options = {}) {
   const lines = await fetchCsvLines(BAZAAR_HISTORY_CSV_PATH, options);
   return parseBazaarPriceHistoryFromLines(lines);
@@ -9644,6 +9771,7 @@ function attachBazaarPriceTabListeners() {
       activeBazaarPriceTab = nextTab;
       if (activeBazaarPriceTab === "equipment") {
         void ensureBazaarEquipmentPricesLoaded();
+        void ensureBazaarEquipmentPriceHistoryLoaded();
       }
       renderBazaarPrices();
     });
@@ -9738,20 +9866,23 @@ async function refreshBazaarPriceData() {
   renderBazaarRefreshDependents();
 
   try {
-    const [nextBazaarPrices, nextBazaarEquipmentPrices, nextBazaarPriceHistoryByMaterialKey] = await Promise.all([
+    const [nextBazaarPrices, nextBazaarEquipmentPrices, nextBazaarPriceHistoryByMaterialKey, nextBazaarEquipmentPriceHistoryByKey] = await Promise.all([
       loadBazaarPricesCsv({ cacheBust: true }),
       loadBazaarEquipmentPricesCsv({ cacheBust: true }),
       loadBazaarPriceHistoryCsv({ cacheBust: true }),
+      loadBazaarEquipmentPriceHistoryCsv({ cacheBust: true }),
     ]);
 
     bazaarPrices = nextBazaarPrices;
     bazaarEquipmentPrices = nextBazaarEquipmentPrices;
     bazaarEquipmentCards = groupBazaarEquipmentRows(bazaarEquipmentPrices);
     bazaarPriceHistoryByMaterialKey = nextBazaarPriceHistoryByMaterialKey;
+    bazaarEquipmentPriceHistoryByKey = nextBazaarEquipmentPriceHistoryByKey;
     rebuildBazaarLookupMaps();
     hasLoadedBazaarPrices = true;
     hasLoadedBazaarEquipmentPrices = true;
     hasLoadedBazaarPriceHistory = true;
+    hasLoadedBazaarEquipmentPriceHistory = true;
     bazaarLoadError = false;
     bazaarEquipmentLoadError = false;
     const materialSyncResult = syncMaterialPricesWithBazaar(state.materials, bazaarPrices);
@@ -9784,6 +9915,7 @@ function switchBazaarPriceTab(tabId) {
   activeBazaarPriceTab = normalizedTabId;
   if (normalizedTabId === "equipment") {
     void ensureBazaarEquipmentPricesLoaded();
+    void ensureBazaarEquipmentPriceHistoryLoaded();
   }
   renderBazaarPrices();
 }
@@ -9872,27 +10004,14 @@ function getBazaarEquipmentUpdatedAt(card) {
   return formatBazaarUpdatedAt(card?.updatedAt);
 }
 
+function getBazaarEquipmentHistoryPoints(itemName, star) {
+  const historyKey = makeBazaarEquipmentHistoryKey(itemName, star);
+  return bazaarEquipmentPriceHistoryByKey.get(historyKey) || [];
+}
+
 function buildBazaarEquipmentHistory(card) {
-  const dateText = String(card?.updatedAt || "").slice(0, 10);
-  const today = /^\d{4}-\d{2}-\d{2}$/.test(dateText) ? new Date(`${dateText}T00:00:00`) : new Date();
-  const previous = new Date(today.getTime() - 24 * 60 * 60 * 1000);
   return BAZAAR_EQUIPMENT_STARS.map((star) => {
-    const row = card?.starRows?.get(star);
-    const points = [];
-    if (Number.isFinite(row?.previousDayPrice)) {
-      points.push({
-        date: previous.toISOString().slice(0, 10),
-        timestamp: previous.getTime(),
-        price: row.previousDayPrice,
-      });
-    }
-    if (row && !isBazaarEquipmentListingUnavailable(row) && Number.isFinite(row.todayPrice)) {
-      points.push({
-        date: today.toISOString().slice(0, 10),
-        timestamp: today.getTime(),
-        price: row.todayPrice,
-      });
-    }
+    const points = getBazaarEquipmentHistoryPoints(card?.itemName, star);
     return {
       label: getBazaarEquipmentStarLabel(star),
       star,
@@ -10118,6 +10237,9 @@ function renderBazaarEquipmentPrices() {
   if (!bazaarListWrap) return;
   if (!hasLoadedBazaarEquipmentPrices && !isBazaarEquipmentLoading) {
     void ensureBazaarEquipmentPricesLoaded();
+  }
+  if (!hasLoadedBazaarEquipmentPriceHistory && !isBazaarEquipmentHistoryLoading) {
+    void ensureBazaarEquipmentPriceHistoryLoaded();
   }
   if (isBazaarEquipmentLoading && !hasLoadedBazaarEquipmentPrices) {
     renderBazaarMessage("装備相場を読み込み中です。しばらくお待ちください。");
@@ -12239,6 +12361,9 @@ function openBazaarEquipmentDetailModal(equipmentKey) {
   if (!bazaarDetailModalOverlay || !bazaarDetailModalBody) return;
   const card = bazaarEquipmentCardByKey.get(String(equipmentKey || ""));
   if (!card) return;
+  if (!hasLoadedBazaarEquipmentPriceHistory && !isBazaarEquipmentHistoryLoading) {
+    void ensureBazaarEquipmentPriceHistoryLoaded();
+  }
 
   const historySeries = buildBazaarEquipmentHistory(card);
   const hasHistory = historySeries.some((series) => series.points.length > 0);
