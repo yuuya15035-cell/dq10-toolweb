@@ -3939,39 +3939,6 @@ button {
   grid-template-columns: 1fr;
 }
 
-.bazaar-price-tabs {
-  margin-bottom: 8px;
-  display: inline-flex;
-  gap: 4px;
-  padding: 4px;
-  border: 1px solid #cdb99f;
-  border-radius: 10px;
-  background: #f7efe4;
-}
-
-.bazaar-price-tab-button {
-  min-width: 86px;
-  min-height: 36px;
-  border: 1px solid transparent;
-  border-radius: 8px;
-  background: transparent;
-  color: #674b34;
-  font-size: 0.88rem;
-  font-weight: 800;
-}
-
-.bazaar-price-tab-button:hover,
-.bazaar-price-tab-button:focus-visible {
-  border-color: #c7a47c;
-  background: rgba(255, 255, 255, 0.58);
-}
-
-.bazaar-price-tab-button.is-active {
-  border-color: #9d7651;
-  background: #8a6a52;
-  color: #ffffff;
-}
-
 .bazaar-paused-section {
   margin-top: 10px;
   padding: 10px 10px 8px;
@@ -4512,64 +4479,6 @@ button {
 .bazaar-price-stack {
   display: grid;
   gap: 3px;
-}
-
-.bazaar-equipment-star-list {
-  gap: 5px;
-}
-
-.bazaar-equipment-star-row,
-.bazaar-equipment-modal-star-row {
-  margin: 0;
-  display: grid;
-  gap: 1px;
-  color: #4a2d18;
-  font-size: 0.82rem;
-  line-height: 1.22;
-  min-width: 0;
-}
-
-.bazaar-equipment-star-row.is-unavailable,
-.bazaar-equipment-modal-star-row.is-unavailable {
-  color: #7c644c;
-}
-
-.bazaar-equipment-star-label {
-  color: #7b5b3d;
-  font-weight: 800;
-  letter-spacing: 0;
-  line-height: 1.1;
-}
-
-.bazaar-equipment-price-pair {
-  min-width: 0;
-  display: grid;
-  gap: 1px;
-}
-
-.bazaar-equipment-price-today {
-  font-weight: 700;
-  color: #3f2818;
-  white-space: nowrap;
-}
-
-.bazaar-equipment-price-previous {
-  font-size: 0.76rem;
-  font-weight: 400;
-  color: #6f5843;
-  white-space: nowrap;
-}
-
-.bazaar-equipment-price-unavailable {
-  font-weight: 700;
-  color: #7c644c;
-  white-space: nowrap;
-}
-
-.bazaar-equipment-modal-star-list {
-  margin: 10px 0;
-  display: grid;
-  gap: 8px;
 }
 
 .bazaar-today-price,
@@ -5139,15 +5048,6 @@ button {
   height: auto;
 }
 
-.bazaar-equipment-detail-chart {
-  padding-left: 6px;
-}
-
-.bazaar-equipment-detail-chart .bazaar-mini-chart-axis-label,
-.bazaar-equipment-detail-chart .bazaar-mini-chart-axis-date {
-  font-size: 11.2px;
-}
-
 .bazaar-detail-modal-link {
   display: inline-flex;
   align-items: center;
@@ -5713,24 +5613,6 @@ button {
     font-size: 0.67rem;
   }
 
-  .bazaar-equipment-star-list {
-    gap: 4px;
-  }
-
-  .bazaar-equipment-star-row {
-    gap: 1px;
-    font-size: 0.74rem;
-    line-height: 1.16;
-  }
-
-  .bazaar-equipment-price-pair {
-    gap: 0;
-  }
-
-  .bazaar-equipment-price-previous {
-    font-size: 0.68rem;
-  }
-
 }
 
 @media (max-width: 380px) {
@@ -5808,21 +5690,6 @@ button {
   .bazaar-detail-modal-chart .bazaar-mini-chart-axis-label,
   .bazaar-detail-modal-chart .bazaar-mini-chart-axis-date {
     font-size: 9.6px;
-  }
-
-  .bazaar-equipment-detail-chart {
-    padding-left: 4px;
-    padding-right: 4px;
-  }
-
-  .bazaar-equipment-detail-chart .bazaar-mini-chart-axis-label,
-  .bazaar-equipment-detail-chart .bazaar-mini-chart-axis-date {
-    font-size: 10.4px;
-  }
-
-  .bazaar-equipment-modal-star-row {
-    gap: 5px;
-    font-size: 0.8rem;
   }
 
   .bazaar-detail-month-summary {

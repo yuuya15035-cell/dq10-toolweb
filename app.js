@@ -9,7 +9,6 @@ const CRAFT_IDEAL_VALUES_CSV_PATH = "./data/craft_ideal_values.csv";
 const BAZAAR_CSV_PATH = "./data/bazaar_prices.csv";
 const BAZAAR_EQUIPMENT_CSV_PATH = "./data/bazaar_equipment_prices.csv";
 const BAZAAR_HISTORY_CSV_PATH = "./data/bazaar_prices_history.csv";
-const BAZAAR_EQUIPMENT_HISTORY_CSV_PATH = "./data/bazaar_equipment_prices_history.csv";
 const PRESENT_CODES_CSV_PATH = "./data/datapresent_codes.csv";
 const FIELD_FARMING_CSV_PATH = "./data/field_farming_monsters.csv";
 const ROUTINE_TASKS_CSV_PATH = "./data/routine_tasks.csv";
@@ -70,7 +69,7 @@ const BOSS_CARD_NAME_CANDIDATES = Object.freeze([
   "人食い火竜",
 ]);
 const HOME_FEATURE_DEFINITIONS = [
-  { id: "bazaar", tabId: "bazaar", title: "バザー情報", icon: "💰" },
+  { id: "bazaar", tabId: "bazaar", title: "素材バザー", icon: "💰" },
   { id: "profit", tabId: "profit", title: "職人アシスト", icon: "🛠️" },
   { id: "craft-records", tabId: "craft-records", title: "職人記録", icon: "🧾" },
   { id: "favorites", tabId: "favorites", title: "お気に入り", icon: "📌" },
@@ -89,7 +88,7 @@ const DEFAULT_DOCUMENT_DESCRIPTION = "DQ10の職人アシスト、バザー情�
 const TAB_DOCUMENT_LABELS = Object.freeze({
   profit: "職人アシスト",
   "craft-records": "職人記録",
-  bazaar: "バザー情報",
+  bazaar: "素材バザー価格",
   "monster-info": "モンスター情報",
   "equipment-db": "装備情報",
   orbs: "宝珠情報",
@@ -482,11 +481,8 @@ const BAZAAR_SORT_OPTIONS = [
 ];
 const BAZAAR_PRICE_UPDATE_NOTE_HTML = `
   <p>素材価格は毎日7:00〜23:00まで2時間ごとに更新しています。</p>
-  <p>装備価格の自動更新は停止しています。</p>
   <p>価格は更新時点の旅人バザー最安値の目安です。購入・販売前にはゲーム内でもご確認ください。</p>
 `;
-const BAZAAR_PRICE_TAB_IDS = new Set(["materials", "equipment"]);
-const BAZAAR_EQUIPMENT_STARS = [2, 3];
 const BAZAAR_MATERIAL_UPDATE_HOURS = Object.freeze([7, 9, 11, 13, 15, 17, 19, 21, 23]);
 const BAZAAR_CHART_RANGE_DAYS = {
   week: 7,
@@ -2117,18 +2113,13 @@ let isMaterialSearchExpanded = false;
 let bazaarPrices = [];
 let bazaarEquipmentPrices = [];
 let bazaarEquipmentCards = [];
-let activeBazaarPriceTab = "materials";
 let selectedBazaarCategory = "";
-let selectedBazaarEquipmentCategory = "";
 let selectedBazaarSort = "standard";
 let bazaarSearchText = "";
-let bazaarEquipmentSearchText = "";
 let selectedBazaarMaterialName = "";
 let selectedBazaarPausedCategory = "";
 let isBazaarSearchComposing = false;
-let isBazaarEquipmentSearchComposing = false;
 let shouldRefocusBazaarSearchInput = false;
-let shouldRefocusBazaarEquipmentSearchInput = false;
 let showBazaarFavoritesOnly = false;
 let showBazaarMonitoringOnly = false;
 let activeFavoritesTabId = "recipes";
@@ -2147,9 +2138,7 @@ let pendingBazaarUrlItemName = "";
 let bazaarRowById = new Map();
 let bazaarRowByMaterialKey = new Map();
 let bazaarRowByMaterialName = new Map();
-let bazaarEquipmentCardByKey = new Map();
 let bazaarPriceHistoryByMaterialKey = new Map();
-let bazaarEquipmentPriceHistoryByKey = new Map();
 let selectedBazaarChartRangeDays = DEFAULT_BAZAAR_CHART_RANGE_DAYS;
 let activeBazaarDetailModalKey = "";
 let bazaarDetailModalSwipeState = null;
@@ -2267,7 +2256,6 @@ let hasLoadedStealFarmingExclusions = false;
 let hasLoadedBazaarPrices = false;
 let hasLoadedBazaarEquipmentPrices = false;
 let hasLoadedBazaarPriceHistory = false;
-let hasLoadedBazaarEquipmentPriceHistory = false;
 let hasLoadedCraftIdealValues = false;
 let bazaarLoadError = false;
 let bazaarEquipmentLoadError = false;
@@ -2291,7 +2279,6 @@ let isStealFarmingExclusionsLoading = false;
 let isBazaarLoading = false;
 let isBazaarEquipmentLoading = false;
 let isBazaarHistoryLoading = false;
-let isBazaarEquipmentHistoryLoading = false;
 let isCraftIdealValuesLoading = false;
 let isToolSiteSearchOpen = false;
 let presentCodesLoadingPromise = null;
@@ -2318,7 +2305,6 @@ let activeArmorSetDetailId = "";
 let bazaarLoadingPromise = null;
 let bazaarEquipmentLoadingPromise = null;
 let bazaarHistoryLoadingPromise = null;
-let bazaarEquipmentHistoryLoadingPromise = null;
 let bazaarAdminCsvModel = null;
 let bazaarAdminLastResults = new Map();
 let bazaarAdminPastedTextByRowId = new Map();
@@ -4313,7 +4299,7 @@ function buildSiteSearchIndex() {
     entries.push({
       name: row.materialName,
       type: "素材",
-      subLabel: "バザー価格一覧",
+      subLabel: "素材バザー価格一覧",
       tabId: "bazaar",
       targetValue: row.materialName,
       materialKey: row.materialKey,
@@ -4580,10 +4566,10 @@ function buildBazaarUpdateStatusHtml(options = {}) {
 }
 
 function getBazaarUpdateStatusOptionsForCurrentPage() {
-  if (appMode === "home") return { context: "home", scope: "both" };
+  if (appMode === "home") return { context: "home", scope: "material" };
   const optionsByTab = {
     profit: { context: "profit", scope: "both" },
-    bazaar: { context: "bazaar", scope: "both" },
+    bazaar: { context: "bazaar", scope: "material" },
     "crystal-simulator": { context: "crystal", scope: "both" },
     "steal-farming": { context: "steal", scope: "material" },
     "cell-farming": { context: "cell", scope: "material" },
@@ -4727,10 +4713,6 @@ function makeBazaarEquipmentKey(itemName, itemCategory) {
   return `be:${String(itemCategory || "").trim()}:${String(itemName || "").trim()}`;
 }
 
-function makeBazaarEquipmentHistoryKey(itemName, star) {
-  return `beh:${String(itemName || "").trim()}:${Number(star)}`;
-}
-
 function isBazaarEquipmentListingUnavailable(row) {
   const listingStatus = String(row?.listingStatus || "").trim();
   if (listingStatus === "出品なし") return true;
@@ -4850,9 +4832,7 @@ function groupBazaarEquipmentRows(rows) {
     card.starRows.set(Number(row.star), row);
   });
 
-  const cards = Array.from(cardMap.values()).sort(compareBazaarEquipmentCards);
-  bazaarEquipmentCardByKey = new Map(cards.map((card) => [card.equipmentKey, card]));
-  return cards;
+  return Array.from(cardMap.values()).sort(compareBazaarEquipmentCards);
 }
 
 function parsePresentCodesFromLines(lines) {
@@ -6365,7 +6345,7 @@ function buildMonsterDropHtml(label, itemName, options = {}) {
   const canOpenBazaar = normalizedItemName !== "" && normalizedItemName !== "-" && normalizedItemName !== "なし" && normalizedItemName !== "未登録";
   const bazaarLinkHtml =
     modal && canOpenBazaar
-      ? `<button type="button" class="monster-info-chip monster-info-nav-link monster-drop-bazaar-link" data-monster-drop-bazaar-item="${escapeHtml(normalizedItemName)}">バザー情報</button>`
+      ? `<button type="button" class="monster-info-chip monster-info-nav-link monster-drop-bazaar-link" data-monster-drop-bazaar-item="${escapeHtml(normalizedItemName)}">素材バザー</button>`
       : "";
   if (modal) {
     return `<div class="monster-drop-detail">
@@ -6392,11 +6372,6 @@ async function loadBazaarPricesCsv(options = {}) {
 async function loadBazaarEquipmentPricesCsv(options = {}) {
   const lines = await fetchCsvLines(BAZAAR_EQUIPMENT_CSV_PATH, options);
   return parseBazaarEquipmentPricesFromLines(lines);
-}
-
-async function loadBazaarEquipmentPriceHistoryCsv(options = {}) {
-  const lines = await fetchCsvLines(BAZAAR_EQUIPMENT_HISTORY_CSV_PATH, options);
-  return parseBazaarEquipmentPriceHistoryFromLines(lines);
 }
 
 async function ensureCraftIdealValuesLoaded() {
@@ -6490,14 +6465,10 @@ async function ensureBazaarEquipmentPricesLoaded() {
       console.error(`bazaar_equipment_prices.csv の読み込みに失敗しました: path=${BAZAAR_EQUIPMENT_CSV_PATH}`, error);
       bazaarEquipmentPrices = [];
       bazaarEquipmentCards = [];
-      bazaarEquipmentCardByKey = new Map();
       bazaarEquipmentLoadError = true;
     } finally {
       isBazaarEquipmentLoading = false;
       renderBazaarUpdateStatuses();
-      if (activeTabId === "bazaar" && activeBazaarPriceTab === "equipment") {
-        renderBazaarPrices();
-      }
       if (activeTabId === "crystal-simulator") renderCrystalSimulator();
     }
   })();
@@ -6521,27 +6492,6 @@ async function ensureBazaarPriceHistoryLoaded() {
     }
   })();
   return bazaarHistoryLoadingPromise;
-}
-
-async function ensureBazaarEquipmentPriceHistoryLoaded() {
-  if (hasLoadedBazaarEquipmentPriceHistory || isBazaarEquipmentHistoryLoading) return bazaarEquipmentHistoryLoadingPromise;
-  isBazaarEquipmentHistoryLoading = true;
-  bazaarEquipmentHistoryLoadingPromise = (async () => {
-    try {
-      bazaarEquipmentPriceHistoryByKey = await loadBazaarEquipmentPriceHistoryCsv();
-      hasLoadedBazaarEquipmentPriceHistory = true;
-    } catch (error) {
-      console.error(`bazaar_equipment_prices_history.csv の読み込みに失敗しました: path=${BAZAAR_EQUIPMENT_HISTORY_CSV_PATH}`, error);
-      bazaarEquipmentPriceHistoryByKey = new Map();
-    } finally {
-      isBazaarEquipmentHistoryLoading = false;
-      if (activeTabId === "bazaar" && activeBazaarPriceTab === "equipment") renderBazaarPrices();
-      if (String(activeBazaarDetailModalKey || "").startsWith("be:")) {
-        openBazaarEquipmentDetailModal(activeBazaarDetailModalKey);
-      }
-    }
-  })();
-  return bazaarEquipmentHistoryLoadingPromise;
 }
 
 async function ensureFieldFarmingMonstersLoaded() {
@@ -8376,47 +8326,6 @@ function parseBazaarHistoryDate(value) {
   return parsed;
 }
 
-function parseBazaarEquipmentHistoryDate(value) {
-  const normalized = String(value || "").trim();
-  if (normalized === "") return null;
-  const matched = normalized.match(
-    /^(\d{4})[\/\-](\d{1,2})[\/\-](\d{1,2})(?:[ T](\d{1,2})(?::(\d{1,2}))?(?::(\d{1,2}))?)?$/
-  );
-  if (!matched) return parseBazaarHistoryDate(normalized);
-
-  const year = Number(matched[1]);
-  const month = Number(matched[2]);
-  const day = Number(matched[3]);
-  const hour = matched[4] === undefined ? 0 : Number(matched[4]);
-  const minute = matched[5] === undefined ? 0 : Number(matched[5]);
-  const second = matched[6] === undefined ? 0 : Number(matched[6]);
-  if (
-    !Number.isFinite(year) ||
-    !Number.isFinite(month) ||
-    !Number.isFinite(day) ||
-    !Number.isFinite(hour) ||
-    !Number.isFinite(minute) ||
-    !Number.isFinite(second)
-  ) {
-    return null;
-  }
-  if (month < 1 || month > 12 || day < 1 || day > 31) return null;
-  if (hour < 0 || hour > 23 || minute < 0 || minute > 59 || second < 0 || second > 59) return null;
-
-  const parsedUtc = new Date(Date.UTC(year, month - 1, day, hour, minute, second));
-  if (
-    parsedUtc.getUTCFullYear() !== year ||
-    parsedUtc.getUTCMonth() !== month - 1 ||
-    parsedUtc.getUTCDate() !== day ||
-    parsedUtc.getUTCHours() !== hour ||
-    parsedUtc.getUTCMinutes() !== minute ||
-    parsedUtc.getUTCSeconds() !== second
-  ) {
-    return null;
-  }
-  return parsedUtc;
-}
-
 function formatDateAsIsoText(date = new Date()) {
   const year = date.getFullYear();
   const month = String(date.getMonth() + 1).padStart(2, "0");
@@ -9260,57 +9169,6 @@ function parseBazaarPriceHistoryFromLines(lines) {
   return historyMap;
 }
 
-function parseBazaarEquipmentPriceHistoryFromLines(lines) {
-  if (lines.length <= 1) return new Map();
-
-  const headers = parseCsvLine(lines[0]).map((header) => String(header || "").replace(/^\uFEFF/, "").trim());
-  const dateIndex = headers.indexOf("date");
-  const itemNameIndex = headers.indexOf("item_name");
-  const starIndex = headers.indexOf("star");
-  const priceIndex = headers.indexOf("price");
-  const listingStatusIndex = headers.indexOf("listing_status");
-  if (dateIndex < 0 || itemNameIndex < 0 || starIndex < 0 || priceIndex < 0 || listingStatusIndex < 0) {
-    throw new Error("bazaar_equipment_prices_history.csv ヘッダーが想定と一致しません");
-  }
-
-  const historyMap = new Map();
-  lines.slice(1).forEach((line) => {
-    const row = parseCsvLine(line);
-    const itemName = String(row[itemNameIndex] || "").trim();
-    const star = Number(row[starIndex]);
-    const price = parseNullableNumber(row[priceIndex]);
-    const listingStatus = String(row[listingStatusIndex] || "").trim();
-    const parsedDate = parseBazaarEquipmentHistoryDate(row[dateIndex]);
-    if (!itemName || !Number.isFinite(star) || !Number.isFinite(price) || listingStatus === "出品なし" || !parsedDate) return;
-
-    const historyKey = makeBazaarEquipmentHistoryKey(itemName, star);
-    const dateText = parsedDate.toISOString().slice(0, 10);
-    if (!historyMap.has(historyKey)) {
-      historyMap.set(historyKey, []);
-    }
-    historyMap.get(historyKey).push({
-      date: dateText,
-      timestamp: parsedDate.getTime(),
-      price,
-    });
-  });
-
-  historyMap.forEach((rows, historyKey) => {
-    const latestByDate = new Map();
-    rows.forEach((row) => {
-      const existing = latestByDate.get(row.date);
-      if (!existing || Number(row.timestamp) >= Number(existing.timestamp)) {
-        latestByDate.set(row.date, row);
-      }
-    });
-    const sorted = Array.from(latestByDate.values()).sort((a, b) => a.timestamp - b.timestamp);
-    historyMap.set(historyKey, sorted);
-  });
-
-  console.info(`[bazaar_equipment_prices_history.csv] parsed series: ${historyMap.size}`);
-  return historyMap;
-}
-
 async function loadBazaarPriceHistoryCsv(options = {}) {
   const lines = await fetchCsvLines(BAZAAR_HISTORY_CSV_PATH, options);
   return parseBazaarPriceHistoryFromLines(lines);
@@ -9679,7 +9537,6 @@ function getVisibleBazaarPausedRows() {
 
 function queueBazaarUrlItemApplication(itemName) {
   const normalizedName = String(itemName || "").trim();
-  activeBazaarPriceTab = "materials";
   if (normalizedName === "") {
     pendingBazaarUrlItemName = "";
     return;
@@ -9731,47 +9588,9 @@ function clearBazaarFilters() {
   renderBazaarPrices();
 }
 
-function buildBazaarPriceTabsHtml() {
-  return `
-    <div class="bazaar-price-tabs" role="tablist" aria-label="バザー種別切り替え">
-      <button
-        type="button"
-        class="bazaar-price-tab-button ${activeBazaarPriceTab === "materials" ? "is-active" : ""}"
-        role="tab"
-        aria-selected="${activeBazaarPriceTab === "materials" ? "true" : "false"}"
-        data-bazaar-price-tab="materials"
-      >素材</button>
-      <button
-        type="button"
-        class="bazaar-price-tab-button ${activeBazaarPriceTab === "equipment" ? "is-active" : ""}"
-        role="tab"
-        aria-selected="${activeBazaarPriceTab === "equipment" ? "true" : "false"}"
-        data-bazaar-price-tab="equipment"
-      >装備</button>
-    </div>
-  `;
-}
-
-function attachBazaarPriceTabListeners() {
-  if (!bazaarListWrap) return;
-  bazaarListWrap.querySelectorAll("[data-bazaar-price-tab]").forEach((button) => {
-    button.addEventListener("click", () => {
-      const nextTab = String(button.dataset.bazaarPriceTab || "").trim();
-      if (!BAZAAR_PRICE_TAB_IDS.has(nextTab) || nextTab === activeBazaarPriceTab) return;
-      activeBazaarPriceTab = nextTab;
-      if (activeBazaarPriceTab === "equipment") {
-        void ensureBazaarEquipmentPricesLoaded();
-        void ensureBazaarEquipmentPriceHistoryLoaded();
-      }
-      renderBazaarPrices();
-    });
-  });
-}
-
 function renderBazaarMessage(message) {
   if (!bazaarListWrap) return;
-  bazaarListWrap.innerHTML = `${buildBazaarPriceTabsHtml()}<p>${message}</p>`;
-  attachBazaarPriceTabListeners();
+  bazaarListWrap.innerHTML = `<p>${message}</p>`;
 }
 
 function buildBazaarRefreshStatusHtml() {
@@ -9836,11 +9655,7 @@ function renderBazaarRefreshDependents() {
     calcAndRenderSummary();
   }
   if (activeBazaarDetailModalKey) {
-    if (String(activeBazaarDetailModalKey).startsWith("be:")) {
-      openBazaarEquipmentDetailModal(activeBazaarDetailModalKey);
-    } else {
-      void openBazaarDetailModal(activeBazaarDetailModalKey);
-    }
+    void openBazaarDetailModal(activeBazaarDetailModalKey);
   }
 }
 
@@ -9856,25 +9671,17 @@ async function refreshBazaarPriceData() {
   renderBazaarRefreshDependents();
 
   try {
-    const [nextBazaarPrices, nextBazaarEquipmentPrices, nextBazaarPriceHistoryByMaterialKey, nextBazaarEquipmentPriceHistoryByKey] = await Promise.all([
+    const [nextBazaarPrices, nextBazaarPriceHistoryByMaterialKey] = await Promise.all([
       loadBazaarPricesCsv({ cacheBust: true }),
-      loadBazaarEquipmentPricesCsv({ cacheBust: true }),
       loadBazaarPriceHistoryCsv({ cacheBust: true }),
-      loadBazaarEquipmentPriceHistoryCsv({ cacheBust: true }),
     ]);
 
     bazaarPrices = nextBazaarPrices;
-    bazaarEquipmentPrices = nextBazaarEquipmentPrices;
-    bazaarEquipmentCards = groupBazaarEquipmentRows(bazaarEquipmentPrices);
     bazaarPriceHistoryByMaterialKey = nextBazaarPriceHistoryByMaterialKey;
-    bazaarEquipmentPriceHistoryByKey = nextBazaarEquipmentPriceHistoryByKey;
     rebuildBazaarLookupMaps();
     hasLoadedBazaarPrices = true;
-    hasLoadedBazaarEquipmentPrices = true;
     hasLoadedBazaarPriceHistory = true;
-    hasLoadedBazaarEquipmentPriceHistory = true;
     bazaarLoadError = false;
-    bazaarEquipmentLoadError = false;
     const materialSyncResult = syncMaterialPricesWithBazaar(state.materials, bazaarPrices);
     state.materials = materialSyncResult.materials;
     if (materialSyncResult.updatedCount > 0) saveData();
@@ -9900,553 +9707,8 @@ function attachBazaarManualRefreshListener() {
   });
 }
 
-function switchBazaarPriceTab(tabId) {
-  const normalizedTabId = BAZAAR_PRICE_TAB_IDS.has(tabId) ? tabId : "materials";
-  activeBazaarPriceTab = normalizedTabId;
-  if (normalizedTabId === "equipment") {
-    void ensureBazaarEquipmentPricesLoaded();
-    void ensureBazaarEquipmentPriceHistoryLoaded();
-  }
-  renderBazaarPrices();
-}
-
-function getBazaarEquipmentCategories() {
-  const categorySet = new Set(
-    (bazaarEquipmentCards || [])
-      .map((card) => String(card.itemCategory || "").trim())
-      .filter((category) => category !== "")
-  );
-  return Array.from(categorySet).sort(compareEquipmentCategories);
-}
-
-function isBazaarEquipmentFavoriteCard(card) {
-  return bazaarFavoriteMaterialKeys.has(card?.equipmentKey);
-}
-
-function getBazaarEquipmentSearchCandidates(keyword) {
-  const normalizedKeyword = normalizeBazaarSearchText(keyword);
-  if (normalizedKeyword === "") return [];
-  const uniqueNames = new Set();
-  (bazaarEquipmentCards || []).forEach((card) => {
-    const itemName = String(card?.itemName || "").trim();
-    if (itemName === "") return;
-    if (normalizeBazaarSearchText(itemName).includes(normalizedKeyword)) {
-      uniqueNames.add(itemName);
-    }
-  });
-  return Array.from(uniqueNames).sort((a, b) => a.localeCompare(b, "ja"));
-}
-
-function getVisibleBazaarEquipmentCards() {
-  const categoryFilteredCards = (bazaarEquipmentCards || []).filter(
-    (card) => selectedBazaarEquipmentCategory === "" || card.itemCategory === selectedBazaarEquipmentCategory
-  );
-  const normalizedKeyword = normalizeBazaarSearchText(bazaarEquipmentSearchText);
-  const keywordFilteredCards =
-    normalizedKeyword === ""
-      ? categoryFilteredCards
-      : categoryFilteredCards.filter((card) => normalizeBazaarSearchText(card.itemName).includes(normalizedKeyword));
-  const favoriteFilteredCards = showBazaarFavoritesOnly
-    ? keywordFilteredCards.filter((card) => isBazaarEquipmentFavoriteCard(card))
-    : keywordFilteredCards;
-  return favoriteFilteredCards.slice().sort(compareBazaarEquipmentCards);
-}
-
-function hasActiveBazaarEquipmentFilters() {
-  return (
-    String(selectedBazaarEquipmentCategory || "").trim() !== "" ||
-    String(bazaarEquipmentSearchText || "").trim() !== "" ||
-    showBazaarFavoritesOnly
-  );
-}
-
-function clearBazaarEquipmentFilters() {
-  selectedBazaarEquipmentCategory = "";
-  bazaarEquipmentSearchText = "";
-  showBazaarFavoritesOnly = false;
-  shouldRefocusBazaarEquipmentSearchInput = false;
-  saveBazaarFavoriteState();
-  renderBazaarPrices();
-}
-
-function getBazaarEquipmentStarLabel(star) {
-  const count = Number(star);
-  if (!Number.isFinite(count) || count <= 0) return "-";
-  return "★".repeat(Math.max(1, Math.min(5, Math.floor(count))));
-}
-
-function formatBazaarEquipmentStarPriceLine(row) {
-  if (!row || isBazaarEquipmentListingUnavailable(row)) return "出品なし";
-  return `最新 ${formatBazaarPriceWithUnit(row.todayPrice)}　前回 ${formatBazaarPriceWithUnit(row.previousDayPrice)}`;
-}
-
-function buildBazaarEquipmentStarPriceHtml(row) {
-  if (!row || isBazaarEquipmentListingUnavailable(row)) {
-    return `<span class="bazaar-equipment-price-unavailable">出品なし</span>`;
-  }
-  return `
-    <span class="bazaar-equipment-price-today">最新 ${escapeHtml(formatBazaarPriceWithUnit(row.todayPrice))}</span>
-    <span class="bazaar-equipment-price-previous">前回 ${escapeHtml(formatBazaarPriceWithUnit(row.previousDayPrice))}</span>
-  `;
-}
-
-function getBazaarEquipmentUpdatedAt(card) {
-  return formatBazaarUpdatedAt(card?.updatedAt);
-}
-
-function getBazaarEquipmentHistoryPoints(itemName, star) {
-  const historyKey = makeBazaarEquipmentHistoryKey(itemName, star);
-  return bazaarEquipmentPriceHistoryByKey.get(historyKey) || [];
-}
-
-function buildBazaarEquipmentHistory(card) {
-  return BAZAAR_EQUIPMENT_STARS.map((star) => {
-    const points = getBazaarEquipmentHistoryPoints(card?.itemName, star);
-    return {
-      label: getBazaarEquipmentStarLabel(star),
-      star,
-      points,
-      stroke: star === 3 ? "#6b4122" : "#2f6f72",
-      areaFill: star === 3 ? "rgba(183, 138, 85, 0.14)" : "rgba(47, 111, 114, 0.1)",
-    };
-  });
-}
-
-function buildBazaarMultiSeriesSparklineSvg(seriesList, options = {}) {
-  const width = Number(options.width) || 320;
-  const height = Number(options.height) || 108;
-  const paddingTop = Number(options.paddingTop) || 8;
-  const paddingRight = Number(options.paddingRight) || 8;
-  const paddingBottom = Number(options.paddingBottom) || 20;
-  const paddingLeft = Number(options.paddingLeft) || 52;
-  const pointRadius = Number(options.pointRadius) || 2;
-  const includeYAxisLabels = options.includeYAxisLabels !== false;
-  const allPoints = (seriesList || []).flatMap((series) =>
-    (series.points || [])
-      .map((point) => ({ ...point, price: Number(point?.price), timestamp: Number(point?.timestamp) }))
-      .filter((point) => Number.isFinite(point.price) && Number.isFinite(point.timestamp))
-  );
-  if (allPoints.length === 0) return "";
-
-  const minTimestamp = Math.min(...allPoints.map((point) => point.timestamp));
-  const maxTimestamp = Math.max(...allPoints.map((point) => point.timestamp));
-  const minPrice = Math.min(...allPoints.map((point) => point.price));
-  const maxPrice = Math.max(...allPoints.map((point) => point.price));
-  const middlePrice = (maxPrice + minPrice) / 2;
-  const safeTimeRange = Math.max(maxTimestamp - minTimestamp, 1);
-  const safePriceRange = Math.max(maxPrice - minPrice, 1);
-  const chartHeight = Math.max(height - paddingTop - paddingBottom, 1);
-  const chartWidth = Math.max(width - paddingLeft - paddingRight, 1);
-  const xForTimestamp = (timestamp) => paddingLeft + ((timestamp - minTimestamp) / safeTimeRange) * chartWidth;
-  const yForPrice = (price) => paddingTop + (1 - (price - minPrice) / safePriceRange) * chartHeight;
-  const seriesHtml = (seriesList || [])
-    .map((series) => {
-      const points = (series.points || [])
-        .map((point) => ({ ...point, price: Number(point?.price), timestamp: Number(point?.timestamp) }))
-        .filter((point) => Number.isFinite(point.price) && Number.isFinite(point.timestamp))
-        .sort((a, b) => a.timestamp - b.timestamp);
-      if (points.length === 0) return "";
-      const coords = points.map((point) => ({ x: xForTimestamp(point.timestamp), y: yForPrice(point.price) }));
-      const polylinePoints = coords.map((coord) => `${coord.x.toFixed(2)},${coord.y.toFixed(2)}`).join(" ");
-      const dots = coords
-        .map((coord) => `<circle cx="${coord.x.toFixed(2)}" cy="${coord.y.toFixed(2)}" r="${pointRadius}" fill="${series.stroke}"></circle>`)
-        .join("");
-      return `<polyline points="${polylinePoints}" class="bazaar-mini-chart-line" style="stroke:${series.stroke};"></polyline>${dots}`;
-    })
-    .join("");
-  const yAxisLabelsHtml = includeYAxisLabels
-    ? [
-        { price: maxPrice, className: "bazaar-mini-chart-axis-label-max" },
-        { price: middlePrice, className: "bazaar-mini-chart-axis-label-middle" },
-        { price: minPrice, className: "bazaar-mini-chart-axis-label-min" },
-      ]
-        .map(({ price, className }) => {
-          const y = yForPrice(price);
-          return `<text x="${Math.max(paddingLeft - 4, 8)}" y="${y.toFixed(2)}" text-anchor="end" class="bazaar-mini-chart-axis-label ${className}">${formatBazaarChartPrice(price)} G</text>`;
-        })
-        .join("")
-    : "";
-  const startX = paddingLeft;
-  const endX = width - paddingRight;
-  return `
-    <svg viewBox="0 0 ${width} ${height}" preserveAspectRatio="xMidYMid meet" class="bazaar-mini-chart-svg is-neutral" aria-hidden="true" focusable="false">
-      <line x1="${startX}" y1="${yForPrice(maxPrice).toFixed(2)}" x2="${endX}" y2="${yForPrice(maxPrice).toFixed(2)}" class="bazaar-mini-chart-grid-line is-edge"></line>
-      <line x1="${startX}" y1="${yForPrice(middlePrice).toFixed(2)}" x2="${endX}" y2="${yForPrice(middlePrice).toFixed(2)}" class="bazaar-mini-chart-grid-line"></line>
-      <line x1="${startX}" y1="${yForPrice(minPrice).toFixed(2)}" x2="${endX}" y2="${yForPrice(minPrice).toFixed(2)}" class="bazaar-mini-chart-grid-line is-edge"></line>
-      ${seriesHtml}
-      ${yAxisLabelsHtml}
-      <text x="${startX}" y="${height - 3}" text-anchor="start" class="bazaar-mini-chart-axis-date">${formatBazaarChartDateLabel(minTimestamp)}</text>
-      <text x="${endX}" y="${height - 3}" text-anchor="end" class="bazaar-mini-chart-axis-date">${formatBazaarChartDateLabel(maxTimestamp)}</text>
-    </svg>
-  `;
-}
-
-function buildBazaarEquipmentCardHtml(card) {
-  const isFavorite = isBazaarEquipmentFavoriteCard(card);
-  const starRowsHtml = BAZAAR_EQUIPMENT_STARS.map((star) => {
-    const row = card.starRows.get(star);
-    return `
-      <p class="bazaar-equipment-star-row ${row && isBazaarEquipmentListingUnavailable(row) ? "is-unavailable" : ""}">
-        <span class="bazaar-equipment-star-label">${getBazaarEquipmentStarLabel(star)}</span>
-        <span class="bazaar-equipment-price-pair">${buildBazaarEquipmentStarPriceHtml(row)}</span>
-      </p>
-    `;
-  }).join("");
-  const hasOfficialUrl = String(card.officialUrl || "") !== "";
-  const historySeries = buildBazaarEquipmentHistory(card);
-  const hasHistory = historySeries.some((series) => series.points.length > 0);
-  const chartHtml = hasHistory
-    ? `
-      <div class="bazaar-mini-chart-plot">
-        <div class="bazaar-mini-chart-canvas">
-          ${buildBazaarMultiSeriesSparklineSvg(historySeries, { includeYAxisLabels: true, paddingLeft: 58 })}
-        </div>
-      </div>
-      <p class="bazaar-mini-chart-meta">★★ / ★★★ 価格推移</p>
-    `
-    : `<p class="bazaar-mini-chart-empty">履歴なし</p>`;
-
-  return `
-    <article class="bazaar-card bazaar-equipment-card" data-bazaar-equipment-key="${escapeHtml(card.equipmentKey)}">
-      <header class="bazaar-card-header">
-        <div class="bazaar-card-title-group">
-          <h3>
-            <button
-              type="button"
-              class="bazaar-material-name-button"
-              data-bazaar-equipment-detail-key="${escapeHtml(card.equipmentKey)}"
-            >${escapeHtml(card.itemName)}</button>
-          </h3>
-        </div>
-        <div class="bazaar-card-header-actions">
-          <button
-            type="button"
-            class="memo-add-button bazaar-card-memo-button"
-            data-memo-bazaar-equipment-key="${escapeHtml(card.equipmentKey)}"
-            aria-label="${escapeHtml(card.itemName)}をメモに追加"
-          >
-            ＋メモ
-          </button>
-          <button
-            type="button"
-            class="bazaar-favorite-button ${isFavorite ? "is-active" : ""}"
-            aria-label="${escapeHtml(card.itemName)}をお気に入り${isFavorite ? "解除" : "登録"}"
-            aria-pressed="${isFavorite ? "true" : "false"}"
-            data-bazaar-equipment-favorite-key="${escapeHtml(card.equipmentKey)}"
-          >
-            ♥
-          </button>
-        </div>
-      </header>
-      <div
-        class="bazaar-sub-row bazaar-card-summary-toggle"
-        aria-label="ジャンル"
-        data-bazaar-equipment-detail-key="${escapeHtml(card.equipmentKey)}"
-        role="button"
-        tabindex="0"
-      >
-        <p class="bazaar-category">${escapeHtml(card.itemCategory)}</p>
-      </div>
-      ${
-        hasOfficialUrl
-          ? `<div class="bazaar-quick-actions">
-              <a
-                class="bazaar-official-link-button bazaar-official-link-button-compact"
-                href="${escapeHtml(card.officialUrl)}"
-                target="_blank"
-                rel="noopener noreferrer"
-                aria-label="${escapeHtml(card.itemName)}の公式相場サイトを新しいタブで開く"
-              >
-                公式相場
-              </a>
-            </div>`
-          : ""
-      }
-      <div
-        class="bazaar-main bazaar-card-summary-toggle"
-        data-bazaar-equipment-detail-key="${escapeHtml(card.equipmentKey)}"
-        role="button"
-        tabindex="0"
-      >
-        <div class="bazaar-primary">
-          <div class="bazaar-price-stack bazaar-equipment-star-list">
-            ${starRowsHtml}
-            <p class="bazaar-listing-count"><span class="bazaar-price-label">件数</span><span class="bazaar-price-sub-value">${formatBazaarListingCount(card.listingCount)}</span></p>
-            <div class="bazaar-meta-row">
-              <p class="bazaar-updated-at"><span class="bazaar-meta-label">更新</span><span>${escapeHtml(getBazaarEquipmentUpdatedAt(card))}</span></p>
-            </div>
-          </div>
-          ${
-            hasOfficialUrl
-              ? `<a
-                  class="bazaar-official-link-button bazaar-official-link-button-desktop"
-                  href="${escapeHtml(card.officialUrl)}"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  aria-label="${escapeHtml(card.itemName)}の公式相場サイトを新しいタブで開く"
-                  data-bazaar-official-link="true"
-                >
-                  公式相場
-                </a>`
-              : ""
-          }
-        </div>
-        <div class="bazaar-mini-chart-wrap" aria-label="${escapeHtml(card.itemName)}の星別価格推移">
-          ${chartHtml}
-        </div>
-      </div>
-    </article>
-  `;
-}
-
-function createBazaarEquipmentMemoEntry(card) {
-  const starLines = BAZAAR_EQUIPMENT_STARS.map((star) => {
-    const row = card?.starRows?.get(star);
-    return `${getBazaarEquipmentStarLabel(star)} ${formatBazaarEquipmentStarPriceLine(row)}`;
-  });
-  return {
-    id: `memo-bazaar-equipment-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
-    type: "装備バザー",
-    name: String(card?.itemName || ""),
-    lines: [
-      `ジャンル: ${String(card?.itemCategory || "-")}`,
-      ...starLines,
-      `件数: ${formatBazaarListingCount(card?.listingCount)}`,
-      `更新: ${getBazaarEquipmentUpdatedAt(card)}`,
-      card?.officialUrl ? `公式相場: ${card.officialUrl}` : "",
-    ].filter(Boolean),
-    createdAt: new Date().toISOString(),
-    target: {
-      kind: "bazaar-equipment",
-      key: String(card?.equipmentKey || ""),
-    },
-  };
-}
-
-function renderBazaarEquipmentPrices() {
-  if (!bazaarListWrap) return;
-  if (!hasLoadedBazaarEquipmentPrices && !isBazaarEquipmentLoading) {
-    void ensureBazaarEquipmentPricesLoaded();
-  }
-  if (!hasLoadedBazaarEquipmentPriceHistory && !isBazaarEquipmentHistoryLoading) {
-    void ensureBazaarEquipmentPriceHistoryLoaded();
-  }
-  if (isBazaarEquipmentLoading && !hasLoadedBazaarEquipmentPrices) {
-    renderBazaarMessage("装備相場を読み込み中です。しばらくお待ちください。");
-    return;
-  }
-  if (!Array.isArray(bazaarEquipmentCards) || bazaarEquipmentCards.length === 0) {
-    renderBazaarMessage(
-      bazaarEquipmentLoadError
-        ? "装備相場データを読み込めませんでした。時間をおいて再度お試しください。"
-        : "現在表示できる装備相場データがありません。"
-    );
-    return;
-  }
-
-  const categories = getBazaarEquipmentCategories();
-  if (selectedBazaarEquipmentCategory !== "" && !categories.includes(selectedBazaarEquipmentCategory)) {
-    selectedBazaarEquipmentCategory = "";
-  }
-  const visibleCards = getVisibleBazaarEquipmentCards();
-  const searchText = String(bazaarEquipmentSearchText || "");
-  const trimmedSearchText = searchText.trim();
-  const searchCandidates = getBazaarEquipmentSearchCandidates(trimmedSearchText);
-  const showSearchCandidates = trimmedSearchText !== "";
-
-  bazaarListWrap.innerHTML = `
-    ${buildBazaarPriceTabsHtml()}
-    ${buildBazaarPageNoteHtml(
-      `<p class="bazaar-page-note-highlight">装備相場は ★★ / ★★★ を同じカード内にまとめて表示しています。</p>`
-    )}
-    <div class="bazaar-control-wrap">
-      <label class="field bazaar-category-field">
-        <span>ジャンル切り替え</span>
-        <select id="bazaarEquipmentCategorySelect" aria-label="装備ジャンル切り替え">
-          <option value="">すべて</option>
-          ${categories
-            .map(
-              (category) => `
-                <option value="${escapeHtml(category)}" ${selectedBazaarEquipmentCategory === category ? "selected" : ""}>${escapeHtml(category)}</option>
-              `
-            )
-            .join("")}
-        </select>
-      </label>
-      <label class="field bazaar-search-field">
-        <span>装備検索</span>
-        <div class="bazaar-search-toolbar">
-          <div class="bazaar-search-input-wrap">
-            <input
-              id="bazaarEquipmentSearchInput"
-              type="search"
-              placeholder="装備名で検索"
-              aria-label="装備名で検索"
-              autocomplete="off"
-              autocapitalize="off"
-              spellcheck="false"
-            />
-          </div>
-          <label class="field inline-field bazaar-favorite-filter-field bazaar-favorite-filter-inline">
-            <input id="bazaarEquipmentFavoritesOnlyToggle" type="checkbox" ${showBazaarFavoritesOnly ? "checked" : ""} />
-            <span>お気に入りのみ表示</span>
-          </label>
-        </div>
-        ${
-          showSearchCandidates
-            ? `<div class="bazaar-search-candidates" role="listbox" aria-label="装備検索候補">
-                ${
-                  searchCandidates.length === 0
-                    ? `<p class="bazaar-search-empty">候補がありません</p>`
-                    : searchCandidates
-                        .slice(0, 30)
-                        .map(
-                          (candidate) => `
-                            <button type="button" class="bazaar-equipment-search-candidate-button">
-                              ${escapeHtml(candidate)}
-                            </button>
-                          `
-                        )
-                        .join("")
-                }
-              </div>`
-            : ""
-        }
-      </label>
-      <div class="filter-reset-wrap">
-        <button
-          id="bazaarEquipmentClearFiltersButton"
-          type="button"
-          class="filter-reset-button"
-          ${hasActiveBazaarEquipmentFilters() ? "" : "hidden"}
-        >
-          × 絞り込み解除
-        </button>
-      </div>
-    </div>
-    ${
-      visibleCards.length === 0
-        ? `<p>条件に一致する装備相場が見つかりませんでした。検索条件を変えてお試しください。</p>`
-        : `<div class="bazaar-list">${visibleCards.map((card) => buildBazaarEquipmentCardHtml(card)).join("")}</div>`
-    }
-  `;
-
-  attachBazaarPriceTabListeners();
-  attachBazaarManualRefreshListener();
-
-  const categorySelect = bazaarListWrap.querySelector("#bazaarEquipmentCategorySelect");
-  if (categorySelect) {
-    categorySelect.value = selectedBazaarEquipmentCategory;
-    categorySelect.addEventListener("change", (event) => {
-      selectedBazaarEquipmentCategory = String(event.target.value || "");
-      renderBazaarPrices();
-    });
-  }
-
-  const favoritesOnlyToggle = bazaarListWrap.querySelector("#bazaarEquipmentFavoritesOnlyToggle");
-  if (favoritesOnlyToggle) {
-    favoritesOnlyToggle.checked = showBazaarFavoritesOnly;
-    favoritesOnlyToggle.addEventListener("change", (event) => {
-      showBazaarFavoritesOnly = Boolean(event.target.checked);
-      saveBazaarFavoriteState();
-      renderBazaarPrices();
-    });
-  }
-
-  const searchInput = bazaarListWrap.querySelector("#bazaarEquipmentSearchInput");
-  if (searchInput) {
-    searchInput.value = searchText;
-    if (shouldRefocusBazaarEquipmentSearchInput) {
-      searchInput.focus({ preventScroll: true });
-      searchInput.setSelectionRange(searchText.length, searchText.length);
-      shouldRefocusBazaarEquipmentSearchInput = false;
-    }
-    searchInput.addEventListener("compositionstart", () => {
-      isBazaarEquipmentSearchComposing = true;
-    });
-    searchInput.addEventListener("compositionend", (event) => {
-      isBazaarEquipmentSearchComposing = false;
-      bazaarEquipmentSearchText = String(event.target.value || "");
-      shouldRefocusBazaarEquipmentSearchInput = true;
-      renderBazaarPrices();
-    });
-    searchInput.addEventListener("input", (event) => {
-      bazaarEquipmentSearchText = String(event.target.value || "");
-      if (isBazaarEquipmentSearchComposing) return;
-      shouldRefocusBazaarEquipmentSearchInput = true;
-      renderBazaarPrices();
-    });
-  }
-
-  const clearFiltersButton = bazaarListWrap.querySelector("#bazaarEquipmentClearFiltersButton");
-  if (clearFiltersButton) {
-    clearFiltersButton.addEventListener("click", () => {
-      clearBazaarEquipmentFilters();
-    });
-  }
-
-  bazaarListWrap.querySelectorAll(".bazaar-equipment-search-candidate-button").forEach((button) => {
-    button.addEventListener("click", () => {
-      bazaarEquipmentSearchText = String(button.textContent || "").trim();
-      shouldRefocusBazaarEquipmentSearchInput = true;
-      renderBazaarPrices();
-    });
-  });
-
-  bazaarListWrap.querySelectorAll("[data-bazaar-equipment-favorite-key]").forEach((button) => {
-    button.addEventListener("click", (event) => {
-      event.stopPropagation();
-      const equipmentKey = String(button.dataset.bazaarEquipmentFavoriteKey || "");
-      if (!equipmentKey) return;
-      if (bazaarFavoriteMaterialKeys.has(equipmentKey)) {
-        bazaarFavoriteMaterialKeys.delete(equipmentKey);
-      } else {
-        bazaarFavoriteMaterialKeys.add(equipmentKey);
-      }
-      saveBazaarFavoriteState();
-      renderBazaarPrices();
-    });
-  });
-
-  decorateMemoAddButtons(bazaarListWrap);
-  bazaarListWrap.querySelectorAll("[data-memo-bazaar-equipment-key]").forEach((button) => {
-    button.addEventListener("click", (event) => {
-      event.stopPropagation();
-      const equipmentKey = String(button.dataset.memoBazaarEquipmentKey || "");
-      const card = bazaarEquipmentCardByKey.get(equipmentKey);
-      if (!card) return;
-      addMemoEntry(createBazaarEquipmentMemoEntry(card));
-    });
-  });
-
-  bazaarListWrap.querySelectorAll("[data-bazaar-official-link]").forEach((link) => {
-    link.addEventListener("click", (event) => {
-      event.stopPropagation();
-    });
-  });
-
-  bazaarListWrap.querySelectorAll("[data-bazaar-equipment-detail-key]").forEach((button) => {
-    button.addEventListener("click", () => {
-      const equipmentKey = String(button.dataset.bazaarEquipmentDetailKey || "");
-      openBazaarEquipmentDetailModal(equipmentKey);
-    });
-    if (button.tagName !== "BUTTON") {
-      button.addEventListener("keydown", (event) => {
-        if (event.key !== "Enter" && event.key !== " ") return;
-        event.preventDefault();
-        const equipmentKey = String(button.dataset.bazaarEquipmentDetailKey || "");
-        openBazaarEquipmentDetailModal(equipmentKey);
-      });
-    }
-  });
-}
-
 function renderBazaarPrices() {
   if (!bazaarListWrap) return;
-  if (activeBazaarPriceTab === "equipment") {
-    renderBazaarEquipmentPrices();
-    return;
-  }
   applyPendingBazaarUrlItemIfNeeded();
   if (isBazaarLoading && !hasLoadedBazaarPrices) {
     renderBazaarMessage("読み込み中です。しばらくお待ちください。");
@@ -10654,7 +9916,6 @@ function renderBazaarPrices() {
     `;
   };
   bazaarListWrap.innerHTML = `
-    ${buildBazaarPriceTabsHtml()}
     ${buildBazaarPageNoteHtml(
       `<p class="bazaar-page-note-highlight">グラフをタップすると詳細確認できます。</p>`,
       `
@@ -10802,7 +10063,6 @@ function renderBazaarPrices() {
       }
   `;
 
-  attachBazaarPriceTabListeners();
   attachBazaarManualRefreshListener();
 
   const bazaarCategorySelect = bazaarListWrap.querySelector("#bazaarCategorySelect");
@@ -12347,83 +11607,6 @@ async function openBazaarDetailModal(materialKey) {
   updateDocumentMetadata();
 }
 
-function openBazaarEquipmentDetailModal(equipmentKey) {
-  if (!bazaarDetailModalOverlay || !bazaarDetailModalBody) return;
-  const card = bazaarEquipmentCardByKey.get(String(equipmentKey || ""));
-  if (!card) return;
-  if (!hasLoadedBazaarEquipmentPriceHistory && !isBazaarEquipmentHistoryLoading) {
-    void ensureBazaarEquipmentPriceHistoryLoaded();
-  }
-
-  const historySeries = buildBazaarEquipmentHistory(card);
-  const hasHistory = historySeries.some((series) => series.points.length > 0);
-  const chartHtml = hasHistory
-    ? `
-      <div class="bazaar-detail-modal-chart bazaar-equipment-detail-chart">${buildBazaarMultiSeriesSparklineSvg(historySeries, {
-        width: 340,
-        height: 176,
-        includeYAxisLabels: true,
-        paddingLeft: 72,
-        paddingRight: 12,
-        pointRadius: 2.4,
-      })}</div>
-    `
-    : `<p class="bazaar-detail-modal-chart-empty">表示できる履歴がありません。</p>`;
-  const starRowsHtml = BAZAAR_EQUIPMENT_STARS.map((star) => {
-    const row = card.starRows.get(star);
-    return `
-      <p class="bazaar-equipment-modal-star-row ${row && isBazaarEquipmentListingUnavailable(row) ? "is-unavailable" : ""}">
-        <span class="bazaar-equipment-star-label">${getBazaarEquipmentStarLabel(star)}</span>
-        <span class="bazaar-equipment-price-pair">${buildBazaarEquipmentStarPriceHtml(row)}</span>
-      </p>
-    `;
-  }).join("");
-
-  bazaarDetailModalBody.innerHTML = `
-    <div class="memo-target-header bazaar-detail-modal-header">
-      <h3 class="bazaar-detail-modal-title">${escapeHtml(card.itemName)}</h3>
-      <button
-        type="button"
-        class="memo-add-button bazaar-detail-memo-button"
-        data-memo-bazaar-equipment-key="${escapeHtml(card.equipmentKey)}"
-        aria-label="${escapeHtml(card.itemName)}をメモに追加"
-      >
-        ＋メモ
-      </button>
-    </div>
-    <p class="bazaar-category">${escapeHtml(card.itemCategory)}</p>
-    <p class="bazaar-detail-modal-updated-at">更新: ${escapeHtml(getBazaarEquipmentUpdatedAt(card))}</p>
-    <div class="bazaar-equipment-modal-star-list">
-      ${starRowsHtml}
-      <p class="bazaar-listing-count"><span class="bazaar-price-label">件数</span><span class="bazaar-price-sub-value">${formatBazaarListingCount(card.listingCount)}</span></p>
-    </div>
-    ${chartHtml}
-    <p class="bazaar-detail-modal-period">★★ / ★★★（出品なしの日は点なし）</p>
-    ${
-      card.officialUrl
-        ? `<a class="bazaar-detail-modal-link" href="${escapeHtml(card.officialUrl)}" target="_blank" rel="noopener noreferrer">公式相場で確認</a>`
-        : ""
-    }
-  `;
-  decorateMemoAddButtons(bazaarDetailModalBody);
-  bazaarDetailModalBody.querySelectorAll("[data-memo-bazaar-equipment-key]").forEach((button) => {
-    button.addEventListener("click", () => {
-      addMemoEntry(createBazaarEquipmentMemoEntry(card));
-    });
-  });
-
-  activeBazaarDetailModalKey = card.equipmentKey;
-  bazaarDetailModalOverlay.hidden = false;
-  bazaarDetailModalOverlay.classList.add("is-open");
-  syncBodyModalOpenState();
-  resetBazaarDetailModalScrollPosition();
-  bazaarDetailModalDialog?.focus();
-  requestAnimationFrame(() => {
-    resetBazaarDetailModalScrollPosition();
-  });
-  updateDocumentMetadata();
-}
-
 function handleBazaarDetailSwipeStart(event) {
   if (!bazaarDetailModalOverlay?.classList.contains("is-open")) return;
   if (!bazaarDetailModalDialog) return;
@@ -13940,10 +13123,6 @@ function getActiveDocumentTargetName() {
     return String(getSelectedEquipment()?.name || "").trim();
   }
   if (activeTabId === "bazaar") {
-    if (activeBazaarPriceTab === "equipment") {
-      const detailCard = activeBazaarDetailModalKey ? bazaarEquipmentCardByKey.get(String(activeBazaarDetailModalKey || "")) : null;
-      return String(detailCard?.itemName || bazaarEquipmentSearchText || "").trim();
-    }
     const detailRow = activeBazaarDetailModalKey ? getBazaarRowByMaterialKey(activeBazaarDetailModalKey) : null;
     return String(detailRow?.materialName || selectedBazaarMaterialName || "").trim();
   }
@@ -17880,7 +17059,6 @@ async function initialize() {
   showMemoDockHintIfNeeded();
   prefetchDataForTab(activeTabId);
   void ensureBazaarPricesLoaded();
-  void ensureBazaarEquipmentPricesLoaded();
   window.setInterval(renderBazaarUpdateStatuses, 60000);
 }
 
