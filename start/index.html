@@ -1,0 +1,118 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-Y1XSJ8S4MT"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag("js", new Date());
+    gtag("config", "G-Y1XSJ8S4MT");
+  </script>
+  <meta name="theme-color" content="#4a2d18">
+  <title>はじめに・使い方｜DQ10ツール</title>
+  <meta name="description" content="DQ10ツールのはじめての方向けガイド。素材バザー価格の見方、職人の原価と利益の計算例、盗み金策の調べ方、価格データの更新や注意点を具体的に紹介します。">
+  <link rel="canonical" href="https://dq10tools.com/start/">
+  <link rel="stylesheet" href="../styles.css">
+</head>
+<body class="info-page-body">
+  <main class="info-page-main about-page-main">
+    <nav class="info-page-breadcrumb about-breadcrumb" aria-label="パンくず"><a href="/">ホーム</a> &gt; はじめに・使い方</nav>
+
+    <section class="info-page-card about-title-card">
+      <h1 class="info-page-title">はじめに｜DQ10ツールの使い方</h1>
+      <p class="info-page-lead">DQ10ツールは、ドラゴンクエストXの冒険中に何度も調べる「素材の値段」「装備を作るための原価」「金策に使えるアイテム」を、できるだけ少ない操作で確認するための非公式サイトです。</p>
+      <p>価格だけを調べたい方も、職人で利益を計算したい方も、目的の機能から使い始められます。アカウント登録は不要で、基本機能は無料で利用できます。</p>
+      <div class="about-actions">
+        <a class="info-page-link" href="/bazaar/">素材の価格を調べる</a>
+        <a class="info-page-link" href="/craft/">職人の原価を計算する</a>
+        <a class="info-page-link" href="/steal-farming/">盗み金策を探す</a>
+      </div>
+    </section>
+
+    <div class="about-section-grid">
+      <section class="info-page-card about-section-card" id="how-to-use">
+        <h2>まずはこの3つの使い方</h2>
+        <h3>1. 素材を売る前にバザー価格を確認する</h3>
+        <p><a href="/bazaar/">素材バザー価格一覧</a>では、アイテムごとの参考価格や出品件数、前回更新からの変化を確認できます。「今売るか、もう少し待つか」を考えるときの材料になります。</p>
+        <p>ただし、表示されるのは更新時点で確認した価格です。実際の出品価格は変わるため、最後はゲーム内の旅人バザーで確認してください。</p>
+        <h3>2. 職人で作る前に原価と利益を試算する</h3>
+        <p><a href="/craft/">職人アシスト</a>で装備を選ぶと、必要素材と素材の参考価格から制作原価の目安を確認できます。制作数、できのよさ別の販売価格、必要に応じた職人道具代を入力し、利益が残るか比較できます。</p>
+        <p>「素材を買って作るより、完成品を買う方が安いのでは？」という疑問も、数値を整理すると判断しやすくなります。成功率や相場の変動によって実際の収支は変わります。</p>
+        <h3>3. 金策候補を価格から絞り込む</h3>
+        <p><a href="/steal-farming/">盗み金策</a>は、モンスターが落とす通常・レアドロップ品の参考価格から候補を探す機能です。<a href="/cell-farming/">魔因細胞金策</a>も、素材や細胞の価値を考えるときの目安になります。</p>
+        <p>ランキング上位が必ず最高効率とは限りません。ドロップ率、敵の強さ、移動時間、混雑状況などもあわせて考えてください。</p>
+      </section>
+
+      <section class="info-page-card about-section-card" id="profit-example">
+        <h2>職人利益の計算例：数字をどう読む？</h2>
+        <p>たとえば「素材を10個使って装備を1つ作り、バザーで売る」と仮定します。以下は計算方法を説明するための架空の金額で、実際のアイテム相場ではありません。</p>
+        <ul>
+          <li>素材の単価：5,000G × 10個 ＝ 50,000G</li>
+          <li>完成品の販売価格：80,000G</li>
+          <li>販売手数料（5%）：4,000G</li>
+          <li>差し引きの目安：80,000 − 50,000 − 4,000 ＝ <strong>26,000G</strong></li>
+        </ul>
+        <p>この26,000Gは職人道具代や失敗品による損失を含まない概算です。星の数ごとに売値が異なる場合は、完成数の内訳も含めて考える必要があります。実際の判断には<a href="/craft/">職人アシスト</a>の入力欄を使ってみてください。</p>
+      </section>
+
+      <section class="info-page-card about-section-card" id="data-guide">
+        <h2>価格データの更新とグラフの見方</h2>
+        <ul>
+          <li><strong>素材価格：</strong>毎日7:00〜23:00の間、2時間ごとに更新する運用です。取得・反映が遅れる場合もあります。</li>
+          <li><strong>最新価格と過去のグラフ：</strong>更新時点の価格と、日単位で集計したグラフは集計間隔が違うため、一致しない場合があります。</li>
+          <li><strong>出品件数：</strong>その時点の出品状況を知る補助情報です。実際に売れる数量や速度を保証するものではありません。</li>
+          <li><strong>装備価格：</strong>自動更新は停止しています。古い価格を現在の相場と誤認しないよう、ご注意ください。</li>
+        </ul>
+        <p>価格が急に変わっていた場合は、一時的な品薄や出品の入れ替わりの可能性もあります。購入や売却の前にゲーム内で確認するのが確実です。</p>
+      </section>
+
+      <section class="info-page-card about-section-card" id="tool-guide">
+        <h2>目的から選べる便利ツール</h2>
+        <ul>
+          <li><a href="/crystal-simulator/">結晶シミュレーター</a>：装備を売る場合と、錬金して結晶化する場合の収支を比較。</li>
+          <li><a href="/equipment/">装備データベース</a>：装備の性能やセット効果、必要素材、関連情報を確認。</li>
+          <li><a href="/monster/">モンスター情報</a>：ドロップ品、生息地、白宝箱や宝珠の手がかりを探す。</li>
+          <li><a href="/orb/">宝珠データベース</a>：宝珠の効果やドロップするモンスターを調べる。</li>
+          <li><a href="/routine/">日課・週課チェック</a>：やることを整理し、消化状況を記録する。</li>
+          <li><a href="/craft-records/">職人記録</a>：星の数ごとの生産・売上や、作業結果を記録する。</li>
+        </ul>
+        <p>使う機能が決まったら、ホームの「サイト内便利ツール」に追加しておくと、次回から開きやすくなります。</p>
+      </section>
+
+      <section class="info-page-card about-section-card" id="faq">
+        <h2>よくある質問</h2>
+        <h3>Q. ゲームにログインしていなくても使える？</h3>
+        <p>はい。サイト上の価格確認やシミュレーションは、ドラゴンクエストXにログインしていない状態でも使えます。ただし、表示内容はゲーム内の最新価格を保証するものではありません。</p>
+        <h3>Q. お気に入りやチェック状態はスマホとPCで共有できる？</h3>
+        <p>現状は基本的に端末・ブラウザごとの保存です。ブラウザデータの削除や別端末への移動で引き継がれない場合があります。職人記録にはCSVでのバックアップ・復元機能があります。</p>
+        <h3>Q. このサイトは公式サービス？</h3>
+        <p>いいえ。個人運営の非公式支援サイトです。公式の旅人バザーやゲーム内情報の代わりではありません。</p>
+      </section>
+
+      <section class="info-page-card about-section-card" id="policy">
+        <h2>運営の考え方とお願い</h2>
+        <p>毎回別々の画面で素材、レシピ、モンスターを調べ直す手間を少なくすることを目指しています。便利だと思った情報同士をつなぎ、必要な数字にたどり着きやすい形で少しずつ機能を増やしています。</p>
+        <p>掲載データは参考値で、誤りや更新遅れ、ゲームの仕様変更による差異が生じることがあります。不具合や改善希望があれば、<a href="/about/#contact">お問い合わせ</a>からお知らせください。</p>
+        <div class="about-actions">
+          <a class="info-page-link" href="/">ホームでツールを使う</a>
+          <a class="info-page-link" href="/about/">サイト運営について</a>
+        </div>
+      </section>
+    </div>
+  </main>
+  <footer class="site-footer" aria-label="権利表記">
+    <div class="site-footer-inner">
+      <nav class="site-footer-links" aria-label="フッターリンク">
+        <a href="/start/">はじめに・使い方</a>
+        <a href="/about/">このサイトについて</a>
+        <a href="/about/#contact">お問い合わせ</a>
+        <a href="/about/#privacy">プライバシーポリシー</a>
+        <a href="/about/#terms">利用上の注意・免責事項</a>
+      </nav>
+      <p class="site-footer-disclaimer">このサイトはドラゴンクエストXの非公式支援ツールです。株式会社スクウェア・エニックス様とは関係のない個人運営サイトです。ゲーム内画像・名称・データ等の権利は各権利者に帰属します。</p>
+    </div>
+  </footer>
+</body>
+</html>
