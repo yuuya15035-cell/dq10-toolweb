@@ -8789,6 +8789,10 @@ body.memo-panel-open {
   margin-top: 0;
 }
 
+.about-section-card {
+  min-width: 0;
+}
+
 .about-feature-list {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
@@ -8859,6 +8863,75 @@ body.memo-panel-open {
 .info-page-card ul {
   margin: 8px 0 0;
   padding-left: 1.2rem;
+}
+
+.info-page-card h3 {
+  margin: 16px 0 6px;
+  color: #4b321f;
+  font-size: 0.96rem;
+  line-height: 1.5;
+}
+
+.guide-check-list,
+.guide-step-list {
+  padding-left: 1.35rem;
+}
+
+.guide-check-list li + li,
+.guide-step-list li + li {
+  margin-top: 6px;
+}
+
+.guide-formula,
+.guide-note {
+  margin: 12px 0;
+  padding: 11px 13px;
+  border-left: 4px solid #b27a43;
+  border-radius: 8px;
+  background: rgba(239, 220, 194, 0.5);
+}
+
+.guide-formula p,
+.guide-note {
+  margin-top: 0;
+  margin-bottom: 0;
+}
+
+.guide-table-wrap {
+  max-width: 100%;
+  margin: 12px 0;
+  overflow-x: auto;
+  border: 1px solid rgba(196, 166, 132, 0.82);
+  border-radius: 10px;
+  background: rgba(255, 250, 242, 0.78);
+  -webkit-overflow-scrolling: touch;
+}
+
+.guide-table {
+  width: 100%;
+  min-width: 560px;
+  border-collapse: collapse;
+  color: #5b4432;
+  font-size: 0.86rem;
+  line-height: 1.55;
+}
+
+.guide-table th,
+.guide-table td {
+  padding: 9px 10px;
+  border-bottom: 1px solid rgba(196, 166, 132, 0.55);
+  text-align: left;
+  vertical-align: top;
+}
+
+.guide-table thead th {
+  background: rgba(234, 213, 183, 0.62);
+  color: #4b321f;
+}
+
+.guide-table tbody tr:last-child th,
+.guide-table tbody tr:last-child td {
+  border-bottom: 0;
 }
 
 .info-page-link {
@@ -8959,11 +9032,25 @@ body.memo-panel-open {
     padding: 14px 12px 12px;
   }
 
+  .info-page-link {
+    min-height: 44px;
+  }
+
   .info-page-lead,
   .info-page-card p,
   .info-page-card li {
     font-size: 0.86rem;
     line-height: 1.65;
+  }
+
+  .guide-table {
+    min-width: 520px;
+    font-size: 0.8rem;
+  }
+
+  .guide-table th,
+  .guide-table td {
+    padding: 8px;
   }
 }
 

@@ -1,0 +1,150 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-Y1XSJ8S4MT"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag("js", new Date());
+    gtag("config", "G-Y1XSJ8S4MT");
+  </script>
+  <meta name="theme-color" content="#4a2d18">
+  <title>DQ10結晶金策のやり方｜装備購入・錬金・結晶化の利益計算</title>
+  <meta name="description" content="DQ10の汗と涙の結晶について、装備購入・初級錬金・装備制作の原価、結晶売却と装備出品の利益を結晶シミュレーターで比較する手順を解説します。">
+  <link rel="canonical" href="https://dq10tools.com/crystal-guide/">
+  <link rel="stylesheet" href="../styles.css">
+</head>
+<body class="info-page-body">
+  <main class="info-page-main about-page-main">
+    <nav class="info-page-breadcrumb about-breadcrumb" aria-label="パンくず"><a href="/">ホーム</a> &gt; <a href="/start/">はじめに</a> &gt; 結晶シミュレーターの使い方</nav>
+
+    <section class="info-page-card about-title-card">
+      <h1 class="info-page-title">DQ10結晶金策のやり方｜装備購入・錬金・結晶化の利益計算</h1>
+      <p class="info-page-lead">汗と涙の結晶を売った場合の手取りと、装備の購入・制作・錬金にかかった原価を比べるためのガイドです。現在のシミュレーターが計算する範囲と、手入力で合わせる項目を分けて説明します。</p>
+      <div class="about-actions">
+        <a class="info-page-link" href="/crystal-simulator/">結晶シミュレーターを開く</a>
+        <a class="info-page-link" href="/start/">はじめに戻る</a>
+      </div>
+      <h2>このページで分かること</h2>
+      <ul class="guide-check-list">
+        <li>3つの計算タブの違いと入力する原価</li>
+        <li>結晶売却と装備売却を同じ条件で比べる方法</li>
+        <li>5％手数料、結晶数の目安、自動反映価格の注意点</li>
+      </ul>
+    </section>
+
+    <div class="about-section-grid">
+      <section class="info-page-card about-section-card" id="basics">
+        <h2>1. 汗と涙の結晶と結晶金策の基本</h2>
+        <p>汗と涙の結晶は、条件を満たした装備の使い込み度を上げ、装備から取り出す素材です。結晶金策では、装備を手に入れる費用や錬金費用と、取り出した結晶を売った手取りを比べます。</p>
+        <div class="guide-formula" aria-label="結晶化利益の計算式">
+          <p><strong>結晶化利益 ＝ 結晶単価 × 結晶数 × 0.95 − 購入・制作原価 − 錬金原価</strong></p>
+        </div>
+        <p>利益が出るかは装備価格、錬金費用、実際に取り出せる結晶数、結晶相場で変わります。シミュレーターは候補比較を助けるもので、利益を保証するものではありません。</p>
+      </section>
+
+      <section class="info-page-card about-section-card" id="modes">
+        <h2>2. 3つのタブと原価の違い</h2>
+        <div class="guide-table-wrap">
+          <table class="guide-table">
+            <thead><tr><th>タブ</th><th>想定する流れ</th><th>原価</th></tr></thead>
+            <tbody>
+              <tr><th>装備買って結晶化</th><td>錬金済み装備を買い、使い込み度を上げて結晶化</td><td>入力した購入単価</td></tr>
+              <tr><th>装備買って錬金</th><td>未錬金装備を買い、自分で錬金して結晶化または装備のまま出品</td><td>未錬金装備の購入価格 ＋ 錬金素材原価</td></tr>
+              <tr><th>装備作って錬金</th><td>素材から装備を作り、自分で錬金して結晶化または出品</td><td>装備の素材原価 ＋ 錬金素材原価</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p>「装備作って錬金」の素材原価は、登録レシピと素材バザー価格から計算します。現在の計算には職人道具代、制作失敗、錬金失敗による追加費用は含まれません。必要なら表示原価を手入力で調整してください。</p>
+      </section>
+
+      <section class="info-page-card about-section-card" id="steps">
+        <h2>3. 結晶シミュレーターの操作手順</h2>
+        <ol class="guide-step-list">
+          <li><strong>目的に合うタブを選ぶ。</strong>すでに錬金済み装備を買うなら「装備買って結晶化」です。</li>
+          <li><strong>装備を選ぶ。</strong>装備レベル、武器・防具、武器種または防具シリーズ、装備名を順に選びます。装備名検索も使えます。</li>
+          <li><strong>できのよさを選ぶ。</strong>現在の選択肢は★、★★、★★★です。</li>
+          <li><strong>結晶数を確認する。</strong>装備レベルと★数から初級錬金成功を前提に目安が入ります。実物から取り出せる数が分かる場合は、その数に直します。</li>
+          <li><strong>価格と原価を確認する。</strong>結晶単価、購入単価、素材原価、バザー出品価格をゲーム内の現在値に合わせます。</li>
+          <li><strong>錬金候補を選ぶ。</strong>現在の実装は登録済みの<strong>ツボ初級・ランプ初級</strong>レシピです。中級・上級錬金を選ぶ機能はありません。</li>
+          <li><strong>計算結果を比べる。</strong>結晶化利益とバザー出品利益の大きい方、差額、総原価を確認します。</li>
+        </ol>
+      </section>
+
+      <section class="info-page-card about-section-card" id="fee">
+        <h2>4. 手数料5％を二重に引かない考え方</h2>
+        <p>シミュレーターは、結晶を売る場合には「結晶単価 × 結晶数」の5％を、装備を売る場合には「装備のバザー出品価格」の5％を差し引きます。この2つは別々の売却方法を比べるための計算で、同じ売上から2回引いているわけではありません。</p>
+        <ul>
+          <li>結晶化：結晶売却手取り − 総原価</li>
+          <li>装備売却：装備売却手取り − 総原価</li>
+        </ul>
+        <p>原価欄に手数料込みの金額を自分で足してしまうと二重控除になります。購入価格、素材原価、錬金原価は支払額をそのまま入力してください。</p>
+      </section>
+
+      <section class="info-page-card about-section-card" id="example">
+        <h2>5. 架空の価格を使った具体例</h2>
+        <p>以下は操作方法を説明するための<strong>架空の価格</strong>です。現在のバザー相場ではありません。</p>
+        <ul>
+          <li>取り出せる結晶：30個</li>
+          <li>結晶単価：3,000G</li>
+          <li>錬金済み装備の購入価格：60,000G</li>
+        </ul>
+        <p>結晶の売上は90,000G、5％控除後の手取りは85,500Gです。「装備買って結晶化」の利益は「85,500 − 60,000 ＝ <strong>25,500G</strong>」になります。</p>
+        <h3>未錬金装備を買って初級錬金する場合</h3>
+        <p>未錬金装備45,000G、初級錬金1回4,000G、★★装備なので2回錬金、装備の出品価格75,000Gとします。</p>
+        <ul>
+          <li>総原価：45,000 ＋ 4,000 × 2 ＝ 53,000G</li>
+          <li>結晶化利益：85,500 − 53,000 ＝ <strong>32,500G</strong></li>
+          <li>装備売却手取り：75,000 × 0.95 ＝ 71,250G</li>
+          <li>装備売却利益：71,250 − 53,000 ＝ <strong>18,250G</strong></li>
+          <li>差額：32,500 − 18,250 ＝ <strong>14,250G</strong>（この条件では結晶化が上）</li>
+        </ul>
+        <p>これは「今すぐ確実に32,500G儲かる」という意味ではありません。装備を使い込む時間、実際の錬金結果、結晶と装備の売れ行き、価格変動は別に考える必要があります。</p>
+      </section>
+
+      <section class="info-page-card about-section-card" id="data">
+        <h2>6. 自動反映されるデータと確認が必要な項目</h2>
+        <ul>
+          <li><strong>結晶単価：</strong>素材バザー価格一覧の「汗と涙の結晶」を参照します。</li>
+          <li><strong>結晶数：</strong>装備レベルと★数から初級錬金成功の目安を入れます。手入力で変更できます。</li>
+          <li><strong>素材原価：</strong>装備レシピと素材価格から計算します。価格未取得素材がある場合は内訳に警告が出ます。</li>
+          <li><strong>錬金原価：</strong>登録済みの初級錬金レシピと素材価格から計算します。</li>
+          <li><strong>一部の装備価格：</strong>自動反映欄がありますが、<strong>装備バザー価格の自動更新は停止中</strong>です。必ず現在のゲーム内価格へ直してください。</li>
+        </ul>
+      </section>
+
+      <section class="info-page-card about-section-card" id="faq">
+        <h2>7. 注意点とよくある質問</h2>
+        <h3>Q. 表示された結晶数は確定値？</h3>
+        <p>いいえ。初級錬金成功を前提にした目安です。実際の装備の錬金内容と取り出し数に合わせて変更してください。</p>
+        <h3>Q. 利益率が高い装備を買えば必ず利益が出る？</h3>
+        <p>保証されません。装備を必要数買えるか、結晶相場が維持されるか、使い込みにかかる時間を許容できるかも確認してください。</p>
+        <h3>Q. 中級・上級錬金も計算できる？</h3>
+        <p>現在の錬金候補はツボ初級・ランプ初級の登録レシピです。中級・上級の費用を自動選択する機能はありません。</p>
+        <h3>Q. 装備を作る場合、職人道具代も入る？</h3>
+        <p>現在の「装備作って錬金」の素材原価には入りません。厳密に比較したい場合は、道具代や制作失敗の見込みを原価に上乗せしてください。</p>
+      </section>
+
+      <section class="info-page-card about-section-card" id="related">
+        <h2>関連ツール</h2>
+        <div class="about-actions">
+          <a class="info-page-link" href="/crystal-simulator/">結晶利益を計算する</a>
+          <a class="info-page-link" href="/bazaar/">素材価格を確認する</a>
+          <a class="info-page-link" href="/craft-guide/">職人原価の考え方</a>
+          <a class="info-page-link" href="/start/">総合案内に戻る</a>
+        </div>
+      </section>
+    </div>
+  </main>
+  <footer class="site-footer" aria-label="権利表記">
+    <div class="site-footer-inner">
+      <nav class="site-footer-links" aria-label="フッターリンク">
+        <a href="/start/">はじめに・使い方</a><a href="/craft-guide/">職人ガイド</a><a href="/crystal-guide/">結晶ガイド</a><a href="/farming-guide/">金策ガイド</a><a href="/about/">このサイトについて</a><a href="/about/#contact">お問い合わせ</a><a href="/about/#privacy">プライバシーポリシー</a><a href="/about/#terms">利用上の注意・免責事項</a>
+      </nav>
+      <p class="site-footer-disclaimer">このサイトはドラゴンクエストXの非公式支援ツールです。株式会社スクウェア・エニックス様とは関係のない個人運営サイトです。掲載価格と計算結果は参考値です。</p>
+    </div>
+  </footer>
+</body>
+</html>

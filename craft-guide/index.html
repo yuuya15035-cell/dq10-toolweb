@@ -1,0 +1,133 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-Y1XSJ8S4MT"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag("js", new Date());
+    gtag("config", "G-Y1XSJ8S4MT");
+  </script>
+  <meta name="theme-color" content="#4a2d18">
+  <title>DQ10職人アシストの使い方｜原価計算と利益シミュレーション</title>
+  <meta name="description" content="DQ10職人アシストで素材原価、バザー手数料、職人道具代、★0〜★3の販売価格を入力し、1個・複数制作の利益と損益分岐点を計算する方法を解説します。">
+  <link rel="canonical" href="https://dq10tools.com/craft-guide/">
+  <link rel="stylesheet" href="../styles.css">
+</head>
+<body class="info-page-body">
+  <main class="info-page-main about-page-main">
+    <nav class="info-page-breadcrumb about-breadcrumb" aria-label="パンくず"><a href="/">ホーム</a> &gt; <a href="/start/">はじめに</a> &gt; 職人アシストの使い方</nav>
+
+    <section class="info-page-card about-title-card">
+      <h1 class="info-page-title">DQ10職人アシストの使い方｜原価計算と利益シミュレーション</h1>
+      <p class="info-page-lead">装備を作る前に、必要素材、素材原価、できのよさ別の売値を同じ画面で比べるためのガイドです。操作を先に試したい方は、職人アシストを開いてから必要な部分だけ確認できます。</p>
+      <div class="about-actions">
+        <a class="info-page-link" href="/craft/">職人アシストを開く</a>
+        <a class="info-page-link" href="/start/">はじめに戻る</a>
+      </div>
+      <h2>このページで分かること</h2>
+      <ul class="guide-check-list">
+        <li>素材原価、バザー手数料、職人道具代を分けて考える方法</li>
+        <li>★0〜★3の完成数を使った複数制作の利益計算</li>
+        <li>現在の職人アシストに沿った入力手順と注意点</li>
+      </ul>
+    </section>
+
+    <div class="about-section-grid">
+      <section class="info-page-card about-section-card" id="basics">
+        <h2>1. 職人の原価計算とは</h2>
+        <p>原価は、装備を1個作るために使う素材の価格を合計したものです。職人アシストでは、選んだ装備のレシピと素材単価から「素材単価 × 必要数」を素材ごとに計算し、その小計を合算します。</p>
+        <div class="guide-formula" aria-label="職人利益の計算式">
+          <p><strong>1個あたり利益 ＝ 販売価格 × 0.95 − 素材原価 − 1回あたりの職人道具代</strong></p>
+        </div>
+        <p>バザー販売手数料は販売価格の5％として扱います。職人道具を原価に含める設定を有効にした場合は、「道具購入価格 ÷ 耐久回数」を制作1回分の道具代として差し引きます。素材を自分で拾った場合も、売れば得られた価格を原価として置くと、作る場合と素材のまま売る場合を比較しやすくなります。</p>
+      </section>
+
+      <section class="info-page-card about-section-card" id="steps">
+        <h2>2. 職人アシストの操作手順</h2>
+        <ol class="guide-step-list">
+          <li><strong>職人種別と装備ジャンルを選ぶ。</strong>装備名が分かる場合は「装備名で検索」も使えます。</li>
+          <li><strong>作りたい装備を選ぶ。</strong>必要素材、1個あたり必要数、素材単価、小計が表示されます。</li>
+          <li><strong>制作数を入力する。</strong>必要素材一覧の総必要数と材料原価合計が制作数に合わせて変わります。</li>
+          <li><strong>素材単価を確認する。</strong>表示価格は更新時点の参考値です。高額素材や出品の少ない素材はゲーム内の旅人バザーで確認します。</li>
+          <li><strong>必要なら職人道具代を含める。</strong>「＋ 職人道具を原価に含める」を開き、道具と購入単価を入力します。</li>
+          <li><strong>★0〜★3の販売価格と個数を入力する。</strong>制作数と★個数の合計が違うと警告が表示されます。</li>
+          <li><strong>利益シミュレーションを見る。</strong>各★の1個利益、★別合計利益、平均手取り、合計利益を比較します。</li>
+        </ol>
+        <p class="guide-note"><strong>装備価格の自動更新は現在停止中です。</strong>販売価格欄に値が入っていても、現在の相場が継続的に自動反映されているとは限りません。出品前にゲーム内価格へ直してください。</p>
+      </section>
+
+      <section class="info-page-card about-section-card" id="single-example">
+        <h2>3. 1個制作の計算例：★2と★3で利益はどう変わる？</h2>
+        <p>以下は計算方法を説明するための<strong>架空の相場</strong>です。実在する装備の現在価格ではありません。</p>
+        <div class="guide-table-wrap">
+          <table class="guide-table">
+            <thead><tr><th>項目</th><th>★2</th><th>★3</th></tr></thead>
+            <tbody>
+              <tr><th>素材原価</th><td>50,000G</td><td>50,000G</td></tr>
+              <tr><th>販売価格</th><td>60,000G</td><td>150,000G</td></tr>
+              <tr><th>手数料5％</th><td>3,000G</td><td>7,500G</td></tr>
+              <tr><th>販売手取り</th><td>57,000G</td><td>142,500G</td></tr>
+              <tr><th>道具代を含めない利益</th><td><strong>7,000G</strong></td><td><strong>92,500G</strong></td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p>★2は「60,000 × 0.95 − 50,000 ＝ 7,000G」、★3は「150,000 × 0.95 − 50,000 ＝ 92,500G」です。同じ素材原価でも、できのよさによって利益差は85,500Gになります。</p>
+        <p>さらに30,000Gで耐久30回の職人道具を使うなら、1回分は1,000Gです。職人アシストで道具代を含めると、★2は6,000G、★3は91,500Gになります。</p>
+      </section>
+
+      <section class="info-page-card about-section-card" id="batch-example">
+        <h2>4. 複数制作と完成割合の計算例</h2>
+        <p>同じ架空相場で10個作り、★2が7個、★3が3個だったとします。道具代は1回1,000Gとして計算します。</p>
+        <ul>
+          <li>販売額：60,000G × 7個 ＋ 150,000G × 3個 ＝ 870,000G</li>
+          <li>手数料：870,000G × 5％ ＝ 43,500G</li>
+          <li>素材原価：50,000G × 10個 ＝ 500,000G</li>
+          <li>道具代：1,000G × 10回 ＝ 10,000G</li>
+          <li>合計利益：870,000 − 43,500 − 500,000 − 10,000 ＝ <strong>316,500G</strong></li>
+        </ul>
+        <p>★3が1個減り、その1個が★2になると、手取り差は「(150,000 − 60,000) × 0.95 ＝ 85,500G」縮みます。職人アシストでは予想成功率を直接入力するのではなく、★ごとの完成個数を入れて結果を比べます。過去の自分の制作記録がある場合は、その比率を個数に置き換えると現実に近い試算になります。</p>
+      </section>
+
+      <section class="info-page-card about-section-card" id="break-even">
+        <h2>5. 損益分岐点の考え方</h2>
+        <p>損益分岐点は、利益がほぼ0Gになる販売価格です。素材原価50,000Gだけなら「50,000 ÷ 0.95 ＝ 52,631.57…G」なので、1G単位では約52,632Gが目安です。</p>
+        <p>道具代1,000Gも含めるなら「(50,000 ＋ 1,000) ÷ 0.95 ＝ 53,684.21…G」となり、約53,685Gが目安です。ただし、値下げ、売れ残り、素材価格の変動、職人作業中の失敗による追加費用は別に見積もる必要があります。</p>
+      </section>
+
+      <section class="info-page-card about-section-card" id="faq">
+        <h2>6. 注意点とよくある質問</h2>
+        <h3>Q. 制作数を増やすだけで合計利益も増える？</h3>
+        <p>必要素材の総数と材料原価合計は増えますが、合計利益には★0〜★3の個数入力も必要です。制作数と★個数合計が一致しているか警告欄を確認してください。</p>
+        <h3>Q. 素材価格はそのまま信じてよい？</h3>
+        <p>更新時点の参考値です。出品数が少ない素材は、表示価格で必要数を買えない場合があります。高額な制作ほどゲーム内で買える数量まで確認してください。</p>
+        <h3>Q. ★3の割合を自動で予測してくれる？</h3>
+        <p>いいえ。現在の職人アシストは、入力した★別個数から利益を集計します。職人レベル、集中力、手順、会心率などから成功率を予測する機能ではありません。</p>
+        <h3>Q. 利益がプラスなら必ず儲かる？</h3>
+        <p>保証はありません。相場変動、売れるまでの時間、値下げ、素材の買い増しなどで実際の収支は変わります。結果は作るかどうかを判断する材料として使ってください。</p>
+      </section>
+
+      <section class="info-page-card about-section-card" id="related">
+        <h2>関連ツール</h2>
+        <p>素材価格の動きを先に見たい場合はバザーガイド、制作結果を残したい場合は職人記録も合わせて使えます。</p>
+        <div class="about-actions">
+          <a class="info-page-link" href="/craft/">職人アシストで計算する</a>
+          <a class="info-page-link" href="/bazaar-guide/">バザー相場の見方</a>
+          <a class="info-page-link" href="/craft-records/">職人記録を開く</a>
+          <a class="info-page-link" href="/start/">総合案内に戻る</a>
+        </div>
+      </section>
+    </div>
+  </main>
+  <footer class="site-footer" aria-label="権利表記">
+    <div class="site-footer-inner">
+      <nav class="site-footer-links" aria-label="フッターリンク">
+        <a href="/start/">はじめに・使い方</a><a href="/craft-guide/">職人ガイド</a><a href="/crystal-guide/">結晶ガイド</a><a href="/farming-guide/">金策ガイド</a><a href="/about/">このサイトについて</a><a href="/about/#contact">お問い合わせ</a><a href="/about/#privacy">プライバシーポリシー</a><a href="/about/#terms">利用上の注意・免責事項</a>
+      </nav>
+      <p class="site-footer-disclaimer">このサイトはドラゴンクエストXの非公式支援ツールです。株式会社スクウェア・エニックス様とは関係のない個人運営サイトです。掲載価格と計算結果は参考値です。</p>
+    </div>
+  </footer>
+</body>
+</html>
